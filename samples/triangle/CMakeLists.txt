@@ -34,10 +34,23 @@ target_link_libraries(triangle PUBLIC limbo)
 target_include_directories(triangle PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../src/)
 
 target_compile_features(triangle PUBLIC cxx_std_20)
-target_compile_options(triangle PRIVATE
+if (WIN32)
+target_compile_options(limbo PRIVATE
     /W3 /WX
     -D_HAS_EXCEPTIONS=0
+    -DLIMBO_WINDOWS=1
 )
+elseif (LINUX)
+target_compile_options(limbo PRIVATE
+    -Wall
+    -Werror
+    -Wconversion
+    -Wno-error=comment
+    -fno-exceptions
+    -DLIMBO_WINDOWS=0
+    -DLIMBO_LINUX=1
+)
+endif()
 
 set_target_properties(triangle PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(triangle PROPERTIES FOLDER "samples")

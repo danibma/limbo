@@ -6,6 +6,11 @@ namespace limbo
 {
 	inline void Log(const char* message)
 	{
-		printf(message);
+#if LIMBO_WINDOWS
+		printf("Windows: %s", message);
+#elif LIMBO_LINUX
+		printf("Linux: %s", message);
+#endif
+		
 	}
 }

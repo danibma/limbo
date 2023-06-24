@@ -6,8 +6,9 @@ An abstraction layer over multiple low-level graphics APIs.
 - Vulkan 1.3
 
 ## Requirements
-- Direct3D12 capable hardware and OS (Windows 10 20H2 or newer)
-- Windows 10 SDK or newer
+- Windows or Linux (x64 or ARM64)
 - CMake 3.22 or newer
+- A C++20 compiler(Visual Studio 2019, Clang 14)
+- Windows SDK 10.0.19041.0 or later for DX12 support
 
 
