@@ -55,7 +55,7 @@ target_compile_options(limbo PRIVATE
     -DLIMBO_WINDOWS=1
     -DLIMBO_LINUX=0
 )
-elseif (LINUX)
+else()
 target_compile_options(limbo PRIVATE
     -Wall
     -Werror

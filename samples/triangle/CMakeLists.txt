@@ -35,13 +35,14 @@ target_include_directories(triangle PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../sr
 
 target_compile_features(triangle PUBLIC cxx_std_20)
 if (WIN32)
-target_compile_options(limbo PRIVATE
+target_compile_options(triangle PRIVATE
     /W3 /WX
     -D_HAS_EXCEPTIONS=0
     -DLIMBO_WINDOWS=1
+    -DLIMBO_LINUX=0
 )
-elseif (LINUX)
-target_compile_options(limbo PRIVATE
+else()
+target_compile_options(triangle PRIVATE
     -Wall
     -Werror
     -Wconversion
