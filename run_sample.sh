@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cmake -B ./build_linux -G "Unix Makefiles"
+cmake -B ./build_linux -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
 cd build_linux
 
 echo "--------- Start Compile ---------";

@@ -2,7 +2,8 @@
 
 int main(int argc, char* argv[])
 {
-	limbo::Log("Hello from triangle\n");
+	LB_LOG("Hello world!");
+	LB_ERROR("Erro crl");
 
 	return 0;
 }
