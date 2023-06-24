@@ -40,7 +40,17 @@ target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if (LIMBO_BUILD_SAMPLES)
     message("Building limbo samples")
 
+    # Samples
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/samples/triangle)
+
+    # GLFW
+    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/samples/third_party/glfw)
+    set_target_properties(glfw PROPERTIES FOLDER "samples/third_party/glfw3")
+    set_target_properties(update_mappings PROPERTIES FOLDER "samples/third_party/glfw3")
+    set_target_properties(uninstall PROPERTIES FOLDER "samples/third_party/glfw3")
 
     # Set up startup project
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT triangle)

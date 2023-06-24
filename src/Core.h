@@ -78,7 +78,7 @@ typedef int64_t int64;
 		inline bool InternalEnsure(bool expression)
 		{
 			if (!expression)
-				INTERNAL_PLATFORM_BREAK();
+				LB_ERROR("Assertion Failed!");
 			return expression;
 		}
 	}

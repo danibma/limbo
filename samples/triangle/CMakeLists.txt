@@ -30,7 +30,7 @@ target_sources(triangle PRIVATE ${HEADER_FILES} ${SHADER_FILES})
 target_include_directories(triangle PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # link limbo
-target_link_libraries(triangle PUBLIC limbo)
+target_link_libraries(triangle PUBLIC limbo glfw)
 target_include_directories(triangle PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../src/)
 
 target_compile_features(triangle PUBLIC cxx_std_20)
