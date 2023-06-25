@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core.h"
+#include "resources.h"
 
 #include <vector>
 #include <queue>
@@ -84,5 +85,7 @@ namespace limbo
 		static ResourceManager* ptr;
 
 		virtual ~ResourceManager() = default;
+
+		virtual Handle<Buffer> createBuffer(const BufferSpec& spec) = 0;
 	};
 }

@@ -36,9 +36,12 @@ int main(int argc, char* argv[])
 	limbo::init(glfwGetX11Window(window));
 #endif
 
-	/*float vertices[] = {  0.5f, -0.5f, 0.0f,
+	float vertices[] = { 0.5f, -0.5f, 0.0f,
 						  0.0f,  0.7f, 0.0f,
 						 -0.5f, -0.5f, 0.0f };
+	limbo::Handle<limbo::Buffer> vertexBuffer = limbo::createBuffer({ .debugName = "triangle vb", .byteSize = 150, .initialData = vertices });
+
+	/*
 	auto vertex_buffer = gfxCreateBuffer(gfx, sizeof(vertices), vertices);
 
 	auto program = gfxCreateProgram(gfx, "triangle");

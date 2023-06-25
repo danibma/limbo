@@ -20,5 +20,5 @@ namespace limbo
 
 	void shutdown();
 
-
+	Handle<Buffer> createBuffer(const BufferSpec& spec);
 }
