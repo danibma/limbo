@@ -18,23 +18,39 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER)
 
 option(LIMBO_BUILD_SAMPLES "Build limbo samples" ON)
+option(LIMBO_BUILD_TESTS "Build limbo tests" ON)
 
 file(GLOB_RECURSE HEADER_FILES
     CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/device.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/resourcemanager.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/resources.h)
 
 file(GLOB_RECURSE SOURCE_FILES
     CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.cpp)
 
-add_library(limbo ${SOURCE_FILES})
+# Vulkan specific
+file(GLOB_RECURSE VULKAN_FILES
+    CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/*.cpp)
+
+add_library(limbo ${SOURCE_FILES} ${VULKAN_FILES})
 
 target_sources(limbo PRIVATE ${SHADER_FILES})
 source_group("Shaders" FILES ${SHADER_FILES})
 set_source_files_properties(${SHADER_FILES} PROPERTIES VS_TOOL_OVERRIDE "None")
 
-target_sources(limbo PRIVATE ${HEADER_FILES} ${SHADER_FILES})
+target_sources(limbo PRIVATE ${HEADER_FILES} ${SHADER_FILES} ${VULKAN_HEADERS})
+source_group("Source" FILES ${SOURCE_FILES} ${HEADER_FILES})
+source_group("Source/Vulkan" FILES ${VULKAN_FILES})
 target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Vulkan headers
+target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/VulkanHeaders)
 
 # Add samples
 if (LIMBO_BUILD_SAMPLES)
@@ -54,6 +70,44 @@ if (LIMBO_BUILD_SAMPLES)
 
     # Set up startup project
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT triangle)
+endif()
+
+# Tests
+if (LIMBO_BUILD_TESTS)
+    message("Building limbo tests")
+
+    file(GLOB_RECURSE TESTS_FILES
+        CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
+
+    add_executable(limbo_tests ${TESTS_FILES})
+
+    target_include_directories(limbo_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests/third_party)
+
+    target_link_libraries(limbo_tests PUBLIC limbo)
+    target_include_directories(limbo_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/)
+
+    set_target_properties(limbo_tests PROPERTIES 
+        VS_DEBUGGER_COMMAND_ARGUMENTS "-s -b")
+
+    if (WIN32)
+    target_compile_options(limbo_tests PRIVATE
+        /W3 /WX
+        -D_HAS_EXCEPTIONS=0
+        -DLIMBO_WINDOWS=1
+        -DLIMBO_LINUX=0
+    )
+    else()
+    target_compile_options(limbo_tests PRIVATE
+        -Wall
+        -Werror
+        -Wconversion
+        -Wno-error=comment
+        -fno-exceptions
+        -DLIMBO_WINDOWS=0
+        -DLIMBO_LINUX=1
+    )
+    endif()
 endif()
 
 target_compile_features(limbo PUBLIC cxx_std_20)

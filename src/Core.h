@@ -86,3 +86,70 @@ typedef int64_t int64;
 #else 
 	#define ensure(expr) (expr)
 #endif
+
+template <typename T>
+void Noop(T exp) {}
+
+#include <vulkan/vulkan.h>
+
+#if LIMBO_WINDOWS
+#include <windows.h>
+#elif LIMBO_LINUX
+#include <dlfcn.h>
+#endif
+
+/*
+typedef const char* LPCSTR;
+typedef struct HINSTANCE__* HINSTANCE;
+typedef HINSTANCE HMODULE;
+
+#ifdef _WIN64
+typedef __int64(__stdcall* FARPROC)(void);
+#else
+typedef int(__stdcall* FARPROC)(void);
+#endif
+
+__declspec(dllimport) HMODULE __stdcall LoadLibraryA(LPCSTR);
+__declspec(dllimport) FARPROC __stdcall GetProcAddress(HMODULE, LPCSTR);*/
+/*
+
+void vulkanInit()
+{
+	//PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
+	PFN_vkCreateInstance vkCreateInstance;
+
+#if LIMBO_WINDOWS
+	HMODULE module = LoadLibraryA("vulkan-1.dll");
+
+	//vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)(void(*)(void))GetProcAddress(module, "vkGetInstanceProcAddr");
+
+	vkCreateInstance = (PFN_vkCreateInstance)GetProcAddress(module, "vkCreateInstance");
+#elif LIMBO_LINUX
+	void* module = dlopen("libvulkan.so.1", RTLD_NOW | RTLD_LOCAL);
+	if (!module)
+		module = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+	ensure(module);
+	//vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)dlsym(module, "vkGetInstanceProcAddr");
+	vkCreateInstance = (PFN_vkCreateInstance)dlsym(module, "vkCreateInstance");
+#endif
+
+	VkApplicationInfo appInfo = {
+		.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+		.pApplicationName = "limbo",
+		.applicationVersion = VK_MAKE_VERSION(0, 0, 1),
+		.pEngineName = "limbo",
+		.engineVersion = VK_MAKE_VERSION(0, 0, 1),
+		.apiVersion = VK_VERSION_1_3,
+	};
+
+	VkInstanceCreateInfo instanceCreateInfo = {
+		.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+		.pApplicationInfo = &appInfo,
+		.enabledLayerCount = 0,
+		.enabledExtensionCount = 0,
+	};
+
+	VkInstance instance;
+	VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+	LB_LOG("%d", (int)result);
+}*/
