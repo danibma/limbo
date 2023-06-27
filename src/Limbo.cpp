@@ -17,7 +17,8 @@ namespace limbo
 #elif LIMBO_LINUX
 	void init(Window window)
 	{
-
+		Device::ptr = new VulkanDevice();
+		ResourceManager::ptr = new VulkanResourceManager();
 	}
 #endif
 

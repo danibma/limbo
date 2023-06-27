@@ -39,8 +39,13 @@ int main(int argc, char* argv[])
 	float vertices[] = { 0.5f, -0.5f, 0.0f,
 						  0.0f,  0.7f, 0.0f,
 						 -0.5f, -0.5f, 0.0f };
-	limbo::Handle<limbo::Buffer> vertexBuffer = limbo::createBuffer({ .debugName = "triangle vb", .byteSize = 150, .initialData = vertices });
+	limbo::Handle<limbo::Buffer> vertexBuffer = limbo::createBuffer({ 
+		.debugName = "triangle vb", 
+		.byteSize = 150, 
+		.usage = limbo::BufferUsage::Vertex, 
+		.initialData = vertices });
 
+	limbo::ResourceManager::ptr->destroyBuffer(vertexBuffer);
 	/*
 	auto vertex_buffer = gfxCreateBuffer(gfx, sizeof(vertices), vertices);
 

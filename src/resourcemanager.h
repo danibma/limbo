@@ -1,7 +1,9 @@
 #pragma once
 
 #include "core.h"
-#include "resources.h"
+#include "buffer.h"
+#include "shader.h"
+#include "texture.h"
 
 #include <vector>
 #include <queue>
@@ -35,17 +37,21 @@ namespace limbo
 
 			m_objects.resize(MAX_SIZE);
 			for (uint16 i = 0; i < MAX_SIZE; ++i)
+			{
 				m_freeSlots.push(i);
+				m_objects[i].data = new DataType();
+			}
 		}
 
-		Handle<HandleType> allocateHandle(DataType* newData)
+		template<class... Args>
+		Handle<HandleType> allocateHandle(Args&&... args)
 		{
 			uint16 freeSlot = m_freeSlots.front();
 			m_freeSlots.pop();
 			ensure(freeSlot < MAX_SIZE);
-			ensure(freeSlot != ~0);
+			ensure(freeSlot != 0xff);
 			Object& obj = m_objects[freeSlot];
-			obj.data = newData;
+			new(obj.data) DataType(std::forward<Args>(args)...);
 			return Handle<HandleType>(freeSlot, obj.generation);
 		}
 
@@ -53,7 +59,7 @@ namespace limbo
 		{
 			m_freeSlots.push(handle.m_index);
 			ensure(handle.isValid());
-			m_objects[handle.m_index].data = nullptr;
+			m_objects[handle.m_index].data->~DataType();
 			m_objects[handle.m_index].generation++;
 		}
 
@@ -64,6 +70,11 @@ namespace limbo
 			if (handle.m_generation != obj.generation)
 				return nullptr;
 			return obj.data;
+		}
+
+		uint16 getSize()
+		{
+			return MAX_SIZE;
 		}
 
 	private:
@@ -87,5 +98,11 @@ namespace limbo
 		virtual ~ResourceManager() = default;
 
 		virtual Handle<Buffer> createBuffer(const BufferSpec& spec) = 0;
+		virtual Handle<Shader> createShader(const ShaderSpec& spec) = 0;
+		virtual Handle<Texture> createTexture(const TextureSpec& spec) = 0;
+
+		virtual void destroyBuffer(Handle<Buffer> buffer) = 0;
+		virtual void destroyShader(Handle<Shader> shader) = 0;
+		virtual void destroyTexture(Handle<Texture> texture) = 0;
 	};
 }

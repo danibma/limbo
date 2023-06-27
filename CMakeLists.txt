@@ -26,7 +26,9 @@ file(GLOB_RECURSE HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/device.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/resourcemanager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/resources.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/buffer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/shader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/texture.h)
 
 file(GLOB_RECURSE SOURCE_FILES
     CONFIGURE_DEPENDS

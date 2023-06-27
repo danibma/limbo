@@ -1,12 +1,15 @@
 #pragma once
 
-#include "resources.h"
+#include "buffer.h"
 
 namespace limbo
 {
 	class VulkanBuffer : public Buffer
 	{
 	public:
-		VulkanBuffer(BufferSpec spec);
+		VulkanBuffer() = default;
+		VulkanBuffer(const BufferSpec& spec);
+
+		virtual ~VulkanBuffer();
 	};
 }

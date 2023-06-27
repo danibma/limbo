@@ -2,8 +2,13 @@
 
 namespace limbo
 {
-	VulkanBuffer::VulkanBuffer(BufferSpec spec)
+	VulkanBuffer::VulkanBuffer(const BufferSpec& spec)
 	{
 		
+	}
+
+	VulkanBuffer::~VulkanBuffer()
+	{
+
 	}
 }

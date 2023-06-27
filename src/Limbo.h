@@ -3,7 +3,6 @@
 #include "core.h"
 #include "device.h"
 #include "resourcemanager.h"
-#include "resources.h"
 
 #if LIMBO_LINUX
 	#include <X11/Xlib.h>
