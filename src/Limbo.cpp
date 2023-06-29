@@ -30,10 +30,4 @@ namespace limbo
 		delete Device::ptr;
 		Device::ptr = nullptr;
 	}
-
-	Handle<Buffer> createBuffer(const BufferSpec& spec)
-	{
-		return ResourceManager::ptr->createBuffer(spec);
-	}
-
 }

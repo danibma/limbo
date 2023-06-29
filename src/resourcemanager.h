@@ -1,9 +1,6 @@
 #pragma once
 
 #include "core.h"
-#include "buffer.h"
-#include "shader.h"
-#include "texture.h"
 
 #include <vector>
 #include <queue>
@@ -90,6 +87,12 @@ namespace limbo
 		const uint16 MAX_SIZE = 32;
 	};
 
+	class Buffer;
+	class Shader;
+	class Texture;
+	struct BufferSpec;
+	struct ShaderSpec;
+	struct TextureSpec;
 	class ResourceManager
 	{
 	public:
@@ -105,4 +108,35 @@ namespace limbo
 		virtual void destroyShader(Handle<Shader> shader) = 0;
 		virtual void destroyTexture(Handle<Texture> texture) = 0;
 	};
+
+	// Global definitions
+	inline Handle<Buffer> createBuffer(const BufferSpec& spec)
+	{
+		return ResourceManager::ptr->createBuffer(spec);
+	}
+
+	inline Handle<Shader> createShader(const ShaderSpec& spec)
+	{
+		return ResourceManager::ptr->createShader(spec);
+	}
+
+	inline Handle<Texture> createTexture(const TextureSpec& spec)
+	{
+		return ResourceManager::ptr->createTexture(spec);
+	}
+
+	inline void destroyBuffer(Handle<Buffer> handle)
+	{
+		ResourceManager::ptr->destroyBuffer(handle);
+	}
+
+	inline void destroyShader(Handle<Shader> handle)
+	{
+		ResourceManager::ptr->destroyShader(handle);
+	}
+
+	inline void destroyTexture(Handle<Texture> handle)
+	{
+		ResourceManager::ptr->destroyTexture(handle);
+	}
 }

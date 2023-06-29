@@ -1,4 +1,5 @@
 #include <limbo.h>
+#include <math.h>
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -45,29 +46,23 @@ int main(int argc, char* argv[])
 		.usage = limbo::BufferUsage::Vertex, 
 		.initialData = vertices });
 
-	limbo::ResourceManager::ptr->destroyBuffer(vertexBuffer);
-	/*
-	auto vertex_buffer = gfxCreateBuffer(gfx, sizeof(vertices), vertices);
-
-	auto program = gfxCreateProgram(gfx, "triangle");
-	auto kernel = gfxCreateGraphicsKernel(gfx, program);*/
+	limbo::Handle<limbo::Shader> triangleShader = limbo::createShader({});
 
 	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
 	{
 		glfwPollEvents();
 		Noop(time);
 
-		/*float color[] = { 0.5f * cosf(time) + 0.5f,
+		float color[] = { 0.5f * cosf(time) + 0.5f,
 						  0.5f * sinf(time) + 0.5f,
 						  1.0f };
-		gfxProgramSetParameter(gfx, program, "Color", color);
 
-		gfxCommandBindKernel(gfx, kernel);
-		gfxCommandBindVertexBuffer(gfx, vertex_buffer);
+		limbo::setParameter(triangleShader, 0, color);
+		limbo::bindShader(triangleShader);
+		limbo::bindVertexBuffer(vertexBuffer);
 
-		gfxCommandDraw(gfx, 3);
-
-		gfxFrame(gfx);*/
+		limbo::draw(3);
+		limbo::present();
 	}
 
 	limbo::shutdown();

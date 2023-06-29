@@ -3,6 +3,9 @@
 #include "core.h"
 #include "device.h"
 #include "resourcemanager.h"
+#include "buffer.h"
+#include "shader.h"
+#include "texture.h"
 
 #if LIMBO_LINUX
 	#include <X11/Xlib.h>
@@ -18,6 +21,4 @@ namespace limbo
 #endif
 
 	void shutdown();
-
-	Handle<Buffer> createBuffer(const BufferSpec& spec);
 }
