@@ -2,8 +2,8 @@
 
 ## Introduction
 An abstraction layer over multiple low-level graphics APIs.
-- Direct3D12
-- Vulkan 1.3
+- Direct3D12 (To Be Implemented)
+- Vulkan 1.3 (WIP)
 
 ## Requirements
 - Windows or Linux (very experimental)
