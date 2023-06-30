@@ -15,7 +15,10 @@
 
 #define ENUM_VK_ENTRYPOINTS_INSTANCE(EnumMacro) \
 	EnumMacro(PFN_vkEnumeratePhysicalDevices, vkEnumeratePhysicalDevices) \
-	EnumMacro(PFN_vkCreateDebugUtilsMessengerEXT, vkCreateDebugUtilsMessengerEXT)
+	EnumMacro(PFN_vkCreateDebugUtilsMessengerEXT, vkCreateDebugUtilsMessengerEXT) \
+	EnumMacro(PFN_vkDestroyInstance, vkDestroyInstance) \
+	EnumMacro(PFN_vkDestroyDevice, vkDestroyDevice) \
+	EnumMacro(PFN_vkDestroyDebugUtilsMessengerEXT, vkDestroyDebugUtilsMessengerEXT)
 
 #define ENUM_VK_ENTRYPOINTS_ALL(EnumMacro) \
 	ENUM_VK_ENTRYPOINTS_BASE(EnumMacro) \

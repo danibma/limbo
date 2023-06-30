@@ -159,7 +159,9 @@ namespace limbo
 
 	VulkanDevice::~VulkanDevice()
 	{
-
+		vk::vkDestroyDebugUtilsMessengerEXT(m_instance, m_messenger, nullptr);
+		vk::vkDestroyDevice(m_device, nullptr);
+		vk::vkDestroyInstance(m_instance, nullptr);
 	}
 
 	void VulkanDevice::setParameter(Handle<Shader> shader, uint8 slot, const void* data)
