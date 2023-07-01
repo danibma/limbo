@@ -37,6 +37,11 @@ int main(int argc, char* argv[])
 	limbo::init(glfwGetX11Window(window));
 #endif
 
+#define COMPUTE 1
+#if COMPUTE
+	limbo::Handle<limbo::Shader> triangleCSShader = limbo::createShader({});
+	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({});
+#else
 	float vertices[] = { 0.5f, -0.5f, 0.0f,
 						  0.0f,  0.7f, 0.0f,
 						 -0.5f, -0.5f, 0.0f };
@@ -47,12 +52,22 @@ int main(int argc, char* argv[])
 		.initialData = vertices });
 
 	limbo::Handle<limbo::Shader> triangleShader = limbo::createShader({});
+#endif
 
 	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
 	{
 		glfwPollEvents();
 		Noop(time);
 
+#if COMPUTE
+		limbo::setParameter(triangleCSShader, 0, outputTexture);
+		limbo::bindShader(triangleCSShader);
+		limbo::dispatch(1280 / 8, 720 / 8, 1);
+
+		limbo::copyTextureToBackBuffer(outputTexture);
+
+		limbo::present();
+#else
 		float color[] = { 0.5f * cosf(time) + 0.5f,
 						  0.5f * sinf(time) + 0.5f,
 						  1.0f };
@@ -63,6 +78,7 @@ int main(int argc, char* argv[])
 
 		limbo::draw(3);
 		limbo::present();
+#endif
 	}
 
 	limbo::shutdown();

@@ -188,6 +188,14 @@ namespace limbo
 	{
 	}
 
+	void VulkanDevice::copyTextureToBackBuffer(Handle<Texture> texture)
+	{
+	}
+
+	void VulkanDevice::dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	{
+	}
+
 	void VulkanDevice::draw(uint32 vertexCount, uint32 instanceCount /*= 1*/, uint32 firstVertex /*= 1*/, uint32 firstInstance /*= 1*/)
 	{
 	}

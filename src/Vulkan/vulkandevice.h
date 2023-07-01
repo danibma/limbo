@@ -36,7 +36,11 @@ namespace limbo
 		virtual void bindVertexBuffer(Handle<Buffer> vertexBuffer) override;
 		virtual void bindIndexBuffer(Handle<Buffer> indexBuffer) override;
 
+		virtual void copyTextureToBackBuffer(Handle<Texture> texture) override;
+
 		virtual void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1) override;
+
+		virtual void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ) override;
 
 		virtual void present() override;
 

@@ -20,7 +20,11 @@ namespace limbo
 		virtual void bindVertexBuffer(Handle<Buffer> vertexBuffer) = 0;
 		virtual void bindIndexBuffer(Handle<Buffer> indexBuffer) = 0;
 
+		virtual void copyTextureToBackBuffer(Handle<Texture> texture) = 0;
+
 		virtual void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1) = 0;
+
+		virtual void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ) = 0;
 
 		virtual void present() = 0;
 	};
@@ -56,9 +60,19 @@ namespace limbo
 		Device::ptr->bindIndexBuffer(indexBuffer);
 	}
 
+	inline void copyTextureToBackBuffer(Handle<Texture> texture)
+	{
+		Device::ptr->copyTextureToBackBuffer(texture);
+	}
+
 	inline void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1)
 	{
 		Device::ptr->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+	}
+
+	inline void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	{
+		Device::ptr->dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 
 	inline void present()
