@@ -50,7 +50,7 @@ namespace limbo
 			.minImageCount = NUM_BUFFERS,
 			.imageFormat = m_surfaceFormat.format,
 			.imageColorSpace = m_surfaceFormat.colorSpace,
-			.imageExtent = {.width = info.width, .height = info.height },
+			.imageExtent = { .width = info.width, .height = info.height },
 			.imageArrayLayers = 1,
 			.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE ,
