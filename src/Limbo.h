@@ -13,12 +13,19 @@
 
 namespace limbo
 {
-	// init functions
+	struct WindowInfo
+	{
 #if LIMBO_WINDOWS
-	void init(HWND window);
+		HWND hwnd;
 #elif LIMBO_LINUX
-	void init(Window window);
+		Window window;
 #endif
+		uint32 width;
+		uint32 height;
+	};
+
+	// init functions
+	void init(WindowInfo window);
 
 	void shutdown();
 }

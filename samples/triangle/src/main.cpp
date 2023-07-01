@@ -13,8 +13,6 @@
 
 int main(int argc, char* argv[])
 {
-	GLFWwindow* window;
-
 	if (!glfwInit())
 	{
 		LB_ERROR("Failed to initialize GLFW!");
@@ -23,7 +21,7 @@ int main(int argc, char* argv[])
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	window = glfwCreateWindow(1280, 720, "Triangle", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(1280, 720, "Triangle", nullptr, nullptr);
 	if (!window)
 	{
 		LB_ERROR("Failed to create GLFW window!");
@@ -31,11 +29,14 @@ int main(int argc, char* argv[])
 	}
 
 	
+	limbo::init({ 
 #if LIMBO_WINDOWS
-	limbo::init(glfwGetWin32Window(window));
+		.hwnd = glfwGetWin32Window(window),
 #elif LIMBO_LINUX
-	limbo::init(glfwGetX11Window(window));
+		.hwnd = glfwGetX11Window(window),
 #endif
+		.width = 1280,
+		.height = 720 });
 
 #define COMPUTE 1
 #if COMPUTE

@@ -7,6 +7,8 @@
 
 namespace limbo
 {
+	struct WindowInfo;
+	class VulkanSwapchain;
 	class VulkanDevice final : public Device
 	{
 	private:
@@ -24,8 +26,10 @@ namespace limbo
 		uint32										m_computeQueueFamily  = ~0;
 		uint32										m_transferQueueFamily = ~0;
 
+		VulkanSwapchain*							m_swapchain;
+
 	public:
-		VulkanDevice();
+		VulkanDevice(const WindowInfo& info);
 		virtual ~VulkanDevice();
 
 		virtual void setParameter(Handle<Shader> shader, uint8 slot, const void* data) override;
@@ -43,6 +47,10 @@ namespace limbo
 		virtual void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ) override;
 
 		virtual void present() override;
+
+		// Vulkan specific
+		[[nodiscard]] VkDevice getDevice() { return m_device; }
+		[[nodiscard]] VkInstance getInstance() { return m_instance; }
 
 	private:
 		void findPhysicalDevice();

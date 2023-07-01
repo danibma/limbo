@@ -8,19 +8,11 @@ namespace limbo
 	Device* Device::ptr = nullptr;
 	ResourceManager* ResourceManager::ptr = nullptr;
 
-#if LIMBO_WINDOWS
-	void init(HWND window)
+	void init(WindowInfo info)
 	{
-		Device::ptr = new VulkanDevice();
+		Device::ptr = new VulkanDevice(info);
 		ResourceManager::ptr = new VulkanResourceManager();
 	}
-#elif LIMBO_LINUX
-	void init(Window window)
-	{
-		Device::ptr = new VulkanDevice();
-		ResourceManager::ptr = new VulkanResourceManager();
-	}
-#endif
 
 	void shutdown()
 	{

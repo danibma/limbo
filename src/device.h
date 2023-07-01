@@ -3,12 +3,22 @@
 #include "resourcemanager.h"
 #include "core.h"
 
+#include <type_traits>
+
 namespace limbo
 {
 	class Device
 	{
 	public:
 		static Device* ptr;
+
+		template<typename T>
+		[[nodiscard]] static T* getAs()
+		{
+			static_assert(std::is_base_of_v<Device, T>);
+			ensure(ptr);
+			return static_cast<T*>(ptr);
+		}
 
 		virtual ~Device() = default;
 

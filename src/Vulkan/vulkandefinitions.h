@@ -7,7 +7,7 @@ namespace limbo
 {
 	namespace internal
 	{
-		void vkHandleError(int error)
+		inline void vkHandleError(int error)
 		{
 			LB_ERROR("Vulkan error code %d", error);
 		}

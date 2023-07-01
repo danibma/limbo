@@ -1,5 +1,6 @@
 #include "vulkandevice.h"
 #include "vulkandefinitions.h"
+#include "vulkanswapchain.h"
 
 #if LIMBO_WINDOWS
 #include <Windows.h>
@@ -30,9 +31,10 @@ namespace limbo
 	{
 #define LOAD_VK_INSTANCE_FUNCTION(Type, Func) vk::Func = (Type)vk::vkGetInstanceProcAddr(instance, #Func);
 		ENUM_VK_ENTRYPOINTS_INSTANCE(LOAD_VK_INSTANCE_FUNCTION);
+		ENUM_VK_ENTRYPOINTS_PLATFORM_INSTANCE(LOAD_VK_INSTANCE_FUNCTION);
 	}
 
-	VulkanDevice::VulkanDevice()
+	VulkanDevice::VulkanDevice(const WindowInfo& info)
 	{
 		loadVulkanBaseLibrary();
 
@@ -44,7 +46,7 @@ namespace limbo
 		m_instanceExtensions.emplace_back("VK_EXT_debug_utils");
 #endif
 		m_instanceExtensions.emplace_back("VK_KHR_surface");
-		m_instanceExtensions.emplace_back("VK_KHR_win32_surface");
+		m_instanceExtensions.emplace_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 		m_instanceExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
 		m_deviceExtensions.emplace_back("VK_KHR_swapchain");
 		m_deviceExtensions.emplace_back("VK_KHR_push_descriptor");
@@ -92,6 +94,8 @@ namespace limbo
 #endif
 
 		createLogicalDevice();
+
+		m_swapchain = new VulkanSwapchain(m_device, m_instance, m_gpu, info);
 	}
 
 	void VulkanDevice::createLogicalDevice()
@@ -159,6 +163,7 @@ namespace limbo
 
 	VulkanDevice::~VulkanDevice()
 	{
+		delete m_swapchain;
 		vk::vkDestroyDebugUtilsMessengerEXT(m_instance, m_messenger, nullptr);
 		vk::vkDestroyDevice(m_device, nullptr);
 		vk::vkDestroyInstance(m_instance, nullptr);

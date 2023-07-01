@@ -98,6 +98,11 @@ void Noop(T exp) {}
 	typedef const char* LPCSTR;
 	typedef struct HINSTANCE__* HINSTANCE;
 	typedef HINSTANCE HMODULE;
+	typedef void* HANDLE;
+	typedef const wchar_t* LPCWSTR;
+	typedef struct _SECURITY_ATTRIBUTES SECURITY_ATTRIBUTES;
+	typedef unsigned long DWORD;
+	typedef struct HMONITOR__* HMONITOR;
 #elif LIMBO_LINUX
 	#include <dlfcn.h>
 #endif
