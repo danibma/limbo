@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 #define COMPUTE 1
 #if COMPUTE
 	limbo::Handle<limbo::Shader> triangleCSShader = limbo::createShader({});
-	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({});
+	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({ .width = 1280, .height = 720 });
 #else
 	float vertices[] = { 0.5f, -0.5f, 0.0f,
 						  0.0f,  0.7f, 0.0f,
@@ -81,6 +81,12 @@ int main(int argc, char* argv[])
 		limbo::present();
 #endif
 	}
+
+#if COMPUTE
+	limbo::destroyTexture(outputTexture);
+#else
+
+#endif
 
 	limbo::shutdown();
 	glfwTerminate();
