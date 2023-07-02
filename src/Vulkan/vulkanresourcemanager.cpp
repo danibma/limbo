@@ -4,6 +4,11 @@ namespace limbo
 {
 	VulkanResourceManager::~VulkanResourceManager()
 	{
+#if LIMBO_DEBUG
+		ensure(m_buffers.isEmpty());
+		ensure(m_textures.isEmpty());
+		ensure(m_shaders.isEmpty());
+#endif
 	}
 
 	Handle<Buffer> VulkanResourceManager::createBuffer(const BufferSpec& spec)

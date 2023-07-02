@@ -57,7 +57,7 @@ namespace limbo
 			m_freeSlots.push(handle.m_index);
 			ensure(handle.isValid());
 			m_objects[handle.m_index].data->~DataType();
-			m_objects[handle.m_index].generation++;
+			++m_objects[handle.m_index].generation;
 		}
 
 		DataType* get(Handle<HandleType> handle)
@@ -72,6 +72,11 @@ namespace limbo
 		uint16 getSize()
 		{
 			return MAX_SIZE;
+		}
+
+		bool isEmpty()
+		{
+			return m_objects.size() == m_freeSlots.size();
 		}
 
 	private:

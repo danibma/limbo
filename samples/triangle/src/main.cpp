@@ -84,8 +84,10 @@ int main(int argc, char* argv[])
 
 #if COMPUTE
 	limbo::destroyTexture(outputTexture);
+	limbo::destroyShader(triangleCSShader);
 #else
-
+	limbo::destroyBuffer(vertexBuffer);
+	limbo::destroyShader(triangleShader);
 #endif
 
 	limbo::shutdown();
