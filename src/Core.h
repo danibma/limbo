@@ -73,21 +73,20 @@ typedef int64_t int64;
 // Assertion macros
 //
 #if LIMBO_DEBUG
-	namespace limbo::internal
-	{
-		inline bool InternalEnsure(bool expression)
-		{
-			if (!expression)
-				LB_ERROR("Assertion Failed!");
-			return expression;
-		}
-	}
-	#define ensure(expr) limbo::internal::InternalEnsure(expr)
+	#define ensure(expr) \
+		([&]() \
+		{\
+			if (!(expr)) \
+				LB_ERROR("Assertion Failed!"); \
+			return expr; \
+		}())
 #else 
 	#define ensure(expr) (expr)
 #endif
 
-template <typename T>
+#define FAILIF(expr) if (!ensure(!(expr))) return;
+
+template<typename T>
 void Noop(T exp) {}
 
 //
