@@ -2,7 +2,7 @@
 
 #include "vulkandevice.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	VulkanTexture::VulkanTexture(const TextureSpec& spec)
 	{

@@ -2,7 +2,7 @@
 
 #include "buffer.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	class VulkanBuffer : public Buffer
 	{

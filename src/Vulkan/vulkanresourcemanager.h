@@ -22,8 +22,8 @@ namespace limbo
 		virtual void destroyTexture(Handle<Texture> texture);
 
 	private:
-		Pool<VulkanBuffer, Buffer> m_buffers;
-		Pool<VulkanShader, Shader> m_shaders;
-		Pool<VulkanTexture, Texture> m_textures;
+		Pool<rhi::VulkanBuffer, Buffer> m_buffers;
+		Pool<rhi::VulkanShader, Shader> m_shaders;
+		Pool<rhi::VulkanTexture, Texture> m_textures;
 	};
 }

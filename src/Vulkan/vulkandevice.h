@@ -8,6 +8,26 @@
 namespace limbo
 {
 	struct WindowInfo;
+}
+
+namespace limbo::rhi
+{
+	struct VulkanPerFrame
+	{
+		VkCommandPool		m_commandPool;
+		VkCommandBuffer		m_commandBuffer;
+		VkSemaphore			m_acquireSemaphore;
+		VkSemaphore			m_renderSemaphore;
+
+		void destroy(VkDevice device)
+		{
+			vk::vkFreeCommandBuffers(device, m_commandPool, 1, &m_commandBuffer);
+			vk::vkDestroyCommandPool(device, m_commandPool, nullptr);
+			vk::vkDestroySemaphore(device, m_acquireSemaphore, nullptr);
+			vk::vkDestroySemaphore(device, m_renderSemaphore, nullptr);
+		}
+	};
+
 	class VulkanSwapchain;
 	class VulkanDevice final : public Device
 	{
@@ -21,6 +41,8 @@ namespace limbo
 		VkPhysicalDevice							m_gpu;
 		VkDevice									m_device;
 		VkDebugUtilsMessengerEXT					m_messenger;
+
+		VulkanPerFrame								m_frame;
 
 		uint32										m_graphicsQueueFamily = ~0;
 		uint32										m_computeQueueFamily  = ~0;
@@ -51,10 +73,12 @@ namespace limbo
 		// Vulkan specific
 		[[nodiscard]] VkDevice getDevice() { return m_device; }
 		[[nodiscard]] VkInstance getInstance() { return m_instance; }
+		[[nodiscard]] VkPhysicalDevice getGPU() { return m_gpu; }
 
 	private:
 		void findPhysicalDevice();
 		void createLogicalDevice();
+		void resetFrame(const VulkanPerFrame& frame);
 
 	};
 }

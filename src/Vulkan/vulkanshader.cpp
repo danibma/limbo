@@ -1,6 +1,6 @@
 #include "vulkanshader.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	VulkanShader::VulkanShader(const ShaderSpec& spec)
 	{

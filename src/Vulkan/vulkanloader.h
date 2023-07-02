@@ -156,7 +156,8 @@
 	EnumMacro(PFN_vkCmdEndRenderPass, vkCmdEndRenderPass) \
 	EnumMacro(PFN_vkCmdExecuteCommands, vkCmdExecuteCommands) \
 	EnumMacro(PFN_vkAcquireNextImageKHR, vkAcquireNextImageKHR) \
-	EnumMacro(PFN_vkQueuePresentKHR, vkQueuePresentKHR)
+	EnumMacro(PFN_vkQueuePresentKHR, vkQueuePresentKHR) \
+	EnumMacro(PFN_vkCmdPipelineBarrier2, vkCmdPipelineBarrier2)
 
 #if LIMBO_WINDOWS
 	#define ENUM_VK_ENTRYPOINTS_PLATFORM_INSTANCE(EnumMacro) \

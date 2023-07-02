@@ -3,7 +3,7 @@
 #include "texture.h"
 #include "vulkandefinitions.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	class VulkanTexture final : public Texture
 	{

@@ -6,7 +6,7 @@
 #include <Windows.h>
 #endif
 
-namespace limbo
+namespace limbo::rhi
 {
 	void loadVulkanBaseLibrary()
 	{
@@ -34,7 +34,7 @@ namespace limbo
 		ENUM_VK_ENTRYPOINTS_PLATFORM_INSTANCE(LOAD_VK_INSTANCE_FUNCTION);
 	}
 
-	VulkanDevice::VulkanDevice(const WindowInfo& info)
+	VulkanDevice::VulkanDevice(const limbo::WindowInfo& info)
 	{
 		loadVulkanBaseLibrary();
 
@@ -95,7 +95,27 @@ namespace limbo
 
 		createLogicalDevice();
 
-		m_swapchain = new VulkanSwapchain(m_device, m_instance, m_gpu, info);
+		m_swapchain = new VulkanSwapchain(this, info);
+
+		// Create semaphores
+		VkSemaphoreCreateInfo semaphoreInfo = { .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+		VK_CHECK(vk::vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_frame.m_acquireSemaphore));
+		VK_CHECK(vk::vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_frame.m_renderSemaphore));
+
+		// Create the command pool
+		VkCommandPoolCreateInfo cmdPoolCreateInfo = { .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
+		cmdPoolCreateInfo.queueFamilyIndex = m_graphicsQueueFamily;
+		VK_CHECK(vk::vkCreateCommandPool(m_device, &cmdPoolCreateInfo, nullptr, &m_frame.m_commandPool));
+
+		// Allocate command buffers
+		VkCommandBufferAllocateInfo allocInfo = { .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+		allocInfo.commandPool = m_frame.m_commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+		VK_CHECK(vk::vkAllocateCommandBuffers(m_device, &allocInfo, &m_frame.m_commandBuffer));
+
+		// Reset the command pool
+		resetFrame(m_frame);
 	}
 
 	void VulkanDevice::createLogicalDevice()
@@ -161,8 +181,22 @@ namespace limbo
 		VK_CHECK(vk::vkCreateDevice(m_gpu, &deviceCreateInfo, nullptr, &m_device));
 	}
 
+	void VulkanDevice::resetFrame(const VulkanPerFrame& frame)
+	{
+		VK_CHECK(vk::vkResetCommandPool(m_device, frame.m_commandPool, 0));
+		VkCommandBufferBeginInfo beginInfo = {
+			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+		};
+		VK_CHECK(vk::vkBeginCommandBuffer(frame.m_commandBuffer, &beginInfo));
+
+		m_swapchain->prepareNextImage(frame);
+	}
+
 	VulkanDevice::~VulkanDevice()
 	{
+		m_frame.destroy(m_device);
+
 		delete m_swapchain;
 		vk::vkDestroyDebugUtilsMessengerEXT(m_instance, m_messenger, nullptr);
 		vk::vkDestroyDevice(m_device, nullptr);
@@ -207,6 +241,15 @@ namespace limbo
 
 	void VulkanDevice::present()
 	{
+		VK_CHECK(vk::vkEndCommandBuffer(m_frame.m_commandBuffer));
+
+		VkQueue queue;
+		vk::vkGetDeviceQueue(m_device, m_graphicsQueueFamily, 0, &queue);
+		m_swapchain->present(m_frame, queue);
+
+		VK_CHECK(vk::vkDeviceWaitIdle(m_device));
+
+		resetFrame(m_frame);
 	}
 
 	void VulkanDevice::findPhysicalDevice()

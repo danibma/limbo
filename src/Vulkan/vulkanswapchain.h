@@ -7,9 +7,16 @@
 namespace limbo
 {
 	struct WindowInfo;
+}
+
+namespace limbo::rhi
+{
+	struct VulkanPerFrame;
+	class VulkanDevice;
 	class VulkanSwapchain
 	{
 	private:
+		VulkanDevice*			m_device;
 		VkSurfaceKHR			m_surface;
 		VkSwapchainKHR			m_swapchain;
 		VkSurfaceFormatKHR		m_surfaceFormat;
@@ -17,8 +24,13 @@ namespace limbo
 
 		const uint8				NUM_BUFFERS = 3;
 
+		uint32					m_imageIndex;
+
 	public:
-		VulkanSwapchain(VkDevice device, VkInstance instance, VkPhysicalDevice gpu, const WindowInfo& info);
+		VulkanSwapchain(VulkanDevice* device, const limbo::WindowInfo& info);
 		~VulkanSwapchain();
+
+		void present(const VulkanPerFrame& frame, VkQueue queue);
+		void prepareNextImage(const VulkanPerFrame& frame);
 	};
 }

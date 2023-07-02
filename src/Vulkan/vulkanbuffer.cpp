@@ -1,6 +1,6 @@
 #include "vulkanbuffer.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	VulkanBuffer::VulkanBuffer(const BufferSpec& spec)
 	{

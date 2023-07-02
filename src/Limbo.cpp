@@ -10,7 +10,7 @@ namespace limbo
 
 	void init(WindowInfo info)
 	{
-		Device::ptr = new VulkanDevice(info);
+		Device::ptr = new rhi::VulkanDevice(info);
 		ResourceManager::ptr = new VulkanResourceManager();
 	}
 

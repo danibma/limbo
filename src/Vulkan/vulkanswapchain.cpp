@@ -5,10 +5,15 @@
 
 #include "limbo.h"
 
-namespace limbo
+namespace limbo::rhi
 {
-	VulkanSwapchain::VulkanSwapchain(VkDevice device, VkInstance instance, VkPhysicalDevice gpu, const WindowInfo& info)
+	VulkanSwapchain::VulkanSwapchain(VulkanDevice* device, const limbo::WindowInfo& info)
+		:m_device(device)
 	{
+		VkInstance instance = m_device->getInstance();
+		VkDevice vkDevice = m_device->getDevice();
+		VkPhysicalDevice gpu = m_device->getGPU();
+
 		VkWin32SurfaceCreateInfoKHR surfaceInfo = {
 			.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
 			.hinstance = GetModuleHandle(nullptr),
@@ -61,19 +66,75 @@ namespace limbo
 			.oldSwapchain = nullptr
 		};
 
-		VK_CHECK(vk::vkCreateSwapchainKHR(device, &swapchainInfo, nullptr, &m_swapchain));
+		VK_CHECK(vk::vkCreateSwapchainKHR(vkDevice, &swapchainInfo, nullptr, &m_swapchain));
 
 		uint32 imagesCount;
-		VK_CHECK(vk::vkGetSwapchainImagesKHR(device, m_swapchain, &imagesCount, nullptr));
-		m_images.reserve(imagesCount);
-		VK_CHECK(vk::vkGetSwapchainImagesKHR(device, m_swapchain, &imagesCount, m_images.data()));
+		VK_CHECK(vk::vkGetSwapchainImagesKHR(vkDevice, m_swapchain, &imagesCount, nullptr));
+		m_images.resize(imagesCount);
+		VK_CHECK(vk::vkGetSwapchainImagesKHR(vkDevice, m_swapchain, &imagesCount, m_images.data()));
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
-		VulkanDevice* device = Device::getAs<VulkanDevice>();
+		vk::vkDestroySwapchainKHR(m_device->getDevice(), m_swapchain, nullptr);
+		vk::vkDestroySurfaceKHR(m_device->getInstance(), m_surface, nullptr);
+	}
 
-		vk::vkDestroySwapchainKHR(device->getDevice(), m_swapchain, nullptr);
-		vk::vkDestroySurfaceKHR(device->getInstance(), m_surface, nullptr);
+	void VulkanSwapchain::present(const VulkanPerFrame& frame, VkQueue queue)
+	{
+		VkPipelineStageFlags submitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSubmitInfo submitInfo = {
+			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = &frame.m_acquireSemaphore,
+			.pWaitDstStageMask = &submitStageMask,
+			.commandBufferCount = 1,
+			.pCommandBuffers = &frame.m_commandBuffer,
+			.signalSemaphoreCount = 1,
+			.pSignalSemaphores = &frame.m_renderSemaphore
+		};
+		VK_CHECK(vk::vkQueueSubmit(queue, 1, &submitInfo, nullptr));
+
+		VkPresentInfoKHR presentInfo = {
+			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+			.waitSemaphoreCount = 1,
+			.pWaitSemaphores = &frame.m_renderSemaphore,
+			.swapchainCount = 1,
+			.pSwapchains = &m_swapchain,
+			.pImageIndices = &m_imageIndex,
+		};
+		VK_CHECK(vk::vkQueuePresentKHR(queue, &presentInfo));
+	}
+
+	void VulkanSwapchain::prepareNextImage(const VulkanPerFrame& frame)
+	{
+		VK_CHECK(vk::vkAcquireNextImageKHR(m_device->getDevice(), m_swapchain, ~0, frame.m_acquireSemaphore, nullptr, &m_imageIndex));
+
+		VkImageMemoryBarrier2 imageBarrier = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+			.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_2_NONE,
+			.dstAccessMask = VK_ACCESS_2_NONE,
+			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			.srcQueueFamilyIndex = 0,
+			.dstQueueFamilyIndex = 0,
+			.image = m_images[m_imageIndex],
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			}
+		};
+
+		VkDependencyInfo info = {
+			.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+			.imageMemoryBarrierCount = 1,
+			.pImageMemoryBarriers = &imageBarrier
+		};
+		vk::vkCmdPipelineBarrier2(frame.m_commandBuffer, &info);
 	}
 }

@@ -2,7 +2,7 @@
 
 #include "shader.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	class VulkanShader : public Shader
 	{
