@@ -8,7 +8,7 @@
 namespace limbo::rhi
 {
 	VulkanSwapchain::VulkanSwapchain(VulkanDevice* device, const limbo::WindowInfo& info)
-		:m_device(device)
+		: m_device(device), m_imageIndex(0), m_imagesWidth(info.width), m_imagesHeight(info.height)
 	{
 		VkInstance instance = m_device->getInstance();
 		VkDevice vkDevice = m_device->getDevice();
@@ -55,7 +55,10 @@ namespace limbo::rhi
 			.minImageCount = NUM_BUFFERS,
 			.imageFormat = m_surfaceFormat.format,
 			.imageColorSpace = m_surfaceFormat.colorSpace,
-			.imageExtent = { .width = info.width, .height = info.height },
+			.imageExtent = {
+				.width = info.width,
+				.height = info.height
+			},
 			.imageArrayLayers = 1,
 			.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE ,
@@ -72,10 +75,37 @@ namespace limbo::rhi
 		VK_CHECK(vk::vkGetSwapchainImagesKHR(vkDevice, m_swapchain, &imagesCount, nullptr));
 		m_images.resize(imagesCount);
 		VK_CHECK(vk::vkGetSwapchainImagesKHR(vkDevice, m_swapchain, &imagesCount, m_images.data()));
+
+		m_imageViews.resize(imagesCount);
+		for (uint32 i = 0; i < imagesCount; ++i)
+		{
+			VkImageViewCreateInfo imageViewInfo = {
+				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.image = m_images[i],
+				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.format = m_surfaceFormat.format,
+				.components = {
+					.r = VK_COMPONENT_SWIZZLE_R,
+					.g = VK_COMPONENT_SWIZZLE_G,
+					.b = VK_COMPONENT_SWIZZLE_B,
+					.a = VK_COMPONENT_SWIZZLE_A
+				},
+				.subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = 0,
+					.levelCount = 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1
+				}
+			};
+			vk::vkCreateImageView(vkDevice, &imageViewInfo, nullptr, &m_imageViews[i]);
+		}
 	}
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
+		for (int i = 0; i < m_imageViews.size(); ++i)
+			vk::vkDestroyImageView(m_device->getDevice(), m_imageViews[i], nullptr);
 		vk::vkDestroySwapchainKHR(m_device->getDevice(), m_swapchain, nullptr);
 		vk::vkDestroySurfaceKHR(m_device->getInstance(), m_surface, nullptr);
 	}

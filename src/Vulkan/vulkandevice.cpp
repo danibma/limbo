@@ -191,6 +191,33 @@ namespace limbo::rhi
 		VK_CHECK(vk::vkBeginCommandBuffer(frame.m_commandBuffer, &beginInfo));
 
 		m_swapchain->prepareNextImage(frame);
+
+		VkRenderingAttachmentInfo colorAttachInfo = {
+			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+			.imageView = m_swapchain->getCurrentImageView(),
+			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR ,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.clearValue = {
+				.color = { 0.0f, 0.5f, 1.0f, 1.0f }
+			}
+		};
+
+		VkRenderingInfo renderingInfo = {
+			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+			.renderArea = {
+				.extent = {
+					.width = m_swapchain->getImagesWidth(),
+					.height = m_swapchain->getImagesHeight()
+				}
+			},
+			.layerCount = 1,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &colorAttachInfo,
+			.pDepthAttachment = nullptr,
+			.pStencilAttachment = nullptr 
+		};
+		vk::vkCmdBeginRendering(frame.m_commandBuffer, &renderingInfo);
 	}
 
 	VulkanDevice::~VulkanDevice()
@@ -241,6 +268,7 @@ namespace limbo::rhi
 
 	void VulkanDevice::present()
 	{
+		vk::vkCmdEndRendering(m_frame.m_commandBuffer);
 		VK_CHECK(vk::vkEndCommandBuffer(m_frame.m_commandBuffer));
 
 		VkQueue queue;
