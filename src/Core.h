@@ -3,6 +3,7 @@
 #include <utility>
 #include <stdio.h>
 #include <stdint.h>
+#include <string>
 
 #if _DEBUG || !NDEBUG
 	#define LIMBO_DEBUG 1

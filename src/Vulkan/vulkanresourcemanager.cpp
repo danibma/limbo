@@ -26,6 +26,16 @@ namespace limbo
 		return m_textures.allocateHandle(spec);
 	}
 
+	Handle<BindGroup> VulkanResourceManager::createBindGroup(const BindGroupSpec& spec)
+	{
+		return m_bindGroups.allocateHandle(spec);
+	}
+
+	rhi::VulkanBindGroup* VulkanResourceManager::getBindGroup(Handle<BindGroup> bindGroup)
+	{
+		return m_bindGroups.get(bindGroup);
+	}
+
 	void VulkanResourceManager::destroyBuffer(Handle<Buffer> buffer)
 	{
 		m_buffers.deleteHandle(buffer);
@@ -41,4 +51,8 @@ namespace limbo
 		m_textures.deleteHandle(texture);
 	}
 
+	void VulkanResourceManager::destroyBindGroup(Handle<BindGroup> bindGroup)
+	{
+		m_bindGroups.deleteHandle(bindGroup);
+	}
 }

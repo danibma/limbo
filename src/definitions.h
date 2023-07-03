@@ -11,6 +11,12 @@ namespace limbo
 		Texture3D,
 	};
 
+    enum class ShaderType : uint8
+    {
+	    Graphics,
+        Compute
+    };
+
 	enum class Format : uint8
 	{
         // R

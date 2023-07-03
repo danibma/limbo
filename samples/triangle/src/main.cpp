@@ -40,8 +40,19 @@ int main(int argc, char* argv[])
 
 #define COMPUTE 1
 #if COMPUTE
-	limbo::Handle<limbo::Shader> triangleCSShader = limbo::createShader({});
 	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({ .width = 1280, .height = 720 });
+	limbo::Handle<limbo::BindGroup> triangleBind = limbo::createBindGroup({
+		.textures = {
+			{ .slot = 0, .texture = outputTexture }
+		},
+	});
+
+	limbo::Handle<limbo::Shader> triangleCSShader = limbo::createShader({ 
+		.programName = "compute_triangle",
+		.entryPoint = "DrawTriangle",
+		.bindGroups = { triangleBind },
+		.type = limbo::ShaderType::Compute
+	});
 #else
 	float vertices[] = { 0.5f, -0.5f, 0.0f,
 						  0.0f,  0.7f, 0.0f,
@@ -85,6 +96,7 @@ int main(int argc, char* argv[])
 #if COMPUTE
 	limbo::destroyTexture(outputTexture);
 	limbo::destroyShader(triangleCSShader);
+	limbo::destroyBindGroup(triangleBind);
 #else
 	limbo::destroyBuffer(vertexBuffer);
 	limbo::destroyShader(triangleShader);

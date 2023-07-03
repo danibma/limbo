@@ -4,7 +4,7 @@
 #include "core.h"
 #include "definitions.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	inline VkImageType vkImageType(TextureType type)
 	{
@@ -111,4 +111,4 @@ namespace limbo
 	}
 #endif
 }
-#define VK_CHECK(expression) { VkResult result = expression; if (result != VK_SUCCESS) limbo::internal::vkHandleError(result); }
+#define VK_CHECK(expression) { VkResult result = expression; if (result != VK_SUCCESS) limbo::rhi::internal::vkHandleError(result); }

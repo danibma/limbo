@@ -47,9 +47,7 @@ namespace limbo::rhi
 #endif
 		m_instanceExtensions.emplace_back("VK_KHR_surface");
 		m_instanceExtensions.emplace_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-		m_instanceExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
 		m_deviceExtensions.emplace_back("VK_KHR_swapchain");
-		m_deviceExtensions.emplace_back("VK_KHR_push_descriptor");
 
 		VkApplicationInfo appInfo = {
 			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,

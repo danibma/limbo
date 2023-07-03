@@ -28,11 +28,16 @@ file(GLOB_RECURSE HEADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/buffer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/shader.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/texture.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/texture.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/shadercompiler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/resourcepool.h)
 
 file(GLOB_RECURSE SOURCE_FILES
     CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/shadercompiler.cpp)
 
 # Vulkan specific
 file(GLOB_RECURSE VULKAN_FILES
@@ -53,6 +58,10 @@ target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Vulkan headers
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/VulkanHeaders)
+
+# dxc
+target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/inc)
+target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/lib/x64/dxcompiler.lib)
 
 # Add samples
 if (LIMBO_BUILD_SAMPLES)
