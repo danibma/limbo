@@ -43,6 +43,7 @@ int main(int argc, char* argv[])
 	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({ 
 		.width = 1280,
 		.height = 720,
+		.usage = limbo::TextureUsage::Storage | limbo::TextureUsage::Transfer_Src,
 		.format = limbo::Format::RGBA8_UNORM,
 		.type = limbo::TextureType::Texture2D
 	});

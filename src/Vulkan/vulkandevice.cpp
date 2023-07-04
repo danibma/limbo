@@ -276,7 +276,7 @@ namespace limbo::rhi
 				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 				VK_ACCESS_2_TRANSFER_WRITE_BIT);
 
-			VkImageMemoryBarrier2 textureBarrier = VkImageBarrier(vkTexture->image, VK_IMAGE_LAYOUT_GENERAL,
+			VkImageMemoryBarrier2 textureBarrier = VkImageBarrier(vkTexture->image, vkTexture->layout,
 				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
 				VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
 				VK_PIPELINE_STAGE_2_TRANSFER_BIT,
@@ -289,6 +289,8 @@ namespace limbo::rhi
 				.pImageMemoryBarriers = barriers
 			};
 			vk::vkCmdPipelineBarrier2(m_frame.m_commandBuffer, &info);
+
+			vkTexture->layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		}
 
 		int width  = (int)m_swapchain->getImagesWidth();
@@ -329,7 +331,7 @@ namespace limbo::rhi
 			                                                             VK_ACCESS_2_TRANSFER_WRITE_BIT,
 			                                                             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 
-			VkImageMemoryBarrier2 textureBarrier = VkImageBarrier(vkTexture->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VkImageMemoryBarrier2 textureBarrier = VkImageBarrier(vkTexture->image, vkTexture->layout,
 			                                                      VK_IMAGE_LAYOUT_GENERAL,
 			                                                      VK_PIPELINE_STAGE_2_TRANSFER_BIT,
 			                                                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
@@ -342,6 +344,8 @@ namespace limbo::rhi
 				.pImageMemoryBarriers = barriers
 			};
 			vk::vkCmdPipelineBarrier2(m_frame.m_commandBuffer, &info);
+
+			vkTexture->layout = VK_IMAGE_LAYOUT_GENERAL;
 		}
 	}
 

@@ -6,10 +6,11 @@ namespace limbo
 {
 	struct TextureSpec
 	{
-		uint32		width;
-		uint32		height;
-		Format		format  = Format::R8_UNORM;
-		TextureType type	= TextureType::Texture2D;
+		uint32		 width;
+		uint32		 height;
+		TextureUsage usage	 = TextureUsage::Sampled;
+		Format		 format  = Format::R8_UNORM;
+		TextureType  type	 = TextureType::Texture2D;
 	};
 
 	class Texture

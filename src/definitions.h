@@ -12,6 +12,24 @@ namespace limbo
         TextureCube
 	};
 
+    enum class TextureUsage : uint8
+    {
+        Sampled             = 0x00000001,
+    	Storage             = 0x00000002,
+        Transfer_Dst        = 0x00000004,
+        Transfer_Src        = 0x00000008,
+        Color_Attachment    = 0x00000016,
+        Depth_Attachment    = 0x00000032
+    };
+    inline TextureUsage operator|(TextureUsage lhs, TextureUsage rhs)
+    {
+        return static_cast<TextureUsage>(static_cast<uint8>(lhs) | static_cast<uint8>(rhs));
+    }
+    inline TextureUsage operator&(TextureUsage lhs, TextureUsage rhs)
+    {
+        return static_cast<TextureUsage>(static_cast<uint8>(lhs) & static_cast<uint8>(rhs));
+    }
+
     enum class ShaderType : uint8
     {
 	    Graphics,

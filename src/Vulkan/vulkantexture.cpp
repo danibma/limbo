@@ -18,12 +18,12 @@ namespace limbo::rhi
 			.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 			.imageType = vkImageType(spec.type),
 			.format = vkFormat(spec.format),
-			.extent = {.width = spec.width, .height = spec.height, .depth = 1 },
+			.extent = { .width = spec.width, .height = spec.height, .depth = 1 },
 			.mipLevels = 1,
 			.arrayLayers = 1,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.tiling = VK_IMAGE_TILING_LINEAR,
-			.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+			.usage = vkImageUsageFlags(spec.usage),
 			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 			.initialLayout = layout
 		};
