@@ -7,9 +7,11 @@ namespace limbo::rhi
 {
 	class VulkanTexture final : public Texture
 	{
-	private:
-		VkImage			m_image;
-		VkImageView		m_imageView;
+	public:
+		VkImage			image;
+		VkImageView		imageView;
+		VkImageLayout	layout;
+		VkDeviceMemory	memory;
 
 	public:
 		VulkanTexture() = default;

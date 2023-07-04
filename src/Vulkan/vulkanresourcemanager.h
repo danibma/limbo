@@ -19,6 +19,9 @@ namespace limbo
 		virtual Handle<Texture> createTexture(const TextureSpec& spec);
 		virtual Handle<BindGroup> createBindGroup(const BindGroupSpec& spec) override;
 
+		rhi::VulkanBuffer* getBuffer(Handle<Buffer> buffer);
+		rhi::VulkanShader* getShader(Handle<Shader> shader);
+		rhi::VulkanTexture* getTexture(Handle<Texture> texture);
 		rhi::VulkanBindGroup* getBindGroup(Handle<BindGroup> bindGroup);
 
 		virtual void destroyBuffer(Handle<Buffer> buffer);

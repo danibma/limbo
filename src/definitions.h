@@ -9,6 +9,7 @@ namespace limbo
 		Texture1D,
 		Texture2D,
 		Texture3D,
+        TextureCube
 	};
 
     enum class ShaderType : uint8

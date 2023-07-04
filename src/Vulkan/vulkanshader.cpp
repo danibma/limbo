@@ -1,7 +1,6 @@
 #include "vulkanshader.h"
 
-#include <array>
-
+#include "shadercompiler.h"
 #include "vulkanbindgroup.h"
 #include "vulkandevice.h"
 #include "vulkanresourcemanager.h"
@@ -10,6 +9,8 @@ namespace limbo::rhi
 {
 	VulkanShader::VulkanShader(const ShaderSpec& spec)
 	{
+		type = spec.type;
+
 		VulkanDevice* device = Device::getAs<VulkanDevice>();
 		VkDevice vkDevice = device->getDevice();
 
@@ -22,8 +23,8 @@ namespace limbo::rhi
 	VulkanShader::~VulkanShader()
 	{
 		VulkanDevice* device = Device::getAs<VulkanDevice>();
-		vk::vkDestroyPipeline(device->getDevice(), m_pipeline, nullptr);
-		vk::vkDestroyPipelineLayout(device->getDevice(), m_layout, nullptr);
+		vk::vkDestroyPipeline(device->getDevice(), pipeline, nullptr);
+		vk::vkDestroyPipelineLayout(device->getDevice(), layout, nullptr);
 	}
 
 	void VulkanShader::createComputePipeline(VkDevice device, const ShaderSpec& spec)
@@ -47,8 +48,8 @@ namespace limbo::rhi
 		for (uint32 i = 0; i < bindGroupsCount; ++i)
 		{
 			VulkanBindGroup* bind = rm->getBindGroup(spec.bindGroups[i]);
-			FAILIF(!bind);
-			layouts[i] = bind->getSetLayout();
+			if (!bind) continue;
+			layouts[i] = bind->setLayout;
 		}
 
 		// Create layout
@@ -59,7 +60,7 @@ namespace limbo::rhi
 			.pushConstantRangeCount = 0,
 			.pPushConstantRanges = nullptr
 		};
-		VK_CHECK(vk::vkCreatePipelineLayout(device, &layoutInfo, nullptr, &m_layout));
+		VK_CHECK(vk::vkCreatePipelineLayout(device, &layoutInfo, nullptr, &layout));
 
 		// Create pipeline
 		VkComputePipelineCreateInfo createInfo = {
@@ -70,12 +71,12 @@ namespace limbo::rhi
 				.module = shader,
 				.pName = spec.entryPoint,
 			},
-			.layout = m_layout,
+			.layout = layout,
 			.basePipelineHandle = nullptr,
 			.basePipelineIndex = -1 
 		};
 
-		VK_CHECK(vk::vkCreateComputePipelines(device, nullptr, 1, &createInfo, nullptr, &m_pipeline));
+		VK_CHECK(vk::vkCreateComputePipelines(device, nullptr, 1, &createInfo, nullptr, &pipeline));
 
 		vk::vkDestroyShaderModule(device, shader, nullptr);
 	}

@@ -44,6 +44,9 @@ namespace limbo
 	class Shader
 	{
 	public:
+		ShaderType		type;
+
+	public:
 		virtual ~Shader() = default;
 	};
 }

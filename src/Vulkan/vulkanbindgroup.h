@@ -7,16 +7,25 @@ namespace limbo::rhi
 {
 	class VulkanBindGroup : public BindGroup
 	{
-	private:
-		VkDescriptorSetLayout		m_setLayout;
+		struct Binding
+		{
+			uint32					binding;
+			VkDescriptorType		descriptorType;
+			VkDescriptorImageInfo	imageInfo;
+			VkDescriptorBufferInfo	bufferInfo;
+		};
+
+	public:
+		VkDescriptorSetLayout		setLayout;
+		VkDescriptorSet				set;
+		std::vector<Binding>		bindings;
 
 	public:
 		VulkanBindGroup() = default;
 		VulkanBindGroup(const BindGroupSpec& spec);
 		virtual ~VulkanBindGroup();
 
-		// Vulkan specific
-		VkDescriptorSetLayout getSetLayout() { return m_setLayout; }
+		void update(VkDevice device);
 	};
 }
 

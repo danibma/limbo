@@ -41,6 +41,9 @@ namespace limbo::rhi
 		VkPhysicalDevice							m_gpu;
 		VkDevice									m_device;
 		VkDebugUtilsMessengerEXT					m_messenger;
+		VkPhysicalDeviceMemoryProperties			m_memoryProperties;
+
+		VkDescriptorPool							m_descriptorPool;
 
 		VulkanPerFrame								m_frame;
 
@@ -48,22 +51,17 @@ namespace limbo::rhi
 		uint32										m_computeQueueFamily  = ~0;
 		uint32										m_transferQueueFamily = ~0;
 
+		VkQueue										m_graphicsQueue;
+
 		VulkanSwapchain*							m_swapchain;
 
 	public:
 		VulkanDevice(const WindowInfo& info);
 		virtual ~VulkanDevice();
 
-		virtual void setParameter(Handle<Shader> shader, uint8 slot, const void* data) override;
-		virtual void setParameter(Handle<Shader> shader, uint8 slot, Handle<Buffer> buffer) override;
-		virtual void setParameter(Handle<Shader> shader, uint8 slot, Handle<Texture> texture) override;
-
-		virtual void bindShader(Handle<Shader> shader) override;
-		virtual void bindVertexBuffer(Handle<Buffer> vertexBuffer) override;
-		virtual void bindIndexBuffer(Handle<Buffer> indexBuffer) override;
-
 		virtual void copyTextureToBackBuffer(Handle<Texture> texture) override;
 
+		virtual void bindDrawState(const DrawInfo& drawState) override;
 		virtual void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1) override;
 
 		virtual void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ) override;
@@ -74,6 +72,10 @@ namespace limbo::rhi
 		[[nodiscard]] VkDevice getDevice() { return m_device; }
 		[[nodiscard]] VkInstance getInstance() { return m_instance; }
 		[[nodiscard]] VkPhysicalDevice getGPU() { return m_gpu; }
+		[[nodiscard]] VkDescriptorPool getDescriptorPool() { return m_descriptorPool; }
+		[[nodiscard]] uint32 getMemoryType(uint32_t memoryTypeBits, VkMemoryPropertyFlags flags);
+
+		void submitPipelineBarrier(const VkDependencyInfo& info);
 
 	private:
 		void findPhysicalDevice();

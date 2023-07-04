@@ -6,6 +6,7 @@
 #include "buffer.h"
 #include "shader.h"
 #include "texture.h"
+#include "draw.h"
 
 #if LIMBO_LINUX
 	#include <X11/Xlib.h>

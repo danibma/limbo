@@ -31,6 +31,21 @@ namespace limbo
 		return m_bindGroups.allocateHandle(spec);
 	}
 
+	rhi::VulkanBuffer* VulkanResourceManager::getBuffer(Handle<Buffer> buffer)
+	{
+		return m_buffers.get(buffer);
+	}
+
+	rhi::VulkanShader* VulkanResourceManager::getShader(Handle<Shader> shader)
+	{
+		return m_shaders.get(shader);
+	}
+
+	rhi::VulkanTexture* VulkanResourceManager::getTexture(Handle<Texture> texture)
+	{
+		return m_textures.get(texture);
+	}
+
 	rhi::VulkanBindGroup* VulkanResourceManager::getBindGroup(Handle<BindGroup> bindGroup)
 	{
 		return m_bindGroups.get(bindGroup);

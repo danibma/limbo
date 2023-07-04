@@ -72,8 +72,10 @@ int main(int argc, char* argv[])
 		Noop(time);
 
 #if COMPUTE
-		limbo::setParameter(triangleCSShader, 0, outputTexture);
-		limbo::bindShader(triangleCSShader);
+		limbo::bindDrawState({
+			.shader = triangleCSShader,
+			.bindGroups = { triangleBind },
+		});
 		limbo::dispatch(1280 / 8, 720 / 8, 1);
 
 		limbo::copyTextureToBackBuffer(outputTexture);

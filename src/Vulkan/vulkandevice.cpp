@@ -1,5 +1,7 @@
 #include "vulkandevice.h"
 #include "vulkandefinitions.h"
+#include "vulkanresourcemanager.h"
+#include "vulkanshader.h"
 #include "vulkanswapchain.h"
 
 #if LIMBO_WINDOWS
@@ -81,6 +83,8 @@ namespace limbo::rhi
 		findPhysicalDevice();
 		ensure(m_gpu);
 
+		vk::vkGetPhysicalDeviceMemoryProperties(m_gpu, &m_memoryProperties);
+
 #if LIMBO_DEBUG
 		VkDebugUtilsMessengerCreateInfoEXT messengerCreateInfo = {
 			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
@@ -111,6 +115,32 @@ namespace limbo::rhi
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
 		VK_CHECK(vk::vkAllocateCommandBuffers(m_device, &allocInfo, &m_frame.m_commandBuffer));
+
+		// Create descriptor pool
+		VkDescriptorPoolSize descriptorPoolSizes[] =
+		{
+			{ VK_DESCRIPTOR_TYPE_SAMPLER,				 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,			 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,		 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,		 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,		 1000 }
+		};
+
+		VkDescriptorPoolCreateInfo descPoolInfo = {
+			.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+			.maxSets = 1000,
+			.poolSizeCount = sizeof(descriptorPoolSizes) / sizeof(descriptorPoolSizes[0]),
+			.pPoolSizes = descriptorPoolSizes
+		};
+		VK_CHECK(vk::vkCreateDescriptorPool(m_device, &descPoolInfo, nullptr, &m_descriptorPool));
+
+		vk::vkGetDeviceQueue(m_device, m_graphicsQueueFamily, 0, &m_graphicsQueue);
 
 		// Reset the command pool
 		resetFrame(m_frame);
@@ -215,7 +245,7 @@ namespace limbo::rhi
 			.pDepthAttachment = nullptr,
 			.pStencilAttachment = nullptr 
 		};
-		vk::vkCmdBeginRendering(frame.m_commandBuffer, &renderingInfo);
+		//vk::vkCmdBeginRendering(frame.m_commandBuffer, &renderingInfo);
 	}
 
 	VulkanDevice::~VulkanDevice()
@@ -228,36 +258,44 @@ namespace limbo::rhi
 		vk::vkDestroyInstance(m_instance, nullptr);
 	}
 
-	void VulkanDevice::setParameter(Handle<Shader> shader, uint8 slot, const void* data)
-	{
-	}
-
-	void VulkanDevice::setParameter(Handle<Shader> shader, uint8 slot, Handle<Buffer> buffer)
-	{
-	}
-
-	void VulkanDevice::setParameter(Handle<Shader> shader, uint8 slot, Handle<Texture> texture)
-	{
-	}
-
-	void VulkanDevice::bindShader(Handle<Shader> shader)
-	{
-	}
-
-	void VulkanDevice::bindVertexBuffer(Handle<Buffer> vertexBuffer)
-	{
-	}
-
-	void VulkanDevice::bindIndexBuffer(Handle<Buffer> indexBuffer)
-	{
-	}
-
 	void VulkanDevice::copyTextureToBackBuffer(Handle<Texture> texture)
 	{
 	}
 
+	void VulkanDevice::bindDrawState(const DrawInfo& drawState)
+	{
+		VulkanResourceManager* rm = ResourceManager::getAs<VulkanResourceManager>();
+
+		VkCommandBuffer cmd = m_frame.m_commandBuffer;
+		VulkanShader* shader = rm->getShader(drawState.shader);
+
+		VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_MAX_ENUM;
+		if (shader->type == ShaderType::Compute)
+			bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+		else if (shader->type == ShaderType::Graphics)
+			bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+		vk::vkCmdBindPipeline(cmd, bindPoint, shader->pipeline);
+
+		const uint32 bindsCount = (uint32)drawState.bindGroups.size();
+		std::vector<VkDescriptorSet> descriptorSets(bindsCount);
+		for (uint32 i = 0; i < bindsCount; ++i)
+		{
+			VulkanBindGroup* bind = rm->getBindGroup(drawState.bindGroups[i]);
+			if (!bind) continue;
+
+			bind->update(m_device);
+
+			descriptorSets[i] = bind->set;
+		}
+
+		vk::vkCmdBindDescriptorSets(cmd, bindPoint, shader->layout, 0, (uint32)descriptorSets.size(), descriptorSets.data(), 0, nullptr);
+	}
+
 	void VulkanDevice::dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
+		VkCommandBuffer cmd = m_frame.m_commandBuffer;
+		vk::vkCmdDispatch(cmd, groupCountX, groupCountY, groupCountZ);
 	}
 
 	void VulkanDevice::draw(uint32 vertexCount, uint32 instanceCount /*= 1*/, uint32 firstVertex /*= 1*/, uint32 firstInstance /*= 1*/)
@@ -266,16 +304,29 @@ namespace limbo::rhi
 
 	void VulkanDevice::present()
 	{
-		vk::vkCmdEndRendering(m_frame.m_commandBuffer);
+		//vk::vkCmdEndRendering(m_frame.m_commandBuffer);
 		VK_CHECK(vk::vkEndCommandBuffer(m_frame.m_commandBuffer));
 
-		VkQueue queue;
-		vk::vkGetDeviceQueue(m_device, m_graphicsQueueFamily, 0, &queue);
-		m_swapchain->present(m_frame, queue);
+		m_swapchain->present(m_frame, m_graphicsQueue);
 
 		VK_CHECK(vk::vkDeviceWaitIdle(m_device));
 
 		resetFrame(m_frame);
+	}
+
+	uint32 VulkanDevice::getMemoryType(uint32_t memoryTypeBits, VkMemoryPropertyFlags flags)
+	{
+		for (uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+			if ((memoryTypeBits & (1 << i)) != 0 && (m_memoryProperties.memoryTypes[i].propertyFlags & flags) == flags)
+				return i;
+
+		LB_ERROR("No compatible memory type found");
+		return ~0u;
+	}
+
+	void VulkanDevice::submitPipelineBarrier(const VkDependencyInfo& info)
+	{
+		vk::vkCmdPipelineBarrier2(m_frame.m_commandBuffer, &info);
 	}
 
 	void VulkanDevice::findPhysicalDevice()

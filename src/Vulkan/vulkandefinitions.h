@@ -12,12 +12,30 @@ namespace limbo::rhi
 		{
 		case TextureType::Texture1D:
 			return VK_IMAGE_TYPE_1D;
+		case TextureType::TextureCube:
 		case TextureType::Texture2D:
 			return VK_IMAGE_TYPE_2D;
 		case TextureType::Texture3D: 
 			return VK_IMAGE_TYPE_3D;
 		default: 
 			return VK_IMAGE_TYPE_MAX_ENUM;
+		}
+	}
+
+	inline VkImageViewType vkImageViewType(TextureType type)
+	{
+		switch (type)
+		{
+		case TextureType::Texture1D:
+			return VK_IMAGE_VIEW_TYPE_1D;
+		case TextureType::TextureCube:
+			return VK_IMAGE_VIEW_TYPE_CUBE;
+		case TextureType::Texture2D:
+			return VK_IMAGE_VIEW_TYPE_2D;
+		case TextureType::Texture3D:
+			return VK_IMAGE_VIEW_TYPE_3D;
+		default:
+			return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
 		}
 	}
 
