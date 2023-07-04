@@ -255,7 +255,9 @@ namespace limbo::rhi
 		m_frame.destroy(m_device);
 
 		delete m_swapchain;
+#if LIMBO_DEBUG
 		vk::vkDestroyDebugUtilsMessengerEXT(m_instance, m_messenger, nullptr);
+#endif
 		vk::vkDestroyDevice(m_device, nullptr);
 		vk::vkDestroyInstance(m_instance, nullptr);
 	}
