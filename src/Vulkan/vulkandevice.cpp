@@ -289,28 +289,35 @@ namespace limbo::rhi
 			vk::vkCmdPipelineBarrier2(m_frame.m_commandBuffer, &info);
 		}
 
-		VkImageCopy copy = {
+		int width  = (int)m_swapchain->getImagesWidth();
+		int height = (int)m_swapchain->getImagesHeight();
+		VkImageBlit blit = {
 			.srcSubresource = {
 				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 				.mipLevel = 0,
 				.baseArrayLayer = 0,
 				.layerCount = 1
 			},
-			.srcOffset = 0,
+			.srcOffsets = {
+				{ 0,     0,      0 },
+				{ width, height, 1 }
+			},
 			.dstSubresource = {
 				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 				.mipLevel = 0,
 				.baseArrayLayer = 0,
 				.layerCount = 1
 			},
-			.dstOffset = 0,
-			.extent = {
-				.width = m_swapchain->getImagesWidth(),
-				.height = m_swapchain->getImagesHeight(),
-				.depth = 1
+			.dstOffsets = {
+				{ 0,     0,      0 },
+				{ width, height, 1 }
 			}
 		};
-		vk::vkCmdCopyImage(m_frame.m_commandBuffer, vkTexture->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+		vk::vkCmdBlitImage(m_frame.m_commandBuffer,
+		                   vkTexture->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		                   swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		                   1, &blit,
+		                   VK_FILTER_NEAREST);
 
 		{
 			VkImageMemoryBarrier2 swapchainImageBarrier = VkImageBarrier(swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
