@@ -23,7 +23,7 @@ namespace limbo::rhi
 			.arrayLayers = 1,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.tiling = VK_IMAGE_TILING_LINEAR,
-			.usage = VK_IMAGE_USAGE_STORAGE_BIT,
+			.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 			.initialLayout = layout
 		};
@@ -64,31 +64,17 @@ namespace limbo::rhi
 		};
 		VK_CHECK(vk::vkCreateImageView(vkDevice, &imageViewInfo, nullptr, &imageView));
 
+		
 		layout = VK_IMAGE_LAYOUT_GENERAL;
-		VkImageMemoryBarrier2 imageBarrier = {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-			.srcStageMask = VK_PIPELINE_STAGE_2_NONE,
-			.srcAccessMask = VK_ACCESS_2_NONE,
-			.dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-			.dstAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout = layout,
-			.srcQueueFamilyIndex = 0,
-			.dstQueueFamilyIndex = 0,
-			.image = image,
-			.subresourceRange = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1
-			}
-		};
-
+		VkImageMemoryBarrier2 barrier = VkImageBarrier(image, VK_IMAGE_LAYOUT_UNDEFINED, layout, 
+		                                               VK_PIPELINE_STAGE_2_NONE, 
+		                                               VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, 
+		                                               VK_ACCESS_2_NONE, 
+		                                               VK_ACCESS_2_SHADER_WRITE_BIT);
 		VkDependencyInfo info = {
 			.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
 			.imageMemoryBarrierCount = 1,
-			.pImageMemoryBarriers = &imageBarrier
+			.pImageMemoryBarriers = &barrier
 		};
 
 		device->submitPipelineBarrier(info);
@@ -101,5 +87,6 @@ namespace limbo::rhi
 
 		vk::vkDestroyImageView(vkDevice, imageView, nullptr);
 		vk::vkDestroyImage(vkDevice, image, nullptr);
+		vk::vkFreeMemory(vkDevice, memory, nullptr);
 	}
 }

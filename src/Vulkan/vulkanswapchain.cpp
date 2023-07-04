@@ -60,7 +60,7 @@ namespace limbo::rhi
 				.height = info.height
 			},
 			.imageArrayLayers = 1,
-			.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+			.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE ,
 			.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR ,
 			.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
@@ -140,26 +140,12 @@ namespace limbo::rhi
 	{
 		VK_CHECK(vk::vkAcquireNextImageKHR(m_device->getDevice(), m_swapchain, ~0, frame.m_acquireSemaphore, nullptr, &m_imageIndex));
 
-		VkImageMemoryBarrier2 imageBarrier = {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-			.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-			.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-			.dstStageMask = VK_PIPELINE_STAGE_2_NONE,
-			.dstAccessMask = VK_ACCESS_2_NONE,
-			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			.srcQueueFamilyIndex = 0,
-			.dstQueueFamilyIndex = 0,
-			.image = m_images[m_imageIndex],
-			.subresourceRange = {
-				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1
-			}
-		};
-
+		VkImageMemoryBarrier2 imageBarrier = VkImageBarrier(m_images[m_imageIndex], VK_IMAGE_LAYOUT_UNDEFINED, 
+		                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
+		                                                    VK_PIPELINE_STAGE_2_NONE, 
+		                                                    VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, 
+		                                                    VK_ACCESS_2_NONE, 
+		                                                    VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
 		VkDependencyInfo info = {
 			.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
 			.imageMemoryBarrierCount = 1,

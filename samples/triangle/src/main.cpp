@@ -40,7 +40,13 @@ int main(int argc, char* argv[])
 
 #define COMPUTE 1
 #if COMPUTE
-	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({ .width = 1280, .height = 720 });
+	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({ 
+		.width = 1280,
+		.height = 720,
+		.format = limbo::Format::RGBA8_UNORM,
+		.type = limbo::TextureType::Texture2D
+	});
+
 	limbo::Handle<limbo::BindGroup> triangleBind = limbo::createBindGroup({
 		.textures = {
 			{ .slot = 0, .texture = outputTexture }

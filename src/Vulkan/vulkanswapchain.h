@@ -40,5 +40,6 @@ namespace limbo::rhi
 		uint32 getImagesWidth() { return m_imagesWidth; }
 		uint32 getImagesHeight() { return m_imagesHeight; }
 		VkImageView getCurrentImageView() { return m_imageViews[m_imageIndex]; }
+		VkImage getCurrentImage() { return m_images[m_imageIndex]; }
 	};
 }

@@ -250,6 +250,8 @@ namespace limbo::rhi
 
 	VulkanDevice::~VulkanDevice()
 	{
+		vk::vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+
 		m_frame.destroy(m_device);
 
 		delete m_swapchain;
@@ -260,6 +262,78 @@ namespace limbo::rhi
 
 	void VulkanDevice::copyTextureToBackBuffer(Handle<Texture> texture)
 	{
+		VulkanResourceManager* rm = ResourceManager::getAs<VulkanResourceManager>();
+		VulkanTexture* vkTexture = rm->getTexture(texture);
+
+		VkImage swapchainImage = m_swapchain->getCurrentImage();
+		{
+			VkImageMemoryBarrier2 swapchainImageBarrier = VkImageBarrier(swapchainImage, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+				VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+				VK_ACCESS_2_TRANSFER_WRITE_BIT);
+
+			VkImageMemoryBarrier2 textureBarrier = VkImageBarrier(vkTexture->image, VK_IMAGE_LAYOUT_GENERAL,
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+				VK_ACCESS_2_SHADER_WRITE_BIT,
+				VK_ACCESS_2_TRANSFER_READ_BIT);
+			VkImageMemoryBarrier2 barriers[2] = { swapchainImageBarrier, textureBarrier };
+			VkDependencyInfo info = {
+				.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+				.imageMemoryBarrierCount = 2,
+				.pImageMemoryBarriers = barriers
+			};
+			vk::vkCmdPipelineBarrier2(m_frame.m_commandBuffer, &info);
+		}
+
+		VkImageCopy copy = {
+			.srcSubresource = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel = 0,
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			},
+			.srcOffset = 0,
+			.dstSubresource = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.mipLevel = 0,
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			},
+			.dstOffset = 0,
+			.extent = {
+				.width = m_swapchain->getImagesWidth(),
+				.height = m_swapchain->getImagesHeight(),
+				.depth = 1
+			}
+		};
+		vk::vkCmdCopyImage(m_frame.m_commandBuffer, vkTexture->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+
+		{
+			VkImageMemoryBarrier2 swapchainImageBarrier = VkImageBarrier(swapchainImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			                                                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			                                                             VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+			                                                             VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			                                                             VK_ACCESS_2_TRANSFER_WRITE_BIT,
+			                                                             VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+
+			VkImageMemoryBarrier2 textureBarrier = VkImageBarrier(vkTexture->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			                                                      VK_IMAGE_LAYOUT_GENERAL,
+			                                                      VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+			                                                      VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+			                                                      VK_ACCESS_2_TRANSFER_READ_BIT,
+			                                                      VK_ACCESS_2_SHADER_WRITE_BIT);
+			VkImageMemoryBarrier2 barriers[2] = { textureBarrier, swapchainImageBarrier };
+			VkDependencyInfo info = {
+				.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+				.imageMemoryBarrierCount = 2,
+				.pImageMemoryBarriers = barriers
+			};
+			vk::vkCmdPipelineBarrier2(m_frame.m_commandBuffer, &info);
+		}
 	}
 
 	void VulkanDevice::bindDrawState(const DrawInfo& drawState)
@@ -304,6 +378,19 @@ namespace limbo::rhi
 
 	void VulkanDevice::present()
 	{
+		VkImageMemoryBarrier2 imageBarrier = VkImageBarrier(m_swapchain->getCurrentImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_PIPELINE_STAGE_2_NONE,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_2_NONE);
+		VkDependencyInfo info = {
+			.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+			.imageMemoryBarrierCount = 1,
+			.pImageMemoryBarriers = &imageBarrier
+		};
+		vk::vkCmdPipelineBarrier2(m_frame.m_commandBuffer, &info);
+
 		//vk::vkCmdEndRendering(m_frame.m_commandBuffer);
 		VK_CHECK(vk::vkEndCommandBuffer(m_frame.m_commandBuffer));
 

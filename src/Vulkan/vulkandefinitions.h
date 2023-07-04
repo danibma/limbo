@@ -6,6 +6,31 @@
 
 namespace limbo::rhi
 {
+	inline VkImageMemoryBarrier2 VkImageBarrier(VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlagBits2 srcStage, VkPipelineStageFlagBits2 dstStage, VkAccessFlagBits2 srcAccess, VkAccessFlagBits2 dstAccess)
+	{
+		VkImageMemoryBarrier2 imageBarrier = {
+			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+			.srcStageMask = srcStage,
+			.srcAccessMask = srcAccess,
+			.dstStageMask = dstStage,
+			.dstAccessMask = dstAccess,
+			.oldLayout = oldLayout,
+			.newLayout = newLayout,
+			.srcQueueFamilyIndex = 0,
+			.dstQueueFamilyIndex = 0,
+			.image = image,
+			.subresourceRange = {
+				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+				.baseMipLevel = 0,
+				.levelCount = 1,
+				.baseArrayLayer = 0,
+				.layerCount = 1
+			}
+		};
+
+		return imageBarrier;
+	}
+
 	inline VkImageType vkImageType(TextureType type)
 	{
 		switch (type)
