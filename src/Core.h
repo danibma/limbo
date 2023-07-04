@@ -44,7 +44,7 @@ typedef int64_t int64;
 	#error Platform not implemented
 #endif
 
-#if LIMBO_DEBUG
+#if !NO_LOG
 	#define LB_LOG(msg, ...) \
 	{ \
 		constexpr uint16 bufferSize = 1024; \

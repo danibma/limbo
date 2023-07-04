@@ -56,6 +56,9 @@ source_group("Source" FILES ${SOURCE_FILES} ${HEADER_FILES})
 source_group("Source/Vulkan" FILES ${VULKAN_FILES})
 target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+# Defines
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNO_LOG")
+
 # Vulkan headers
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/VulkanHeaders)
 
