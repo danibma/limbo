@@ -3,6 +3,11 @@
 #include "device.h"
 
 #include <d3d12/d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl/client.h>
+#include <dxgidebug.h>
+
+using namespace Microsoft::WRL;
 
 namespace limbo
 {
@@ -13,7 +18,9 @@ namespace limbo::rhi
 {
 	class D3D12Device final : public Device
 	{
-		ID3D12Device*		m_device;
+		ComPtr<IDXGIFactory2>			m_factory;
+		ComPtr<IDXGIAdapter1>			m_adapter;
+		ComPtr<ID3D12Device>			m_device;
 
 	public:
 		D3D12Device(const WindowInfo& info);
@@ -27,5 +34,8 @@ namespace limbo::rhi
 		void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ) override;
 
 		void present() override;
+
+	private:
+		void pickGPU();
 	};
 }

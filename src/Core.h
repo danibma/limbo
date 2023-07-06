@@ -1,7 +1,6 @@
 #pragma once
 
 #include <utility>
-#include <stdio.h>
 #include <stdint.h>
 #include <string>
 
@@ -29,7 +28,9 @@ typedef int64_t int64;
 #if LIMBO_WINDOWS
 
 	extern "C" __declspec(dllimport) void __stdcall OutputDebugStringA(_In_opt_ const char* lpOutputString);
+	extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ const wchar_t* lpOutputString);
 	#define INTERNAL_PLATFORM_LOG(msg) OutputDebugStringA(msg)
+	#define INTERNAL_PLATFORM_WLOG(msg) OutputDebugStringW(msg)
 
 	#if LIMBO_DEBUG
 		#define INTERNAL_PLATFORM_BREAK() __debugbreak();
@@ -55,6 +56,16 @@ typedef int64_t int64;
 		INTERNAL_PLATFORM_LOG(body); \
 	}
 
+	#define LB_WLOG(msg, ...) \
+	{ \
+		constexpr uint16 bufferSize = 1024; \
+		wchar_t header[bufferSize], body[bufferSize]; \
+		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
+		_snwprintf_s(body, bufferSize, L"[Limbo] Info: %ls\n", header); \
+		printf("%ls", body); \
+		INTERNAL_PLATFORM_WLOG(body); \
+	}
+
 	#define LB_ERROR(msg, ...) \
 	{ \
 		constexpr uint16 bufferSize = 1024; \
@@ -63,6 +74,17 @@ typedef int64_t int64;
 		snprintf(body, bufferSize, "[Limbo] Error: %s -> %s:%d\n", header, __FILE__, __LINE__); \
 		printf("%s", body); \
 		INTERNAL_PLATFORM_LOG(body); \
+		INTERNAL_PLATFORM_BREAK(); \
+	}
+
+	#define LB_WERROR(msg, ...) \
+	{ \
+		constexpr uint16 bufferSize = 1024; \
+		wchar_t header[bufferSize], body[bufferSize]; \
+		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
+		_snwprintf_s(body, bufferSize, L"[Limbo] Error: %ls -> %hs:%d\n", header, __FILE__, __LINE__); \
+		printf("%ls", body); \
+		INTERNAL_PLATFORM_WLOG(body); \
 		INTERNAL_PLATFORM_BREAK(); \
 	}
 #else
@@ -103,6 +125,7 @@ void Noop(T exp) {}
 	typedef struct _SECURITY_ATTRIBUTES SECURITY_ATTRIBUTES;
 	typedef unsigned long DWORD;
 	typedef struct HMONITOR__* HMONITOR;
+	typedef long HRESULT;
 #elif LIMBO_LINUX
 	#include <dlfcn.h>
 #endif
