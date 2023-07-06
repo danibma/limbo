@@ -138,7 +138,7 @@ target_compile_features(limbo PUBLIC cxx_std_20)
 
 if (WIN32)
 target_compile_options(limbo PRIVATE
-    /W3 /WX
+    /W3 /WX /MP
     -D_HAS_EXCEPTIONS=0
     -DLIMBO_WINDOWS=1
     -DLIMBO_LINUX=0

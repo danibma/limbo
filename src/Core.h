@@ -1,8 +1,7 @@
 #pragma once
 
-#include <utility>
 #include <stdint.h>
-#include <string>
+#include <stdio.h>
 
 #if _DEBUG || !NDEBUG
 	#define LIMBO_DEBUG 1
@@ -126,6 +125,11 @@ void Noop(T exp) {}
 	typedef unsigned long DWORD;
 	typedef struct HMONITOR__* HMONITOR;
 	typedef long HRESULT;
+	typedef long long INT_PTR;
+	typedef INT_PTR(__stdcall* FARPROC)();
+
+	extern "C" __declspec(dllimport) HMODULE __stdcall LoadLibraryA(LPCSTR lpLibFileName);
+	extern "C" __declspec(dllimport) FARPROC __stdcall GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
 #elif LIMBO_LINUX
 	#include <dlfcn.h>
 #endif

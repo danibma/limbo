@@ -4,10 +4,6 @@
 #include "vulkanshader.h"
 #include "vulkanswapchain.h"
 
-#if LIMBO_WINDOWS
-#include <Windows.h>
-#endif
-
 namespace limbo::rhi
 {
 	void loadVulkanBaseLibrary()
