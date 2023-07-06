@@ -45,15 +45,22 @@ file(GLOB_RECURSE VULKAN_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/*.cpp)
 
-add_library(limbo ${SOURCE_FILES} ${VULKAN_FILES})
+# D3D12 specific
+file(GLOB_RECURSE D3D12_FILES
+    CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/D3D12/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/D3D12/*.cpp)
+
+add_library(limbo ${SOURCE_FILES} ${VULKAN_FILES} ${D3D12_FILES})
 
 target_sources(limbo PRIVATE ${SHADER_FILES})
 source_group("Shaders" FILES ${SHADER_FILES})
 set_source_files_properties(${SHADER_FILES} PROPERTIES VS_TOOL_OVERRIDE "None")
 
-target_sources(limbo PRIVATE ${HEADER_FILES} ${SHADER_FILES} ${VULKAN_HEADERS})
+target_sources(limbo PRIVATE ${HEADER_FILES} ${SHADER_FILES})
 source_group("Source" FILES ${SOURCE_FILES} ${HEADER_FILES})
 source_group("Source/Vulkan" FILES ${VULKAN_FILES})
+source_group("Source/D3D12" FILES ${D3D12_FILES})
 target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Defines
@@ -65,6 +72,9 @@ target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/
 # dxc
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/inc)
 target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/lib/x64/dxcompiler.lib)
+
+# d3d12
+target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/include)
 
 # Add samples
 if (LIMBO_BUILD_SAMPLES)

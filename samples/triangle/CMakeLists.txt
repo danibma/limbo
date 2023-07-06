@@ -53,5 +53,36 @@ target_compile_options(triangle PRIVATE
 )
 endif()
 
+
+# copy DLL's
+add_custom_command(
+    TARGET triangle
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Debug/D3D12/D3D12Core.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/D3D12/D3D12Core.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Release/D3D12/D3D12Core.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/D3D12/D3D12Core.dll)
+
+add_custom_command(
+    TARGET triangle
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/d3d12SDKLayers.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Debug/D3D12/d3d12SDKLayers.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/d3d12SDKLayers.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/D3D12/d3d12SDKLayers.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/d3d12SDKLayers.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/D3D12/d3d12SDKLayers.dll)
+
 set_target_properties(triangle PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(triangle PROPERTIES FOLDER "samples")

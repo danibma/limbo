@@ -1,6 +1,6 @@
 #include "vulkanresourcemanager.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	VulkanResourceManager::~VulkanResourceManager()
 	{
@@ -8,6 +8,7 @@ namespace limbo
 		ensure(m_buffers.isEmpty());
 		ensure(m_textures.isEmpty());
 		ensure(m_shaders.isEmpty());
+		ensure(m_bindGroups.isEmpty());
 #endif
 	}
 

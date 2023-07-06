@@ -14,6 +14,12 @@
 
 namespace limbo
 {
+	enum class RHI_API : uint8
+	{
+		Vulkan,
+		D3D12
+	};
+
 	struct WindowInfo
 	{
 #if LIMBO_WINDOWS
@@ -21,12 +27,13 @@ namespace limbo
 #elif LIMBO_LINUX
 		Window window;
 #endif
-		uint32 width;
-		uint32 height;
+		uint32  width;
+		uint32  height;
+		RHI_API	api = RHI_API::D3D12;
 	};
 
 	// init functions
-	void init(WindowInfo window);
+	void init(const WindowInfo&& info);
 
 	void shutdown();
 }

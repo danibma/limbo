@@ -6,7 +6,7 @@
 #include "vulkanshader.h"
 #include "vulkantexture.h"
 
-namespace limbo
+namespace limbo::rhi
 {
 	class VulkanResourceManager final : public ResourceManager
 	{
@@ -19,10 +19,10 @@ namespace limbo
 		virtual Handle<Texture> createTexture(const TextureSpec& spec);
 		virtual Handle<BindGroup> createBindGroup(const BindGroupSpec& spec) override;
 
-		rhi::VulkanBuffer* getBuffer(Handle<Buffer> buffer);
-		rhi::VulkanShader* getShader(Handle<Shader> shader);
-		rhi::VulkanTexture* getTexture(Handle<Texture> texture);
-		rhi::VulkanBindGroup* getBindGroup(Handle<BindGroup> bindGroup);
+		VulkanBuffer* getBuffer(Handle<Buffer> buffer);
+		VulkanShader* getShader(Handle<Shader> shader);
+		VulkanTexture* getTexture(Handle<Texture> texture);
+		VulkanBindGroup* getBindGroup(Handle<BindGroup> bindGroup);
 
 		virtual void destroyBuffer(Handle<Buffer> buffer);
 		virtual void destroyShader(Handle<Shader> shader);
@@ -30,9 +30,9 @@ namespace limbo
 		virtual void destroyBindGroup(Handle<BindGroup> bindGroup) override;
 
 	private:
-		Pool<rhi::VulkanBuffer, Buffer> m_buffers;
-		Pool<rhi::VulkanBindGroup, BindGroup> m_bindGroups;
-		Pool<rhi::VulkanShader, Shader> m_shaders;
-		Pool<rhi::VulkanTexture, Texture> m_textures;
+		Pool<VulkanBuffer, Buffer> m_buffers;
+		Pool<VulkanBindGroup, BindGroup> m_bindGroups;
+		Pool<VulkanShader, Shader> m_shaders;
+		Pool<VulkanTexture, Texture> m_textures;
 	};
 }
