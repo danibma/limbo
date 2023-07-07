@@ -36,7 +36,9 @@ int main(int argc, char* argv[])
 		.hwnd = glfwGetX11Window(window),
 #endif
 		.width = 1280,
-		.height = 720 });
+		.height = 720,
+		.api = limbo::RHI_API::D3D12
+	});
 
 #define COMPUTE 1
 #if COMPUTE

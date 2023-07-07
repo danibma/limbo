@@ -1,5 +1,5 @@
 ﻿#include "d3d12device.h"
-#include "d3d12definitions.h"
+#include "d3d12swapchain.h"
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -41,10 +41,39 @@ namespace limbo::rhi
 		pickGPU();
 
 		DX_CHECK(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_device)));
+
+		DX_CHECK(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
+
+		DX_CHECK(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
+
+		D3D12_COMMAND_QUEUE_DESC queueDesc = {
+			.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
+			.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
+			.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
+			.NodeMask = 0
+		};
+		DX_CHECK(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+
+		m_swapchain = new D3D12Swapchain(m_commandQueue.Get(), m_factory.Get(), info);
+
+		m_frameIndex = m_swapchain->getCurrentIndex();
+
+		// Create synchronization objects
+		{
+			DX_CHECK(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+			m_fenceValues[m_frameIndex]++;
+
+			// Create an event handler to use for frame synchronization
+			m_fenceEvent = CreateEvent(nullptr, false, false, nullptr);
+			ensure(m_fenceEvent);
+		}
 	}
 
 	D3D12Device::~D3D12Device()
 	{
+		waitGPU();
+
+		delete m_swapchain;
 	}
 
 	void D3D12Device::copyTextureToBackBuffer(Handle<Texture> texture)
@@ -65,6 +94,7 @@ namespace limbo::rhi
 
 	void D3D12Device::present()
 	{
+		m_swapchain->present();
 	}
 
 	void D3D12Device::pickGPU()
@@ -97,5 +127,18 @@ namespace limbo::rhi
 		DXGI_ADAPTER_DESC1 desc;
 		DX_CHECK(m_adapter->GetDesc1(&desc));
 		LB_WLOG("Initiliazed D3D12 on %ls", desc.Description);
+	}
+
+	void D3D12Device::waitGPU()
+	{
+		// Schedule a signal command in the queue
+		m_commandQueue->Signal(m_fence.Get(), m_fenceValues[m_frameIndex]);
+		
+		// Wait until the fence has been processed
+		m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent);
+		WaitForSingleObject(m_fenceEvent, INFINITE);
+		
+		// Increment the fence value for the current frame
+		m_fenceValues[m_frameIndex]++;
 	}
 }

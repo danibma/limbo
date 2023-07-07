@@ -2,12 +2,7 @@
 
 #include "device.h"
 
-#include <d3d12/d3d12.h>
-#include <dxgi1_6.h>
-#include <wrl/client.h>
-#include <dxgidebug.h>
-
-using namespace Microsoft::WRL;
+#include "d3d12definitions.h"
 
 namespace limbo
 {
@@ -16,11 +11,23 @@ namespace limbo
 
 namespace limbo::rhi
 {
+	class D3D12Swapchain;
 	class D3D12Device final : public Device
 	{
-		ComPtr<IDXGIFactory2>			m_factory;
-		ComPtr<IDXGIAdapter1>			m_adapter;
-		ComPtr<ID3D12Device>			m_device;
+		ComPtr<IDXGIFactory2>				m_factory;
+		ComPtr<IDXGIAdapter1>				m_adapter;
+		ComPtr<ID3D12Device>				m_device;
+
+		ComPtr<ID3D12CommandAllocator>		m_commandAllocator;
+		ComPtr<ID3D12CommandList>			m_commandList;
+		ComPtr<ID3D12CommandQueue>			m_commandQueue;
+
+		ComPtr<ID3D12Fence>					m_fence;
+		HANDLE								m_fenceEvent;
+		uint32								m_fenceValues[3];
+
+		D3D12Swapchain*						m_swapchain;
+		uint32								m_frameIndex;
 
 	public:
 		D3D12Device(const WindowInfo& info);
@@ -37,5 +44,6 @@ namespace limbo::rhi
 
 	private:
 		void pickGPU();
+		void waitGPU();
 	};
 }
