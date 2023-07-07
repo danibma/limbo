@@ -42,6 +42,9 @@ namespace limbo::rhi
 
 		void present() override;
 
+		// D3D12 specific
+		ID3D12Device* getDevice() const { return m_device.Get(); }
+
 	private:
 		void pickGPU();
 		void waitGPU();
