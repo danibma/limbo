@@ -75,6 +75,22 @@ add_custom_command(
     TARGET triangle
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Debug/dxil.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/dxil.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Release/dxil.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/dxil.dll)
+
+add_custom_command(
+    TARGET triangle
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/d3d12/bin/d3d12SDKLayers.dll
             ${CMAKE_CURRENT_BINARY_DIR}/Debug/D3D12/d3d12SDKLayers.dll
     COMMAND ${CMAKE_COMMAND} -E copy

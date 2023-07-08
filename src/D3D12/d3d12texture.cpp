@@ -6,8 +6,11 @@ namespace limbo::rhi
 {
 	D3D12Texture::D3D12Texture(const TextureSpec& spec)
 	{
-		D3D12Device* device = Device::ptr->getAs<D3D12Device>();
+		D3D12Device* device = Device::getAs<D3D12Device>();
 		ID3D12Device* d3ddevice = device->getDevice();
+
+		if ((spec.usage & TextureUsage::Storage) == TextureUsage::Storage)
+			m_bIsUnordered = true;
 
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = d3dTextureType(spec.type),
