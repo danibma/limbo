@@ -11,6 +11,8 @@ namespace limbo::rhi
 		D3D12Device* device = Device::getAs<D3D12Device>();
 		ID3D12Device* d3ddevice = device->getDevice();
 
+		type = spec.type;
+
 		if (spec.type == ShaderType::Compute)
 			createComputePipeline(d3ddevice, spec);
 		else if (spec.type == ShaderType::Graphics)
@@ -43,7 +45,7 @@ namespace limbo::rhi
 			.CachedPSO = nullptr,
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
-		DX_CHECK(device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_pipeline)));
+		DX_CHECK(device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&pipelineState)));
 	}
 
 	void D3D12Shader::createGraphicsPipeline(ID3D12Device* device)

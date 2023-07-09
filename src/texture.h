@@ -8,6 +8,7 @@ namespace limbo
 	{
 		uint32		 width;
 		uint32		 height;
+		const char*  debugName;
 		TextureUsage usage	 = TextureUsage::Sampled;
 		Format		 format  = Format::R8_UNORM;
 		TextureType  type	 = TextureType::Texture2D;

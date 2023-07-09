@@ -2,13 +2,20 @@
 
 #include "texture.h"
 #include "d3d12definitions.h"
+#include "d3d12descriptorheap.h"
 
 namespace limbo::rhi
 {
 	class D3D12Texture final : public Texture
 	{
-		ComPtr<ID3D12Resource>		m_resource;
-		bool						m_bIsUnordered = false;
+	public:
+		ComPtr<ID3D12Resource>		resource;
+		bool						bIsUnordered = false;
+
+		D3D12DescriptorHandle		handle;
+
+		D3D12_RESOURCE_STATES		currentState;
+		D3D12_RESOURCE_STATES		defaultState;
 
 	public:
 		D3D12Texture() = default;
@@ -17,6 +24,6 @@ namespace limbo::rhi
 		virtual ~D3D12Texture();
 
 		// D3D12 Specific
-		bool isUnordered() const { return m_bIsUnordered; }
+		void createUAV(const TextureSpec& spec, ID3D12Device* d3ddevice);
 	};
 }

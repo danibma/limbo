@@ -7,8 +7,8 @@ namespace limbo::rhi
 {
 	class D3D12Shader final : public Shader
 	{
-	private:
-		ComPtr<ID3D12PipelineState>			m_pipeline;
+	public:
+		ComPtr<ID3D12PipelineState>			pipelineState;
 
 	public:
 		D3D12Shader() = default;
