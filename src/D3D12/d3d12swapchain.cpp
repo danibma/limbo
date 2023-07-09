@@ -16,7 +16,7 @@ namespace limbo::rhi
 				.Quality = 0
 			},
 			.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT,
-			.BufferCount = 3,
+			.BufferCount = NUM_BACK_BUFFERS,
 			.Scaling = DXGI_SCALING_NONE,
 			.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD ,
 			.AlphaMode = DXGI_ALPHA_MODE_IGNORE,

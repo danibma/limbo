@@ -23,8 +23,6 @@ namespace limbo::rhi
 		std::vector<VkImage>		m_images;
 		std::vector<VkImageView>	m_imageViews;
 
-		const uint8					NUM_BUFFERS = 3;
-
 		uint32						m_imageIndex;
 
 		uint32						m_imagesWidth;

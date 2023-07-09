@@ -51,10 +51,6 @@ namespace limbo::rhi
 		m_rtvheap = new D3D12DescriptorHeap(m_device.Get(), D3D12DescriptorHeapType::RTV);
 		m_dsvheap = new D3D12DescriptorHeap(m_device.Get(), D3D12DescriptorHeapType::DSV);
 
-		DX_CHECK(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
-
-		DX_CHECK(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
-
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {
 			.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
 			.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL,
@@ -66,6 +62,11 @@ namespace limbo::rhi
 		m_swapchain = new D3D12Swapchain(m_commandQueue.Get(), m_factory.Get(), info);
 
 		m_frameIndex = m_swapchain->getCurrentIndex();
+
+		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
+			DX_CHECK(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[i])));
+
+		DX_CHECK(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
 
 		// Create synchronization objects
 		{
@@ -157,8 +158,8 @@ namespace limbo::rhi
 
 		nextFrame();
 
-		//DX_CHECK(m_commandAllocator->Reset());
-		DX_CHECK(m_commandList->Reset(m_commandAllocator.Get(), nullptr));
+		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
+		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
 	}
 
 	D3D12DescriptorHandle D3D12Device::allocateHandle(D3D12DescriptorHeapType heapType)

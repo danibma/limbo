@@ -4,6 +4,8 @@
 
 namespace limbo
 {
+    constexpr uint8	NUM_BACK_BUFFERS = 3;
+
 	enum class TextureType : uint8
 	{
 		Texture1D,

@@ -23,8 +23,8 @@ namespace limbo::rhi
 
 		VkSurfaceCapabilitiesKHR surfaceCapabilities;
 		vk::vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, m_surface, &surfaceCapabilities);
-		ensure(NUM_BUFFERS > surfaceCapabilities.minImageCount);
-		ensure(NUM_BUFFERS < surfaceCapabilities.maxImageCount);
+		ensure(NUM_BACK_BUFFERS > surfaceCapabilities.minImageCount);
+		ensure(NUM_BACK_BUFFERS < surfaceCapabilities.maxImageCount);
 
 		uint32 formatCount;
 		VK_CHECK(vk::vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, m_surface, &formatCount, nullptr));
@@ -52,7 +52,7 @@ namespace limbo::rhi
 		VkSwapchainCreateInfoKHR swapchainInfo = {
 			.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
 			.surface = m_surface,
-			.minImageCount = NUM_BUFFERS,
+			.minImageCount = NUM_BACK_BUFFERS,
 			.imageFormat = m_surfaceFormat.format,
 			.imageColorSpace = m_surfaceFormat.colorSpace,
 			.imageExtent = {

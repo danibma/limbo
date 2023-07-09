@@ -23,7 +23,7 @@ namespace limbo::rhi
 		ComPtr<IDXGIAdapter1>				m_adapter;
 		ComPtr<ID3D12Device>				m_device;
 
-		ComPtr<ID3D12CommandAllocator>		m_commandAllocator;
+		ComPtr<ID3D12CommandAllocator>		m_commandAllocators[NUM_BACK_BUFFERS];
 		ComPtr<ID3D12GraphicsCommandList>	m_commandList;
 		ComPtr<ID3D12CommandQueue>			m_commandQueue;
 
