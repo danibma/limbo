@@ -15,7 +15,6 @@ namespace limbo::rhi
 		D3D12DescriptorHandle		handle;
 
 		D3D12_RESOURCE_STATES		currentState;
-		D3D12_RESOURCE_STATES		defaultState;
 
 	public:
 		D3D12Texture() = default;

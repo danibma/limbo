@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 		.api = limbo::RHI_API::D3D12
 	});
 
-#define COMPUTE 1
+#define COMPUTE 0
 #if COMPUTE
 	limbo::Handle<limbo::Texture> outputTexture = limbo::createTexture({ 
 		.width = 1280,
@@ -92,15 +92,18 @@ int main(int argc, char* argv[])
 
 		limbo::present();
 #else
-		float color[] = { 0.5f * cosf(time) + 0.5f,
-						  0.5f * sinf(time) + 0.5f,
-						  1.0f };
-
-		limbo::setParameter(triangleShader, 0, color);
-		limbo::bindShader(triangleShader);
-		limbo::bindVertexBuffer(vertexBuffer);
-
-		limbo::draw(3);
+		//float color[] = { 0.5f * cosf(time) + 0.5f,
+		//				  0.5f * sinf(time) + 0.5f,
+		//				  1.0f };
+		//
+		//limbo::setParameter(triangleShader, 0, color);
+		//limbo::bindDrawState({
+		//	.shader = triangleShader,
+		//	//.bindGroups = { triangleBind },
+		//	});
+		//limbo::bindVertexBuffer(vertexBuffer);
+		//
+		//limbo::draw(3);
 		limbo::present();
 #endif
 	}

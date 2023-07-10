@@ -15,7 +15,7 @@ namespace limbo
 	{
 		const char* debugName = nullptr;
 
-		uint32 byteSize = 0;
+		uint32		byteSize = 0;
 		BufferUsage usage = BufferUsage::Constant;
 		const void* initialData = nullptr;
 	};

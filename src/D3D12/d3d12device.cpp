@@ -6,6 +6,8 @@
 
 #include <d3d12/d3dx12/d3dx12.h>
 
+#include "d3d12memoryallocator.h"
+
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
@@ -77,11 +79,16 @@ namespace limbo::rhi
 			m_fenceEvent = CreateEvent(nullptr, false, false, nullptr);
 			ensure(m_fenceEvent);
 		}
+
+		D3D12MemoryAllocator::ptr = new D3D12MemoryAllocator();
 	}
 
 	D3D12Device::~D3D12Device()
 	{
 		waitGPU();
+
+		delete D3D12MemoryAllocator::ptr;
+		D3D12MemoryAllocator::ptr = nullptr;
 
 		delete m_swapchain;
 		delete m_srvheap;
@@ -109,6 +116,16 @@ namespace limbo::rhi
 		                                                                     D3D12_RESOURCE_STATE_COPY_DEST,
 		                                                                     D3D12_RESOURCE_STATE_PRESENT));
 		submitResourceBarriers();
+	}
+
+	void D3D12Device::bindVertexBuffer(Handle<Buffer> buffer)
+	{
+		ensure(false);
+	}
+
+	void D3D12Device::bindIndexBuffer(Handle<Buffer> buffer)
+	{
+		ensure(false);
 	}
 
 	void D3D12Device::bindDrawState(const DrawInfo& drawState)
@@ -159,6 +176,8 @@ namespace limbo::rhi
 		m_swapchain->present();
 
 		nextFrame();
+
+		D3D12MemoryAllocator::ptr->flushUploadBuffers();
 
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));

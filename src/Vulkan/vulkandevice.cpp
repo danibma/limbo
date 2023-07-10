@@ -345,6 +345,16 @@ namespace limbo::rhi
 		}
 	}
 
+	void VulkanDevice::bindVertexBuffer(Handle<Buffer> buffer)
+	{
+		ensure(false);
+	}
+
+	void VulkanDevice::bindIndexBuffer(Handle<Buffer> buffer)
+	{
+		ensure(false);
+	}
+
 	void VulkanDevice::bindDrawState(const DrawInfo& drawState)
 	{
 		VulkanResourceManager* rm = ResourceManager::getAs<VulkanResourceManager>();

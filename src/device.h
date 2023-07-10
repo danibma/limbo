@@ -25,6 +25,8 @@ namespace limbo
 
 		virtual void copyTextureToBackBuffer(Handle<Texture> texture) = 0;
 
+		virtual void bindVertexBuffer(Handle<Buffer> buffer) = 0;
+		virtual void bindIndexBuffer(Handle<Buffer> buffer) = 0;
 		virtual void bindDrawState(const DrawInfo& drawState) = 0;
 		virtual void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1) = 0;
 
@@ -36,6 +38,16 @@ namespace limbo
 	inline void copyTextureToBackBuffer(Handle<Texture> texture)
 	{
 		Device::ptr->copyTextureToBackBuffer(texture);
+	}
+
+	inline void bindVertexBuffer(Handle<Buffer> buffer)
+	{
+		Device::ptr->bindVertexBuffer(buffer);
+	}
+
+	inline void bindIndexBuffer(Handle<Buffer> buffer)
+	{
+		Device::ptr->bindIndexBuffer(buffer);
 	}
 
 	inline void bindDrawState(const DrawInfo&& drawState)

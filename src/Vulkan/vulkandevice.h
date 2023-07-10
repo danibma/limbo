@@ -61,6 +61,8 @@ namespace limbo::rhi
 
 		virtual void copyTextureToBackBuffer(Handle<Texture> texture) override;
 
+		virtual void bindVertexBuffer(Handle<Buffer> buffer) override;
+		virtual void bindIndexBuffer(Handle<Buffer> buffer) override;
 		virtual void bindDrawState(const DrawInfo& drawState) override;
 		virtual void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1) override;
 
@@ -81,6 +83,5 @@ namespace limbo::rhi
 		void findPhysicalDevice();
 		void createLogicalDevice();
 		void resetFrame(const VulkanPerFrame& frame);
-
 	};
 }

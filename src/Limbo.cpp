@@ -6,6 +6,7 @@
 
 // D3D12
 #include "D3D12/d3d12device.h"
+#include "D3D12/d3d12memoryallocator.h"
 #include "D3D12/d3d12resourcemanager.h"
 
 namespace limbo

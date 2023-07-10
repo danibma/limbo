@@ -1,17 +1,21 @@
-#include "d3d12buffer.h"
+﻿#include "d3d12memoryallocator.h"
 #include "d3d12device.h"
-#include "d3d12memoryallocator.h"
-
-#include "utils.h"
 
 namespace limbo::rhi
 {
-	D3D12Buffer::D3D12Buffer(const BufferSpec& spec)
+	D3D12MemoryAllocator* D3D12MemoryAllocator::ptr = nullptr;
+
+	D3D12MemoryAllocator::~D3D12MemoryAllocator()
+	{
+		flushUploadBuffers();
+	}
+
+	ID3D12Resource* D3D12MemoryAllocator::createUploadBuffer()
 	{
 		D3D12Device* device = Device::getAs<D3D12Device>();
 		ID3D12Device* d3ddevice = device->getDevice();
 
-		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+		ID3D12Resource* resource;
 
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -26,12 +30,12 @@ namespace limbo::rhi
 				.Quality = 0
 			},
 			.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-			.Flags = flags
+			.Flags = D3D12_RESOURCE_FLAG_NONE
 		};
 
 		// #todo: use CreatePlacedResource instead of CreateCommittedResource
 		D3D12_HEAP_PROPERTIES heapProps = {
-			.Type = D3D12_HEAP_TYPE_DEFAULT,
+			.Type = D3D12_HEAP_TYPE_UPLOAD,
 			.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
 			.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
 			.CreationNodeMask = 0,
@@ -39,24 +43,18 @@ namespace limbo::rhi
 		};
 
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
-													D3D12_RESOURCE_STATE_COMMON,
+													D3D12_RESOURCE_STATE_COPY_SOURCE,
 													nullptr,
 													IID_PPV_ARGS(&resource)));
-		currentState = D3D12_RESOURCE_STATE_COMMON;
 
-		ID3D12Resource* uploadBuffer = D3D12MemoryAllocator::ptr->createUploadBuffer();
-
-		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
-		{
-			std::wstring wname;
-			utils::StringConvert(spec.debugName, wname);
-			DX_CHECK(resource->SetName(wname.c_str()));
-			wname.append(L"(upload buffer)");
-			DX_CHECK(uploadBuffer->SetName(wname.c_str()));
-		}
+		m_uploadBuffers.emplace_back(resource);
+		return resource;
 	}
 
-	D3D12Buffer::~D3D12Buffer()
+	void D3D12MemoryAllocator::flushUploadBuffers()
 	{
+		for (ID3D12Resource* resource : m_uploadBuffers)
+			resource->Release();
+		m_uploadBuffers.clear();
 	}
 }

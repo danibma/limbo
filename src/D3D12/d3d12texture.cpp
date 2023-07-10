@@ -42,9 +42,8 @@ namespace limbo::rhi
 			.VisibleNodeMask = 0
 		};
 
-		defaultState = D3D12_RESOURCE_STATE_COMMON;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
-													defaultState, 
+													D3D12_RESOURCE_STATE_COMMON, 
 													nullptr,
 													IID_PPV_ARGS(&resource)));
 
