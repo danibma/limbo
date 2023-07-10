@@ -91,6 +91,24 @@ namespace limbo::rhi
 
 	void D3D12Device::copyTextureToBackBuffer(Handle<Texture> texture)
 	{
+		D3D12ResourceManager* rm = ResourceManager::getAs<D3D12ResourceManager>();
+
+		D3D12Texture* d3dTexture = rm->getTexture(texture);
+
+		ID3D12Resource* backbuffer = m_swapchain->getBackbuffer(m_frameIndex);
+
+		transitionResource(d3dTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(backbuffer,
+		                                                   D3D12_RESOURCE_STATE_PRESENT,
+		                                                   D3D12_RESOURCE_STATE_COPY_DEST));
+
+		submitResourceBarriers();
+		m_commandList->CopyResource(backbuffer, d3dTexture->resource.Get());
+
+		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(backbuffer,
+		                                                                     D3D12_RESOURCE_STATE_COPY_DEST,
+		                                                                     D3D12_RESOURCE_STATE_PRESENT));
+		submitResourceBarriers();
 	}
 
 	void D3D12Device::bindDrawState(const DrawInfo& drawState)
@@ -122,22 +140,6 @@ namespace limbo::rhi
 	{
 		submitResourceBarriers();
 		m_commandList->Dispatch(groupCountX, groupCountY, groupCountZ);
-	}
-
-	void D3D12Device::nextFrame()
-	{
-		uint64 currentFenceValue = m_fenceValues[m_frameIndex];
-		DX_CHECK(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
-
-		m_frameIndex = m_swapchain->getCurrentIndex();
-
-		if (m_fence->GetCompletedValue() < m_fenceValues[m_frameIndex])
-		{
-			DX_CHECK(m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent));
-			WaitForSingleObject(m_fenceEvent, INFINITE);
-		}
-
-		m_fenceValues[m_frameIndex] = currentFenceValue + 1;
 	}
 
 	void D3D12Device::submitResourceBarriers()
@@ -214,6 +216,22 @@ namespace limbo::rhi
 		DXGI_ADAPTER_DESC1 desc;
 		DX_CHECK(m_adapter->GetDesc1(&desc));
 		LB_WLOG("Initiliazed D3D12 on %ls", desc.Description);
+	}
+
+	void D3D12Device::nextFrame()
+	{
+		uint64 currentFenceValue = m_fenceValues[m_frameIndex];
+		DX_CHECK(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
+
+		m_frameIndex = m_swapchain->getCurrentIndex();
+
+		if (m_fence->GetCompletedValue() < m_fenceValues[m_frameIndex])
+		{
+			DX_CHECK(m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent));
+			WaitForSingleObject(m_fenceEvent, INFINITE);
+		}
+
+		m_fenceValues[m_frameIndex] = currentFenceValue + 1;
 	}
 
 	void D3D12Device::waitGPU()

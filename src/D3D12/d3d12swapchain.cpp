@@ -25,6 +25,9 @@ namespace limbo::rhi
 		ComPtr<IDXGISwapChain1> tempSwapchain;
 		DX_CHECK(factory->CreateSwapChainForHwnd(queue, info.hwnd, &desc, nullptr, nullptr, &tempSwapchain));
 		tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_swapchain));
+
+		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
+			DX_CHECK(m_swapchain->GetBuffer(i, IID_PPV_ARGS(&m_backbuffers[i])));
 	}
 
 	void D3D12Swapchain::present()
@@ -35,5 +38,11 @@ namespace limbo::rhi
 	uint32 D3D12Swapchain::getCurrentIndex()
 	{
 		return m_swapchain->GetCurrentBackBufferIndex();
+	}
+
+	ID3D12Resource* D3D12Swapchain::getBackbuffer(uint32 index)
+	{
+		ensure(index < NUM_BACK_BUFFERS);
+		return m_backbuffers[index].Get();
 	}
 }
