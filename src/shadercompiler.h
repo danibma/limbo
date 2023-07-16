@@ -2,7 +2,7 @@
 
 #include "core.h"
 
-namespace limbo::rhi
+namespace limbo::gfx
 {
     /*
 	   Version: dxcompiler.dll: 1.7 - 1.7.2212.40 (e043f4a12); dxil.dll: 1.7(101.7.2212.36)

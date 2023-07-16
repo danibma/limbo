@@ -1,0 +1,113 @@
+﻿#pragma once
+
+#include "definitions.h"
+#include "resourcepool.h"
+
+#include <vector>
+
+namespace limbo::gfx
+{
+	enum class DescriptorHeapType : uint8;
+	struct DescriptorHandle;
+	class DescriptorHeap;
+	struct WindowInfo;
+	struct DrawInfo;
+	class BindGroup;
+	class Swapchain;
+	class Buffer;
+	class Texture;
+
+	class Device
+	{
+		ComPtr<IDXGIFactory2>				m_factory;
+		ComPtr<IDXGIAdapter1>				m_adapter;
+		ComPtr<ID3D12Device>				m_device;
+
+		ComPtr<ID3D12CommandAllocator>		m_commandAllocators[NUM_BACK_BUFFERS];
+		ComPtr<ID3D12GraphicsCommandList>	m_commandList;
+		ComPtr<ID3D12CommandQueue>			m_commandQueue;
+
+		ComPtr<ID3D12Fence>					m_fence;
+		HANDLE								m_fenceEvent;
+		uint64								m_fenceValues[3] = { 0, 0, 0 };
+
+		Swapchain*							m_swapchain;
+		uint32								m_frameIndex;
+
+		DescriptorHeap*						m_srvheap;
+		DescriptorHeap*						m_dsvheap;
+		DescriptorHeap*						m_rtvheap;
+
+		BindGroup*							m_boundBindGroup;
+
+		std::vector<D3D12_RESOURCE_BARRIER> m_resourceBarriers;
+
+	public:
+		static Device* ptr;
+
+	public:
+		Device(const WindowInfo& info);
+		~Device();
+
+		void copyTextureToBackBuffer(Handle<Texture> texture);
+
+		void bindVertexBuffer(Handle<Buffer> buffer);
+		void bindIndexBuffer(Handle<Buffer> buffer);
+		void bindDrawState(const DrawInfo& drawState);
+		void draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
+
+		void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
+
+		void present();
+
+		// D3D12 specific
+		ID3D12Device* getDevice() const { return m_device.Get(); }
+
+		DescriptorHandle allocateHandle(DescriptorHeapType heapType);
+
+		void transitionResource(Texture* texture, D3D12_RESOURCE_STATES newState);
+
+	private:
+		void pickGPU();
+		void waitGPU();
+
+		void nextFrame();
+
+		void submitResourceBarriers();
+	};
+
+	inline void copyTextureToBackBuffer(Handle<Texture> texture)
+	{
+		Device::ptr->copyTextureToBackBuffer(texture);
+	}
+
+	inline void bindVertexBuffer(Handle<Buffer> buffer)
+	{
+		Device::ptr->bindVertexBuffer(buffer);
+	}
+
+	inline void bindIndexBuffer(Handle<Buffer> buffer)
+	{
+		Device::ptr->bindIndexBuffer(buffer);
+	}
+
+	inline void bindDrawState(const DrawInfo&& drawState)
+	{
+		Device::ptr->bindDrawState(drawState);
+	}
+
+	inline void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1)
+	{
+		Device::ptr->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+	}
+
+	inline void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	{
+		Device::ptr->dispatch(groupCountX, groupCountY, groupCountZ);
+	}
+
+	inline void present()
+	{
+		Device::ptr->present();
+	}
+}

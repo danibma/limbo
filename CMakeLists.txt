@@ -1,5 +1,30 @@
 cmake_minimum_required(VERSION 3.22)
 
+function(GroupSourcesByFolder target)
+  set(SOURCE_GROUP_DELIMITER "/")
+  set(last_dir "")
+  set(files "")
+
+  get_target_property(sources ${target} SOURCES)
+
+  foreach(file ${sources})
+    file(RELATIVE_PATH relative_file "${PROJECT_SOURCE_DIR}" ${file})
+    get_filename_component(dir "${relative_file}" PATH)
+    if(NOT "${dir}" STREQUAL "${last_dir}")
+      if(files)
+        source_group("${last_dir}" FILES ${files})
+      endif()
+      set(files "")
+    endif()
+    set(files ${files} ${file})
+    set(last_dir "${dir}")
+  endforeach()
+
+  if(files)
+    source_group("${last_dir}" FILES ${files})
+  endif()
+endfunction()
+
 project(limbo)
 
 # Files
@@ -17,57 +42,33 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # set the cmake projects into CMakePredefinedTargets
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER)
 
-option(LIMBO_BUILD_SAMPLES "Build limbo samples" ON)
-option(LIMBO_BUILD_TESTS "Build limbo tests" ON)
+option(LIMBO_BUILD_TESTS "Build limbo tests" OFF)
 
-file(GLOB_RECURSE HEADER_FILES
+file(GLOB_RECURSE CPP_FILES
     CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/device.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/resourcemanager.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/buffer.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/shader.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/texture.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/shadercompiler.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/resourcepool.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 
-file(GLOB_RECURSE SOURCE_FILES
-    CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/limbo.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/shadercompiler.cpp)
-
-# Vulkan specific
-file(GLOB_RECURSE VULKAN_FILES
-    CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/*.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/Vulkan/*.cpp)
-
-# D3D12 specific
-file(GLOB_RECURSE D3D12_FILES
-    CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/D3D12/*.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/D3D12/*.cpp)
-
-add_library(limbo ${SOURCE_FILES} ${VULKAN_FILES} ${D3D12_FILES})
+add_executable(limbo ${CPP_FILES})
+GroupSourcesByFolder(limbo)
 
 target_sources(limbo PRIVATE ${SHADER_FILES})
-source_group("Shaders" FILES ${SHADER_FILES})
+source_group("shaders" FILES ${SHADER_FILES})
 set_source_files_properties(${SHADER_FILES} PROPERTIES VS_TOOL_OVERRIDE "None")
 
-target_sources(limbo PRIVATE ${HEADER_FILES} ${SHADER_FILES})
-source_group("Source" FILES ${SOURCE_FILES} ${HEADER_FILES})
-source_group("Source/Vulkan" FILES ${VULKAN_FILES})
-source_group("Source/D3D12" FILES ${D3D12_FILES})
 target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Defines
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNO_LOG")
 
-# Vulkan headers
-target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/VulkanHeaders)
+# GLFW
+target_link_libraries(limbo PUBLIC glfw)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/third_party/glfw)
+set_target_properties(glfw PROPERTIES FOLDER "third_party/glfw3")
+set_target_properties(update_mappings PROPERTIES FOLDER "third_party/glfw3")
+set_target_properties(uninstall PROPERTIES FOLDER "third_party/glfw3")
 
 # dxc
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/inc)
@@ -76,28 +77,65 @@ target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/l
 # d3d12
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/include)
 
-# Add samples
-if (LIMBO_BUILD_SAMPLES)
-    message("Building limbo samples")
+target_compile_features(limbo PUBLIC cxx_std_20)
 
-    # Samples
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/samples/triangle)
+target_compile_options(limbo PRIVATE
+    /W3 /WX /MP
+    -D_HAS_EXCEPTIONS=0
+)
 
-    # GLFW
-    set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/samples/third_party/glfw)
-    set_target_properties(glfw PROPERTIES FOLDER "samples/third_party/glfw3")
-    set_target_properties(update_mappings PROPERTIES FOLDER "samples/third_party/glfw3")
-    set_target_properties(uninstall PROPERTIES FOLDER "samples/third_party/glfw3")
+# copy DLL's
+add_custom_command(
+    TARGET limbo
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Debug/D3D12/D3D12Core.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/D3D12/D3D12Core.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Release/D3D12/D3D12Core.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/D3D12/D3D12Core.dll)
 
-    # Set up startup project
-    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT triangle)
-endif()
+add_custom_command(
+    TARGET limbo
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Debug/dxil.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/dxil.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Release/dxil.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/dxil.dll)
+
+add_custom_command(
+    TARGET limbo
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/d3d12SDKLayers.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/Debug/D3D12/d3d12SDKLayers.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/d3d12SDKLayers.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/D3D12/d3d12SDKLayers.dll
+    COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/d3d12SDKLayers.dll
+            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/D3D12/d3d12SDKLayers.dll)
+
+set_target_properties(limbo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT limbo)
+
 
 # Tests
-if (LIMBO_BUILD_TESTS)
+#[===[if (LIMBO_BUILD_TESTS)
     message("Building limbo tests")
 
     file(GLOB_RECURSE TESTS_FILES
@@ -133,24 +171,4 @@ if (LIMBO_BUILD_TESTS)
     )
     endif()
 endif()
-
-target_compile_features(limbo PUBLIC cxx_std_20)
-
-if (WIN32)
-target_compile_options(limbo PRIVATE
-    /W3 /WX /MP
-    -D_HAS_EXCEPTIONS=0
-    -DLIMBO_WINDOWS=1
-    -DLIMBO_LINUX=0
-)
-else()
-target_compile_options(limbo PRIVATE
-    -Wall
-    -Werror
-    -Wconversion
-    -Wno-error=comment
-    -fno-exceptions
-    -DLIMBO_WINDOWS=0
-    -DLIMBO_LINUX=1
-)
-endif()
+]===]
