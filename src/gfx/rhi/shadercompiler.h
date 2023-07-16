@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "core.h"
+#include "core/core.h"
 
 namespace limbo::gfx
 {
@@ -183,12 +183,6 @@ namespace limbo::gfx
 		Warning Options:
 		  -W[no-]<warning> Enable/Disable the specified warning
 	*/
-
-	// Used for Spir-V
-	inline uint32 ShiftUType = 0;
-	inline uint32 ShiftBType = 100;
-	inline uint32 ShiftTType = 200;
-	inline uint32 ShiftSType = 300;
 
 	struct ShaderResult
 	{

@@ -1,7 +1,7 @@
 #include "texture.h"
 
 #include "device.h"
-#include "utils.h"
+#include "core/utils.h"
 
 namespace limbo::gfx
 {

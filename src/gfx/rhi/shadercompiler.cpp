@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "utils.h"
+#include "core/utils.h"
 
 namespace limbo::gfx::ShaderCompiler
 {

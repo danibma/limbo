@@ -2,7 +2,7 @@
 #include "device.h"
 #include "memoryallocator.h"
 
-#include "utils.h"
+#include "core/utils.h"
 
 namespace limbo::gfx
 {

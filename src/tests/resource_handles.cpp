@@ -1,6 +1,6 @@
 #include <catch/catch.hpp>
 
-#include "core.h"
+#include "core/core.h"
 #include "gfx/rhi/resourcepool.h"
 
 struct Child
