@@ -6,6 +6,10 @@
 #include "gfx/rhi/texture.h"
 #include "gfx/rhi/draw.h"
 
+#include "tests/tests.h"
+
+#include <CLI11/CLI11.hpp>
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -16,6 +20,16 @@ using namespace limbo;
 
 int main(int argc, char* argv[])
 {
+	CLI::App app { "limbo" };
+
+	bool bRunTests = false;
+	app.add_flag("--tests", bRunTests, "Run tests");
+
+	CLI11_PARSE(app, argc, argv);
+
+	if (bRunTests)
+		return tests::executeTests(argc, argv);
+
 	if (!glfwInit())
 	{
 		LB_ERROR("Failed to initialize GLFW!");
@@ -39,7 +53,7 @@ int main(int argc, char* argv[])
 
 #define COMPUTE 1
 #if COMPUTE
-	Handle<gfx::Texture> outputTexture = gfx::createTexture({
+	gfx::Handle<gfx::Texture> outputTexture = gfx::createTexture({
 		.width = 1280,
 		.height = 720,
 		.debugName = "triangle output texture",
@@ -48,13 +62,13 @@ int main(int argc, char* argv[])
 		.type = gfx::TextureType::Texture2D
 	});
 
-	Handle<gfx::BindGroup> triangleBind = gfx::createBindGroup({
+	gfx::Handle<gfx::BindGroup> triangleBind = gfx::createBindGroup({
 		.textures = {
 			{ .slot = 0, .texture = outputTexture }
 		},
 	});
 
-	Handle<gfx::Shader> triangleCSShader = gfx::createShader({
+	gfx::Handle<gfx::Shader> triangleCSShader = gfx::createShader({
 		.programName = "compute_triangle",
 		.entryPoint = "DrawTriangle",
 		.bindGroups = { triangleBind },

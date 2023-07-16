@@ -33,10 +33,10 @@ namespace limbo::gfx
 		void destroyBindGroup(Handle<BindGroup> bindGroup);
 
 	private:
-		Pool<Buffer, Buffer> m_buffers;
-		Pool<Shader, Shader> m_shaders;
-		Pool<Texture, Texture> m_textures;
-		Pool<BindGroup, BindGroup> m_bindGroups;
+		Pool<Buffer> m_buffers;
+		Pool<Shader> m_shaders;
+		Pool<Texture> m_textures;
+		Pool<BindGroup> m_bindGroups;
 	};
 
 

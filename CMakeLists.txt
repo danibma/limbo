@@ -77,6 +77,8 @@ target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/l
 # d3d12
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/include)
 
+target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/)
+
 target_compile_features(limbo PUBLIC cxx_std_20)
 
 target_compile_options(limbo PRIVATE
@@ -132,43 +134,3 @@ add_custom_command(
 
 set_target_properties(limbo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT limbo)
-
-
-# Tests
-#[===[if (LIMBO_BUILD_TESTS)
-    message("Building limbo tests")
-
-    file(GLOB_RECURSE TESTS_FILES
-        CONFIGURE_DEPENDS
-        ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp)
-
-    add_executable(limbo_tests ${TESTS_FILES})
-
-    target_include_directories(limbo_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests/third_party)
-
-    target_link_libraries(limbo_tests PUBLIC limbo)
-    target_include_directories(limbo_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/)
-
-    set_target_properties(limbo_tests PROPERTIES 
-        VS_DEBUGGER_COMMAND_ARGUMENTS "-s -b")
-
-    if (WIN32)
-    target_compile_options(limbo_tests PRIVATE
-        /W3 /WX
-        -D_HAS_EXCEPTIONS=0
-        -DLIMBO_WINDOWS=1
-        -DLIMBO_LINUX=0
-    )
-    else()
-    target_compile_options(limbo_tests PRIVATE
-        -Wall
-        -Werror
-        -Wconversion
-        -Wno-error=comment
-        -fno-exceptions
-        -DLIMBO_WINDOWS=0
-        -DLIMBO_LINUX=1
-    )
-    endif()
-endif()
-]===]

@@ -6,7 +6,7 @@
 #include <queue>
 #include <type_traits>
 
-namespace limbo
+namespace limbo::gfx
 {
 	template<typename T>
 	class Handle
@@ -21,22 +21,20 @@ namespace limbo
 		uint16 m_index;
 		uint16 m_generation;
 
-		template<typename T1, typename T2> friend class Pool;
+		template<typename T1> friend class Pool;
 	};
 
-	template<typename DataType, typename HandleType>
+	template<typename HandleType>
 	class Pool
 	{
 	public:
 		Pool()
 		{
-			static_assert(std::is_base_of<HandleType, DataType>::value, "DataType has to inherit from HandleType!");
-
 			m_objects.resize(MAX_SIZE);
 			for (uint16 i = 0; i < MAX_SIZE; ++i)
 			{
 				m_freeSlots.push(i);
-				m_objects[i].data = new DataType();
+				m_objects[i].data = new HandleType();
 			}
 		}
 
@@ -48,7 +46,7 @@ namespace limbo
 			ensure(freeSlot < MAX_SIZE);
 			ensure(freeSlot != 0xff);
 			Object& obj = m_objects[freeSlot];
-			new(obj.data) DataType(std::forward<Args>(args)...);
+			new(obj.data) HandleType(std::forward<Args>(args)...);
 			return Handle<HandleType>(freeSlot, obj.generation);
 		}
 
@@ -56,11 +54,11 @@ namespace limbo
 		{
 			m_freeSlots.push(handle.m_index);
 			ensure(handle.isValid());
-			m_objects[handle.m_index].data->~DataType();
+			m_objects[handle.m_index].data->~HandleType();
 			++m_objects[handle.m_index].generation;
 		}
 
-		DataType* get(Handle<HandleType> handle)
+		HandleType* get(Handle<HandleType> handle)
 		{
 			ensure(handle.isValid());
 			const Object& obj = m_objects[handle.m_index];
@@ -82,7 +80,7 @@ namespace limbo
 	private:
 		struct Object
 		{
-			DataType* data;
+			HandleType* data;
 			uint16 generation;
 		};
 

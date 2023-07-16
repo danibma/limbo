@@ -1,6 +1,6 @@
 ﻿#include "swapchain.h"
 
-#include "limbo.h"
+#include "gfx/gfx.h"
 
 namespace limbo::gfx
 {

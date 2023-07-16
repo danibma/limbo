@@ -1,13 +1,9 @@
 #include <catch/catch.hpp>
 
-#include <limbo.h>
+#include "core.h"
+#include "gfx/rhi/resourcepool.h"
 
-struct Base
-{
-	uint32 i = 0;
-};
-
-struct Child : public Base
+struct Child
 {
 	uint32 i = 0;
 
@@ -22,9 +18,9 @@ bool operator==(const Child& left, const Child& right)
 
 TEST_CASE("resource_handles - allocate handle") 
 {
-	limbo::Pool<Child, Base> pool;
-	limbo::Handle<Base> handle1 = pool.allocateHandle();
-	limbo::Handle<Base> handle2 = pool.allocateHandle();
+	limbo::gfx::Pool<Child> pool;
+	limbo::gfx::Handle<Child> handle1 = pool.allocateHandle();
+	limbo::gfx::Handle<Child> handle2 = pool.allocateHandle();
 	REQUIRE(handle1.isValid());
 	REQUIRE(handle2.isValid());
 }
@@ -33,9 +29,9 @@ TEST_CASE("resource_handles - get handle")
 {
 	Child c1 = Child(1);
 	Child c2 = Child(2);
-	limbo::Pool<Child, Base> pool;
-	limbo::Handle<Base> handle1 = pool.allocateHandle(c1);
-	limbo::Handle<Base> handle2 = pool.allocateHandle(c2);
+	limbo::gfx::Pool<Child> pool;
+	limbo::gfx::Handle<Child> handle1 = pool.allocateHandle(c1);
+	limbo::gfx::Handle<Child> handle2 = pool.allocateHandle(c2);
 	Child* cc1 = pool.get(handle1);
 	Child* cc2 = pool.get(handle2);
 	REQUIRE(c1 == *cc1);
@@ -46,8 +42,8 @@ TEST_CASE("resource_handles - delete handle")
 {
 	Child c1 = Child(1);
 
-	limbo::Pool<Child, Base> pool;
-	limbo::Handle<Base> handle1 = pool.allocateHandle(c1);
+	limbo::gfx::Pool<Child> pool;
+	limbo::gfx::Handle<Child> handle1 = pool.allocateHandle(c1);
 	Child* cc1 = pool.get(handle1);
 	REQUIRE(c1 == *cc1);
 	pool.deleteHandle(handle1);

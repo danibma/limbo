@@ -5732,7 +5732,7 @@ namespace Catch {
 
     std::string serializeFilters( std::vector<std::string> const& container );
 
-    template<typename DerivedT>
+			template<typename DerivedT>
     struct StreamingReporterBase : IStreamingReporter {
 
         StreamingReporterBase( ReporterConfig const& _config )
