@@ -184,7 +184,7 @@ namespace limbo::gfx
 		  -W[no-]<warning> Enable/Disable the specified warning
 	*/
 
-	struct ShaderResult
+	struct Kernel
 	{
 		size_t size;
 		void*  code;
@@ -199,7 +199,7 @@ namespace limbo::gfx
 
 	namespace ShaderCompiler
 	{
-		bool compile(ShaderResult& result, const char* programName, const char* entryPoint, KernelType kernel, bool bIsSpirV);
+		bool compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel);
 	};
 }
 

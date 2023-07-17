@@ -62,11 +62,6 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 #endif
 
 #if !NO_LOG
-	#define ANSI_COLOR_RED     "\x1b[31m"
-	#define ANSI_COLOR_GREEN   "\x1b[32m"
-	#define ANSI_COLOR_YELLOW  "\x1b[33m"
-	#define ANSI_COLOR_RESET   "\x1b[0m"
-
 	#define LB_LOG(msg, ...) \
 	{ \
 		constexpr uint16 bufferSize = 1024; \
@@ -112,7 +107,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		constexpr uint16 bufferSize = 1024; \
 		char header[bufferSize], body[bufferSize]; \
 		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
-		snprintf(body, bufferSize, "[Limbo] %s Error %s: %s -> %s:%d\n", ANSI_COLOR_RED, ANSI_COLOR_RESET, header, __FILE__, __LINE__); \
+		snprintf(body, bufferSize, "[Limbo] Error: %s -> %s:%d\n", header, __FILE__, __LINE__); \
 		printf("%s", body); \
 		INTERNAL_PLATFORM_LOG(body); \
 		INTERNAL_PLATFORM_BREAK(); \

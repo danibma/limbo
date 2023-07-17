@@ -7,7 +7,7 @@ namespace limbo::gfx
 	class BindGroup;
 	struct DrawInfo
 	{
-		Handle<Shader> shader;
-		std::vector<Handle<BindGroup>> bindGroups;
+		Handle<Shader>	  shader;
+		Handle<BindGroup> bindGroup;
 	};
 }

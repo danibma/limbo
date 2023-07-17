@@ -60,12 +60,16 @@ namespace limbo::gfx
 
 		void present();
 
+		Format getSwapchainFormat();
+
 		// D3D12 specific
 		ID3D12Device* getDevice() const { return m_device.Get(); }
 
 		DescriptorHandle allocateHandle(DescriptorHeapType heapType);
 
 		void transitionResource(Texture* texture, D3D12_RESOURCE_STATES newState);
+		void transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
+		void copyResource(ID3D12Resource* dst, ID3D12Resource* src);
 
 	private:
 		void pickGPU();
@@ -109,5 +113,10 @@ namespace limbo::gfx
 	inline void present()
 	{
 		Device::ptr->present();
+	}
+
+	inline Format getSwapchainFormat()
+	{
+		return Device::ptr->getSwapchainFormat();
 	}
 }

@@ -121,7 +121,16 @@ namespace limbo::gfx
 
 	void Device::bindVertexBuffer(Handle<Buffer> buffer)
 	{
-		ensure(false);
+		ResourceManager* rm = ResourceManager::ptr;
+		Buffer* vb = rm->getBuffer(buffer);
+		transitionResource(vb, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+
+		D3D12_VERTEX_BUFFER_VIEW vbView = {
+			.BufferLocation = vb->resource->GetGPUVirtualAddress(),
+			.SizeInBytes = 36,
+			.StrideInBytes = 12
+		};
+		m_commandList->IASetVertexBuffers(0, 1, &vbView);
 	}
 
 	void Device::bindIndexBuffer(Handle<Buffer> buffer)
@@ -133,7 +142,7 @@ namespace limbo::gfx
 	{
 		ResourceManager* rm = ResourceManager::ptr;
 		Shader* pipeline = rm->getShader(drawState.shader);
-		m_boundBindGroup = rm->getBindGroup(drawState.bindGroups[0]);
+		m_boundBindGroup = rm->getBindGroup(drawState.bindGroup);
 
 		if (pipeline->type == ShaderType::Compute)
 		{
@@ -142,6 +151,7 @@ namespace limbo::gfx
 		}
 		else if (pipeline->type == ShaderType::Graphics)
 		{
+			m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_commandList->SetGraphicsRootSignature(m_boundBindGroup->rootSignature.Get());
 			m_boundBindGroup->setGraphicsRootParameters(m_commandList.Get());
 		}
@@ -151,7 +161,8 @@ namespace limbo::gfx
 
 	void Device::draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
 	{
-		ensure(false);
+		submitResourceBarriers();
+		m_commandList->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
 	void Device::dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
@@ -184,6 +195,11 @@ namespace limbo::gfx
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
 	}
 
+	Format Device::getSwapchainFormat()
+	{
+		return m_swapchain->getFormat();
+	}
+
 	DescriptorHandle Device::allocateHandle(DescriptorHeapType heapType)
 	{
 		switch (heapType)
@@ -204,6 +220,18 @@ namespace limbo::gfx
 		if (texture->currentState == newState) return;
 		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->resource.Get(), texture->currentState, newState));
 		texture->currentState = newState;
+	}
+
+	void Device::transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState)
+	{
+		if (buffer->currentState == newState) return;
+		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(buffer->resource.Get(), buffer->currentState, newState));
+		buffer->currentState = newState;
+	}
+
+	void Device::copyResource(ID3D12Resource* dst, ID3D12Resource* src)
+	{
+		m_commandList->CopyResource(dst, src);
 	}
 
 	void Device::pickGPU()

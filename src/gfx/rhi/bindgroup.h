@@ -36,9 +36,16 @@ namespace limbo::gfx
 			Handle<Buffer> buffer;
 		};
 
+		struct InputElement
+		{
+			const char* semanticName;
+			Format		format;
+		};
+
 	public:
-		std::vector<TextureSlot> textures;
-		std::vector<BufferSlot>  buffers;
+		std::vector<TextureSlot>	textures;
+		std::vector<BufferSlot>		buffers;
+		std::vector<InputElement>	inputLayout;
 	};
 
 	class BindGroup
@@ -78,7 +85,8 @@ namespace limbo::gfx
 		std::vector<Texture*> srvTextures;
 
 	public:
-		ComPtr<ID3D12RootSignature>			rootSignature;
+		ComPtr<ID3D12RootSignature>				rootSignature;
+		std::vector<D3D12_INPUT_ELEMENT_DESC>	inputElements;
 
 	public:
 		BindGroup() = default;

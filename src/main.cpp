@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 		.height = 720,
 	});
 
-#define COMPUTE 1
+#define COMPUTE 0
 #if COMPUTE
 	gfx::Handle<gfx::Texture> outputTexture = gfx::createTexture({
 		.width = 1280,
@@ -68,23 +68,43 @@ int main(int argc, char* argv[])
 		},
 	});
 
-	gfx::Handle<gfx::Shader> triangleCSShader = gfx::createShader({
-		.programName = "compute_triangle",
-		.entryPoint = "DrawTriangle",
-		.bindGroups = { triangleBind },
+	gfx::Kernel triangleKernelCS;
+	FAILIF(!gfx::ShaderCompiler::compile(triangleKernelCS, "compute_triangle", "DrawTriangle", gfx::KernelType::Compute), -1);
+
+	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
+		.cs = triangleKernelCS,
+		.bindGroup = triangleBind,
 		.type = gfx::ShaderType::Compute
 	});
 #else
 	float vertices[] = {  0.5f, -0.5f, 0.0f,
 						  0.0f,  0.7f, 0.0f,
 						 -0.5f, -0.5f, 0.0f };
-	Handle<Buffer> vertexBuffer = createBuffer({ 
+	gfx::Handle<gfx::Buffer> vertexBuffer = gfx::createBuffer({ 
 		.debugName = "triangle vb", 
-		.byteSize = 150, 
-		.usage = BufferUsage::Vertex, 
+		.byteSize = sizeof(vertices), 
+		.usage = gfx::BufferUsage::Vertex, 
 		.initialData = vertices });
 
-	Handle<Shader> triangleShader = createShader({});
+	gfx::Handle<gfx::BindGroup> triangleBind = gfx::createBindGroup({
+		.inputLayout = {
+			{ .semanticName = "Position", .format = gfx::Format::RGB32_SFLOAT }
+		}
+	});
+
+	gfx::Kernel triangleKernelVS;
+	FAILIF(!gfx::ShaderCompiler::compile(triangleKernelVS, "triangle", "VSMain", gfx::KernelType::Vertex), -1);
+	gfx::Kernel triangleKernelPS;
+	FAILIF(!gfx::ShaderCompiler::compile(triangleKernelPS, "triangle", "PSMain", gfx::KernelType::Pixel), -1);
+
+	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
+		.vs = triangleKernelVS,
+		.ps = triangleKernelPS,
+		.rtCount = 1,
+		.rtFormats = { gfx::getSwapchainFormat() },
+		.bindGroup = triangleBind,
+		.type = gfx::ShaderType::Graphics
+	});
 #endif
 
 	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
@@ -94,7 +114,7 @@ int main(int argc, char* argv[])
 
 #if COMPUTE
 		gfx::bindDrawState({
-			.shader = triangleCSShader,
+			.shader = triangleShader,
 			.bindGroups = { triangleBind },
 		});
 		gfx::dispatch(1280 / 8, 720 / 8, 1);
@@ -108,24 +128,25 @@ int main(int argc, char* argv[])
 		//				  1.0f };
 		//
 		//setParameter(triangleShader, 0, color);
-		//bindDrawState({
-		//	.shader = triangleShader,
-		//	//.bindGroups = { triangleBind },
-		//	});
-		//bindVertexBuffer(vertexBuffer);
-		//
-		//draw(3);
-		present();
+		gfx::bindDrawState({
+			.shader = triangleShader,
+			.bindGroup = triangleBind,
+			});
+		gfx::bindVertexBuffer(vertexBuffer);
+		
+		gfx::draw(3);
+		gfx::present();
 #endif
 	}
 
 #if COMPUTE
 	gfx::destroyTexture(outputTexture);
-	gfx::destroyShader(triangleCSShader);
+	gfx::destroyShader(triangleShader);
 	gfx::destroyBindGroup(triangleBind);
 #else
 	gfx::destroyBuffer(vertexBuffer);
 	gfx::destroyShader(triangleShader);
+	gfx::destroyBindGroup(triangleBind);
 #endif
 
 	gfx::shutdown();

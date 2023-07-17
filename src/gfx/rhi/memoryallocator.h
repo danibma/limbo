@@ -18,7 +18,7 @@ namespace limbo::gfx
 		MemoryAllocator() = default;
 		~MemoryAllocator();
 
-		ID3D12Resource* createUploadBuffer();
+		ID3D12Resource* createUploadBuffer(uint32 size);
 		void flushUploadBuffers();
 	};
 }

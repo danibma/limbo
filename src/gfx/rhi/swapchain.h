@@ -10,7 +10,7 @@ namespace limbo::gfx
 	{
 		ComPtr<IDXGISwapChain3>			m_swapchain;
 
-		DXGI_FORMAT						m_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		Format							m_format = Format::RGBA8_UNORM;
 
 		ComPtr<ID3D12Resource>			m_backbuffers[NUM_BACK_BUFFERS];
 
@@ -23,5 +23,6 @@ namespace limbo::gfx
 		uint32 getCurrentIndex();
 
 		ID3D12Resource* getBackbuffer(uint32 index);
+		Format getFormat();
 	};
 }

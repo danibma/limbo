@@ -16,7 +16,7 @@ namespace limbo::gfx
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-			.Width = 1,
+			.Width = spec.byteSize,
 			.Height = 1,
 			.DepthOrArraySize = 1,
 			.MipLevels = 1,
@@ -44,15 +44,32 @@ namespace limbo::gfx
 													IID_PPV_ARGS(&resource)));
 		currentState = D3D12_RESOURCE_STATE_COMMON;
 
-		ID3D12Resource* uploadBuffer = MemoryAllocator::ptr->createUploadBuffer();
+		if (spec.initialData)
+		{
+			ID3D12Resource* uploadBuffer = MemoryAllocator::ptr->createUploadBuffer(spec.byteSize);
+			FAILIF(!uploadBuffer);
+
+			void* data;
+			uploadBuffer->Map(0, nullptr, &data);
+			memcpy(data, spec.initialData, spec.byteSize);
+			uploadBuffer->Unmap(0, nullptr);
+
+			device->copyResource(resource.Get(), uploadBuffer);
+
+			if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
+			{
+				std::wstring wname;
+				utils::StringConvert(spec.debugName, wname);
+				wname.append(L"(upload buffer)");
+				DX_CHECK(uploadBuffer->SetName(wname.c_str()));
+			}
+		}
 
 		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
 		{
 			std::wstring wname;
 			utils::StringConvert(spec.debugName, wname);
 			DX_CHECK(resource->SetName(wname.c_str()));
-			wname.append(L"(upload buffer)");
-			DX_CHECK(uploadBuffer->SetName(wname.c_str()));
 		}
 	}
 

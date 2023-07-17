@@ -2,17 +2,24 @@
 
 #include "definitions.h"
 #include "resourcepool.h"
-
-#include <vector>
+#include "shadercompiler.h"
 
 namespace limbo::gfx
 {
-	class BindGroup;
+	class  BindGroup;
 	struct ShaderSpec
 	{
-		const char* programName;
-		const char* entryPoint;
-		std::vector<Handle<BindGroup>>	bindGroups;
+		Kernel vs;
+		Kernel ps;
+		Kernel cs;
+
+		uint8  rtCount;
+		Format rtFormats[8];
+		Format depthFormat = Format::MAX;
+
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE	topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+		Handle<BindGroup>				bindGroup;
 		ShaderType						type = ShaderType::Graphics;
 	};
 
@@ -20,7 +27,6 @@ namespace limbo::gfx
 	{
 	public:
 		ShaderType							type;
-
 		ComPtr<ID3D12PipelineState>			pipelineState;
 
 	public:
@@ -31,6 +37,6 @@ namespace limbo::gfx
 
 	private:
 		void createComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
-		void createGraphicsPipeline(ID3D12Device* device);
+		void createGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec);
 	};
 }

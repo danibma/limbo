@@ -30,6 +30,20 @@ namespace limbo::gfx
 				ensure(false);
 			}
 		}
+
+		inputElements.resize(spec.inputLayout.size());
+		for (size_t i = 0; i < spec.inputLayout.size(); ++i)
+		{
+			inputElements[i] = {
+				.SemanticName = spec.inputLayout[i].semanticName,
+				.SemanticIndex = 0,
+				.Format = d3dFormat(spec.inputLayout[i].format),
+				.InputSlot = 0,
+				.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT,
+				.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
+				.InstanceDataStepRate = 0
+			};
+		}
 	}
 
 	BindGroup::BindGroup(const BindGroupSpec& spec)
@@ -85,7 +99,11 @@ namespace limbo::gfx
 			rootParamterCount++;
 		}
 
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc(rootParamterCount, rootParameters);
+		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc;
+		desc.Init_1_1(rootParamterCount, rootParameters);
+		if (inputElements.size() > 0)
+			desc.Desc_1_0.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
 		ID3DBlob* rootSigBlob;
 		ID3DBlob* errorBlob;
 		DX_CHECK(D3D12SerializeVersionedRootSignature(&desc, &rootSigBlob, &errorBlob));
@@ -123,7 +141,18 @@ namespace limbo::gfx
 
 	void BindGroup::setGraphicsRootParameters(ID3D12GraphicsCommandList* cmd)
 	{
-		ensure(false);
+		transitionResources();
+
+		ID3D12DescriptorHeap* heaps[] = { m_localHeap->getHeap() };
+		cmd->SetDescriptorHeaps(1, heaps);
+
+		for (uint8 i = 0; i < (uint8)TableType::MAX; ++i)
+		{
+			const Table& table = m_tables[i];
+			if (table.index == -1) continue;
+
+			cmd->SetGraphicsRootDescriptorTable(table.index, m_localHeap->getHandleByIndex(table.begin).gpuHandle);
+		}
 	}
 
 	void BindGroup::transitionResources()

@@ -9,7 +9,7 @@
 
 namespace limbo::gfx::ShaderCompiler
 {
-	bool compile(ShaderResult& result, const char* programName, const char* entryPoint, KernelType kernel, bool bIsSpirV)
+	bool compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel )
 	{
         static IDxcUtils* m_dxcUtils;
         static IDxcCompiler3* m_dxcCompiler;

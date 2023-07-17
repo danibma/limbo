@@ -9,7 +9,7 @@ namespace limbo::gfx
 		DXGI_SWAP_CHAIN_DESC1 desc = {
 			.Width = info.width,
 			.Height = info.height,
-			.Format = m_format,
+			.Format = d3dFormat(m_format),
 			.Stereo = false,
 			.SampleDesc = {
 				.Count = 1,
@@ -44,5 +44,10 @@ namespace limbo::gfx
 	{
 		ensure(index < NUM_BACK_BUFFERS);
 		return m_backbuffers[index].Get();
+	}
+
+	Format Swapchain::getFormat()
+	{
+		return m_format;
 	}
 }

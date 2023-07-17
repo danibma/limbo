@@ -10,7 +10,7 @@ namespace limbo::gfx
 		flushUploadBuffers();
 	}
 
-	ID3D12Resource* MemoryAllocator::createUploadBuffer()
+	ID3D12Resource* MemoryAllocator::createUploadBuffer(uint32 size)
 	{
 		Device* device = Device::ptr;
 		ID3D12Device* d3ddevice = device->getDevice();
@@ -20,7 +20,7 @@ namespace limbo::gfx
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-			.Width = 1,
+			.Width = size,
 			.Height = 1,
 			.DepthOrArraySize = 1,
 			.MipLevels = 1,
