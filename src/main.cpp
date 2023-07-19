@@ -18,6 +18,14 @@
 
 using namespace limbo;
 
+#define WIDTH  1280
+#define HEIGHT 720
+
+struct Vertex
+{
+	float position[3];
+};
+
 int main(int argc, char* argv[])
 {
 	CLI::App app { "limbo" };
@@ -38,7 +46,7 @@ int main(int argc, char* argv[])
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	GLFWwindow* window = glfwCreateWindow(1280, 720, "limbo", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "limbo", nullptr, nullptr);
 	if (!window)
 	{
 		LB_ERROR("Failed to create GLFW window!");
@@ -47,15 +55,31 @@ int main(int argc, char* argv[])
 	
 	gfx::init({ 
 		.hwnd = glfwGetWin32Window(window),
-		.width = 1280,
-		.height = 720,
+		.width = WIDTH,
+		.height = HEIGHT,
 	});
+
+	D3D12_VIEWPORT swapchainViewport = {
+		.TopLeftX = 0,
+		.TopLeftY = 0,
+		.Width = WIDTH,
+		.Height = HEIGHT,
+		.MinDepth = 0,
+		.MaxDepth = 1
+	};
+
+	D3D12_RECT swapchainScissor = {
+		.left = 0,
+		.top = 0,
+		.right = WIDTH,
+		.bottom = HEIGHT
+	};
 
 #define COMPUTE 0
 #if COMPUTE
 	gfx::Handle<gfx::Texture> outputTexture = gfx::createTexture({
-		.width = 1280,
-		.height = 720,
+		.width = WIDTH,
+		.height = HEIGHT,
 		.debugName = "triangle output texture",
 		.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
 		.format = gfx::Format::RGBA8_UNORM,
@@ -77,12 +101,13 @@ int main(int argc, char* argv[])
 		.type = gfx::ShaderType::Compute
 	});
 #else
-	float vertices[] = {  0.5f, -0.5f, 0.0f,
-						  0.0f,  0.7f, 0.0f,
-						 -0.5f, -0.5f, 0.0f };
+	Vertex vertices[] = { { -1.0,  1.0, 1.0 },
+						  {  1.0,  1.0, 1.0 },
+						  {  0.0, -1.0, 1.0 } };
 	gfx::Handle<gfx::Buffer> vertexBuffer = gfx::createBuffer({ 
-		.debugName = "triangle vb", 
-		.byteSize = sizeof(vertices), 
+		.debugName = "triangle vb",
+		.byteStride = sizeof(Vertex),
+		.byteSize = sizeof(Vertex) * 3,
 		.usage = gfx::BufferUsage::Vertex, 
 		.initialData = vertices });
 
@@ -100,8 +125,6 @@ int main(int argc, char* argv[])
 	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
 		.vs = triangleKernelVS,
 		.ps = triangleKernelPS,
-		.rtCount = 1,
-		.rtFormats = { gfx::getSwapchainFormat() },
 		.bindGroup = triangleBind,
 		.type = gfx::ShaderType::Graphics
 	});
@@ -115,9 +138,9 @@ int main(int argc, char* argv[])
 #if COMPUTE
 		gfx::bindDrawState({
 			.shader = triangleShader,
-			.bindGroups = { triangleBind },
+			.bindGroup =  triangleBind
 		});
-		gfx::dispatch(1280 / 8, 720 / 8, 1);
+		gfx::dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
 		gfx::copyTextureToBackBuffer(outputTexture);
 
@@ -131,7 +154,9 @@ int main(int argc, char* argv[])
 		gfx::bindDrawState({
 			.shader = triangleShader,
 			.bindGroup = triangleBind,
-			});
+			.viewport = swapchainViewport,
+			.scissor = swapchainScissor
+		});
 		gfx::bindVertexBuffer(vertexBuffer);
 		
 		gfx::draw(3);

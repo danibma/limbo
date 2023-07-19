@@ -1,6 +1,10 @@
 ﻿#include "swapchain.h"
-
+#include "resourcemanager.h"
 #include "gfx/gfx.h"
+
+#include <format>
+
+#include "device.h"
 
 namespace limbo::gfx
 {
@@ -25,9 +29,31 @@ namespace limbo::gfx
 		ComPtr<IDXGISwapChain1> tempSwapchain;
 		DX_CHECK(factory->CreateSwapChainForHwnd(queue, info.hwnd, &desc, nullptr, nullptr, &tempSwapchain));
 		tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_swapchain));
+	}
 
+	Swapchain::~Swapchain()
+	{
 		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
-			DX_CHECK(m_swapchain->GetBuffer(i, IID_PPV_ARGS(&m_backbuffers[i])));
+			destroyTexture(m_backbuffers[i]);
+	}
+
+	void Swapchain::initBackBuffers()
+	{
+		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
+		{
+			ID3D12Resource* tempBuffer;
+			m_swapchain->GetBuffer(i, IID_PPV_ARGS(&tempBuffer));
+
+			std::string debugName = std::format("swapchain backbuffer({})", i);
+			m_backbuffers[i] = createTexture(tempBuffer, {
+				.debugName = debugName.c_str(),
+				.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+				.format = m_format,
+				.type = TextureType::Texture2D
+			});
+
+			tempBuffer->Release();
+		}
 	}
 
 	void Swapchain::present()
@@ -40,10 +66,10 @@ namespace limbo::gfx
 		return m_swapchain->GetCurrentBackBufferIndex();
 	}
 
-	ID3D12Resource* Swapchain::getBackbuffer(uint32 index)
+	Handle<Texture> Swapchain::getBackbuffer(uint32 index)
 	{
 		ensure(index < NUM_BACK_BUFFERS);
-		return m_backbuffers[index].Get();
+		return m_backbuffers[index];
 	}
 
 	Format Swapchain::getFormat()

@@ -28,6 +28,7 @@ namespace limbo::gfx
 	public:
 		ShaderType							type;
 		ComPtr<ID3D12PipelineState>			pipelineState;
+		bool								useSwapchainRT;
 
 	public:
 		Shader() = default;

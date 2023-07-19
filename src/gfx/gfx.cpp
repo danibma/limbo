@@ -12,10 +12,14 @@ namespace limbo::gfx
 	{
 		Device::ptr = new Device(info);
 		ResourceManager::ptr = new ResourceManager();
+
+		Device::ptr->initSwapchainBackBuffers();
 	}
 
 	void shutdown()
 	{
+		Device::ptr->destroySwapchainBackBuffers();
+
 		delete ResourceManager::ptr;
 		ResourceManager::ptr = nullptr;
 

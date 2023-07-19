@@ -12,5 +12,23 @@ namespace limbo::gfx
 			const char* errMsg = err.ErrorMessage();
 			LB_ERROR("D3D12 Error: %s", errMsg);
 		}
+
+		void dxMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
+		{
+			switch (Severity)
+			{
+			case D3D12_MESSAGE_SEVERITY_CORRUPTION:
+			case D3D12_MESSAGE_SEVERITY_ERROR:
+				LB_ERROR("%s", pDescription);
+				break;
+			case D3D12_MESSAGE_SEVERITY_WARNING:
+				LB_WARN("%s", pDescription);
+				break;
+			case D3D12_MESSAGE_SEVERITY_INFO:
+			case D3D12_MESSAGE_SEVERITY_MESSAGE:
+				LB_LOG("%s", pDescription);
+				break;
+			}
+		}
 	}
 }

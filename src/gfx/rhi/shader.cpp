@@ -68,6 +68,10 @@ namespace limbo::gfx
 		ResourceManager* rm = ResourceManager::ptr;
 		BindGroup* bind = rm->getBindGroup(spec.bindGroup);
 
+		D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+		rasterizerDesc.FrontCounterClockwise = false;
+
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
 			.pRootSignature = bind->rootSignature.Get(),
 			.VS = vs,
@@ -75,7 +79,7 @@ namespace limbo::gfx
 			.StreamOutput = nullptr,
 			.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
 			.SampleMask = 0xFFFFFFFF,
-			.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT),
+			.RasterizerState = rasterizerDesc,
 			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
 			.InputLayout = {
 				bind->inputElements.data(),
@@ -83,7 +87,6 @@ namespace limbo::gfx
 			},
 			.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 			.PrimitiveTopologyType = spec.topology,
-			.NumRenderTargets = spec.rtCount,
 			.DSVFormat = d3dFormat(spec.depthFormat),
 			.SampleDesc = {
 				.Count = 1,
@@ -100,8 +103,20 @@ namespace limbo::gfx
 			desc.DepthStencilState.StencilEnable = false;
 		}
 
-		for (uint8 i = 0; i < spec.rtCount; ++i)
-			desc.RTVFormats[i] = d3dFormat(spec.rtFormats[i]);
+		if (spec.rtCount <= 0)
+		{
+			desc.RTVFormats[0]		= d3dFormat(Device::ptr->getSwapchainFormat());
+			desc.NumRenderTargets	= 1;
+			useSwapchainRT			= true;
+		}
+		else
+		{
+			useSwapchainRT = false;
+
+			for (uint8 i = 0; i < spec.rtCount; ++i)
+				desc.RTVFormats[i] = d3dFormat(spec.rtFormats[i]);
+			desc.NumRenderTargets = spec.rtCount;
+		}
 
 		DX_CHECK(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState)));
 	}

@@ -27,6 +27,11 @@ namespace limbo::gfx
 		return m_textures.allocateHandle(spec);
 	}
 
+	Handle<Texture> ResourceManager::createTexture(ID3D12Resource* resource, const TextureSpec& spec)
+	{
+		return m_textures.allocateHandle(resource, spec);
+	}
+
 	Handle<BindGroup> ResourceManager::createBindGroup(const BindGroupSpec& spec)
 	{
 		return m_bindGroups.allocateHandle(spec);

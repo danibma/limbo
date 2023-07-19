@@ -28,10 +28,12 @@ namespace limbo::gfx
 			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 			debugController->EnableDebugLayer();
 
+#if LIMBO_DEBUG
 			ComPtr<ID3D12Debug1> debugController1;
 			DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(&debugController1)));
 			debugController1->SetEnableGPUBasedValidation(true);
-#if LIMBO_DEBUG
+#endif
+
 			ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
 			if (!FAILED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiInfoQueue))))
 			{
@@ -42,13 +44,23 @@ namespace limbo::gfx
 			}
 		}
 #endif
-#endif
 
 		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory)));
 
 		pickGPU();
 
 		DX_CHECK(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_device)));
+
+#if !NO_LOG
+		{
+			ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
+			DX_CHECK(m_device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
+			ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
+			DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
+			DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(internal::dxMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_messageCallbackCookie));
+		}
+
+#endif
 
 		m_srvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SRV);
 		m_rtvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::RTV);
@@ -91,10 +103,14 @@ namespace limbo::gfx
 		delete MemoryAllocator::ptr;
 		MemoryAllocator::ptr = nullptr;
 
-		delete m_swapchain;
 		delete m_srvheap;
 		delete m_rtvheap;
 		delete m_dsvheap;
+	}
+
+	void Device::destroySwapchainBackBuffers()
+	{
+		delete m_swapchain;
 	}
 
 	void Device::copyTextureToBackBuffer(Handle<Texture> texture)
@@ -103,19 +119,16 @@ namespace limbo::gfx
 
 		Texture* d3dTexture = rm->getTexture(texture);
 
-		ID3D12Resource* backbuffer = m_swapchain->getBackbuffer(m_frameIndex);
+		Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
+		Texture* backbuffer = rm->getTexture(backBufferHandle);
 
 		transitionResource(d3dTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(backbuffer,
-		                                                   D3D12_RESOURCE_STATE_PRESENT,
-		                                                   D3D12_RESOURCE_STATE_COPY_DEST));
+		transitionResource(backbuffer, D3D12_RESOURCE_STATE_COPY_DEST);
 
 		submitResourceBarriers();
-		m_commandList->CopyResource(backbuffer, d3dTexture->resource.Get());
+		m_commandList->CopyResource(backbuffer->resource.Get(), d3dTexture->resource.Get());
 
-		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(backbuffer,
-		                                                                     D3D12_RESOURCE_STATE_COPY_DEST,
-		                                                                     D3D12_RESOURCE_STATE_PRESENT));
+		transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		submitResourceBarriers();
 	}
 
@@ -127,8 +140,8 @@ namespace limbo::gfx
 
 		D3D12_VERTEX_BUFFER_VIEW vbView = {
 			.BufferLocation = vb->resource->GetGPUVirtualAddress(),
-			.SizeInBytes = 36,
-			.StrideInBytes = 12
+			.SizeInBytes = vb->byteSize,
+			.StrideInBytes = vb->byteStride
 		};
 		m_commandList->IASetVertexBuffers(0, 1, &vbView);
 	}
@@ -154,6 +167,23 @@ namespace limbo::gfx
 			m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_commandList->SetGraphicsRootSignature(m_boundBindGroup->rootSignature.Get());
 			m_boundBindGroup->setGraphicsRootParameters(m_commandList.Get());
+
+			if (pipeline->useSwapchainRT)
+			{
+				Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
+				Texture* backbuffer = rm->getTexture(backBufferHandle);
+
+				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+				m_commandList->ClearRenderTargetView(backbuffer->handle.cpuHandle, clearColor, 0, nullptr);
+				m_commandList->OMSetRenderTargets(1, &backbuffer->handle.cpuHandle, false, nullptr);
+			}
+			else
+			{
+				ensure(false);
+			}
+
+			m_commandList->RSSetViewports(1, &drawState.viewport);
+			m_commandList->RSSetScissorRects(1, &drawState.scissor);
 		}
 
 		m_commandList->SetPipelineState(pipeline->pipelineState.Get());
@@ -180,11 +210,17 @@ namespace limbo::gfx
 
 	void Device::present()
 	{
+		{
+			Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
+			Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
+			transitionResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
+			submitResourceBarriers();
+		}
+
 		DX_CHECK(m_commandList->Close());
 
 		ID3D12CommandList* cmd[1] = { m_commandList.Get() };
 		m_commandQueue->ExecuteCommandLists(1, cmd);
-
 		m_swapchain->present();
 
 		nextFrame();
@@ -193,11 +229,28 @@ namespace limbo::gfx
 
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+		{
+			Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
+			Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
+			transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			submitResourceBarriers();
+		}
 	}
 
 	Format Device::getSwapchainFormat()
 	{
 		return m_swapchain->getFormat();
+	}
+
+	void Device::initSwapchainBackBuffers()
+	{
+		m_swapchain->initBackBuffers();
+
+		Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
+		Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
+		transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		submitResourceBarriers();
 	}
 
 	DescriptorHandle Device::allocateHandle(DescriptorHeapType heapType)

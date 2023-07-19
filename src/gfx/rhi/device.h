@@ -22,6 +22,7 @@ namespace limbo::gfx
 		ComPtr<IDXGIFactory2>				m_factory;
 		ComPtr<IDXGIAdapter1>				m_adapter;
 		ComPtr<ID3D12Device>				m_device;
+		DWORD								m_messageCallbackCookie;
 
 		ComPtr<ID3D12CommandAllocator>		m_commandAllocators[NUM_BACK_BUFFERS];
 		ComPtr<ID3D12GraphicsCommandList>	m_commandList;
@@ -49,6 +50,8 @@ namespace limbo::gfx
 		Device(const WindowInfo& info);
 		~Device();
 
+		void destroySwapchainBackBuffers();
+
 		void copyTextureToBackBuffer(Handle<Texture> texture);
 
 		void bindVertexBuffer(Handle<Buffer> buffer);
@@ -64,6 +67,8 @@ namespace limbo::gfx
 
 		// D3D12 specific
 		ID3D12Device* getDevice() const { return m_device.Get(); }
+
+		void initSwapchainBackBuffers();
 
 		DescriptorHandle allocateHandle(DescriptorHeapType heapType);
 
@@ -100,7 +105,7 @@ namespace limbo::gfx
 		Device::ptr->bindDrawState(drawState);
 	}
 
-	inline void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 1, uint32 firstInstance = 1)
+	inline void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
 	{
 		Device::ptr->draw(vertexCount, instanceCount, firstVertex, firstInstance);
 	}

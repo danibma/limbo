@@ -38,31 +38,22 @@ namespace limbo::gfx
 			.VisibleNodeMask = 0
 		};
 
+		currentState = D3D12_RESOURCE_STATE_COMMON;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
-													D3D12_RESOURCE_STATE_COMMON, 
+													currentState, 
 													nullptr,
 													IID_PPV_ARGS(&resource)));
 
-		handle = device->allocateHandle(DescriptorHeapType::SRV);
-
-		if (bIsUnordered)
-		{
-			createUAV(spec, d3ddevice);
-		}
-		else
-		{
-			ensure(false);
-		}
-
-		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
-		{
-			std::wstring wname;
-			utils::StringConvert(spec.debugName, wname);
-			DX_CHECK(resource->SetName(wname.c_str()));
-		}
+		initResource(spec, device);
 	}
 
-	void Texture::createUAV(const TextureSpec& spec, ID3D12Device* d3ddevice)
+	Texture::Texture(ID3D12Resource* inResource, const TextureSpec& spec)
+		: resource(inResource)
+	{
+		initResource(spec, Device::ptr);
+	}
+
+	void Texture::createUAV(const TextureSpec& spec, ID3D12Device* device)
 	{
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
 			.Format = d3dFormat(spec.format),
@@ -91,7 +82,76 @@ namespace limbo::gfx
 			uavDesc.Texture3D.WSize = -1;
 		}
 
-		d3ddevice->CreateUnorderedAccessView(resource.Get(), nullptr, &uavDesc, handle.cpuHandle);
+		device->CreateUnorderedAccessView(resource.Get(), nullptr, &uavDesc, handle.cpuHandle);
+	}
+
+	void Texture::createRTV(const TextureSpec& spec, ID3D12Device* device)
+	{
+		D3D12_RENDER_TARGET_VIEW_DESC desc = {
+			.Format = d3dFormat(spec.format),
+		};
+
+		if (spec.type == TextureType::Texture1D)
+		{
+			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
+			desc.Texture1D = {
+				.MipSlice = 0
+			};
+		}
+		else if (spec.type == TextureType::Texture2D)
+		{
+			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+			desc.Texture2D = {
+				.MipSlice = 0,
+				.PlaneSlice = 0
+			};
+		}
+		else if (spec.type == TextureType::Texture3D)
+		{
+			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
+			desc.Texture3D.MipSlice = 0;
+			desc.Texture3D.FirstWSlice = 0;
+			desc.Texture3D.WSize = -1;
+		}
+
+		device->CreateRenderTargetView(resource.Get(), &desc, handle.cpuHandle);
+	}
+
+	void Texture::createDSV(const TextureSpec& spec, ID3D12Device* device)
+	{
+		ensure(false);
+	}
+
+	void Texture::initResource(const TextureSpec& spec, Device* device)
+	{
+		ID3D12Device* d3ddevice = device->getDevice();
+
+		if (spec.resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+		{
+			handle = device->allocateHandle(DescriptorHeapType::RTV);
+			createRTV(spec, d3ddevice);
+		}
+		else if (spec.resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+		{
+			handle = device->allocateHandle(DescriptorHeapType::DSV);
+			createDSV(spec, d3ddevice);
+		}
+		else
+		{
+			handle = device->allocateHandle(DescriptorHeapType::SRV);
+
+			if (bIsUnordered)
+				createUAV(spec, d3ddevice);
+			else
+				ensure(false);
+		}
+
+		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
+		{
+			std::wstring wname;
+			utils::StringConvert(spec.debugName, wname);
+			DX_CHECK(resource->SetName(wname.c_str()));
+		}
 	}
 
 	Texture::~Texture()

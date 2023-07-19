@@ -18,8 +18,9 @@ namespace limbo::gfx
 	{
 		const char*		debugName = nullptr;
 
-		uint32			byteSize = 0;
-		BufferUsage		usage = BufferUsage::Constant;
+		uint32			byteStride	= 0;
+		uint32			byteSize	= 0;
+		BufferUsage		usage		= BufferUsage::Constant;
 		const void*		initialData = nullptr;
 	};
 
@@ -28,10 +29,11 @@ namespace limbo::gfx
 	{
 	public:
 		ComPtr<ID3D12Resource>	resource;
-
+		D3D12_RESOURCE_STATES	currentState;
 		DescriptorHandle		handle;
 
-		D3D12_RESOURCE_STATES	currentState;
+		uint32					byteStride = 0;
+		uint32					byteSize = 0;
 
 	public:
 		Buffer() = default;

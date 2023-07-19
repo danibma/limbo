@@ -7,6 +7,7 @@
 namespace limbo::gfx
 {
 	Buffer::Buffer(const BufferSpec& spec)
+		: byteStride(spec.byteStride), byteSize(spec.byteSize)
 	{
 		Device* device = Device::ptr;
 		ID3D12Device* d3ddevice = device->getDevice();
@@ -38,11 +39,11 @@ namespace limbo::gfx
 			.VisibleNodeMask = 0
 		};
 
+		currentState = D3D12_RESOURCE_STATE_COMMON;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
-													D3D12_RESOURCE_STATE_COMMON,
+													currentState,
 													nullptr,
 													IID_PPV_ARGS(&resource)));
-		currentState = D3D12_RESOURCE_STATE_COMMON;
 
 		if (spec.initialData)
 		{
@@ -63,6 +64,8 @@ namespace limbo::gfx
 				wname.append(L"(upload buffer)");
 				DX_CHECK(uploadBuffer->SetName(wname.c_str()));
 			}
+
+			currentState = D3D12_RESOURCE_STATE_COPY_DEST;
 		}
 
 		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))

@@ -20,6 +20,7 @@ namespace limbo::gfx
 		Handle<Buffer> createBuffer(const BufferSpec& spec);
 		Handle<Shader> createShader(const ShaderSpec& spec);
 		Handle<Texture> createTexture(const TextureSpec& spec);
+		Handle<Texture> createTexture(ID3D12Resource* resource, const TextureSpec& spec);
 		Handle<BindGroup> createBindGroup(const BindGroupSpec& spec);
 
 		Buffer* getBuffer(Handle<Buffer> buffer);
@@ -54,6 +55,11 @@ namespace limbo::gfx
 	inline Handle<Texture> createTexture(const TextureSpec& spec)
 	{
 		return ResourceManager::ptr->createTexture(spec);
+	}
+
+	inline Handle<Texture> createTexture(ID3D12Resource* resource, const TextureSpec& spec)
+	{
+		return ResourceManager::ptr->createTexture(resource, spec);
 	}
 
 	inline Handle<BindGroup> createBindGroup(const BindGroupSpec& spec)

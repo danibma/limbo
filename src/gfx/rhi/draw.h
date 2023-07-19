@@ -7,7 +7,10 @@ namespace limbo::gfx
 	class BindGroup;
 	struct DrawInfo
 	{
-		Handle<Shader>	  shader;
-		Handle<BindGroup> bindGroup;
+		Handle<Shader>		shader;
+		Handle<BindGroup>	bindGroup;
+
+		D3D12_VIEWPORT		viewport;
+		D3D12_RECT			scissor;
 	};
 }
