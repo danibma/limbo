@@ -107,7 +107,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		constexpr uint16 bufferSize = 1024; \
 		char header[bufferSize], body[bufferSize]; \
 		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
-		snprintf(body, bufferSize, "[Limbo] Error: %s -> %s:%d\n", header, __FILE__, __LINE__); \
+		snprintf(body, bufferSize, "[Limbo] Error: %s\n", header); \
 		printf("%s", body); \
 		INTERNAL_PLATFORM_LOG(body); \
 		INTERNAL_PLATFORM_BREAK(); \
@@ -118,14 +118,18 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		constexpr uint16 bufferSize = 1024; \
 		wchar_t header[bufferSize], body[bufferSize]; \
 		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
-		_snwprintf_s(body, bufferSize, L"[Limbo] Error: %ls -> %hs:%d\n", header, __FILE__, __LINE__); \
+		_snwprintf_s(body, bufferSize, L"[Limbo] Error: %ls\n", header); \
 		printf("%ls", body); \
 		INTERNAL_PLATFORM_WLOG(body); \
 		INTERNAL_PLATFORM_BREAK(); \
 	}
 #else
-	#define LB_LOG(msg, ...)
-	#define LB_ERROR(msg, ...)
+	#define LB_LOG(msg, ...) __noop()
+	#define LB_WLOG(msg, ...) __noop()
+	#define LB_WWARN(msg, ...) __noop()
+	#define LB_WARN(msg, ...) __noop()
+	#define LB_WERROR(msg, ...) __noop()
+	#define LB_ERROR(msg, ...) __noop()
 #endif
 
 //

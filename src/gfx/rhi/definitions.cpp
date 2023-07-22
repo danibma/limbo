@@ -6,11 +6,11 @@ namespace limbo::gfx
 {
 	namespace internal
 	{
-		void dxHandleError(HRESULT hr)
+		void dxHandleError(HRESULT hr, const char* file, int line)
 		{
 			_com_error err(hr);
 			const char* errMsg = err.ErrorMessage();
-			LB_ERROR("D3D12 Error: %s", errMsg);
+			LB_ERROR("D3D12 Error: %s in %s:%d", errMsg, file, line);
 		}
 
 		void dxMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
