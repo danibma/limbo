@@ -139,9 +139,10 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 	#define ensure(expr) \
 		([&]() \
 		{\
-			if (!(expr)) \
+			bool r = (expr);\
+			if (!(r)) \
 				LB_ERROR("Assertion Failed!"); \
-			return expr; \
+			return r; \
 		}())
 #else 
 	#define ensure(expr) (expr)
