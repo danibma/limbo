@@ -52,14 +52,31 @@ namespace limbo::gfx
 		DX_CHECK(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_device)));
 
 #if !NO_LOG
+		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		{
-			ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
-			DX_CHECK(m_device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
-			ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
-			DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
-			DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(internal::dxMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_messageCallbackCookie));
-		}
+			bool bUnderRenderDoc = false;
 
+			IID renderDocID;
+			if (SUCCEEDED(IIDFromString(L"{A7AA6116-9C8D-4BBA-9083-B4D816B71B78}", &renderDocID)))
+			{
+				ComPtr<IUnknown> renderDoc;
+				if (SUCCEEDED(m_device->QueryInterface(renderDocID, &renderDoc)))
+				{
+					// Running under RenderDoc, so enable capturing mode
+					bUnderRenderDoc = true;
+					LB_LOG("Running under Render Doc, ID3D12InfoQueue features won't be enabled!");
+				}
+			}
+
+			if (!bUnderRenderDoc)
+			{
+				ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
+				DX_CHECK(m_device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
+				ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
+				DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
+				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(internal::dxMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_messageCallbackCookie));
+			}
+		}
 #endif
 
 		m_srvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SRV);
