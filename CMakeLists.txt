@@ -70,6 +70,8 @@ set_target_properties(glfw PROPERTIES FOLDER "third_party/glfw3")
 set_target_properties(update_mappings PROPERTIES FOLDER "third_party/glfw3")
 set_target_properties(uninstall PROPERTIES FOLDER "third_party/glfw3")
 
+# glm
+target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/glm)
 # dxc
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/inc)
 target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/lib/x64/dxcompiler.lib)
