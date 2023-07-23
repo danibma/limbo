@@ -73,22 +73,6 @@ int main(int argc, char* argv[])
 
 	core::FPSCamera camera = core::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
-	D3D12_VIEWPORT swapchainViewport = {
-		.TopLeftX = 0,
-		.TopLeftY = 0,
-		.Width = WIDTH,
-		.Height = HEIGHT,
-		.MinDepth = 0,
-		.MaxDepth = 1
-	};
-
-	D3D12_RECT swapchainScissor = {
-		.left = 0,
-		.top = 0,
-		.right = WIDTH,
-		.bottom = HEIGHT
-	};
-
 	Vertex vertices[] = { { -1.0,  1.0, 1.0 },
 						  {  1.0,  1.0, 1.0 },
 						  {  0.0, -1.0, 1.0 } };
@@ -123,8 +107,15 @@ int main(int argc, char* argv[])
 		gfx::setParameter(triangleShader, "color", color);
 		gfx::bindDrawState({
 			.shader = triangleShader,
-			.viewport = swapchainViewport,
-			.scissor = swapchainScissor
+			.viewport = {
+				.Width = WIDTH,
+				.Height = HEIGHT,
+				.MaxDepth = 1
+			},
+			.scissor = {
+				.right = WIDTH,
+				.bottom = HEIGHT
+			}
 		});
 		gfx::bindVertexBuffer(vertexBuffer);
 		

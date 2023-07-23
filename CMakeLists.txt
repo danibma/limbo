@@ -34,7 +34,8 @@ file(GLOB SHADER_FILES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsli)
+    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsli
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/gfx/shaders/*.*)
 
 # enable folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
