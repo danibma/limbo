@@ -172,18 +172,17 @@ namespace limbo::gfx
 	{
 		ResourceManager* rm = ResourceManager::ptr;
 		Shader* pipeline = rm->getShader(drawState.shader);
-		m_boundBindGroup = rm->getBindGroup(drawState.bindGroup);
 
 		if (pipeline->type == ShaderType::Compute)
 		{
-			m_commandList->SetComputeRootSignature(m_boundBindGroup->rootSignature.Get());
-			m_boundBindGroup->setComputeRootParameters(m_commandList.Get());
+			m_commandList->SetComputeRootSignature(pipeline->rootSignature.Get());
+			pipeline->setComputeRootParameters(m_commandList.Get());
 		}
 		else if (pipeline->type == ShaderType::Graphics)
 		{
 			m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			m_commandList->SetGraphicsRootSignature(m_boundBindGroup->rootSignature.Get());
-			m_boundBindGroup->setGraphicsRootParameters(m_commandList.Get());
+			m_commandList->SetGraphicsRootSignature(pipeline->rootSignature.Get());
+			pipeline->setGraphicsRootParameters(m_commandList.Get());
 
 			if (pipeline->useSwapchainRT)
 			{

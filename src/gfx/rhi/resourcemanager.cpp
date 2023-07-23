@@ -8,7 +8,6 @@ namespace limbo::gfx
 		ensure(m_buffers.isEmpty());
 		ensure(m_textures.isEmpty());
 		ensure(m_shaders.isEmpty());
-		ensure(m_bindGroups.isEmpty());
 #endif
 	}
 
@@ -32,11 +31,6 @@ namespace limbo::gfx
 		return m_textures.allocateHandle(resource, spec);
 	}
 
-	Handle<BindGroup> ResourceManager::createBindGroup(const BindGroupSpec& spec)
-	{
-		return m_bindGroups.allocateHandle(spec);
-	}
-
 	gfx::Buffer* ResourceManager::getBuffer(Handle<Buffer> buffer)
 	{
 		return m_buffers.get(buffer);
@@ -52,11 +46,6 @@ namespace limbo::gfx
 		return m_textures.get(texture);
 	}
 
-	gfx::BindGroup* ResourceManager::getBindGroup(Handle<BindGroup> bindGroup)
-	{
-		return m_bindGroups.get(bindGroup);
-	}
-
 	void ResourceManager::destroyBuffer(Handle<Buffer> buffer)
 	{
 		m_buffers.deleteHandle(buffer);
@@ -70,10 +59,5 @@ namespace limbo::gfx
 	void ResourceManager::destroyTexture(Handle<Texture> texture)
 	{
 		m_textures.deleteHandle(texture);
-	}
-
-	void ResourceManager::destroyBindGroup(Handle<BindGroup> bindGroup)
-	{
-		m_bindGroups.deleteHandle(bindGroup);
 	}
 }

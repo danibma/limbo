@@ -3,7 +3,9 @@
 	return float4(position, 1.0f);
 }
 
+float3 color;
+
 float4 PSMain(float4 position : SV_Position) : SV_Target
 {
-	return (float4)1.0f;
+    return float4(color, 1.0f);
 }

@@ -1,24 +1,19 @@
 ﻿#include "shadercompiler.h"
 
-#include <Windows.h>
-#include <dxcapi.h>
-#include <string>
-#include <vector>
-
 #include "core/utils.h"
 
-namespace limbo::gfx::ShaderCompiler
+namespace limbo::gfx::SC
 {
 	bool compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel )
 	{
-        static IDxcUtils* m_dxcUtils;
-        static IDxcCompiler3* m_dxcCompiler;
-        static IDxcIncludeHandler* m_includeHandler;
-        if (!m_dxcCompiler)
+        static IDxcUtils* dxcUtils;
+        static IDxcCompiler3* dxcCompiler;
+        static IDxcIncludeHandler* includeHandler;
+        if (!dxcCompiler)
         {
-            DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_dxcUtils));
-            DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_dxcCompiler));
-            m_dxcUtils->CreateDefaultIncludeHandler(&m_includeHandler);
+            DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+            DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+            dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
         }
 
         // setup arguments
@@ -53,14 +48,14 @@ namespace limbo::gfx::ShaderCompiler
         
         // Debug: Disable optimizations and embed HLSL source in the shaders
 #if LIMBO_DEBUG
-        arguments.emplace_back(L"-Od");           // Disable optimizations
-        arguments.emplace_back(L"-Zi");           // Enable debug information
-        arguments.emplace_back(L"-Qembed_debug"); // Embed PDB in shader container (must be used with /Zi)
+        arguments.emplace_back(DXC_ARG_SKIP_OPTIMIZATIONS); // Disable optimizations
+        arguments.emplace_back(DXC_ARG_DEBUG);              // Enable debug information
+        arguments.emplace_back(L"-Qembed_debug");           // Embed PDB in shader container (must be used with /Zi)
 #endif
 
         // Compile shader
-        IDxcBlobEncoding* source = nullptr;
-        m_dxcUtils->LoadFile(path.c_str(), nullptr, &source);
+        ComPtr<IDxcBlobEncoding> source = nullptr;
+        dxcUtils->LoadFile(path.c_str(), nullptr, &source);
         if (!source)
         {
             LB_ERROR("Could not find the program shader file: %s", cpath.c_str());
@@ -72,12 +67,12 @@ namespace limbo::gfx::ShaderCompiler
         sourceBuffer.Size = source->GetBufferSize();
         sourceBuffer.Encoding = DXC_CP_ACP;
 
-        IDxcResult* compileResult;
-        m_dxcCompiler->Compile(&sourceBuffer, arguments.data(), (uint32)arguments.size(), m_includeHandler, IID_PPV_ARGS(&compileResult));
+        ComPtr<IDxcResult> compileResult;
+        DX_CHECK(dxcCompiler->Compile(&sourceBuffer, arguments.data(), (uint32)arguments.size(), includeHandler, IID_PPV_ARGS(&compileResult)));
 
         // Print errors if present.
-        IDxcBlobUtf8* errors = nullptr;
-        compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr);
+        ComPtr<IDxcBlobUtf8> errors = nullptr;
+        DX_CHECK(compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr));
         // Note that d3dcompiler would return null if no errors or warnings are present.  
         // IDxcCompiler3::Compile will always return an error buffer, but its length will be zero if there are no warnings or errors.
         if (errors != nullptr && errors->GetStringLength() != 0)
@@ -86,12 +81,20 @@ namespace limbo::gfx::ShaderCompiler
             return false;
         }
 
-        // Get shader blob
-        IDxcBlob* shaderBlob;
-        compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&shaderBlob), nullptr);
+        // Get shader reflection data.
+        ComPtr<IDxcBlob> reflectionBlob;
+        DX_CHECK(compileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&reflectionBlob), nullptr));
 
-        result.code = shaderBlob->GetBufferPointer();
-        result.size = shaderBlob->GetBufferSize();
+        const DxcBuffer reflectionBuffer = {
+            .Ptr = reflectionBlob->GetBufferPointer(),
+            .Size = reflectionBlob->GetBufferSize(),
+            .Encoding = 0,
+        };
+
+        DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.reflection)));
+
+        // Get shader blob
+        DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&result.bytecode), nullptr));
 
         return true;
 	}

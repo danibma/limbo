@@ -2,7 +2,14 @@
 
 #include "core/core.h"
 
-namespace limbo::gfx
+#include "definitions.h"
+
+#include <dxcapi.h>
+#include <d3d12shader.h>
+
+#include <vector>
+
+namespace limbo::gfx::SC
 {
     /*
 	   Version: dxcompiler.dll: 1.7 - 1.7.2212.40 (e043f4a12); dxil.dll: 1.7(101.7.2212.36)
@@ -186,8 +193,8 @@ namespace limbo::gfx
 
 	struct Kernel
 	{
-		size_t size;
-		void*  code;
+		ComPtr<IDxcBlob>				bytecode;
+		ComPtr<ID3D12ShaderReflection>  reflection;
 	};
 
 	enum class KernelType : uint8
@@ -197,9 +204,6 @@ namespace limbo::gfx
 		Pixel
 	};
 
-	namespace ShaderCompiler
-	{
-		bool compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel);
-	};
+	bool compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel);
 }
 

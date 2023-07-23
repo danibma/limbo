@@ -86,12 +86,6 @@ int main(int argc, char* argv[])
 		.type = gfx::TextureType::Texture2D
 	});
 
-	gfx::Handle<gfx::BindGroup> triangleBind = gfx::createBindGroup({
-		.textures = {
-			{ .slot = 0, .texture = outputTexture }
-		},
-	});
-
 	gfx::Kernel triangleKernelCS;
 	FAILIF(!gfx::ShaderCompiler::compile(triangleKernelCS, "compute_triangle", "DrawTriangle", gfx::KernelType::Compute), -1);
 
@@ -109,23 +103,11 @@ int main(int argc, char* argv[])
 		.byteStride = sizeof(Vertex),
 		.byteSize = sizeof(Vertex) * 3,
 		.usage = gfx::BufferUsage::Vertex, 
-		.initialData = vertices });
-
-	gfx::Handle<gfx::BindGroup> triangleBind = gfx::createBindGroup({
-		.inputLayout = {
-			{ .semanticName = "Position", .format = gfx::Format::RGB32_SFLOAT }
-		}
+		.initialData = vertices
 	});
 
-	gfx::Kernel triangleKernelVS;
-	FAILIF(!gfx::ShaderCompiler::compile(triangleKernelVS, "triangle", "VSMain", gfx::KernelType::Vertex), -1);
-	gfx::Kernel triangleKernelPS;
-	FAILIF(!gfx::ShaderCompiler::compile(triangleKernelPS, "triangle", "PSMain", gfx::KernelType::Pixel), -1);
-
 	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
-		.vs = triangleKernelVS,
-		.ps = triangleKernelPS,
-		.bindGroup = triangleBind,
+		.programName = "triangle",
 		.type = gfx::ShaderType::Graphics
 	});
 #endif
@@ -146,14 +128,13 @@ int main(int argc, char* argv[])
 
 		gfx::present();
 #else
-		//float color[] = { 0.5f * cosf(time) + 0.5f,
-		//				  0.5f * sinf(time) + 0.5f,
-		//				  1.0f };
-		//
+		float color[] = { 0.5f * cosf(time) + 0.5f,
+						  0.5f * sinf(time) + 0.5f,
+						  1.0f };
 		//setParameter(triangleShader, 0, color);
+		gfx::setParameter(triangleShader, "color", color);
 		gfx::bindDrawState({
 			.shader = triangleShader,
-			.bindGroup = triangleBind,
 			.viewport = swapchainViewport,
 			.scissor = swapchainScissor
 		});
@@ -171,7 +152,6 @@ int main(int argc, char* argv[])
 #else
 	gfx::destroyBuffer(vertexBuffer);
 	gfx::destroyShader(triangleShader);
-	gfx::destroyBindGroup(triangleBind);
 #endif
 
 	gfx::shutdown();

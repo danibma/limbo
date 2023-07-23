@@ -12,7 +12,6 @@ namespace limbo::gfx
 	class DescriptorHeap;
 	struct WindowInfo;
 	struct DrawInfo;
-	class BindGroup;
 	class Swapchain;
 	class Buffer;
 	class Texture;
@@ -38,8 +37,6 @@ namespace limbo::gfx
 		DescriptorHeap*						m_srvheap;
 		DescriptorHeap*						m_dsvheap;
 		DescriptorHeap*						m_rtvheap;
-
-		BindGroup*							m_boundBindGroup;
 
 		std::vector<D3D12_RESOURCE_BARRIER> m_resourceBarriers;
 

@@ -164,4 +164,4 @@ namespace limbo::gfx
 		void dxMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext);
 	}
 }
-#define DX_CHECK(expression) { HRESULT result = expression; if (result != S_OK) limbo::gfx::internal::dxHandleError(result, __FILE__, __LINE__); }
+#define DX_CHECK(expression) { HRESULT _hr = expression; if (_hr != S_OK) limbo::gfx::internal::dxHandleError(_hr, __FILE__, __LINE__); }
