@@ -82,6 +82,8 @@ namespace limbo::gfx
 		void setGraphicsRootParameters(ID3D12GraphicsCommandList* cmd);
 
 		void setConstant(const char* parameterName, const void* data);
+		void setTexture(const char* parameterName, Handle<class Texture> texture);
+		void setBuffer(const char* parameterName, Handle<class Buffer> buffer);
 
 	private:
 		void createInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);

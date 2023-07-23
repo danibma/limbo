@@ -72,6 +72,20 @@ namespace limbo::gfx
 		ResourceManager::ptr->destroyTexture(handle);
 	}
 
+	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture)
+	{
+		Shader* s = ResourceManager::ptr->getShader(shader);
+		FAILIF(!s);
+		s->setTexture(parameterName, texture);
+	}
+
+	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Buffer> buffer)
+	{
+		Shader* s = ResourceManager::ptr->getShader(shader);
+		FAILIF(!s);
+		s->setBuffer(parameterName, buffer);
+	}
+
 	template<typename T>
 	inline void setParameter(Handle<Shader> shader, const char* parameterName, const T& value)
 	{

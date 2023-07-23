@@ -86,12 +86,9 @@ int main(int argc, char* argv[])
 		.type = gfx::TextureType::Texture2D
 	});
 
-	gfx::Kernel triangleKernelCS;
-	FAILIF(!gfx::ShaderCompiler::compile(triangleKernelCS, "compute_triangle", "DrawTriangle", gfx::KernelType::Compute), -1);
-
 	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
-		.cs = triangleKernelCS,
-		.bindGroup = triangleBind,
+		.programName = "compute_triangle",
+		.cs_entryPoint = "DrawTriangle",
 		.type = gfx::ShaderType::Compute
 	});
 #else
@@ -118,9 +115,9 @@ int main(int argc, char* argv[])
 		Noop(time);
 
 #if COMPUTE
+		gfx::setParameter(triangleShader, "output", outputTexture);
 		gfx::bindDrawState({
 			.shader = triangleShader,
-			.bindGroup =  triangleBind
 		});
 		gfx::dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
@@ -148,7 +145,6 @@ int main(int argc, char* argv[])
 #if COMPUTE
 	gfx::destroyTexture(outputTexture);
 	gfx::destroyShader(triangleShader);
-	gfx::destroyBindGroup(triangleBind);
 #else
 	gfx::destroyBuffer(vertexBuffer);
 	gfx::destroyShader(triangleShader);

@@ -79,7 +79,7 @@ namespace limbo::gfx
 		}
 #endif
 
-		m_srvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SRV);
+		m_srvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SRV, true);
 		m_rtvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::RTV);
 		m_dsvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::DSV);
 
@@ -172,6 +172,9 @@ namespace limbo::gfx
 	{
 		ResourceManager* rm = ResourceManager::ptr;
 		Shader* pipeline = rm->getShader(drawState.shader);
+
+		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap() };
+		m_commandList->SetDescriptorHeaps(1, heaps);
 
 		if (pipeline->type == ShaderType::Compute)
 		{
