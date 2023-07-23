@@ -73,6 +73,9 @@ namespace limbo::gfx
 		void transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
 		void copyResource(ID3D12Resource* dst, ID3D12Resource* src);
 
+		uint32 getBackbufferWidth();
+		uint32 getBackbufferHeight();
+
 	private:
 		void pickGPU();
 		void waitGPU();
@@ -120,5 +123,15 @@ namespace limbo::gfx
 	inline Format getSwapchainFormat()
 	{
 		return Device::ptr->getSwapchainFormat();
+	}
+
+	inline uint32 getBackbufferWidth()
+	{
+		return Device::ptr->getBackbufferWidth();
+	}
+
+	inline uint32 getBackbufferHeight()
+	{
+		return Device::ptr->getBackbufferHeight();
 	}
 }

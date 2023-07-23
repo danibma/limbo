@@ -131,28 +131,36 @@ namespace limbo::gfx
 				{
 					D3D12_SHADER_BUFFER_DESC desc;
 					cb->GetDesc(&desc);
-					uint32 constantOffset = 0;
 					uint32 num32BitValues = 0;
+					bool   bAddedVar = false;
 					for (uint32 v = 0; v < desc.Variables; ++v)
 					{
 						auto* var = cb->GetVariableByIndex(v);
 						D3D12_SHADER_VARIABLE_DESC varDesc;
 						var->GetDesc(&varDesc);
 
-						parameterMap[algo::hash(varDesc.Name)] = {
+						uint32 hashedName = algo::hash(varDesc.Name);
+						if (parameterMap.contains(hashedName)) continue;
+
+						bAddedVar = true;
+
+						uint32 numValues = varDesc.Size / sizeof(uint32);
+						parameterMap[hashedName] = {
 							.type = ParameterType::Constants,
 							.rpIndex = currentRP,
-							.numValues = varDesc.Size / sizeof(uint32),
-							.offset = constantOffset
+							.numValues = numValues,
+							.offset = varDesc.StartOffset / sizeof(uint32)
 						};
-
-						constantOffset += v * (varDesc.Size / sizeof(uint32));
-						num32BitValues += varDesc.Size / sizeof(uint32);
+						
+						num32BitValues += numValues;
 					}
 
-					rootParameters[currentRP].InitAsConstants(num32BitValues, bindDesc.BindPoint, bindDesc.Space);
-					currentRP++;
-					rsCost += desc.Variables;
+					if (bAddedVar)
+					{
+						rootParameters[currentRP].InitAsConstants(num32BitValues, bindDesc.BindPoint, bindDesc.Space);
+						currentRP++;
+						rsCost += desc.Variables;
+					}
 
 					break;
 				}

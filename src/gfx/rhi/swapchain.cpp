@@ -9,6 +9,7 @@
 namespace limbo::gfx
 {
 	Swapchain::Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, const WindowInfo& info)
+		: m_backbufferWidth(info.width), m_backbufferHeight(info.height)
 	{
 		DXGI_SWAP_CHAIN_DESC1 desc = {
 			.Width = info.width,
@@ -75,5 +76,15 @@ namespace limbo::gfx
 	Format Swapchain::getFormat()
 	{
 		return m_format;
+	}
+
+	uint32 Swapchain::getBackbufferWidth()
+	{
+		return m_backbufferWidth;
+	}
+
+	uint32 Swapchain::getBackbufferHeight()
+	{
+		return m_backbufferHeight;
 	}
 }

@@ -1,6 +1,9 @@
 ﻿#pragma once
 
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 typedef glm::vec2 float2;
 typedef glm::vec3 float3;

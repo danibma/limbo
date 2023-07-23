@@ -1,6 +1,12 @@
-﻿float4 VSMain(float3 position : Position) : SV_Position
+﻿float4x4 viewProj;
+float4x4 model;
+
+float4 VSMain(float3 pos : Position) : SV_Position
 {
-	return float4(position, 1.0f);
+    float4x4 mvp = mul(viewProj, model);
+    float4 position = mul(mvp, float4(pos, 1.0f));
+
+	return position;
 }
 
 float3 color;

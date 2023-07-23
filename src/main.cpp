@@ -6,6 +6,8 @@
 #include "gfx/rhi/texture.h"
 #include "gfx/rhi/draw.h"
 
+#include "core/fpscamera.h"
+
 #include "tests/tests.h"
 
 #include <CLI11/CLI11.hpp>
@@ -15,6 +17,8 @@
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
+
+#include "core/timer.h"
 
 using namespace limbo;
 
@@ -58,6 +62,8 @@ int main(int argc, char* argv[])
 		.width = WIDTH,
 		.height = HEIGHT,
 	});
+
+	core::FPSCamera camera = core::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
 	D3D12_VIEWPORT swapchainViewport = {
 		.TopLeftX = 0,
@@ -109,10 +115,15 @@ int main(int argc, char* argv[])
 	});
 #endif
 
+	core::Timer deltaTimer;
 	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
 	{
+		float deltaTime = deltaTimer.ElapsedMilliseconds();
+		deltaTimer.Record();
+
 		glfwPollEvents();
-		Noop(time);
+		Noop(time); // remove warning
+		core::UpdateCamera(window, camera, deltaTime);
 
 #if COMPUTE
 		gfx::setParameter(triangleShader, "output", outputTexture);
@@ -128,7 +139,8 @@ int main(int argc, char* argv[])
 		float color[] = { 0.5f * cosf(time) + 0.5f,
 						  0.5f * sinf(time) + 0.5f,
 						  1.0f };
-		//setParameter(triangleShader, 0, color);
+		gfx::setParameter(triangleShader, "viewProj", camera.viewProj);
+		gfx::setParameter(triangleShader, "model", float4x4(1.0f));
 		gfx::setParameter(triangleShader, "color", color);
 		gfx::bindDrawState({
 			.shader = triangleShader,

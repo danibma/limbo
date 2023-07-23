@@ -306,6 +306,16 @@ namespace limbo::gfx
 		m_commandList->CopyResource(dst, src);
 	}
 
+	uint32 Device::getBackbufferWidth()
+	{
+		return m_swapchain->getBackbufferWidth();
+	}
+
+	uint32 Device::getBackbufferHeight()
+	{
+		return m_swapchain->getBackbufferHeight();
+	}
+
 	void Device::pickGPU()
 	{
 		m_adapter = nullptr;
