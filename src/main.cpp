@@ -36,11 +36,19 @@ int main(int argc, char* argv[])
 
 	bool bRunTests = false;
 	app.add_flag("--tests", bRunTests, "Run tests");
+	bool bComputeTriangle = false;
+	app.add_flag("--ctriangle", bComputeTriangle, "Run compute triangle test");
+	bool bGraphicsTriangle = false;
+	app.add_flag("--gtriangle", bGraphicsTriangle, "Run graphics triangle test");
 
 	CLI11_PARSE(app, argc, argv);
 
 	if (bRunTests)
 		return tests::executeTests(argc, argv);
+	else if (bComputeTriangle)
+		return tests::executeComputeTriangle();
+	else if (bGraphicsTriangle)
+		return tests::executeGraphicsTriangle();
 
 	if (!glfwInit())
 	{
@@ -81,23 +89,6 @@ int main(int argc, char* argv[])
 		.bottom = HEIGHT
 	};
 
-#define COMPUTE 0
-#if COMPUTE
-	gfx::Handle<gfx::Texture> outputTexture = gfx::createTexture({
-		.width = WIDTH,
-		.height = HEIGHT,
-		.debugName = "triangle output texture",
-		.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-		.format = gfx::Format::RGBA8_UNORM,
-		.type = gfx::TextureType::Texture2D
-	});
-
-	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
-		.programName = "compute_triangle",
-		.cs_entryPoint = "DrawTriangle",
-		.type = gfx::ShaderType::Compute
-	});
-#else
 	Vertex vertices[] = { { -1.0,  1.0, 1.0 },
 						  {  1.0,  1.0, 1.0 },
 						  {  0.0, -1.0, 1.0 } };
@@ -113,7 +104,6 @@ int main(int argc, char* argv[])
 		.programName = "triangle",
 		.type = gfx::ShaderType::Graphics
 	});
-#endif
 
 	core::Timer deltaTimer;
 	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
@@ -125,17 +115,6 @@ int main(int argc, char* argv[])
 		Noop(time); // remove warning
 		core::UpdateCamera(window, camera, deltaTime);
 
-#if COMPUTE
-		gfx::setParameter(triangleShader, "output", outputTexture);
-		gfx::bindDrawState({
-			.shader = triangleShader,
-		});
-		gfx::dispatch(WIDTH / 8, HEIGHT / 8, 1);
-
-		gfx::copyTextureToBackBuffer(outputTexture);
-
-		gfx::present();
-#else
 		float color[] = { 0.5f * cosf(time) + 0.5f,
 						  0.5f * sinf(time) + 0.5f,
 						  1.0f };
@@ -151,16 +130,10 @@ int main(int argc, char* argv[])
 		
 		gfx::draw(3);
 		gfx::present();
-#endif
 	}
 
-#if COMPUTE
-	gfx::destroyTexture(outputTexture);
-	gfx::destroyShader(triangleShader);
-#else
 	gfx::destroyBuffer(vertexBuffer);
 	gfx::destroyShader(triangleShader);
-#endif
 
 	gfx::shutdown();
 	glfwTerminate();

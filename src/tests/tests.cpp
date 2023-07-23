@@ -4,6 +4,9 @@
 #define CATCH_CONFIG_DISABLE_EXCEPTIONS
 #include <catch/catch.hpp>
 
+#include "gfx/computetriangle.h"
+#include "gfx/graphicstriangle.h"
+
 namespace limbo::tests
 {
 	int executeTests(int argc, char* argv[])
@@ -17,5 +20,15 @@ namespace limbo::tests
 		args[2] = "--break";
 		args[3] = "--success";
 		return session.run(4, args);
+	}
+
+	int executeComputeTriangle()
+	{
+		return gfx::runComputeTriangle();
+	}
+
+	int executeGraphicsTriangle()
+	{
+		return gfx::runGfxTriangle();
 	}
 }
