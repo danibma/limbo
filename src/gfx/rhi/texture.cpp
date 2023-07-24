@@ -143,7 +143,7 @@ namespace limbo::gfx
 			if (bIsUnordered)
 				createUAV(spec, d3ddevice);
 			else
-				ensure(false);
+				createSRV(spec, d3ddevice);
 		}
 
 		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
@@ -156,5 +156,44 @@ namespace limbo::gfx
 
 	Texture::~Texture()
 	{
+	}
+
+	void Texture::createSRV(const TextureSpec& spec, ID3D12Device* device)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = d3dFormat(spec.format),
+			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
+		};
+
+		if (spec.type == TextureType::Texture1D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+			srvDesc.Texture1D = {
+				.MostDetailedMip = 0,
+				.MipLevels = 1,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (spec.type == TextureType::Texture2D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D = {
+				.MostDetailedMip = 0,
+				.MipLevels = 1,
+				.PlaneSlice = 0,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (spec.type == TextureType::Texture3D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+			srvDesc.Texture3D = {
+				.MostDetailedMip = 0,
+				.MipLevels = 1,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+
+		device->CreateShaderResourceView(resource.Get(), &srvDesc, handle.cpuHandle);
 	}
 }

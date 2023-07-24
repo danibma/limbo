@@ -8,12 +8,21 @@ namespace limbo::gfx
 {
 	struct TextureSpec
 	{
+	private:
+		struct InitialData
+		{
+			void*  data;
+			size_t size;
+		};
+
+	public:
 		uint32					width;
 		uint32					height;
 		const char*				debugName;
 		D3D12_RESOURCE_FLAGS	resourceFlags = D3D12_RESOURCE_FLAG_NONE;
 		Format					format = Format::R8_UNORM;
 		TextureType				type = TextureType::Texture2D;
+		InitialData				initialData;
 	};
 
 	class Texture
@@ -33,6 +42,7 @@ namespace limbo::gfx
 		~Texture();
 
 		// D3D12 Specific
+		void createSRV(const TextureSpec& spec, ID3D12Device* device);
 		void createUAV(const TextureSpec& spec, ID3D12Device* device);
 		void createRTV(const TextureSpec& spec, ID3D12Device* device);
 		void createDSV(const TextureSpec& spec, ID3D12Device* device);
