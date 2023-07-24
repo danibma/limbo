@@ -5,6 +5,7 @@
 #include "gfx/rhi/buffer.h"
 #include "gfx/rhi/texture.h"
 #include "gfx/rhi/draw.h"
+#include "gfx/scene.h"
 
 #include "core/fpscamera.h"
 
@@ -89,6 +90,8 @@ int main(int argc, char* argv[])
 		.type = gfx::ShaderType::Graphics
 	});
 
+	gfx::Scene* damagedHelmet = gfx::loadScene("models/DamagedHelmet.glb");
+
 	core::Timer deltaTimer;
 	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
 	{
@@ -117,14 +120,22 @@ int main(int argc, char* argv[])
 				.bottom = HEIGHT
 			}
 		});
-		gfx::bindVertexBuffer(vertexBuffer);
-		
-		gfx::draw(3);
+		//gfx::bindVertexBuffer(vertexBuffer);
+		//gfx::draw(3);
+		damagedHelmet->drawMesh([&](const gfx::Mesh& mesh)
+		{
+			gfx::bindVertexBuffer(mesh.vertexBuffer);
+			gfx::bindIndexBuffer(mesh.indexBuffer);
+			gfx::drawIndexed((uint32)mesh.indexCount);
+		});
+
 		gfx::present();
 	}
 
 	gfx::destroyBuffer(vertexBuffer);
 	gfx::destroyShader(triangleShader);
+
+	gfx::destroyScene(damagedHelmet);
 
 	gfx::shutdown();
 	glfwTerminate();
