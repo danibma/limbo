@@ -90,6 +90,16 @@ int main(int argc, char* argv[])
 		.type = gfx::ShaderType::Graphics
 	});
 
+	gfx::Handle<gfx::Sampler> linearWrapSampler = gfx::createSampler({
+		.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+		.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
+		.MinLOD = 0.0f,
+		.MaxLOD = 1.0f
+	});
+
 	gfx::Scene* damagedHelmet = gfx::loadScene("models/DamagedHelmet.glb");
 
 	core::Timer deltaTimer;
@@ -108,22 +118,25 @@ int main(int argc, char* argv[])
 		gfx::setParameter(triangleShader, "viewProj", camera.viewProj);
 		gfx::setParameter(triangleShader, "model", float4x4(1.0f));
 		gfx::setParameter(triangleShader, "color", color);
-		gfx::bindDrawState({
-			.shader = triangleShader,
-			.viewport = {
-				.Width = WIDTH,
-				.Height = HEIGHT,
-				.MaxDepth = 1
-			},
-			.scissor = {
-				.right = WIDTH,
-				.bottom = HEIGHT
-			}
-		});
-		//gfx::bindVertexBuffer(vertexBuffer);
-		//gfx::draw(3);
+		gfx::setParameter(triangleShader, "LinearWrap", linearWrapSampler);
+
 		damagedHelmet->drawMesh([&](const gfx::Mesh& mesh)
 		{
+			gfx::setParameter(triangleShader, "g_diffuseTexture", mesh.material.diffuse);
+
+			gfx::bindDrawState({
+				.shader = triangleShader,
+				.viewport = {
+					.Width = WIDTH,
+					.Height = HEIGHT,
+					.MaxDepth = 1
+				},
+				.scissor = {
+					.right = WIDTH,
+					.bottom = HEIGHT
+				}
+			});
+
 			gfx::bindVertexBuffer(mesh.vertexBuffer);
 			gfx::bindIndexBuffer(mesh.indexBuffer);
 			gfx::drawIndexed((uint32)mesh.indexCount);

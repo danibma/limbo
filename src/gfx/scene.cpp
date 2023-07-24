@@ -121,10 +121,7 @@ namespace limbo::gfx
 				.debugName = debugName.c_str(),
 				.format = Format::RGBA8_UNORM,
 				.type = TextureType::Texture2D,
-				.initialData = {
-					.data = data,
-					.size = width * height * (uint32)channels
-				}
+				.initialData = data
 			});
 			free(data);
 		}
@@ -141,10 +138,7 @@ namespace limbo::gfx
 				.debugName = debugName.c_str(),
 				.format = Format::RGBA8_UNORM,
 				.type = TextureType::Texture2D,
-				.initialData = {
-					.data = data,
-					.size = width * height * (uint32)channels
-				}
+				.initialData = data
 			});
 			free(data);
 		}

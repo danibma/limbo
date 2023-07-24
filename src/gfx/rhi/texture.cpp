@@ -1,6 +1,9 @@
 #include "texture.h"
 
+#include <d3d12/d3dx12/d3dx12_resource_helpers.h>
+
 #include "device.h"
+#include "memoryallocator.h"
 #include "core/utils.h"
 
 namespace limbo::gfx
@@ -144,6 +147,34 @@ namespace limbo::gfx
 				createUAV(spec, d3ddevice);
 			else
 				createSRV(spec, d3ddevice);
+		}
+
+		if (spec.initialData)
+		{
+			D3D12_RESOURCE_DESC desc = resource->GetDesc();
+
+			uint64 size;
+			d3ddevice->GetCopyableFootprints(&desc, 0, 1, 0, nullptr, nullptr, nullptr, &size);
+
+			ID3D12Resource* uploadBuffer = MemoryAllocator::ptr->createUploadBuffer((uint32)size);
+			FAILIF(!uploadBuffer);
+
+			void* data;
+			uploadBuffer->Map(0, nullptr, &data);
+			memcpy(data, spec.initialData, (uint32)size);
+			uploadBuffer->Unmap(0, nullptr);
+
+			device->copyBufferToTexture(resource.Get(), uploadBuffer);
+
+			if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
+			{
+				std::wstring wname;
+				utils::StringConvert(spec.debugName, wname);
+				wname.append(L"(upload buffer)");
+				DX_CHECK(uploadBuffer->SetName(wname.c_str()));
+			}
+
+			currentState = D3D12_RESOURCE_STATE_COPY_DEST;
 		}
 
 		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))

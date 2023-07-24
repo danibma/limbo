@@ -8,13 +8,6 @@ namespace limbo::gfx
 {
 	struct TextureSpec
 	{
-	private:
-		struct InitialData
-		{
-			void*  data;
-			size_t size;
-		};
-
 	public:
 		uint32					width;
 		uint32					height;
@@ -22,7 +15,7 @@ namespace limbo::gfx
 		D3D12_RESOURCE_FLAGS	resourceFlags = D3D12_RESOURCE_FLAG_NONE;
 		Format					format = Format::R8_UNORM;
 		TextureType				type = TextureType::Texture2D;
-		InitialData				initialData;
+		void*					initialData;
 	};
 
 	class Texture

@@ -1,17 +1,30 @@
 ﻿float4x4 viewProj;
 float4x4 model;
 
-float4 VSMain(float3 pos : Position) : SV_Position
+struct VSOut
 {
-    float4x4 mvp = mul(viewProj, model);
-    float4 position = mul(mvp, float4(pos, 1.0f));
+    float4 position : SV_Position;
+    float2 uv       : TEXCOORD;
+};
 
-	return position;
+VSOut VSMain(float3 pos : Position, float2 uv : UV)
+{
+    VSOut result;
+
+    float4x4 mvp = mul(viewProj, model);
+    result.position = mul(mvp, float4(pos, 1.0f));
+    result.uv = uv;
+
+	return result;
 }
 
 float3 color;
+Texture2D<float4> g_diffuseTexture;
+SamplerState LinearWrap;
 
-float4 PSMain(float4 position : SV_Position) : SV_Target
+float4 PSMain(VSOut input) : SV_Target
 {
-    return float4(color, 1.0f);
+    float4 finalColor = g_diffuseTexture.Sample(LinearWrap, input.uv);
+
+    return finalColor;
 }
