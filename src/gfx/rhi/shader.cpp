@@ -49,16 +49,26 @@ namespace limbo::gfx
 
 	void Shader::setGraphicsRootParameters(ID3D12GraphicsCommandList* cmd)
 	{
-		for (const auto& [name, parameter] : parameterMap)
+		for (const auto& [hash, parameter] : parameterMap)
 		{
 			if (parameter.type == ParameterType::Constants)
 			{
-				FAILIF(!parameter.data);
+				if (!parameter.data)
+				{
+					LB_WARN("Shader parameter at index %d has no value!", parameter.rpIndex);
+					continue;
+				}
+
 				cmd->SetGraphicsRoot32BitConstants(parameter.rpIndex, parameter.numValues, parameter.data, parameter.offset);
 			}
 			else
 			{
-				FAILIF(!parameter.descriptor.ptr);
+				if (!parameter.descriptor.ptr)
+				{
+					LB_WARN("Shader parameter at index %d has no value!", parameter.rpIndex);
+					continue;
+				}
+
 				cmd->SetGraphicsRootDescriptorTable(parameter.rpIndex, parameter.descriptor);
 			}
 		}
@@ -84,7 +94,7 @@ namespace limbo::gfx
 		if (parameter.type == ParameterType::UAV)
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		else if (parameter.type == ParameterType::SRV)
-			newState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 		else
 			ensure(false);
 
@@ -126,13 +136,15 @@ namespace limbo::gfx
 
 		parameter.descriptor = s->handle.gpuHandle;
 	}
+
 	void Shader::createRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel const* kernels, uint32 kernelsCount)
 	{
-		CD3DX12_ROOT_PARAMETER1 rootParameters[64]; // root signature limits https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits#memory-limits-and-costs
+		CD3DX12_ROOT_PARAMETER1   rootParameters[64] = {}; // root signature limits https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits#memory-limits-and-costs
+		CD3DX12_DESCRIPTOR_RANGE1 ranges[64] = {};
 		uint32 currentRP = 0;
 		uint32 rsCost    = 0;
 
-		auto processResourceBinding = [&rootParameters, &currentRP, &rsCost, this](const D3D12_SHADER_INPUT_BIND_DESC& bindDesc, ID3D12ShaderReflection* reflection)
+		auto processResourceBinding = [&rootParameters, &ranges, &currentRP, &rsCost, this](const D3D12_SHADER_INPUT_BIND_DESC& bindDesc, ID3D12ShaderReflection* reflection)
 		{
 			switch (bindDesc.Type) {
 			case D3D_SIT_CBUFFER:
@@ -191,10 +203,9 @@ namespace limbo::gfx
 					.rpIndex = currentRP,
 				};
 
-				CD3DX12_DESCRIPTOR_RANGE1 range;
-				range.Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, bindDesc.BindPoint, bindDesc.Space);
+				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, bindDesc.BindPoint, bindDesc.Space);
 
-				rootParameters[currentRP].InitAsDescriptorTable(1, &range);
+				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
 
 				currentRP++;
 				rsCost += 1;
@@ -205,8 +216,38 @@ namespace limbo::gfx
 			case D3D_SIT_BYTEADDRESS: ensure(false); break;
 			case D3D_SIT_RTACCELERATIONSTRUCTURE: ensure(false); break;
 			case D3D_SIT_TBUFFER: ensure(false); break;
-			case D3D_SIT_TEXTURE: ensure(false); break;
-			case D3D_SIT_SAMPLER: ensure(false); break;
+			case D3D_SIT_TEXTURE:
+			{
+				parameterMap[algo::hash(bindDesc.Name)] = {
+					.type = ParameterType::SRV,
+					.rpIndex = currentRP,
+				};
+
+				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bindDesc.BindPoint, bindDesc.Space);
+
+				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
+
+				currentRP++;
+				rsCost += 1;
+
+				break;
+			}
+			case D3D_SIT_SAMPLER:
+			{
+				parameterMap[algo::hash(bindDesc.Name)] = {
+					.type = ParameterType::Samplers,
+					.rpIndex = currentRP,
+				};
+
+				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, bindDesc.BindPoint, bindDesc.Space);
+
+				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
+
+				currentRP++;
+				rsCost += 1;
+				
+				break;
+			}
 			default: LB_ERROR("Invalid Resource Type");
 			}
 		};
