@@ -74,6 +74,7 @@ namespace limbo::gfx
 		void transitionResource(Texture* texture, D3D12_RESOURCE_STATES newState);
 		void transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
 		void copyResource(ID3D12Resource* dst, ID3D12Resource* src);
+		void copyBufferToTexture(ID3D12Resource* dst, ID3D12Resource* src);
 
 		uint32 getBackbufferWidth();
 		uint32 getBackbufferHeight();

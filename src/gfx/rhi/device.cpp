@@ -327,6 +327,27 @@ namespace limbo::gfx
 		m_commandList->CopyResource(dst, src);
 	}
 
+	void Device::copyBufferToTexture(ID3D12Resource* dst, ID3D12Resource* src)
+	{
+		D3D12_RESOURCE_DESC dstDesc = dst->GetDesc();
+
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT srcFootprints[D3D12_REQ_MIP_LEVELS] = {};
+		m_device->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, 0, srcFootprints, nullptr, nullptr, nullptr);
+
+		D3D12_TEXTURE_COPY_LOCATION srcLocation = {
+			.pResource = src,
+			.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+			.PlacedFootprint = srcFootprints[0]
+		};
+
+		D3D12_TEXTURE_COPY_LOCATION dstLocation = {
+			.pResource = dst,
+			.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+			.SubresourceIndex = 0 
+		};
+		m_commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+	}
+
 	uint32 Device::getBackbufferWidth()
 	{
 		return m_swapchain->getBackbufferWidth();
