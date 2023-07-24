@@ -31,6 +31,11 @@ namespace limbo::gfx
 		return m_textures.allocateHandle(resource, spec);
 	}
 
+	Handle<Sampler> ResourceManager::createSampler(const D3D12_SAMPLER_DESC& spec)
+	{
+		return m_samplers.allocateHandle(spec);
+	}
+
 	gfx::Buffer* ResourceManager::getBuffer(Handle<Buffer> buffer)
 	{
 		return m_buffers.get(buffer);
@@ -46,6 +51,11 @@ namespace limbo::gfx
 		return m_textures.get(texture);
 	}
 
+	Sampler* ResourceManager::getSampler(Handle<Sampler> sampler)
+	{
+		return m_samplers.get(sampler);
+	}
+
 	void ResourceManager::destroyBuffer(Handle<Buffer> buffer)
 	{
 		m_buffers.deleteHandle(buffer);
@@ -59,5 +69,10 @@ namespace limbo::gfx
 	void ResourceManager::destroyTexture(Handle<Texture> texture)
 	{
 		m_textures.deleteHandle(texture);
+	}
+
+	void ResourceManager::destroySampler(Handle<Sampler> sampler)
+	{
+		m_samplers.deleteHandle(sampler);
 	}
 }

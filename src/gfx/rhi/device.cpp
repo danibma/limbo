@@ -82,6 +82,7 @@ namespace limbo::gfx
 		m_srvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SRV, true);
 		m_rtvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::RTV);
 		m_dsvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::DSV);
+		m_samplerheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SAMPLERS, true);
 
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {
 			.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -180,11 +181,13 @@ namespace limbo::gfx
 
 	void Device::bindDrawState(const DrawInfo& drawState)
 	{
+		submitResourceBarriers();
+
 		ResourceManager* rm = ResourceManager::ptr;
 		Shader* pipeline = rm->getShader(drawState.shader);
 
-		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap() };
-		m_commandList->SetDescriptorHeaps(1, heaps);
+		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
+		m_commandList->SetDescriptorHeaps(2, heaps);
 
 		if (pipeline->type == ShaderType::Compute)
 		{
@@ -298,6 +301,8 @@ namespace limbo::gfx
 			return m_rtvheap->allocateHandle();
 		case DescriptorHeapType::DSV:
 			return m_dsvheap->allocateHandle();
+		case DescriptorHeapType::SAMPLERS:
+			return m_samplerheap->allocateHandle();
 		default: 
 			return DescriptorHandle();
 		}

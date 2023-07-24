@@ -115,6 +115,17 @@ namespace limbo::gfx
 		parameter.descriptor = b->handle.gpuHandle;
 	}
 
+	void Shader::setSampler(const char* parameterName, Handle<Sampler> sampler)
+	{
+		uint32 hash = algo::hash(parameterName);
+		FAILIF(!parameterMap.contains(hash));
+		ParameterInfo& parameter = parameterMap[hash];
+
+		Sampler* s = ResourceManager::ptr->getSampler(sampler);
+		FAILIF(!s);
+
+		parameter.descriptor = s->handle.gpuHandle;
+	}
 	void Shader::createRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel const* kernels, uint32 kernelsCount)
 	{
 		CD3DX12_ROOT_PARAMETER1 rootParameters[64]; // root signature limits https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits#memory-limits-and-costs

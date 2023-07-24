@@ -69,9 +69,6 @@ namespace limbo::gfx
 		ShaderType							type;
 		bool								useSwapchainRT;
 
-		uint32*								m_constants;
-		uint8								m_constantsIndex;
-
 	public:
 		Shader() = default;
 		Shader(const ShaderSpec& spec);
@@ -84,6 +81,7 @@ namespace limbo::gfx
 		void setConstant(const char* parameterName, const void* data);
 		void setTexture(const char* parameterName, Handle<class Texture> texture);
 		void setBuffer(const char* parameterName, Handle<class Buffer> buffer);
+		void setSampler(const char* parameterName, Handle<class Sampler> sampler);
 
 	private:
 		void createInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);

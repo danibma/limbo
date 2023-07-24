@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include "shader.h"
 #include "texture.h"
+#include "sampler.h"
 
 namespace limbo::gfx
 {
@@ -20,19 +21,23 @@ namespace limbo::gfx
 		Handle<Shader> createShader(const ShaderSpec& spec);
 		Handle<Texture> createTexture(const TextureSpec& spec);
 		Handle<Texture> createTexture(ID3D12Resource* resource, const TextureSpec& spec);
+		Handle<Sampler> createSampler(const D3D12_SAMPLER_DESC& spec);
 
 		Buffer* getBuffer(Handle<Buffer> buffer);
 		Shader* getShader(Handle<Shader> shader);
 		Texture* getTexture(Handle<Texture> texture);
+		Sampler* getSampler(Handle<Sampler> sampler);
 
 		void destroyBuffer(Handle<Buffer> buffer);
 		void destroyShader(Handle<Shader> shader);
 		void destroyTexture(Handle<Texture> texture);
+		void destroySampler(Handle<Sampler> sampler);
 
 	private:
 		Pool<Buffer> m_buffers;
 		Pool<Shader> m_shaders;
 		Pool<Texture> m_textures;
+		Pool<Sampler> m_samplers;
 	};
 
 
@@ -57,6 +62,11 @@ namespace limbo::gfx
 		return ResourceManager::ptr->createTexture(resource, spec);
 	}
 
+	inline Handle<Sampler> createSampler(const D3D12_SAMPLER_DESC& spec)
+	{
+		return ResourceManager::ptr->createSampler(spec);
+	}
+
 	inline void destroyBuffer(Handle<Buffer> handle)
 	{
 		ResourceManager::ptr->destroyBuffer(handle);
@@ -72,6 +82,11 @@ namespace limbo::gfx
 		ResourceManager::ptr->destroyTexture(handle);
 	}
 
+	inline void destroySampler(Handle<Sampler> sampler)
+	{
+		ResourceManager::ptr->destroySampler(sampler);
+	}
+
 	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture)
 	{
 		Shader* s = ResourceManager::ptr->getShader(shader);
@@ -84,6 +99,13 @@ namespace limbo::gfx
 		Shader* s = ResourceManager::ptr->getShader(shader);
 		FAILIF(!s);
 		s->setBuffer(parameterName, buffer);
+	}
+
+	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Sampler> sampler)
+	{
+		Shader* s = ResourceManager::ptr->getShader(shader);
+		FAILIF(!s);
+		s->setSampler(parameterName, sampler);
 	}
 
 	template<typename T>

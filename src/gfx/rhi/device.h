@@ -37,6 +37,7 @@ namespace limbo::gfx
 		DescriptorHeap*						m_srvheap;
 		DescriptorHeap*						m_dsvheap;
 		DescriptorHeap*						m_rtvheap;
+		DescriptorHeap*						m_samplerheap;
 
 		std::vector<D3D12_RESOURCE_BARRIER> m_resourceBarriers;
 
