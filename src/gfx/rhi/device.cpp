@@ -165,7 +165,17 @@ namespace limbo::gfx
 
 	void Device::bindIndexBuffer(Handle<Buffer> buffer)
 	{
-		ensure(false);
+		ResourceManager* rm = ResourceManager::ptr;
+		Buffer* ib = rm->getBuffer(buffer);
+		transitionResource(ib, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+
+		D3D12_INDEX_BUFFER_VIEW ibView = {
+			.BufferLocation = ib->resource->GetGPUVirtualAddress(),
+			.SizeInBytes = ib->byteSize,
+			.Format = DXGI_FORMAT_R32_UINT
+		};
+
+		m_commandList->IASetIndexBuffer(&ibView);
 	}
 
 	void Device::bindDrawState(const DrawInfo& drawState)
@@ -212,6 +222,12 @@ namespace limbo::gfx
 	{
 		submitResourceBarriers();
 		m_commandList->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
+	}
+
+	void Device::drawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance)
+	{
+		submitResourceBarriers();
+		m_commandList->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
 	void Device::dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)

@@ -55,6 +55,7 @@ namespace limbo::gfx
 		void bindIndexBuffer(Handle<Buffer> buffer);
 		void bindDrawState(const DrawInfo& drawState);
 		void draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
+		void drawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
 
 		void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 
@@ -108,6 +109,11 @@ namespace limbo::gfx
 	inline void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
 	{
 		Device::ptr->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+	}
+
+	inline void drawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
+	{
+		Device::ptr->drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
 	inline void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
