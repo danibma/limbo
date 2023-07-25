@@ -25,6 +25,8 @@ namespace limbo::core
 		bool				m_buttonsDown[(uint32)input::MouseButton::B8] = {};
 		bool				m_lastButtonsDown[(uint32)input::MouseButton::B8] = {};
 
+		float2				m_scroll = { 0, 0 };
+
 	public:
 		uint32				width;
 		uint32				height;
@@ -50,10 +52,13 @@ namespace limbo::core
 		bool isMouseButtonUp(input::MouseButton button);
 
 		float2 getMousePos();
+		float getScrollX();
+		float getScrollY();
 
 		// GLFW
 		friend void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		friend void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+		friend void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 		// Input
 		friend bool input::isKeyPressed(core::Window* window, input::KeyCode key);
@@ -63,6 +68,8 @@ namespace limbo::core
 		friend bool input::isMouseButtonDown(core::Window* window, input::MouseButton button);
 		friend bool input::isMouseButtonUp(core::Window* window, input::MouseButton button);
 		friend float2 input::getMousePos(core::Window* window);
+		friend float input::getScrollX(core::Window* window);
+		friend float input::getScrollY(core::Window* window);
 	};
 
 	Window* createWindow(const WindowInfo&& info);

@@ -38,8 +38,11 @@ namespace limbo::gfx
 
 		fpsCamera.proj = glm::perspective(45.0f, aspect_ratio, 1e-1f, 1e4f);
 
+		fpsCamera.cameraSpeed += input::getScrollY(window) / 2.0f;
+		if (fpsCamera.cameraSpeed <= 0.0f) fpsCamera.cameraSpeed = 0.1f;
+
 		// Update view
-		float cameraSpeed = fpsCamera.cameraSpeed * deltaTime;
+		float cameraSpeed = (fpsCamera.cameraSpeed / 100.0f) * deltaTime;
 
 		// Keyboard input
 		float3 rightDirection = glm::cross(fpsCamera.center, fpsCamera.up);

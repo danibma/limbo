@@ -5,21 +5,26 @@
 namespace limbo::input
 {
 
-#define IMPLEMENT_INPUT_EVENT(functionName, codeType) \
-	bool functionName(core::Window* window, codeType code) \
+#define IMPLEMENT_INPUT_EVENT_PARAM(returnType, functionName, codeType) \
+	returnType functionName(core::Window* window, codeType code) \
 	{ \
 		return window->functionName(code); \
 	}
 
-	IMPLEMENT_INPUT_EVENT(isKeyPressed, KeyCode);
-	IMPLEMENT_INPUT_EVENT(isKeyDown, KeyCode);
-	IMPLEMENT_INPUT_EVENT(isKeyUp, KeyCode);
-	IMPLEMENT_INPUT_EVENT(isMouseButtonPressed, MouseButton);
-	IMPLEMENT_INPUT_EVENT(isMouseButtonDown, MouseButton);
-	IMPLEMENT_INPUT_EVENT(isMouseButtonUp, MouseButton);
+	IMPLEMENT_INPUT_EVENT_PARAM(bool, isKeyPressed, KeyCode);
+	IMPLEMENT_INPUT_EVENT_PARAM(bool, isKeyDown, KeyCode);
+	IMPLEMENT_INPUT_EVENT_PARAM(bool, isKeyUp, KeyCode);
+	IMPLEMENT_INPUT_EVENT_PARAM(bool, isMouseButtonPressed, MouseButton);
+	IMPLEMENT_INPUT_EVENT_PARAM(bool, isMouseButtonDown, MouseButton);
+	IMPLEMENT_INPUT_EVENT_PARAM(bool, isMouseButtonUp, MouseButton);
 
-	float2 getMousePos(core::Window* window)
-	{
-		return window->getMousePos();
+#define IMPLEMENT_INPUT_EVENT(returnType, functionName) \
+	returnType functionName(core::Window* window) \
+	{ \
+		return window->functionName(); \
 	}
+
+	IMPLEMENT_INPUT_EVENT(float2, getMousePos);
+	IMPLEMENT_INPUT_EVENT(float, getScrollX);
+	IMPLEMENT_INPUT_EVENT(float, getScrollY);
 }

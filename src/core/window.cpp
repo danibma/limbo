@@ -36,6 +36,14 @@ namespace limbo::core
 		win->m_buttonsDown[button] = action == GLFW_PRESS;
 	}
 
+	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+	{
+		Window* win = (Window*)glfwGetWindowUserPointer(window);
+		ensure(win);
+
+		win->m_scroll = { xoffset, yoffset };
+	}
+
 	Window::Window(const WindowInfo& info)
 		: width(info.width), height(info.height)
 	{
@@ -58,12 +66,14 @@ namespace limbo::core
 
 		glfwSetKeyCallback(m_handle, key_callback);
 		glfwSetMouseButtonCallback(m_handle, mouse_button_callback);
+		glfwSetScrollCallback(m_handle, scroll_callback);
 	}
 
 	void Window::pollEvents()
 	{
 		memcpy(m_lastKeysDown, m_keysDown, sizeof(m_keysDown));
 		memcpy(m_lastButtonsDown, m_buttonsDown, sizeof(m_buttonsDown));
+		m_scroll = { 0, 0 };
 		glfwPollEvents();
 	}
 
@@ -122,5 +132,15 @@ namespace limbo::core
 		double x, y;
 		glfwGetCursorPos(m_handle, &x, &y);
 		return { x, y };
+	}
+
+	float Window::getScrollX()
+	{
+		return m_scroll.x;
+	}
+
+	float Window::getScrollY()
+	{
+		return m_scroll.y;
 	}
 }

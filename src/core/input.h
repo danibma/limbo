@@ -159,15 +159,20 @@ namespace limbo::input
 		Disabled = 0x00034003  // GLFW_DISABLED
 	};
 
-#define DECLARE_INPUT_EVENT(functionName, codeType)\
-	bool functionName(core::Window* window, codeType code)
+#define DECLARE_INPUT_EVENT_PARAM(returnType, functionName, codeType)\
+	returnType functionName(core::Window* window, codeType code)
 
-	DECLARE_INPUT_EVENT(isKeyPressed, KeyCode);
-	DECLARE_INPUT_EVENT(isKeyDown, KeyCode);
-	DECLARE_INPUT_EVENT(isKeyUp, KeyCode);
-	DECLARE_INPUT_EVENT(isMouseButtonPressed, MouseButton);
-	DECLARE_INPUT_EVENT(isMouseButtonDown, MouseButton);
-	DECLARE_INPUT_EVENT(isMouseButtonUp, MouseButton);
+	DECLARE_INPUT_EVENT_PARAM(bool, isKeyPressed, KeyCode);
+	DECLARE_INPUT_EVENT_PARAM(bool, isKeyDown, KeyCode);
+	DECLARE_INPUT_EVENT_PARAM(bool, isKeyUp, KeyCode);
+	DECLARE_INPUT_EVENT_PARAM(bool, isMouseButtonPressed, MouseButton);
+	DECLARE_INPUT_EVENT_PARAM(bool, isMouseButtonDown, MouseButton);
+	DECLARE_INPUT_EVENT_PARAM(bool, isMouseButtonUp, MouseButton);
 
-	float2 getMousePos(core::Window* window);
+#define DECLARE_INPUT_EVENT(returnType, functionName)\
+	returnType functionName(core::Window* window)
+
+	DECLARE_INPUT_EVENT(float2, getMousePos);
+	DECLARE_INPUT_EVENT(float, getScrollX);
+	DECLARE_INPUT_EVENT(float, getScrollY);
 }

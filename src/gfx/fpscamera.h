@@ -17,7 +17,7 @@ namespace limbo::gfx
 		float3 center;
 		float3 up;
 
-		float cameraSpeed = 0.02f;
+		float cameraSpeed = 2.0f;
 
 		float4x4 view;
 		float4x4 proj;
