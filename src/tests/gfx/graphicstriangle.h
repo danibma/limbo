@@ -5,7 +5,6 @@
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/shader.h"
 #include "gfx/rhi/buffer.h"
-#include "gfx/rhi/draw.h"
 
 #include "core/fpscamera.h"
 
@@ -52,9 +51,9 @@ namespace limbo::tests::gfx
 
 		core::FPSCamera camera = core::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
-		Vertex vertices[] = { { -1.0,  1.0, 1.0 },
-							  {  1.0,  1.0, 1.0 },
-							  {  0.0, -1.0, 1.0 } };
+		Vertex vertices[] = { {  0.0,  1.0, -1.0 },
+							  { -1.0, -1.0, -1.0 },
+							  {  1.0, -1.0, -1.0 } };
 		limbo::gfx::Handle<limbo::gfx::Buffer> vertexBuffer = limbo::gfx::createBuffer({
 			.debugName = "triangle vb",
 			.byteStride = sizeof(Vertex),
@@ -84,18 +83,7 @@ namespace limbo::tests::gfx
 			limbo::gfx::setParameter(triangleShader, "viewProj", camera.viewProj);
 			limbo::gfx::setParameter(triangleShader, "model", float4x4(1.0f));
 			limbo::gfx::setParameter(triangleShader, "color", color);
-			limbo::gfx::bindDrawState({
-				.shader = triangleShader,
-				.viewport = {
-					.Width = WIDTH,
-					.Height = HEIGHT,
-					.MaxDepth = 1
-				},
-				.scissor = {
-					.right = WIDTH,
-					.bottom = HEIGHT
-				}
-			});
+			limbo::gfx::bindShader(triangleShader);
 			limbo::gfx::bindVertexBuffer(vertexBuffer);
 
 			limbo::gfx::draw(3);

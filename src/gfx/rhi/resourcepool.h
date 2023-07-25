@@ -87,6 +87,6 @@ namespace limbo::gfx
 		std::vector<Object> m_objects;
 		std::queue<uint16> m_freeSlots;
 
-		const uint16 MAX_SIZE = 32;
+		const uint16 MAX_SIZE = 256;
 	};
 }

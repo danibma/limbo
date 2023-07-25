@@ -1,6 +1,5 @@
 ﻿#include "device.h"
 
-#include "draw.h"
 #include "swapchain.h"
 #include "descriptorheap.h"
 #include "resourcemanager.h"
@@ -114,6 +113,9 @@ namespace limbo::gfx
 			ensure(m_fenceEvent);
 		}
 
+		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
+		m_commandList->SetDescriptorHeaps(2, heaps);
+
 		MemoryAllocator::ptr = new MemoryAllocator();
 	}
 
@@ -193,29 +195,22 @@ namespace limbo::gfx
 		m_commandList->IASetIndexBuffer(&ibView);
 	}
 
-	void Device::bindDrawState(const DrawInfo& drawState)
+	void Device::bindShader(Handle<Shader> shader)
 	{
-		submitResourceBarriers();
+		m_boundShader = shader;
 
 		ResourceManager* rm = ResourceManager::ptr;
-		Shader* pipeline = rm->getShader(drawState.shader);
+		Shader* pBoundShader = rm->getShader(m_boundShader);
 
-		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
-		m_commandList->SetDescriptorHeaps(2, heaps);
-
-		if (pipeline->type == ShaderType::Compute)
+		if (pBoundShader->type == ShaderType::Graphics)
 		{
-			m_commandList->SetComputeRootSignature(pipeline->rootSignature.Get());
-			pipeline->setComputeRootParameters(m_commandList.Get());
-		}
-		else if (pipeline->type == ShaderType::Graphics)
-		{
-			m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			m_commandList->SetGraphicsRootSignature(pipeline->rootSignature.Get());
-			pipeline->setGraphicsRootParameters(m_commandList.Get());
-
-			if (pipeline->useSwapchainRT)
+			int32 width  = 0;
+			int32 height = 0;
+			if (pBoundShader->useSwapchainRT)
 			{
+				width  = m_swapchain->getBackbufferWidth();
+				height = m_swapchain->getBackbufferHeight();
+
 				Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
 				Texture* backbuffer = rm->getTexture(backBufferHandle);
 				FAILIF(!backbuffer);
@@ -225,7 +220,7 @@ namespace limbo::gfx
 				FAILIF(!depthBackbuffer);
 
 				m_commandList->OMSetRenderTargets(1, &backbuffer->handle.cpuHandle, false, &depthBackbuffer->handle.cpuHandle);
-					
+
 				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 				m_commandList->ClearDepthStencilView(depthBackbuffer->handle.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 				m_commandList->ClearRenderTargetView(backbuffer->handle.cpuHandle, clearColor, 0, nullptr);
@@ -235,28 +230,64 @@ namespace limbo::gfx
 				ensure(false);
 			}
 
-			m_commandList->RSSetViewports(1, &drawState.viewport);
-			m_commandList->RSSetScissorRects(1, &drawState.scissor);
+			D3D12_VIEWPORT viewport = {
+				.TopLeftX = 0,
+				.TopLeftY = 0,
+				.Width = (float)width,
+				.Height = (float)height,
+				.MinDepth = 0.0f,
+				.MaxDepth = 1.0f
+			};
+
+			D3D12_RECT scissor = {
+				.left = 0,
+				.top = 0,
+				.right = width,
+				.bottom = height
+			};
+
+			m_commandList->RSSetViewports(1, &viewport);
+			m_commandList->RSSetScissorRects(1, &scissor);
+		}
+	}
+
+	void Device::installDrawState()
+	{
+		submitResourceBarriers();
+
+		ResourceManager* rm = ResourceManager::ptr;
+		Shader* shader = rm->getShader(m_boundShader);
+
+		if (shader->type == ShaderType::Compute)
+		{
+			m_commandList->SetComputeRootSignature(shader->rootSignature.Get());
+			shader->setComputeRootParameters(m_commandList.Get());
+		}
+		else if (shader->type == ShaderType::Graphics)
+		{
+			m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			m_commandList->SetGraphicsRootSignature(shader->rootSignature.Get());
+			shader->setGraphicsRootParameters(m_commandList.Get());
 		}
 
-		m_commandList->SetPipelineState(pipeline->pipelineState.Get());
+		m_commandList->SetPipelineState(shader->pipelineState.Get());
 	}
 
 	void Device::draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
 	{
-		submitResourceBarriers();
+		installDrawState();
 		m_commandList->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
 	void Device::drawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance)
 	{
-		submitResourceBarriers();
+		installDrawState();
 		m_commandList->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
 	void Device::dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
-		submitResourceBarriers();
+		installDrawState();
 		m_commandList->Dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 
@@ -289,6 +320,9 @@ namespace limbo::gfx
 
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
+		m_commandList->SetDescriptorHeaps(2, heaps);
 
 		// Prepare frame render targets
 		{

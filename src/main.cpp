@@ -4,7 +4,6 @@
 #include "gfx/rhi/shader.h"
 #include "gfx/rhi/buffer.h"
 #include "gfx/rhi/texture.h"
-#include "gfx/rhi/draw.h"
 #include "gfx/scene.h"
 
 #include "core/fpscamera.h"
@@ -102,7 +101,8 @@ int main(int argc, char* argv[])
 		.MaxLOD = 1.0f
 	});
 
-	gfx::Scene* damagedHelmet = gfx::loadScene("models/DamagedHelmet.glb");
+	//gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet.glb");
+	gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
 	core::Timer deltaTimer;
 	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
@@ -117,28 +117,16 @@ int main(int argc, char* argv[])
 		float color[] = { 0.5f * cosf(time) + 0.5f,
 						  0.5f * sinf(time) + 0.5f,
 						  1.0f };
+
+		gfx::bindShader(triangleShader);
 		gfx::setParameter(triangleShader, "viewProj", camera.viewProj);
-		gfx::setParameter(triangleShader, "model", float4x4(1.0f));
 		gfx::setParameter(triangleShader, "color", color);
 		gfx::setParameter(triangleShader, "LinearWrap", linearWrapSampler);
 
-		damagedHelmet->drawMesh([&](const gfx::Mesh& mesh)
+		scene->drawMesh([&](const gfx::Mesh& mesh)
 		{
 			gfx::setParameter(triangleShader, "g_diffuseTexture", mesh.material.diffuse);
 			gfx::setParameter(triangleShader, "model", mesh.transform);
-
-			gfx::bindDrawState({
-				.shader = triangleShader,
-				.viewport = {
-					.Width = WIDTH,
-					.Height = HEIGHT,
-					.MaxDepth = 1
-				},
-				.scissor = {
-					.right = WIDTH,
-					.bottom = HEIGHT
-				}
-			});
 
 			gfx::bindVertexBuffer(mesh.vertexBuffer);
 			gfx::bindIndexBuffer(mesh.indexBuffer);
@@ -151,7 +139,7 @@ int main(int argc, char* argv[])
 	gfx::destroyBuffer(vertexBuffer);
 	gfx::destroyShader(triangleShader);
 
-	gfx::destroyScene(damagedHelmet);
+	gfx::destroyScene(scene);
 
 	gfx::shutdown();
 	glfwTerminate();

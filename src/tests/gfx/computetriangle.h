@@ -5,7 +5,6 @@
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/shader.h"
 #include "gfx/rhi/buffer.h"
-#include "gfx/rhi/draw.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -62,9 +61,7 @@ namespace limbo::tests::gfx
 			glfwPollEvents();
 
 			limbo::gfx::setParameter(triangleShader, "output", outputTexture);
-			limbo::gfx::bindDrawState({
-				.shader = triangleShader,
-			});
+			limbo::gfx::bindShader(triangleShader);
 			limbo::gfx::dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
 			limbo::gfx::copyTextureToBackBuffer(outputTexture);

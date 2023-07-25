@@ -15,6 +15,7 @@ namespace limbo::gfx
 	class Swapchain;
 	class Buffer;
 	class Texture;
+	class Shader;
 
 	typedef uint8 GfxDeviceFlags;
 
@@ -45,6 +46,8 @@ namespace limbo::gfx
 
 		GfxDeviceFlags						m_flags;
 
+		Handle<Shader>						m_boundShader;
+
 	public:
 		static Device* ptr;
 
@@ -58,7 +61,7 @@ namespace limbo::gfx
 
 		void bindVertexBuffer(Handle<Buffer> buffer);
 		void bindIndexBuffer(Handle<Buffer> buffer);
-		void bindDrawState(const DrawInfo& drawState);
+		void bindShader(Handle<Shader> shader);
 		void draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
 		void drawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
 
@@ -90,6 +93,8 @@ namespace limbo::gfx
 		void nextFrame();
 
 		void submitResourceBarriers();
+
+		void installDrawState();
 	};
 
 	inline void copyTextureToBackBuffer(Handle<Texture> texture)
@@ -107,9 +112,9 @@ namespace limbo::gfx
 		Device::ptr->bindIndexBuffer(buffer);
 	}
 
-	inline void bindDrawState(const DrawInfo&& drawState)
+	inline void bindShader(Handle<Shader> shader)
 	{
-		Device::ptr->bindDrawState(drawState);
+		Device::ptr->bindShader(shader);
 	}
 
 	inline void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
