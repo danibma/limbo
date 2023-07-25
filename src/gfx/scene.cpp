@@ -43,7 +43,7 @@ namespace limbo::gfx
 		}
 	}
 
-	void Scene::drawMesh(std::function<void(const Mesh& mesh)> drawFunction)
+	void Scene::drawMesh(const std::function<void(const Mesh& mesh)>& drawFunction)
 	{
 		for (const Mesh& m : m_meshes)
 			drawFunction(m);
@@ -55,7 +55,14 @@ namespace limbo::gfx
 		for (uint32_t i = 0; i < node->mNumMeshes; i++)
 		{
 			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-			m_meshes.emplace_back(processMesh(mesh, scene));
+			Mesh& m = m_meshes.emplace_back(processMesh(mesh, scene));
+			m.transform = aiMatrix4x4ToGlm(&node->mTransformation);
+			aiNode* parent = node->mParent;
+			while (parent)
+			{
+				m.transform *= aiMatrix4x4ToGlm(&parent->mTransformation);
+				parent = parent->mParent;
+			}
 		}
 
 		// then do the same for each of its children

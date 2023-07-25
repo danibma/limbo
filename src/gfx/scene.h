@@ -36,6 +36,8 @@ namespace limbo::gfx
 
 		MeshMaterial			material;
 
+		float4x4				transform;
+
 		size_t					indexCount = 0;
 		size_t					vertexCount = 0;
 
@@ -57,7 +59,7 @@ namespace limbo::gfx
 		static Scene* load(const char* path);
 		void destroy();
 
-		void drawMesh(std::function<void(const Mesh& mesh)> drawFunction);
+		void drawMesh(const std::function<void(const Mesh& mesh)>& drawFunction);
 
 	private:
 		void processNode(aiNode* node, const aiScene* scene);

@@ -125,6 +125,7 @@ int main(int argc, char* argv[])
 		damagedHelmet->drawMesh([&](const gfx::Mesh& mesh)
 		{
 			gfx::setParameter(triangleShader, "g_diffuseTexture", mesh.material.diffuse);
+			gfx::setParameter(triangleShader, "model", mesh.transform);
 
 			gfx::bindDrawState({
 				.shader = triangleShader,
