@@ -6,7 +6,7 @@
 #include "gfx/rhi/shader.h"
 #include "gfx/rhi/buffer.h"
 
-#include "core/fpscamera.h"
+#include "gfx/fpscamera.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -49,7 +49,7 @@ namespace limbo::tests::gfx
 			.height = HEIGHT,
 			});
 
-		core::FPSCamera camera = core::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
+		limbo::gfx::FPSCamera camera = limbo::gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
 		Vertex vertices[] = { {  0.0,  1.0, -1.0 },
 							  { -1.0, -1.0, -1.0 },
@@ -75,7 +75,7 @@ namespace limbo::tests::gfx
 
 			glfwPollEvents();
 			Noop(time); // remove warning
-			core::UpdateCamera(window, camera, deltaTime);
+			limbo::gfx::updateCamera(window, camera, deltaTime);
 
 			float color[] = { 0.5f * cosf(time) + 0.5f,
 							  0.5f * sinf(time) + 0.5f,

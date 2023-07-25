@@ -4,9 +4,9 @@
 
 #include <GLFW/glfw3.h>
 
-namespace limbo::core
+namespace limbo::gfx
 {
-	FPSCamera CreateCamera(const float3& eye, const float3& center)
+	FPSCamera createCamera(const float3& eye, const float3& center)
 	{
 		FPSCamera fpsCamera = {};
 
@@ -27,7 +27,7 @@ namespace limbo::core
 		return fpsCamera;
 	}
 
-	void UpdateCamera(GLFWwindow* window, FPSCamera& fpsCamera, float deltaTime)
+	void updateCamera(GLFWwindow* window, FPSCamera& fpsCamera, float deltaTime)
 	{
 		// Update camera history
 		fpsCamera.prevView = fpsCamera.view;
@@ -36,10 +36,10 @@ namespace limbo::core
 		// Update projection aspect ratio
 		const float aspect_ratio = (float)gfx::getBackbufferWidth() / (float)gfx::getBackbufferHeight();
 
-		fpsCamera.proj = glm::perspective(0.6f, aspect_ratio, 1e-1f, 1e4f);
+		fpsCamera.proj = glm::perspective(45.0f, aspect_ratio, 1e-1f, 1e4f);
 
 		// Update view
-		float cameraSpeed = 0.02f * deltaTime;
+		float cameraSpeed = fpsCamera.cameraSpeed * deltaTime;
 
 		// Keyboard input
 		float3 rightDirection = glm::cross(fpsCamera.center, fpsCamera.up);

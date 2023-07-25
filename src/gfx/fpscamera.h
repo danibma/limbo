@@ -1,10 +1,10 @@
 #pragma once
 
-#include "math.h"
+#include "core/math.h"
 
 struct GLFWwindow;
 
-namespace limbo::core
+namespace limbo::gfx
 {
 	struct FPSCamera
 	{
@@ -13,6 +13,8 @@ namespace limbo::core
 		float3 eye;
 		float3 center;
 		float3 up;
+
+		float cameraSpeed = 0.02f;
 
 		float4x4 view;
 		float4x4 proj;
@@ -23,6 +25,6 @@ namespace limbo::core
 		float4x4 prevViewProj;
 	};
 
-	FPSCamera CreateCamera(const float3& eye, const float3& center);
-	void UpdateCamera(GLFWwindow* window, FPSCamera& fpsCamera, float deltaTime);
+	FPSCamera createCamera(const float3& eye, const float3& center);
+	void updateCamera(GLFWwindow* window, FPSCamera& fpsCamera, float deltaTime);
 }

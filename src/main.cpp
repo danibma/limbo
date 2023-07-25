@@ -5,8 +5,7 @@
 #include "gfx/rhi/buffer.h"
 #include "gfx/rhi/texture.h"
 #include "gfx/scene.h"
-
-#include "core/fpscamera.h"
+#include "gfx/fpscamera.h"
 
 #include "tests/tests.h"
 
@@ -72,7 +71,7 @@ int main(int argc, char* argv[])
 		//.flags = gfx::GfxDeviceFlag::DetailedLogging
 	});
 
-	core::FPSCamera camera = core::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
+	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
 	Vertex vertices[] = { { -1.0,  1.0, 1.0 },
 						  {  1.0,  1.0, 1.0 },
@@ -112,7 +111,7 @@ int main(int argc, char* argv[])
 
 		glfwPollEvents();
 		Noop(time); // remove warning
-		core::UpdateCamera(window, camera, deltaTime);
+		gfx::updateCamera(window, camera, deltaTime);
 
 		float color[] = { 0.5f * cosf(time) + 0.5f,
 						  0.5f * sinf(time) + 0.5f,
