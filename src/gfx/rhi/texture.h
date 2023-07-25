@@ -13,6 +13,7 @@ namespace limbo::gfx
 		uint32					height;
 		const char*				debugName;
 		D3D12_RESOURCE_FLAGS	resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+		D3D12_CLEAR_VALUE		clearValue;
 		Format					format = Format::R8_UNORM;
 		TextureType				type = TextureType::Texture2D;
 		void*					initialData;

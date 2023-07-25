@@ -87,6 +87,7 @@ int main(int argc, char* argv[])
 
 	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
 		.programName = "triangle",
+		.depthFormat = gfx::Format::D32_SFLOAT,
 		.type = gfx::ShaderType::Graphics
 	});
 

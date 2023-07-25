@@ -339,7 +339,7 @@ namespace limbo::gfx
 
 		D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-		rasterizerDesc.FrontCounterClockwise = false;
+		rasterizerDesc.FrontCounterClockwise = true;
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
 			.pRootSignature = rootSignature.Get(),
@@ -366,11 +366,11 @@ namespace limbo::gfx
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
 
+		desc.DepthStencilState.StencilEnable = false;
 		if (spec.depthFormat == Format::MAX)
-		{
-			desc.DepthStencilState.DepthEnable	 = false;
-			desc.DepthStencilState.StencilEnable = false;
-		}
+			desc.DepthStencilState.DepthEnable = false;
+		else
+			desc.DepthStencilState.DepthEnable = true;
 
 		if (spec.rtCount <= 0)
 		{

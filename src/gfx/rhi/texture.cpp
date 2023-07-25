@@ -41,10 +41,14 @@ namespace limbo::gfx
 			.VisibleNodeMask = 0
 		};
 
+		const D3D12_CLEAR_VALUE* clearValue = nullptr;
+		if (spec.clearValue.Format != DXGI_FORMAT_UNKNOWN)
+			clearValue = &spec.clearValue;
+
 		currentState = D3D12_RESOURCE_STATE_COMMON;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
 													currentState, 
-													nullptr,
+													clearValue,
 													IID_PPV_ARGS(&resource)));
 
 		initResource(spec, device);
@@ -122,7 +126,28 @@ namespace limbo::gfx
 
 	void Texture::createDSV(const TextureSpec& spec, ID3D12Device* device)
 	{
-		ensure(false);
+		FAILIF(spec.type == TextureType::Texture3D); // this is not a valid texture type fro DSV
+
+		D3D12_DEPTH_STENCIL_VIEW_DESC desc = {
+			.Format = d3dFormat(spec.format),
+		};
+
+		if (spec.type == TextureType::Texture1D)
+		{
+			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
+			desc.Texture1D = {
+				.MipSlice = 0
+			};
+		}
+		else if (spec.type == TextureType::Texture2D)
+		{
+			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+			desc.Texture2D = {
+				.MipSlice = 0,
+			};
+		}
+
+		device->CreateDepthStencilView(resource.Get(), &desc, handle.cpuHandle);
 	}
 
 	void Texture::initResource(const TextureSpec& spec, Device* device)

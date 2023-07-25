@@ -35,7 +35,10 @@ namespace limbo::gfx
 	Swapchain::~Swapchain()
 	{
 		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
+		{
 			destroyTexture(m_backbuffers[i]);
+			destroyTexture(m_depthBackbuffers[i]);
+		}
 	}
 
 	void Swapchain::initBackBuffers()
@@ -50,6 +53,23 @@ namespace limbo::gfx
 				.debugName = debugName.c_str(),
 				.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
 				.format = m_format,
+				.type = TextureType::Texture2D
+			});
+
+			std::string depthDebugName = std::format("swapchain depth backbuffer({})", i);
+			m_depthBackbuffers[i] = createTexture({
+				.width = m_backbufferWidth,
+				.height = m_backbufferHeight,
+				.debugName = depthDebugName.c_str(),
+				.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+				.clearValue = {
+					.Format = d3dFormat(m_depthFormat),
+					.DepthStencil = {
+						.Depth = 1.0f,
+						.Stencil = 0
+					}
+				},
+				.format = m_depthFormat,
 				.type = TextureType::Texture2D
 			});
 
@@ -73,9 +93,20 @@ namespace limbo::gfx
 		return m_backbuffers[index];
 	}
 
+	Handle<Texture> Swapchain::getDepthBackbuffer(uint32 index)
+	{
+		ensure(index < NUM_BACK_BUFFERS);
+		return m_depthBackbuffers[index];
+	}
+
 	Format Swapchain::getFormat()
 	{
 		return m_format;
+	}
+
+	Format Swapchain::getDepthFormat()
+	{
+		return m_depthFormat;
 	}
 
 	uint32 Swapchain::getBackbufferWidth()

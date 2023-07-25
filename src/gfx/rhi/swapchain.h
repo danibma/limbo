@@ -12,7 +12,9 @@ namespace limbo::gfx
 	{
 		ComPtr<IDXGISwapChain3>			m_swapchain;
 		Handle<Texture>					m_backbuffers[NUM_BACK_BUFFERS];
-		Format							m_format = Format::RGBA8_UNORM;
+		Handle<Texture>					m_depthBackbuffers[NUM_BACK_BUFFERS];
+		const Format					m_format      = Format::RGBA8_UNORM;
+		const Format					m_depthFormat = Format::D32_SFLOAT;
 		uint32							m_backbufferWidth;
 		uint32							m_backbufferHeight;
 
@@ -27,7 +29,9 @@ namespace limbo::gfx
 		uint32 getCurrentIndex();
 
 		Handle<Texture> getBackbuffer(uint32 index);
+		Handle<Texture> getDepthBackbuffer(uint32 index);
 		Format getFormat();
+		Format getDepthFormat();
 
 		uint32 getBackbufferWidth();
 		uint32 getBackbufferHeight();

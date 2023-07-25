@@ -204,10 +204,17 @@ namespace limbo::gfx
 			{
 				Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
 				Texture* backbuffer = rm->getTexture(backBufferHandle);
+				FAILIF(!backbuffer);
 
+				Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
+				Texture* depthBackbuffer = rm->getTexture(depthBackBufferHandle);
+				FAILIF(!depthBackbuffer);
+
+				m_commandList->OMSetRenderTargets(1, &backbuffer->handle.cpuHandle, false, &depthBackbuffer->handle.cpuHandle);
+					
 				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+				m_commandList->ClearDepthStencilView(depthBackbuffer->handle.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 				m_commandList->ClearRenderTargetView(backbuffer->handle.cpuHandle, clearColor, 0, nullptr);
-				m_commandList->OMSetRenderTargets(1, &backbuffer->handle.cpuHandle, false, nullptr);
 			}
 			else
 			{
@@ -252,6 +259,7 @@ namespace limbo::gfx
 			Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
 			Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
 			transitionResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
+
 			submitResourceBarriers();
 		}
 
@@ -268,10 +276,18 @@ namespace limbo::gfx
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
 
+		// Prepare frame render targets
 		{
 			Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
 			Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
+			FAILIF(!backbuffer);
 			transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+			Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
+			Texture* depthBackbuffer = ResourceManager::ptr->getTexture(depthBackBufferHandle);
+			FAILIF(!depthBackbuffer);
+			transitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+
 			submitResourceBarriers();
 		}
 	}
@@ -287,7 +303,14 @@ namespace limbo::gfx
 
 		Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
 		Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
+		FAILIF(!backbuffer);
 		transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+		Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
+		Texture* depthBackbuffer = ResourceManager::ptr->getTexture(depthBackBufferHandle);
+		FAILIF(!depthBackbuffer);
+		transitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+
 		submitResourceBarriers();
 	}
 
