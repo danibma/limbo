@@ -21,8 +21,23 @@ namespace limbo::gfx
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 			LB_ERROR("Could not load '%s' model: %s", path, importer.GetErrorString());
 
-		std::filesystem::path temp = path;
-		m_folderPath = temp.remove_filename().string().c_str();
+		size_t strLength = strlen(path);
+		FAILIF(strLength >= 256); // atm this is the size of m_folderPath
+		size_t finalIndex;
+		for (size_t i = strLength - 1; true; --i)
+		{
+			if (path[i] == '/' || path[i] == '\\' || i == 0)
+			{
+				finalIndex = i;
+				break;
+			}
+		}
+
+		for (size_t i = 0; i <= finalIndex; ++i)
+		{
+			m_folderPath[i] = path[i];
+			if (i == finalIndex) m_folderPath[i + 1] = '\0';
+		}
 
 		processNode(scene->mRootNode, scene);
 	}
