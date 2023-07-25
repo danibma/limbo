@@ -124,6 +124,14 @@ namespace limbo::gfx
 		delete m_srvheap;
 		delete m_rtvheap;
 		delete m_dsvheap;
+		delete m_samplerheap;
+
+#if !NO_LOG
+		IDXGIDebug1* dxgiDebug;
+		DX_CHECK(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
+		DX_CHECK(dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_IGNORE_INTERNAL)));
+		dxgiDebug->Release();
+#endif
 	}
 
 	void Device::destroySwapchainBackBuffers()
