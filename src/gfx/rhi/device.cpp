@@ -8,6 +8,8 @@
 
 #include <d3d12/d3dx12/d3dx12.h>
 
+#include "gfx/gfx.h"
+
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -19,6 +21,7 @@ extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\
 namespace limbo::gfx
 {
 	Device::Device(const WindowInfo& info)
+		: m_flags(info.flags)
 	{
 		uint32_t dxgiFactoryFlags = 0;
 
@@ -127,10 +130,13 @@ namespace limbo::gfx
 		delete m_samplerheap;
 
 #if !NO_LOG
-		IDXGIDebug1* dxgiDebug;
-		DX_CHECK(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
-		DX_CHECK(dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_IGNORE_INTERNAL)));
-		dxgiDebug->Release();
+		if (m_flags & GfxDeviceFlag::DetailedLogging)
+		{
+			IDXGIDebug1* dxgiDebug;
+			DX_CHECK(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
+			DX_CHECK(dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_FLAGS(DXGI_DEBUG_RLO_SUMMARY | DXGI_DEBUG_RLO_IGNORE_INTERNAL)));
+			dxgiDebug->Release();
+		}
 #endif
 	}
 

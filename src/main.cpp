@@ -70,6 +70,7 @@ int main(int argc, char* argv[])
 		.hwnd = glfwGetWin32Window(window),
 		.width = WIDTH,
 		.height = HEIGHT,
+		//.flags = gfx::GfxDeviceFlag::DetailedLogging
 	});
 
 	core::FPSCamera camera = core::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));

@@ -16,6 +16,8 @@ namespace limbo::gfx
 	class Buffer;
 	class Texture;
 
+	typedef uint8 GfxDeviceFlags;
+
 	class Device
 	{
 		ComPtr<IDXGIFactory2>				m_factory;
@@ -40,6 +42,8 @@ namespace limbo::gfx
 		DescriptorHeap*						m_samplerheap;
 
 		std::vector<D3D12_RESOURCE_BARRIER> m_resourceBarriers;
+
+		GfxDeviceFlags						m_flags;
 
 	public:
 		static Device* ptr;
