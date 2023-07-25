@@ -2,6 +2,11 @@
 
 #include "core/core.h"
 
+namespace limbo::core
+{
+	class Window;
+}
+
 namespace limbo::gfx
 {
 	enum GfxDeviceFlag
@@ -10,16 +15,8 @@ namespace limbo::gfx
 	};
 	typedef uint8 GfxDeviceFlags;
 
-	struct WindowInfo
-	{
-		HWND			hwnd;
-		uint32			width;
-		uint32			height;
-		GfxDeviceFlags	flags = 0;
-	};
-
 	// init functions
-	void init(const WindowInfo&& info);
+	void init(core::Window* window, GfxDeviceFlags flags = 0);
 
 	void shutdown();
 }

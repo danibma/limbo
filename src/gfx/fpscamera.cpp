@@ -2,7 +2,7 @@
 
 #include "gfx/rhi/device.h"
 
-#include <GLFW/glfw3.h>
+#include "core/input.h"
 
 namespace limbo::gfx
 {
@@ -27,7 +27,7 @@ namespace limbo::gfx
 		return fpsCamera;
 	}
 
-	void updateCamera(GLFWwindow* window, FPSCamera& fpsCamera, float deltaTime)
+	void updateCamera(core::Window* window, FPSCamera& fpsCamera, float deltaTime)
 	{
 		// Update camera history
 		fpsCamera.prevView = fpsCamera.view;
@@ -43,27 +43,25 @@ namespace limbo::gfx
 
 		// Keyboard input
 		float3 rightDirection = glm::cross(fpsCamera.center, fpsCamera.up);
-		if (glfwGetKey(window, GLFW_KEY_W)) // W
+		if (input::isKeyDown(window, input::KeyCode::W)) // W
 			fpsCamera.eye += fpsCamera.center * cameraSpeed;
-		if (glfwGetKey(window, GLFW_KEY_S)) // S
+		if (input::isKeyDown(window, input::KeyCode::S)) // S
 			fpsCamera.eye -= fpsCamera.center * cameraSpeed;
-		if (glfwGetKey(window, GLFW_KEY_A)) // A
+		if (input::isKeyDown(window, input::KeyCode::A)) // A
 			fpsCamera.eye -= rightDirection * cameraSpeed;
-		if (glfwGetKey(window, GLFW_KEY_D)) // D
+		if (input::isKeyDown(window, input::KeyCode::D)) // D
 			fpsCamera.eye += rightDirection * cameraSpeed;
-		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) // Shift
+		if (input::isKeyDown(window, input::KeyCode::LeftShift)) // Shift
 			fpsCamera.eye -= fpsCamera.up * cameraSpeed;
-		if (glfwGetKey(window, GLFW_KEY_SPACE)) // Spacebar
+		if (input::isKeyDown(window, input::KeyCode::Space)) // Spacebar
 			fpsCamera.eye += fpsCamera.up * cameraSpeed;
 
 		// mouse input
-		double mouseX, mouseY;
-		glfwGetCursorPos(window, &mouseX, &mouseY);
-		float2 mousePos = { mouseX, mouseY };
+		float2 mousePos = input::getMousePos(window);
 		float2 delta    = (mousePos - fpsCamera.lastMousePos) * 0.002f;
 		fpsCamera.lastMousePos = mousePos;
 
-		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT))
+		if (input::isMouseButtonDown(window, input::MouseButton::Right))
 		{
 			// Rotation
 			if (delta.x != 0.0f || delta.y != 0.0f)

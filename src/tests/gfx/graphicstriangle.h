@@ -8,11 +8,7 @@
 
 #include "gfx/fpscamera.h"
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+#include "core/window.h"
 
 #include "core/timer.h"
 
@@ -28,26 +24,13 @@ namespace limbo::tests::gfx
 		constexpr uint32 WIDTH  = 1280;
 		constexpr uint32 HEIGHT = 720;
 
-		if (!glfwInit())
-		{
-			LB_ERROR("Failed to initialize GLFW!");
-			return 0;
-		}
-
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-		GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "limbo", nullptr, nullptr);
-		if (!window)
-		{
-			LB_ERROR("Failed to create GLFW window!");
-			return 0;
-		}
-
-		limbo::gfx::init({
-			.hwnd = glfwGetWin32Window(window),
+		core::Window* window = core::createWindow({
+			.title = "limbo -> graphics triangle test",
 			.width = WIDTH,
-			.height = HEIGHT,
-			});
+			.height = HEIGHT
+		});
+
+		limbo::gfx::init(window);
 
 		limbo::gfx::FPSCamera camera = limbo::gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
@@ -68,12 +51,12 @@ namespace limbo::tests::gfx
 			});
 
 		core::Timer deltaTimer;
-		for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
+		for (float time = 0.0f; !window->shouldClose(); time += 0.1f)
 		{
 			float deltaTime = deltaTimer.ElapsedMilliseconds();
 			deltaTimer.Record();
 
-			glfwPollEvents();
+			window->pollEvents();
 			Noop(time); // remove warning
 			limbo::gfx::updateCamera(window, camera, deltaTime);
 
@@ -94,7 +77,8 @@ namespace limbo::tests::gfx
 		limbo::gfx::destroyShader(triangleShader);
 
 		limbo::gfx::shutdown();
-		glfwTerminate();
+		core::destroyWindow(window);
+
 		return 0;
 	}
 }

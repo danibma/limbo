@@ -6,11 +6,7 @@
 #include "gfx/rhi/shader.h"
 #include "gfx/rhi/buffer.h"
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+#include "core/window.h"
 
 namespace limbo::tests::gfx
 {
@@ -19,26 +15,13 @@ namespace limbo::tests::gfx
 		constexpr uint32 WIDTH = 1280;
 		constexpr uint32 HEIGHT = 720;
 
-		if (!glfwInit())
-		{
-			LB_ERROR("Failed to initialize GLFW!");
-			return 0;
-		}
-
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-		GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "limbo", nullptr, nullptr);
-		if (!window)
-		{
-			LB_ERROR("Failed to create GLFW window!");
-			return 0;
-		}
-
-		limbo::gfx::init({
-			.hwnd = glfwGetWin32Window(window),
+		core::Window* window = core::createWindow({
+			.title = "limbo -> compute triangle test",
 			.width = WIDTH,
-			.height = HEIGHT,
-			});
+			.height = HEIGHT
+		});
+
+		limbo::gfx::init(window);
 
 		limbo::gfx::Handle<limbo::gfx::Texture> outputTexture = limbo::gfx::createTexture({
 			.width = WIDTH,
@@ -56,9 +39,9 @@ namespace limbo::tests::gfx
 			});
 
 
-		while (!glfwWindowShouldClose(window))
+		while (!window->shouldClose())
 		{
-			glfwPollEvents();
+			window->pollEvents();
 
 			limbo::gfx::setParameter(triangleShader, "output", outputTexture);
 			limbo::gfx::bindShader(triangleShader);
@@ -73,7 +56,7 @@ namespace limbo::tests::gfx
 		limbo::gfx::destroyShader(triangleShader);
 
 		limbo::gfx::shutdown();
-		glfwTerminate();
+		core::destroyWindow(window);
 
 		return 0;
 	}

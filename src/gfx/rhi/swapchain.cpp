@@ -1,19 +1,21 @@
 ﻿#include "swapchain.h"
-#include "resourcemanager.h"
 #include "gfx/gfx.h"
+#include "device.h"
+#include "resourcemanager.h"
+
+#include "core/window.h"
 
 #include <format>
 
-#include "device.h"
 
 namespace limbo::gfx
 {
-	Swapchain::Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, const WindowInfo& info)
-		: m_backbufferWidth(info.width), m_backbufferHeight(info.height)
+	Swapchain::Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, core::Window* window)
+		: m_backbufferWidth(window->width), m_backbufferHeight(window->height)
 	{
 		DXGI_SWAP_CHAIN_DESC1 desc = {
-			.Width = info.width,
-			.Height = info.height,
+			.Width = m_backbufferWidth,
+			.Height = m_backbufferHeight,
 			.Format = d3dFormat(m_format),
 			.Stereo = false,
 			.SampleDesc = {
@@ -28,7 +30,7 @@ namespace limbo::gfx
 			.Flags = 0
 		};
 		ComPtr<IDXGISwapChain1> tempSwapchain;
-		DX_CHECK(factory->CreateSwapChainForHwnd(queue, info.hwnd, &desc, nullptr, nullptr, &tempSwapchain));
+		DX_CHECK(factory->CreateSwapChainForHwnd(queue, window->getWin32Handle(), &desc, nullptr, nullptr, &tempSwapchain));
 		tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_swapchain));
 	}
 

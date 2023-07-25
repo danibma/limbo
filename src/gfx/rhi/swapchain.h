@@ -4,6 +4,11 @@
 #include "resourcepool.h"
 #include "texture.h"
 
+namespace limbo::core
+{
+	class Window;
+}
+
 namespace limbo::gfx
 {
 	struct WindowInfo;
@@ -19,7 +24,7 @@ namespace limbo::gfx
 		uint32							m_backbufferHeight;
 
 	public:
-		Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, const WindowInfo& info);
+		Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, core::Window* window);
 		~Swapchain();
 
 		void initBackBuffers();

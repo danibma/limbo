@@ -7,15 +7,11 @@
 #include "gfx/scene.h"
 #include "gfx/fpscamera.h"
 
+#include "core/window.h"
+
 #include "tests/tests.h"
 
 #include <CLI11/CLI11.hpp>
-
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
 
 #include "core/timer.h"
 
@@ -44,32 +40,18 @@ int main(int argc, char* argv[])
 
 	if (bRunTests)
 		return tests::executeTests(argc, argv);
-	else if (bComputeTriangle)
+	if (bComputeTriangle)
 		return tests::executeComputeTriangle();
-	else if (bGraphicsTriangle)
+	if (bGraphicsTriangle)
 		return tests::executeGraphicsTriangle();
 
-	if (!glfwInit())
-	{
-		LB_ERROR("Failed to initialize GLFW!");
-		return 0;
-	}
-
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "limbo", nullptr, nullptr);
-	if (!window)
-	{
-		LB_ERROR("Failed to create GLFW window!");
-		return 0;
-	}
-	
-	gfx::init({ 
-		.hwnd = glfwGetWin32Window(window),
+	core::Window* window = core::createWindow({
+		.title = "limbo",
 		.width = WIDTH,
-		.height = HEIGHT,
-		//.flags = gfx::GfxDeviceFlag::DetailedLogging
+		.height = HEIGHT
 	});
+
+	gfx::init(window);
 
 	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
@@ -104,12 +86,12 @@ int main(int argc, char* argv[])
 	gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
 	core::Timer deltaTimer;
-	for (float time = 0.0f; !glfwWindowShouldClose(window); time += 0.1f)
+	for (float time = 0.0f; !window->shouldClose(); time += 0.1f)
 	{
 		float deltaTime = deltaTimer.ElapsedMilliseconds();
 		deltaTimer.Record();
 
-		glfwPollEvents();
+		window->pollEvents();
 		Noop(time); // remove warning
 		gfx::updateCamera(window, camera, deltaTime);
 
@@ -141,7 +123,7 @@ int main(int argc, char* argv[])
 	gfx::destroyScene(scene);
 
 	gfx::shutdown();
-	glfwTerminate();
+	core::destroyWindow(window);
 
 	return 0;
 }

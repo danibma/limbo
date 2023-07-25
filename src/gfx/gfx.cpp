@@ -8,9 +8,9 @@ namespace limbo::gfx
 	Device* Device::ptr = nullptr;
 	ResourceManager* ResourceManager::ptr = nullptr;
 
-	void init(const WindowInfo&& info)
+	void init(core::Window* window, GfxDeviceFlags flags)
 	{
-		Device::ptr = new Device(info);
+		Device::ptr = new Device(window, flags);
 		ResourceManager::ptr = new ResourceManager();
 
 		Device::ptr->initSwapchainBackBuffers();

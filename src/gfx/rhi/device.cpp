@@ -19,8 +19,8 @@ extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\
 
 namespace limbo::gfx
 {
-	Device::Device(const WindowInfo& info)
-		: m_flags(info.flags)
+	Device::Device(core::Window* window, GfxDeviceFlags flags)
+		: m_flags(flags)
 	{
 		uint32_t dxgiFactoryFlags = 0;
 
@@ -94,7 +94,7 @@ namespace limbo::gfx
 		};
 		DX_CHECK(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
 
-		m_swapchain = new Swapchain(m_commandQueue.Get(), m_factory.Get(), info);
+		m_swapchain = new Swapchain(m_commandQueue.Get(), m_factory.Get(), window);
 
 		m_frameIndex = m_swapchain->getCurrentIndex();
 

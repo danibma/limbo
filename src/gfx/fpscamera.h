@@ -2,7 +2,10 @@
 
 #include "core/math.h"
 
-struct GLFWwindow;
+namespace limbo::core
+{
+	class Window;
+}
 
 namespace limbo::gfx
 {
@@ -26,5 +29,5 @@ namespace limbo::gfx
 	};
 
 	FPSCamera createCamera(const float3& eye, const float3& center);
-	void updateCamera(GLFWwindow* window, FPSCamera& fpsCamera, float deltaTime);
+	void updateCamera(core::Window* window, FPSCamera& fpsCamera, float deltaTime);
 }

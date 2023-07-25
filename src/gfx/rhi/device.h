@@ -5,6 +5,11 @@
 
 #include <vector>
 
+namespace limbo::core
+{
+	class Window;
+}
+
 namespace limbo::gfx
 {
 	enum class DescriptorHeapType : uint8;
@@ -52,7 +57,7 @@ namespace limbo::gfx
 		static Device* ptr;
 
 	public:
-		Device(const WindowInfo& info);
+		Device(core::Window* window, GfxDeviceFlags flags);
 		~Device();
 
 		void destroySwapchainBackBuffers();
