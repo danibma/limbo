@@ -55,19 +55,8 @@ int main(int argc, char* argv[])
 
 	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
-	Vertex vertices[] = { { -1.0,  1.0, 1.0 },
-						  {  1.0,  1.0, 1.0 },
-						  {  0.0, -1.0, 1.0 } };
-	gfx::Handle<gfx::Buffer> vertexBuffer = gfx::createBuffer({ 
-		.debugName = "triangle vb",
-		.byteStride = sizeof(Vertex),
-		.byteSize = sizeof(Vertex) * 3,
-		.usage = gfx::BufferUsage::Vertex, 
-		.initialData = vertices
-	});
-
-	gfx::Handle<gfx::Shader> triangleShader = gfx::createShader({
-		.programName = "triangle",
+	gfx::Handle<gfx::Shader> deferredShader = gfx::createShader({
+		.programName = "deferredshading",
 		.depthFormat = gfx::Format::D32_SFLOAT,
 		.type = gfx::ShaderType::Graphics
 	});
@@ -82,7 +71,7 @@ int main(int argc, char* argv[])
 		.MaxLOD = 1.0f
 	});
 
-	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet.glb");
+	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.gltf");
 	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
 	core::Timer deltaTimer;
@@ -109,14 +98,17 @@ int main(int argc, char* argv[])
 		}
 		ImGui::End();
 
-		gfx::bindShader(triangleShader);
-		gfx::setParameter(triangleShader, "viewProj", camera.viewProj);
-		gfx::setParameter(triangleShader, "LinearWrap", linearWrapSampler);
+		gfx::bindShader(deferredShader);
+		gfx::setParameter(deferredShader, "viewProj", camera.viewProj);
+		gfx::setParameter(deferredShader, "LinearWrap", linearWrapSampler);
 
 		scene->drawMesh([&](const gfx::Mesh& mesh)
 		{
-			gfx::setParameter(triangleShader, "g_diffuseTexture", mesh.material.diffuse);
-			gfx::setParameter(triangleShader, "model", mesh.transform);
+			gfx::setParameter(deferredShader, "g_albedoTexture", mesh.material.albedo);
+			gfx::setParameter(deferredShader, "g_roughnessMetalTexture", mesh.material.roughnessMetal);
+			gfx::setParameter(deferredShader, "g_normalTexture", mesh.material.normal);
+			gfx::setParameter(deferredShader, "g_emissiveTexture", mesh.material.emissive);
+			gfx::setParameter(deferredShader, "model", mesh.transform);
 
 			gfx::bindVertexBuffer(mesh.vertexBuffer);
 			gfx::bindIndexBuffer(mesh.indexBuffer);
@@ -126,8 +118,7 @@ int main(int argc, char* argv[])
 		gfx::present();
 	}
 
-	gfx::destroyBuffer(vertexBuffer);
-	gfx::destroyShader(triangleShader);
+	gfx::destroyShader(deferredShader);
 
 	gfx::destroyScene(scene);
 

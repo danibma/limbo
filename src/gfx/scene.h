@@ -25,8 +25,10 @@ namespace limbo::gfx
 
 	struct MeshMaterial
 	{
-		Handle<Texture> diffuse;
-		Handle<Texture> roughness;
+		Handle<Texture> albedo;
+		Handle<Texture> roughnessMetal;
+		Handle<Texture> normal;
+		Handle<Texture> emissive;
 	};
 
 	struct Mesh
@@ -65,7 +67,7 @@ namespace limbo::gfx
 		void processNode(aiNode* node, const aiScene* scene);
 		Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
-		void* loadTexture(const aiMaterial* material, const aiScene* scene, aiTextureType type, int* width, int* height, int* channels);
+		void* loadTexture(const aiMaterial* material, const aiScene* scene, aiTextureType type, uint32 index, int* width, int* height, int* channels);
 	};
 
 	inline Scene* loadScene(const char* path)

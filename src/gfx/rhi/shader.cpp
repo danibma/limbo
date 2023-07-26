@@ -84,7 +84,11 @@ namespace limbo::gfx
 	void Shader::setTexture(const char* parameterName, Handle<Texture> texture)
 	{
 		uint32 hash = algo::hash(parameterName);
-		FAILIF(!parameterMap.contains(hash));
+		if (!parameterMap.contains(hash))
+		{
+			LB_WARN("Tried to setTexture to parameter '%s' but the parameter was not found in the shader", parameterName);
+			return;
+		}
 		ParameterInfo& parameter = parameterMap[hash];
 
 		Texture* t = ResourceManager::ptr->getTexture(texture);

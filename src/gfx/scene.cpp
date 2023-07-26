@@ -53,8 +53,10 @@ namespace limbo::gfx
 		{
 			gfx::destroyBuffer(mesh.vertexBuffer);
 			gfx::destroyBuffer(mesh.indexBuffer);
-			gfx::destroyTexture(mesh.material.diffuse);
-			gfx::destroyTexture(mesh.material.roughness);
+			gfx::destroyTexture(mesh.material.albedo);
+			gfx::destroyTexture(mesh.material.roughnessMetal);
+			gfx::destroyTexture(mesh.material.normal);
+			gfx::destroyTexture(mesh.material.emissive);
 		}
 	}
 
@@ -134,10 +136,10 @@ namespace limbo::gfx
 		// Get diffuse texture
 		{
 			int width, height, channels;
-			void* data = loadTexture(material, scene, aiTextureType_DIFFUSE, &width, &height, &channels);
+			void* data = loadTexture(material, scene, AI_MATKEY_BASE_COLOR_TEXTURE, &width, &height, &channels);
 
 			std::string debugName = std::string(mesh->mName.C_Str()) + " Diffuse";
-			modelMaterial.diffuse = ResourceManager::ptr->createTexture({
+			modelMaterial.albedo = ResourceManager::ptr->createTexture({
 				.width = (uint32)width,
 				.height = (uint32)height,
 				.debugName = debugName.c_str(),
@@ -151,10 +153,44 @@ namespace limbo::gfx
 		// Get roughness texture
 		{
 			int width, height, channels;
-			void* data = loadTexture(material, scene, aiTextureType_SHININESS, &width, &height, &channels);
+			void* data = loadTexture(material, scene, aiTextureType_UNKNOWN, 0, &width, &height, &channels);
 
 			std::string debugName = std::string(mesh->mName.C_Str()) + " Roughness";
-			modelMaterial.roughness = ResourceManager::ptr->createTexture({
+			modelMaterial.roughnessMetal = ResourceManager::ptr->createTexture({
+				.width = (uint32)width,
+				.height = (uint32)height,
+				.debugName = debugName.c_str(),
+				.format = Format::RGBA8_UNORM,
+				.type = TextureType::Texture2D,
+				.initialData = data
+			});
+			free(data);
+		}
+
+		// Get normal map
+		{
+			int width, height, channels;
+			void* data = loadTexture(material, scene, aiTextureType_NORMALS, 0, &width, &height, &channels);
+
+			std::string debugName = std::string(mesh->mName.C_Str()) + " Normal";
+			modelMaterial.normal = ResourceManager::ptr->createTexture({
+				.width = (uint32)width,
+				.height = (uint32)height,
+				.debugName = debugName.c_str(),
+				.format = Format::RGBA8_UNORM,
+				.type = TextureType::Texture2D,
+				.initialData = data
+			});
+			free(data);
+		}
+
+		// Get emissive map
+		{
+			int width, height, channels;
+			void* data = loadTexture(material, scene, aiTextureType_EMISSIVE, 0, &width, &height, &channels);
+
+			std::string debugName = std::string(mesh->mName.C_Str()) + " Emissive";
+			modelMaterial.emissive = ResourceManager::ptr->createTexture({
 				.width = (uint32)width,
 				.height = (uint32)height,
 				.debugName = debugName.c_str(),
@@ -168,7 +204,7 @@ namespace limbo::gfx
 		return Mesh(mesh->mName.C_Str(), vertices, indices, modelMaterial);
 	}
 
-	void* Scene::loadTexture(const aiMaterial* material, const aiScene* scene, aiTextureType type, int* width, int* height, int* channels)
+	void* Scene::loadTexture(const aiMaterial* material, const aiScene* scene, aiTextureType type, uint32 index, int* width, int* height, int* channels)
 	{
 		*width = 1;
 		*height = 1;
@@ -179,7 +215,7 @@ namespace limbo::gfx
 		if (count == 1)
 		{
 			aiString path;
-			aiReturn result = material->GetTexture(type, 0, &path);
+			aiReturn result = material->GetTexture(type, index, &path);
 			ensure(result == aiReturn_SUCCESS);
 			// check if the texture is embedded or if we need to load it from a file
 			if (const aiTexture* texture = scene->GetEmbeddedTexture(path.C_Str()))
@@ -200,9 +236,17 @@ namespace limbo::gfx
 			}
 		}
 
-		aiColor3D color(0.f, 0.f, 0.f);
-		material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-		glm::vec3* baseColor = new glm::vec3(color.r, color.g, color.b);
+		float4* baseColor;
+		if (type == aiTextureType_DIFFUSE || type == aiTextureType_BASE_COLOR)
+		{
+			aiColor3D color(0.f, 0.f, 0.f);
+			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+			baseColor = new float4(color.r, color.g, color.b, 1.0f);
+		}
+		else
+		{
+			baseColor = new float4(0.0f);
+		}
 
 		return baseColor;
 	}
