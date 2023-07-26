@@ -18,7 +18,6 @@ VSOut VSMain(float3 pos : Position, float2 uv : UV)
 	return result;
 }
 
-float3 color;
 Texture2D<float4> g_diffuseTexture;
 SamplerState LinearWrap;
 

@@ -11,7 +11,8 @@ namespace limbo::gfx
 {
 	enum GfxDeviceFlag
 	{
-		DetailedLogging = 1 << 0
+		DetailedLogging = 1 << 0,
+		EnableImgui		= 1 << 1
 	};
 	typedef uint8 GfxDeviceFlags;
 

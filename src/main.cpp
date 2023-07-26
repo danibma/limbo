@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 		.height = HEIGHT
 	});
 
-	gfx::init(window);
+	gfx::init(window, gfx::GfxDeviceFlag::EnableImgui);
 
 	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
@@ -82,26 +82,35 @@ int main(int argc, char* argv[])
 		.MaxLOD = 1.0f
 	});
 
-	//gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet.glb");
-	gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
+	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet.glb");
+	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
 	core::Timer deltaTimer;
-	for (float time = 0.0f; !window->shouldClose(); time += 0.1f)
+	while (!window->shouldClose())
 	{
 		float deltaTime = deltaTimer.ElapsedMilliseconds();
 		deltaTimer.Record();
 
 		window->pollEvents();
-		Noop(time); // remove warning
+
 		gfx::updateCamera(window, camera, deltaTime);
 
-		float color[] = { 0.5f * cosf(time) + 0.5f,
-						  0.5f * sinf(time) + 0.5f,
-						  1.0f };
+		ImGui::Begin("Limbo", nullptr);
+		ImGui::Text("Selected device: %s", gfx::getGPUInfo().name);
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::DragFloat("Speed", &camera.cameraSpeed, 0.1f, 0.1f);
+		}
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Text("Frame Time: %.2f ms (%.2f fps)", deltaTime, 1000.0f / deltaTime);
+		}
+		ImGui::End();
 
 		gfx::bindShader(triangleShader);
 		gfx::setParameter(triangleShader, "viewProj", camera.viewProj);
-		gfx::setParameter(triangleShader, "color", color);
 		gfx::setParameter(triangleShader, "LinearWrap", linearWrapSampler);
 
 		scene->drawMesh([&](const gfx::Mesh& mesh)

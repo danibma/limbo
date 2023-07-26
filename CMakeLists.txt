@@ -85,6 +85,9 @@ target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/
 target_link_libraries(limbo PUBLIC debug ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Debug/assimp-vc142-mtd.lib)
 target_link_libraries(limbo PUBLIC optimized ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Release/assimp-vc142-mt.lib)
 
+# imgui
+target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/imgui)
+
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/)
 
 target_compile_features(limbo PUBLIC cxx_std_20)

@@ -87,6 +87,11 @@ namespace limbo::core
 		return glfwWindowShouldClose(m_handle);
 	}
 
+	GLFWwindow* Window::getGLFWHandle()
+	{
+		return m_handle;
+	}
+
 	HWND Window::getWin32Handle()
 	{
 		return glfwGetWin32Window(m_handle);

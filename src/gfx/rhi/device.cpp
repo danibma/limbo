@@ -1,5 +1,8 @@
 ﻿#include "device.h"
 
+#include "core/window.h"
+#include "core/utils.h"
+#include "gfx/gfx.h"
 #include "swapchain.h"
 #include "descriptorheap.h"
 #include "resourcemanager.h"
@@ -7,7 +10,18 @@
 
 #include <d3d12/d3dx12/d3dx12.h>
 
-#include "gfx/gfx.h"
+#include <imgui/backends/imgui_impl_dx12.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+
+// imgui unity build
+#include <imgui/imgui.cpp>
+#include <imgui/imgui_draw.cpp>
+#include <imgui/imgui_demo.cpp>
+#include <imgui/imgui_tables.cpp>
+#include <imgui/imgui_widgets.cpp>
+#include <imgui/backends/imgui_impl_dx12.cpp>
+#include <imgui/backends/imgui_impl_glfw.cpp>
+
 
 
 #pragma comment(lib, "d3d12.lib")
@@ -20,7 +34,7 @@ extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\
 namespace limbo::gfx
 {
 	Device::Device(core::Window* window, GfxDeviceFlags flags)
-		: m_flags(flags)
+		: m_flags(flags), m_gpuInfo()
 	{
 		uint32_t dxgiFactoryFlags = 0;
 
@@ -117,6 +131,27 @@ namespace limbo::gfx
 		m_commandList->SetDescriptorHeaps(2, heaps);
 
 		MemoryAllocator::ptr = new MemoryAllocator();
+
+		// ImGui Stuff
+		if (flags & GfxDeviceFlag::EnableImgui)
+		{
+			// Setup Dear ImGui context
+			IMGUI_CHECKVERSION();
+			ImGui::CreateContext();
+			ImGuiIO& io = ImGui::GetIO();
+			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+			io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+			DescriptorHandle imguiDescriptor = m_srvheap->allocateHandle();
+
+			ImGui_ImplGlfw_InitForOther(window->getGLFWHandle(), true);
+			ImGui_ImplDX12_Init(m_device.Get(), NUM_BACK_BUFFERS, d3dFormat(m_swapchain->getFormat()),
+			                    m_srvheap->getHeap(), imguiDescriptor.cpuHandle, imguiDescriptor.gpuHandle);
+
+			ImGui_ImplDX12_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+		}
 	}
 
 	Device::~Device()
@@ -140,6 +175,10 @@ namespace limbo::gfx
 			dxgiDebug->Release();
 		}
 #endif
+
+		ImGui_ImplDX12_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 	}
 
 	void Device::destroySwapchainBackBuffers()
@@ -300,6 +339,12 @@ namespace limbo::gfx
 
 	void Device::present()
 	{
+		if (m_flags & GfxDeviceFlag::EnableImgui)
+		{
+			ImGui::Render();
+			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_commandList.Get());
+		}
+
 		{
 			Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
 			Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
@@ -337,6 +382,13 @@ namespace limbo::gfx
 			transitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
 			submitResourceBarriers();
+		}
+
+		if (m_flags & GfxDeviceFlag::EnableImgui)
+		{
+			ImGui_ImplDX12_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
 		}
 	}
 
@@ -459,6 +511,8 @@ namespace limbo::gfx
 		DXGI_ADAPTER_DESC1 desc;
 		DX_CHECK(m_adapter->GetDesc1(&desc));
 		LB_WLOG("Initiliazed D3D12 on %ls", desc.Description);
+
+		utils::StringConvert(desc.Description, m_gpuInfo.name);
 	}
 
 	void Device::nextFrame()

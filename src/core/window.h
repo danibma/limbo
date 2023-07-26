@@ -40,6 +40,7 @@ namespace limbo::core
 
 		bool shouldClose();
 
+		GLFWwindow* getGLFWHandle();
 		HWND getWin32Handle();
 
 	private:

@@ -3,6 +3,9 @@
 #include "definitions.h"
 #include "resourcepool.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui/imgui.h>
+
 #include <vector>
 
 namespace limbo::core
@@ -23,6 +26,11 @@ namespace limbo::gfx
 	class Shader;
 
 	typedef uint8 GfxDeviceFlags;
+
+	struct GPUInfo
+	{
+		char name[128];
+	};
 
 	class Device
 	{
@@ -51,6 +59,8 @@ namespace limbo::gfx
 
 		GfxDeviceFlags						m_flags;
 
+		GPUInfo								m_gpuInfo;
+
 		Handle<Shader>						m_boundShader;
 
 	public:
@@ -73,6 +83,11 @@ namespace limbo::gfx
 		void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 
 		void present();
+
+		const GPUInfo& getGPUInfo() const
+		{
+			return m_gpuInfo;
+		}
 
 		Format getSwapchainFormat();
 
@@ -101,6 +116,11 @@ namespace limbo::gfx
 
 		void installDrawState();
 	};
+
+	inline const GPUInfo& getGPUInfo()
+	{
+		return Device::ptr->getGPUInfo();
+	}
 
 	inline void copyTextureToBackBuffer(Handle<Texture> texture)
 	{
