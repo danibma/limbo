@@ -108,6 +108,23 @@ namespace limbo::gfx
 		s->setSampler(parameterName, sampler);
 	}
 
+	// Used to bind render targets, from other shaders, as a texture
+	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Shader> rtShader, uint8 rtIndex)
+	{
+		Shader* s = ResourceManager::ptr->getShader(shader);
+		FAILIF(!s);
+		Shader* renderTargetShader = ResourceManager::ptr->getShader(rtShader);
+		FAILIF(!renderTargetShader);
+
+		if (rtIndex >= renderTargetShader->rtCount)
+		{
+			LB_WARN("Failed to set parameter '%s' because the render target index '%d' is not valid!", parameterName, rtIndex);
+			return;
+		}
+
+		s->setTexture(parameterName, renderTargetShader->renderTargets[rtIndex]);
+	}
+
 	template<typename T>
 	inline void setParameter(Handle<Shader> shader, const char* parameterName, const T& value)
 	{

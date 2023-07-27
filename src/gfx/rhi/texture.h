@@ -17,6 +17,7 @@ namespace limbo::gfx
 		Format					format = Format::R8_UNORM;
 		TextureType				type = TextureType::Texture2D;
 		void*					initialData;
+		bool					bCreateSrv = true;
 	};
 
 	class Texture
@@ -24,9 +25,9 @@ namespace limbo::gfx
 	public:
 		ComPtr<ID3D12Resource>		resource;
 		D3D12_RESOURCE_STATES		currentState;
+		D3D12_RESOURCE_STATES		initialState;
 		DescriptorHandle			handle;
-
-		bool						bIsUnordered = false;
+		DescriptorHandle			srvhandle;
 
 	public:
 		Texture() = default;
@@ -36,8 +37,8 @@ namespace limbo::gfx
 		~Texture();
 
 		// D3D12 Specific
-		void createSRV(const TextureSpec& spec, ID3D12Device* device);
-		void createUAV(const TextureSpec& spec, ID3D12Device* device);
+		void createSRV(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
+		void createUAV(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
 		void createRTV(const TextureSpec& spec, ID3D12Device* device);
 		void createDSV(const TextureSpec& spec, ID3D12Device* device);
 

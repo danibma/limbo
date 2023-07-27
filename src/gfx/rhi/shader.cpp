@@ -98,6 +98,7 @@ namespace limbo::gfx
 
 		Texture* t = ResourceManager::ptr->getTexture(texture);
 		FAILIF(!t);
+		FAILIF(t->srvhandle.gpuHandle.ptr == 0); // texture is not a SRV
 
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
 		if (parameter.type == ParameterType::UAV)
@@ -109,7 +110,7 @@ namespace limbo::gfx
 
 		Device::ptr->transitionResource(t, newState);
 
-		parameter.descriptor = t->handle.gpuHandle;
+		parameter.descriptor = t->srvhandle.gpuHandle;
 	}
 
 	void Shader::setBuffer(const char* parameterName, Handle<Buffer> buffer)

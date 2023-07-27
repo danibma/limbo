@@ -55,7 +55,8 @@ namespace limbo::gfx
 				.debugName = debugName.c_str(),
 				.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
 				.format = m_format,
-				.type = TextureType::Texture2D
+				.type = TextureType::Texture2D,
+				.bCreateSrv = false
 			});
 
 			std::string depthDebugName = std::format("swapchain depth backbuffer({})", i);
@@ -72,7 +73,8 @@ namespace limbo::gfx
 					}
 				},
 				.format = m_depthFormat,
-				.type = TextureType::Texture2D
+				.type = TextureType::Texture2D,
+				.bCreateSrv = false
 			});
 
 			tempBuffer->Release();

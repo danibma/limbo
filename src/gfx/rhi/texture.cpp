@@ -13,9 +13,6 @@ namespace limbo::gfx
 		Device* device = Device::ptr;
 		ID3D12Device* d3ddevice = device->getDevice();
 
-		if (spec.resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-			bIsUnordered = true;
-
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = d3dTextureType(spec.type),
 			.Alignment = 0,
@@ -52,8 +49,9 @@ namespace limbo::gfx
 		else
 			currentState = D3D12_RESOURCE_STATE_COMMON;
 
+		initialState = currentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
-													currentState, 
+													initialState, 
 													clearValue,
 													IID_PPV_ARGS(&resource)));
 
@@ -66,10 +64,10 @@ namespace limbo::gfx
 		initResource(spec, Device::ptr);
 	}
 
-	void Texture::createUAV(const TextureSpec& spec, ID3D12Device* device)
+	void Texture::createUAV(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
 	{
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
-			.Format = d3dFormat(spec.format),
+			.Format = format,
 		};
 
 		if (spec.type == TextureType::Texture1D)
@@ -95,7 +93,7 @@ namespace limbo::gfx
 			uavDesc.Texture3D.WSize = -1;
 		}
 
-		device->CreateUnorderedAccessView(resource.Get(), nullptr, &uavDesc, handle.cpuHandle);
+		device->CreateUnorderedAccessView(resource.Get(), nullptr, &uavDesc, srvhandle.cpuHandle);
 	}
 
 	void Texture::createRTV(const TextureSpec& spec, ID3D12Device* device)
@@ -160,6 +158,7 @@ namespace limbo::gfx
 	{
 		ID3D12Device* d3ddevice = device->getDevice();
 
+		DXGI_FORMAT srvformat = d3dFormat(spec.format);
 		if (spec.resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
 		{
 			handle = device->allocateHandle(DescriptorHeapType::RTV);
@@ -169,15 +168,31 @@ namespace limbo::gfx
 		{
 			handle = device->allocateHandle(DescriptorHeapType::DSV);
 			createDSV(spec, d3ddevice);
+			switch (spec.format)
+			{
+			case Format::D16_UNORM: 
+				srvformat = DXGI_FORMAT_R16_UNORM;
+				break;
+			case Format::D32_SFLOAT: 
+				srvformat = DXGI_FORMAT_R32_FLOAT;
+				break;
+			case Format::D32_SFLOAT_S8_UINT: 
+				srvformat = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+				break;
+			default:
+				ensure(false);
+				break;
+			}
 		}
-		else
-		{
-			handle = device->allocateHandle(DescriptorHeapType::SRV);
 
-			if (bIsUnordered)
-				createUAV(spec, d3ddevice);
+		if (spec.bCreateSrv)
+		{
+			srvhandle = device->allocateHandle(DescriptorHeapType::SRV);
+
+			if (spec.resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+				createUAV(spec, d3ddevice, srvformat);
 			else
-				createSRV(spec, d3ddevice);
+				createSRV(spec, d3ddevice, srvformat);
 		}
 
 		if (spec.initialData)
@@ -220,10 +235,10 @@ namespace limbo::gfx
 	{
 	}
 
-	void Texture::createSRV(const TextureSpec& spec, ID3D12Device* device)
+	void Texture::createSRV(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
-			.Format = d3dFormat(spec.format),
+			.Format = format,
 			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
 		};
 
@@ -256,6 +271,6 @@ namespace limbo::gfx
 			};
 		}
 
-		device->CreateShaderResourceView(resource.Get(), &srvDesc, handle.cpuHandle);
+		device->CreateShaderResourceView(resource.Get(), &srvDesc, srvhandle.cpuHandle);
 	}
 }

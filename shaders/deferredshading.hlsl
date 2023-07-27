@@ -1,4 +1,6 @@
-﻿float4x4 viewProj;
+﻿#include "common.hlsli"
+
+float4x4 viewProj;
 float4x4 model;
 
 struct VSOut
@@ -18,10 +20,9 @@ VSOut VSMain(float3 pos : Position, float2 uv : UV)
 	return result;
 }
 
-SamplerState LinearWrap;
-Texture2D<float4> g_albedoTexture;
-Texture2D<float4> g_roughnessMetalTexture;
-Texture2D<float4> g_emissiveTexture;
+Texture2D g_albedoTexture;
+Texture2D g_roughnessMetalTexture;
+Texture2D g_emissiveTexture;
 
 struct DeferredShadingOutput
 {

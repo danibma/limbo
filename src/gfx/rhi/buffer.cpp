@@ -40,8 +40,9 @@ namespace limbo::gfx
 		};
 
 		currentState = D3D12_RESOURCE_STATE_COMMON;
+		initialState = currentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
-													currentState,
+													initialState,
 													nullptr,
 													IID_PPV_ARGS(&resource)));
 

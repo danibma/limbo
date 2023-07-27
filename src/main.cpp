@@ -20,11 +20,6 @@ using namespace limbo;
 #define WIDTH  1280
 #define HEIGHT 720
 
-struct Vertex
-{
-	float position[3];
-};
-
 int main(int argc, char* argv[])
 {
 	CLI::App app { "limbo" };
@@ -55,6 +50,16 @@ int main(int argc, char* argv[])
 
 	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
+	gfx::Handle<gfx::Sampler> linearWrapSampler = gfx::createSampler({
+		.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+		.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+		.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
+		.MinLOD = 0.0f,
+		.MaxLOD = 1.0f
+		});
+
 	gfx::Handle<gfx::Shader> deferredShader = gfx::createShader({
 		.programName = "deferredshading",
 		.rtFormats = {
@@ -67,14 +72,9 @@ int main(int argc, char* argv[])
 		.type = gfx::ShaderType::Graphics
 	});
 
-	gfx::Handle<gfx::Sampler> linearWrapSampler = gfx::createSampler({
-		.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-		.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
-		.MinLOD = 0.0f,
-		.MaxLOD = 1.0f
+	gfx::Handle<gfx::Shader> compositeShader = gfx::createShader({
+		.programName = "scenecomposite",
+		.type = gfx::ShaderType::Graphics
 	});
 
 	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.gltf");
@@ -120,6 +120,13 @@ int main(int argc, char* argv[])
 			gfx::bindIndexBuffer(mesh.indexBuffer);
 			gfx::drawIndexed((uint32)mesh.indexCount);
 		});
+		gfx::endEvent();
+
+		gfx::beginEvent("Scene Composite");
+		gfx::bindShader(compositeShader);
+		gfx::setParameter(compositeShader, "g_sceneTexture", deferredShader, 0);
+		gfx::setParameter(compositeShader, "LinearWrap", linearWrapSampler);
+		gfx::draw(6);
 		gfx::endEvent();
 
 		gfx::present();

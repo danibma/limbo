@@ -30,6 +30,7 @@ namespace limbo::gfx
 	public:
 		ComPtr<ID3D12Resource>	resource;
 		D3D12_RESOURCE_STATES	currentState;
+		D3D12_RESOURCE_STATES	initialState;
 		DescriptorHandle		handle;
 
 		uint32					byteStride = 0;
