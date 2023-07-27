@@ -249,20 +249,7 @@ namespace limbo::gfx
 			{
 				width  = m_swapchain->getBackbufferWidth();
 				height = m_swapchain->getBackbufferHeight();
-
-				Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
-				Texture* backbuffer = rm->getTexture(backBufferHandle);
-				FAILIF(!backbuffer);
-
-				Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
-				Texture* depthBackbuffer = rm->getTexture(depthBackBufferHandle);
-				FAILIF(!depthBackbuffer);
-
-				m_commandList->OMSetRenderTargets(1, &backbuffer->handle.cpuHandle, false, &depthBackbuffer->handle.cpuHandle);
-
-				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-				m_commandList->ClearDepthStencilView(depthBackbuffer->handle.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-				m_commandList->ClearRenderTargetView(backbuffer->handle.cpuHandle, clearColor, 0, nullptr);
+				bindSwapchainRenderTargets();
 			}
 			else
 			{
@@ -312,6 +299,25 @@ namespace limbo::gfx
 		m_commandList->SetPipelineState(shader->pipelineState.Get());
 	}
 
+	void Device::bindSwapchainRenderTargets()
+	{
+		ResourceManager* rm = ResourceManager::ptr;
+
+		Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
+		Texture* backbuffer = rm->getTexture(backBufferHandle);
+		FAILIF(!backbuffer);
+
+		Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
+		Texture* depthBackbuffer = rm->getTexture(depthBackBufferHandle);
+		FAILIF(!depthBackbuffer);
+
+		m_commandList->OMSetRenderTargets(1, &backbuffer->handle.cpuHandle, false, &depthBackbuffer->handle.cpuHandle);
+
+		constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+		m_commandList->ClearDepthStencilView(depthBackbuffer->handle.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		m_commandList->ClearRenderTargetView(backbuffer->handle.cpuHandle, clearColor, 0, nullptr);
+	}
+
 	void Device::draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
 	{
 		installDrawState();
@@ -341,6 +347,11 @@ namespace limbo::gfx
 	{
 		if (m_flags & GfxDeviceFlag::EnableImgui)
 		{
+			ResourceManager* rm = ResourceManager::ptr;
+			Shader* shader = rm->getShader(m_boundShader);
+			if (!shader->useSwapchainRT)
+				bindSwapchainRenderTargets();
+
 			ImGui::Render();
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_commandList.Get());
 		}

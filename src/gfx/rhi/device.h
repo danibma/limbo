@@ -116,6 +116,8 @@ namespace limbo::gfx
 		void submitResourceBarriers();
 
 		void installDrawState();
+		void bindSwapchainRenderTargets();
+
 	};
 
 	inline const GPUInfo& getGPUInfo()
