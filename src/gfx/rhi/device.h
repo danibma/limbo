@@ -90,6 +90,7 @@ namespace limbo::gfx
 		}
 
 		Format getSwapchainFormat();
+		Format getSwapchainDepthFormat();
 
 		// D3D12 specific
 		ID3D12Device* getDevice() const { return m_device.Get(); }

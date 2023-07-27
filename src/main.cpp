@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
 
 	gfx::Handle<gfx::Shader> deferredShader = gfx::createShader({
 		.programName = "deferredshading",
-		.depthFormat = gfx::Format::D32_SFLOAT,
 		.type = gfx::ShaderType::Graphics
 	});
 

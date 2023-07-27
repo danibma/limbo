@@ -397,6 +397,11 @@ namespace limbo::gfx
 		return m_swapchain->getFormat();
 	}
 
+	Format Device::getSwapchainDepthFormat()
+	{
+		return m_swapchain->getDepthFormat();
+	}
+
 	void Device::initSwapchainBackBuffers()
 	{
 		m_swapchain->initBackBuffers();

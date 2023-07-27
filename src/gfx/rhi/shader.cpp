@@ -360,7 +360,6 @@ namespace limbo::gfx
 			},
 			.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 			.PrimitiveTopologyType = spec.topology,
-			.DSVFormat = d3dFormat(spec.depthFormat),
 			.SampleDesc = {
 				.Count = 1,
 				.Quality = 0 
@@ -370,21 +369,21 @@ namespace limbo::gfx
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
 
-		desc.DepthStencilState.StencilEnable = false;
-		if (spec.depthFormat == Format::MAX)
-			desc.DepthStencilState.DepthEnable = false;
-		else
-			desc.DepthStencilState.DepthEnable = true;
-
 		if (spec.rtCount <= 0)
 		{
 			desc.RTVFormats[0]		= d3dFormat(Device::ptr->getSwapchainFormat());
+			desc.DSVFormat			= d3dFormat(Device::ptr->getSwapchainDepthFormat());
 			desc.NumRenderTargets	= 1;
 			useSwapchainRT			= true;
 		}
 		else
 		{
 			useSwapchainRT = false;
+
+			if (spec.depthFormat == Format::MAX)
+				desc.DepthStencilState.DepthEnable = false;
+			else
+				desc.DSVFormat = d3dFormat(Device::ptr->getSwapchainDepthFormat());
 
 			for (uint8 i = 0; i < spec.rtCount; ++i)
 				desc.RTVFormats[i] = d3dFormat(spec.rtFormats[i]);
