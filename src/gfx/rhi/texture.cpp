@@ -45,7 +45,13 @@ namespace limbo::gfx
 		if (spec.clearValue.Format != DXGI_FORMAT_UNKNOWN)
 			clearValue = &spec.clearValue;
 
-		currentState = D3D12_RESOURCE_STATE_COMMON;
+		if (spec.resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+			currentState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+		else if (spec.resourceFlags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+			currentState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		else
+			currentState = D3D12_RESOURCE_STATE_COMMON;
+
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
 													currentState, 
 													clearValue,

@@ -1,15 +1,15 @@
 #include "shader.h"
 
-#include <dxcapi.h>
-
 #include "device.h"
-#include "shadercompiler.h"
-
 #include "core/algo.h"
+#include "shadercompiler.h"
+#include "resourcemanager.h"
+
+#include <dxcapi.h>
+#include <format>
 
 #include <d3d12/d3dx12/d3dx12.h>
 
-#include "resourcemanager.h"
 
 namespace limbo::gfx
 {
@@ -28,6 +28,11 @@ namespace limbo::gfx
 
 	Shader::~Shader()
 	{
+		for (uint8 i = 0; i < rtCount; ++i)
+			destroyTexture(renderTargets[i]);
+
+		if (depthTarget.isValid())
+			destroyTexture(depthTarget);
 	}
 
 	void Shader::setComputeRootParameters(ID3D12GraphicsCommandList* cmd)
@@ -315,7 +320,6 @@ namespace limbo::gfx
 
 	void Shader::createGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec)
 	{
-		FAILIF(spec.rtCount > 8)
 		FAILIF(!spec.programName);
 
 		SC::Kernel vs;
@@ -369,7 +373,11 @@ namespace limbo::gfx
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
 
-		if (spec.rtCount <= 0)
+		rtCount = 0;
+		for (uint8 i = 0; spec.rtFormats[i] != Format::UNKNOWN; ++i)
+			rtCount++;
+
+		if (rtCount <= 0)
 		{
 			desc.RTVFormats[0]		= d3dFormat(Device::ptr->getSwapchainFormat());
 			desc.DSVFormat			= d3dFormat(Device::ptr->getSwapchainDepthFormat());
@@ -380,14 +388,51 @@ namespace limbo::gfx
 		{
 			useSwapchainRT = false;
 
-			if (spec.depthFormat == Format::MAX)
-				desc.DepthStencilState.DepthEnable = false;
-			else
-				desc.DSVFormat = d3dFormat(Device::ptr->getSwapchainDepthFormat());
-
-			for (uint8 i = 0; i < spec.rtCount; ++i)
+			for (uint8 i = 0; i < rtCount; ++i)
+			{
 				desc.RTVFormats[i] = d3dFormat(spec.rtFormats[i]);
-			desc.NumRenderTargets = spec.rtCount;
+
+				std::string debugName = std::format("{} RT {}", spec.programName, i);
+				renderTargets[i] = createTexture({
+					.width = Device::ptr->getBackbufferWidth(),
+					.height = Device::ptr->getBackbufferHeight(),
+					.debugName = debugName.c_str(),
+					.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+					.clearValue = {
+						.Format = d3dFormat(spec.rtFormats[i]),
+						.Color = { 0.0f, 0.0f, 0.0f, 0.0f }
+					},
+					.format = spec.rtFormats[i],
+					.type = TextureType::Texture2D,
+				});
+			}
+			desc.NumRenderTargets = rtCount;
+
+			if (spec.depthFormat == Format::UNKNOWN)
+			{
+				desc.DepthStencilState.DepthEnable = false;
+			}
+			else
+			{
+				desc.DSVFormat = d3dFormat(spec.depthFormat);
+
+				std::string debugName = std::format("{} DSV", spec.programName);
+				depthTarget = createTexture({
+					.width = Device::ptr->getBackbufferWidth(),
+					.height = Device::ptr->getBackbufferHeight(),
+					.debugName = debugName.c_str(),
+					.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+					.clearValue = {
+						.Format = d3dFormat(spec.depthFormat),
+						.DepthStencil = {
+							.Depth = 1.0f,
+							.Stencil = 0
+						}
+					},
+					.format = spec.depthFormat,
+					.type = TextureType::Texture2D,
+				});
+			}
 		}
 
 		DX_CHECK(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState)));

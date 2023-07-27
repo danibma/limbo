@@ -99,8 +99,12 @@ namespace limbo::gfx
 
 		DescriptorHandle allocateHandle(DescriptorHeapType heapType);
 
+		void transitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState);
 		void transitionResource(Texture* texture, D3D12_RESOURCE_STATES newState);
+
+		void transitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
 		void transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
+
 		void copyResource(ID3D12Resource* dst, ID3D12Resource* src);
 		void copyBufferToTexture(ID3D12Resource* dst, ID3D12Resource* src);
 
@@ -117,7 +121,6 @@ namespace limbo::gfx
 
 		void installDrawState();
 		void bindSwapchainRenderTargets();
-
 	};
 
 	inline const GPUInfo& getGPUInfo()

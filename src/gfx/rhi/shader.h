@@ -17,9 +17,8 @@ namespace limbo::gfx
 		const char* ps_entryPoint = "PSMain";
 		const char* cs_entryPoint = "CSMain";
 
-		uint8  rtCount;
 		Format rtFormats[8];
-		Format depthFormat = Format::MAX;
+		Format depthFormat = Format::UNKNOWN;
 
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE	topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
@@ -68,6 +67,10 @@ namespace limbo::gfx
 		ParameterMap						parameterMap;
 		ShaderType							type;
 		bool								useSwapchainRT;
+
+		uint8								rtCount;
+		Handle<class Texture>				renderTargets[8];
+		Handle<class Texture>				depthTarget;
 
 	public:
 		Shader() = default;

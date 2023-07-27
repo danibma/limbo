@@ -57,6 +57,13 @@ int main(int argc, char* argv[])
 
 	gfx::Handle<gfx::Shader> deferredShader = gfx::createShader({
 		.programName = "deferredshading",
+		.rtFormats = {
+			gfx::Format::RGBA8_UNORM,
+			gfx::Format::RGBA8_UNORM,
+			gfx::Format::RGBA8_UNORM,
+			gfx::Format::RGBA8_UNORM
+		},
+		.depthFormat = gfx::Format::D32_SFLOAT,
 		.type = gfx::ShaderType::Graphics
 	});
 
@@ -105,7 +112,6 @@ int main(int argc, char* argv[])
 		{
 			gfx::setParameter(deferredShader, "g_albedoTexture", mesh.material.albedo);
 			gfx::setParameter(deferredShader, "g_roughnessMetalTexture", mesh.material.roughnessMetal);
-			gfx::setParameter(deferredShader, "g_normalTexture", mesh.material.normal);
 			gfx::setParameter(deferredShader, "g_emissiveTexture", mesh.material.emissive);
 			gfx::setParameter(deferredShader, "model", mesh.transform);
 

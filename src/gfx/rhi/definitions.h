@@ -48,6 +48,8 @@ namespace limbo::gfx
 
 	enum class Format : uint8
 	{
+		UNKNOWN,
+
 		// R
 		R8_UNORM,
 		R8_UINT,
@@ -78,9 +80,7 @@ namespace limbo::gfx
 		BC7_UNORM_BLOCK,
 		ASTC_4x4_UNORM_BLOCK,
 		//Surface
-		BGRA8_UNORM,
-
-		MAX
+		BGRA8_UNORM
 	};
 
 	inline D3D12_RESOURCE_DIMENSION d3dTextureType(TextureType type)
@@ -152,7 +152,7 @@ namespace limbo::gfx
 			return DXGI_FORMAT_UNKNOWN; // No support in D3D12
 		case Format::BGRA8_UNORM:
 			return DXGI_FORMAT_B8G8R8A8_UNORM;
-		case Format::MAX:
+		case Format::UNKNOWN:
 		default: 
 			return DXGI_FORMAT_UNKNOWN;
 		}

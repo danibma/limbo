@@ -243,17 +243,31 @@ namespace limbo::gfx
 
 		if (pBoundShader->type == ShaderType::Graphics)
 		{
-			int32 width  = 0;
-			int32 height = 0;
+			int32 width  = m_swapchain->getBackbufferWidth();
+			int32 height = m_swapchain->getBackbufferHeight();
 			if (pBoundShader->useSwapchainRT)
 			{
-				width  = m_swapchain->getBackbufferWidth();
-				height = m_swapchain->getBackbufferHeight();
 				bindSwapchainRenderTargets();
 			}
 			else
 			{
-				ensure(false);
+				Texture* depthBackbuffer = rm->getTexture(pBoundShader->depthTarget);
+				FAILIF(!depthBackbuffer);
+
+				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+				m_commandList->ClearDepthStencilView(depthBackbuffer->handle.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
+				D3D12_CPU_DESCRIPTOR_HANDLE rtHandles[8];
+				for (uint8 i = 0; i < pBoundShader->rtCount; ++i)
+				{
+					Texture* rt = rm->getTexture(pBoundShader->renderTargets[i]);
+					FAILIF(!rt);
+
+					m_commandList->ClearRenderTargetView(rt->handle.cpuHandle, clearColor, 0, nullptr);
+					rtHandles[i] = rt->handle.cpuHandle;
+				}
+
+				m_commandList->OMSetRenderTargets(pBoundShader->rtCount, rtHandles, false, &depthBackbuffer->handle.cpuHandle);
 			}
 
 			D3D12_VIEWPORT viewport = {
@@ -445,6 +459,20 @@ namespace limbo::gfx
 		default: 
 			return DescriptorHandle();
 		}
+	}
+
+	void Device::transitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState)
+	{
+		Texture* t = ResourceManager::ptr->getTexture(texture);
+		FAILIF(!t);
+		transitionResource(t, newState);
+	}
+
+	void Device::transitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState)
+	{
+		Buffer* b = ResourceManager::ptr->getBuffer(buffer);
+		FAILIF(!b);
+		transitionResource(b, newState);
 	}
 
 	void Device::transitionResource(Texture* texture, D3D12_RESOURCE_STATES newState)

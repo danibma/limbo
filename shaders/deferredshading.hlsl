@@ -21,18 +21,31 @@ VSOut VSMain(float3 pos : Position, float2 uv : UV)
 SamplerState LinearWrap;
 Texture2D<float4> g_albedoTexture;
 Texture2D<float4> g_roughnessMetalTexture;
-Texture2D<float4> g_normalTexture;
 Texture2D<float4> g_emissiveTexture;
 
-float4 PSMain(VSOut input) : SV_Target
+struct DeferredShadingOutput
 {
+    float4 albedo       : SV_Target0;
+    float4 roughness    : SV_Target1;
+    float4 metallic     : SV_Target2;
+    float4 emissive     : SV_Target3;
+};
+
+DeferredShadingOutput PSMain(VSOut input)
+{
+    DeferredShadingOutput result;
+
     float4 albedo               = g_albedoTexture.Sample(LinearWrap, input.uv);
     float4 roughnessMetalMap    = g_roughnessMetalTexture.Sample(LinearWrap, input.uv);
-    float4 normalMap            = g_normalTexture.Sample(LinearWrap, input.uv);
     float4 emissiveMap          = g_emissiveTexture.Sample(LinearWrap, input.uv);
 
-    float roughness = roughnessMetalMap.g;
-    float metallic = roughnessMetalMap.b;
+    float roughness     = roughnessMetalMap.g;
+    float metallic      = roughnessMetalMap.b;
 
-    return albedo;
+    result.albedo       = albedo;
+    result.roughness    = roughness;
+    result.metallic     = metallic;
+    result.emissive     = emissiveMap;
+
+    return result;
 }

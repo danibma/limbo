@@ -77,7 +77,7 @@ namespace limbo::gfx::SC
         // IDxcCompiler3::Compile will always return an error buffer, but its length will be zero if there are no warnings or errors.
         if (errors != nullptr && errors->GetStringLength() != 0)
         {
-            LB_ERROR("Failed to compile %s shader: %s", cpath.c_str(), errors->GetStringPointer());
+            LB_ERROR("%s", errors->GetStringPointer());
             return false;
         }
 
