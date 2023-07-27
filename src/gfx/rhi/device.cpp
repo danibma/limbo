@@ -9,6 +9,7 @@
 #include "memoryallocator.h"
 
 #include <d3d12/d3dx12/d3dx12.h>
+#include <WinPixEventRuntime/pix3.h>
 
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
@@ -361,6 +362,8 @@ namespace limbo::gfx
 	{
 		if (m_flags & GfxDeviceFlag::EnableImgui)
 		{
+			beginEvent("ImGui");
+
 			ResourceManager* rm = ResourceManager::ptr;
 			Shader* shader = rm->getShader(m_boundShader);
 			if (!shader->useSwapchainRT)
@@ -368,6 +371,8 @@ namespace limbo::gfx
 
 			ImGui::Render();
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_commandList.Get());
+
+			endEvent();
 		}
 
 		{
@@ -513,6 +518,16 @@ namespace limbo::gfx
 			.SubresourceIndex = 0 
 		};
 		m_commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+	}
+
+	void Device::beginEvent(const char* name, uint64 color)
+	{
+		PIXBeginEvent(m_commandList.Get(), color, name);
+	}
+
+	void Device::endEvent()
+	{
+		PIXEndEvent(m_commandList.Get());
 	}
 
 	uint32 Device::getBackbufferWidth()

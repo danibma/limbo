@@ -104,6 +104,7 @@ int main(int argc, char* argv[])
 		}
 		ImGui::End();
 
+		gfx::beginEvent("Geometry Pass");
 		gfx::bindShader(deferredShader);
 		gfx::setParameter(deferredShader, "viewProj", camera.viewProj);
 		gfx::setParameter(deferredShader, "LinearWrap", linearWrapSampler);
@@ -119,6 +120,7 @@ int main(int argc, char* argv[])
 			gfx::bindIndexBuffer(mesh.indexBuffer);
 			gfx::drawIndexed((uint32)mesh.indexCount);
 		});
+		gfx::endEvent();
 
 		gfx::present();
 	}

@@ -74,6 +74,9 @@ namespace limbo::gfx
 
 		void copyTextureToBackBuffer(Handle<Texture> texture);
 
+		void beginEvent(const char* name, uint64 color = 0);
+		void endEvent();
+
 		void bindVertexBuffer(Handle<Buffer> buffer);
 		void bindIndexBuffer(Handle<Buffer> buffer);
 		void bindShader(Handle<Shader> shader);
@@ -131,6 +134,16 @@ namespace limbo::gfx
 	inline void copyTextureToBackBuffer(Handle<Texture> texture)
 	{
 		Device::ptr->copyTextureToBackBuffer(texture);
+	}
+
+	inline void beginEvent(const char* name, uint64 color = 0)
+	{
+		Device::ptr->beginEvent(name, color);
+	}
+
+	inline void endEvent()
+	{
+		Device::ptr->endEvent();
 	}
 
 	inline void bindVertexBuffer(Handle<Buffer> buffer)

@@ -25,6 +25,25 @@ function(GroupSourcesByFolder target)
   endif()
 endfunction()
 
+function(AddDLL dllFilepath dllFilename)
+    add_custom_command(
+        TARGET limbo
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${dllFilepath}
+                ${CMAKE_CURRENT_BINARY_DIR}/Debug/${dllFilename}
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${dllFilepath}
+                ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/${dllFilename}
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${dllFilepath}
+                ${CMAKE_CURRENT_BINARY_DIR}/Release/${dllFilename}
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${dllFilepath}
+                ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/${dllFilename}
+    )
+endfunction()
+
 project(limbo)
 
 # Files
@@ -76,17 +95,25 @@ set_target_properties(uninstall PROPERTIES FOLDER "third_party/glfw3")
 
 # glm
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/glm)
+
 # dxc
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/inc)
 target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/lib/x64/dxcompiler.lib)
+AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll dxil.dll)
 
 # d3d12
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/include)
+AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll D3D12/D3D12Core.dll)
 
 # assimp
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/include)
 target_link_libraries(limbo PUBLIC debug ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Debug/assimp-vc142-mtd.lib)
 target_link_libraries(limbo PUBLIC optimized ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Release/assimp-vc142-mt.lib)
+
+# WinPixEventRuntime
+target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/WinPixEventRuntime/Include)
+target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/WinPixEventRuntime/bin/x64/WinPixEventRuntime.lib)
+AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/WinPixEventRuntime/bin/x64/WinPixEventRuntime.dll WinPixEventRuntime.dll)
 
 # imgui
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/imgui)
@@ -100,39 +127,7 @@ target_compile_options(limbo PRIVATE
     -D_HAS_EXCEPTIONS=0
 )
 
-# copy DLL's
-add_custom_command(
-    TARGET limbo
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/Debug/D3D12/D3D12Core.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/D3D12/D3D12Core.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/Release/D3D12/D3D12Core.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/D3D12/D3D12Core.dll)
-
-add_custom_command(
-    TARGET limbo
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/Debug/dxil.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/dxil.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/Release/dxil.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/dxil.dll)
-
+# special DLL's...
 add_custom_command(
     TARGET limbo
     POST_BUILD
