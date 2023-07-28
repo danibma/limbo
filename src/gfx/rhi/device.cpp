@@ -393,10 +393,10 @@ namespace limbo::gfx
 
 		nextFrame();
 
-		MemoryAllocator::ptr->flushUploadBuffers();
-
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+		MemoryAllocator::ptr->flushUploadBuffers(m_frameIndex);
 
 		prepareFrameDelegate.Broadcast();
 

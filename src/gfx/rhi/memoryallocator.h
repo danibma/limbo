@@ -2,14 +2,20 @@
 
 #include "definitions.h"
 
-#include <vector>
-
 namespace limbo::gfx
 {
+#define MEMORY_ALLOCATOR_MAX_UPLOAD 32
+
 	class MemoryAllocator
 	{
 	private:
-		std::vector<ID3D12Resource*> m_uploadBuffers;
+		struct UploadBuffersList
+		{
+			ID3D12Resource* resources[MEMORY_ALLOCATOR_MAX_UPLOAD];
+			uint32			nextAvailableIndex = 0;
+		};
+
+		UploadBuffersList m_uploadBuffersPerFrame[NUM_BACK_BUFFERS];
 
 	public:
 		 static MemoryAllocator* ptr;
@@ -19,6 +25,6 @@ namespace limbo::gfx
 		~MemoryAllocator();
 
 		ID3D12Resource* createUploadBuffer(uint32 size);
-		void flushUploadBuffers();
+		void flushUploadBuffers(uint32 frameIndex);
 	};
 }

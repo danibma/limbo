@@ -7,13 +7,19 @@ namespace limbo::gfx
 
 	MemoryAllocator::~MemoryAllocator()
 	{
-		flushUploadBuffers();
+		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
+			flushUploadBuffers(i);
 	}
 
 	ID3D12Resource* MemoryAllocator::createUploadBuffer(uint32 size)
 	{
 		Device* device = Device::ptr;
 		ID3D12Device* d3ddevice = device->getDevice();
+
+		uint32 currentFrame = device->getCurrentFrameIndex();
+		UploadBuffersList& list = m_uploadBuffersPerFrame[currentFrame];
+		uint32 listIndex = list.nextAvailableIndex;
+		FAILIF(listIndex >= MEMORY_ALLOCATOR_MAX_UPLOAD, nullptr);
 
 		ID3D12Resource* resource;
 
@@ -47,14 +53,20 @@ namespace limbo::gfx
 													nullptr,
 													IID_PPV_ARGS(&resource)));
 
-		m_uploadBuffers.emplace_back(resource);
+		list.resources[listIndex] = resource;
+		list.nextAvailableIndex++;
 		return resource;
 	}
 
-	void MemoryAllocator::flushUploadBuffers()
+	void MemoryAllocator::flushUploadBuffers(uint32 frameIndex)
 	{
-		for (ID3D12Resource* resource : m_uploadBuffers)
-			resource->Release();
-		m_uploadBuffers.clear();
+		UploadBuffersList& list = m_uploadBuffersPerFrame[frameIndex];
+		uint32 resourcesUsed = list.nextAvailableIndex;
+		for (uint32 i = 0; i < resourcesUsed; ++i)
+		{
+			FAILIF(!list.resources[i]);
+			list.resources[i]->Release();
+		}
+		list.nextAvailableIndex = 0;
 	}
 }
