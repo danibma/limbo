@@ -8,6 +8,8 @@
 
 #include <vector>
 
+#include <CppDelegates/Delegates.h>
+
 namespace limbo::core
 {
 	class Window;
@@ -65,6 +67,9 @@ namespace limbo::gfx
 
 	public:
 		static Device* ptr;
+
+		DECLARE_MULTICAST_DELEGATE(PrepareFrame);
+		PrepareFrame prepareFrameDelegate;
 
 	public:
 		Device(core::Window* window, GfxDeviceFlags flags);

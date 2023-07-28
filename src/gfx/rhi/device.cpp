@@ -23,7 +23,7 @@
 #include <imgui/backends/imgui_impl_dx12.cpp>
 #include <imgui/backends/imgui_impl_glfw.cpp>
 
-
+unsigned int DelegateHandle::CURRENT_ID = 0;
 
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -395,6 +395,8 @@ namespace limbo::gfx
 
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+
+		prepareFrameDelegate.Broadcast();
 
 		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
 		m_commandList->SetDescriptorHeaps(2, heaps);

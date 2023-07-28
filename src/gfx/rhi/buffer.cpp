@@ -75,6 +75,13 @@ namespace limbo::gfx
 			utils::StringConvert(spec.debugName, wname);
 			DX_CHECK(resource->SetName(wname.c_str()));
 		}
+
+		device->prepareFrameDelegate.AddRaw(this, &Buffer::resetResourceState);
+	}
+
+	void Buffer::resetResourceState()
+	{
+		Device::ptr->transitionResource(this, initialState);
 	}
 
 	Buffer::~Buffer()

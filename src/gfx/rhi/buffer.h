@@ -40,6 +40,8 @@ namespace limbo::gfx
 		Buffer() = default;
 		Buffer(const BufferSpec& spec);
 
+		void resetResourceState();
+
 		virtual ~Buffer();
 	};
 }

@@ -55,6 +55,8 @@ namespace limbo::gfx
 													clearValue,
 													IID_PPV_ARGS(&resource)));
 
+		device->prepareFrameDelegate.AddRaw(this, &Texture::resetResourceState);
+
 		initResource(spec, device);
 	}
 
@@ -152,6 +154,11 @@ namespace limbo::gfx
 		}
 
 		device->CreateDepthStencilView(resource.Get(), &desc, handle.cpuHandle);
+	}
+
+	void Texture::resetResourceState()
+	{
+		Device::ptr->transitionResource(this, initialState);
 	}
 
 	void Texture::initResource(const TextureSpec& spec, Device* device)

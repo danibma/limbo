@@ -42,6 +42,8 @@ namespace limbo::gfx
 		void createRTV(const TextureSpec& spec, ID3D12Device* device);
 		void createDSV(const TextureSpec& spec, ID3D12Device* device);
 
+		void resetResourceState();
+
 		void initResource(const TextureSpec& spec, class Device* device);
 	};
 }

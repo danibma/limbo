@@ -133,6 +133,7 @@ int main(int argc, char* argv[])
 	}
 
 	gfx::destroyShader(deferredShader);
+	gfx::destroyShader(compositeShader);
 
 	gfx::destroyScene(scene);
 
