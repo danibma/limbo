@@ -12,8 +12,8 @@ namespace limbo::gfx
 	class Handle
 	{
 	public:
-		Handle() : m_index(0), m_generation(0) {}
-		bool isValid() { return m_index != ~0; }
+		Handle() : m_index(0xFFFF), m_generation(0) {}
+		bool isValid() { return m_index != 0xFFFF; }
 
 	private:
 		Handle(uint16 index, uint16 generation) : m_index(index), m_generation(generation) {}
@@ -53,6 +53,7 @@ namespace limbo::gfx
 		void deleteHandle(Handle<HandleType> handle)
 		{
 			m_freeSlots.push(handle.m_index);
+			ensure(m_freeSlots.size() <= MAX_SIZE);
 			ensure(handle.isValid());
 			m_objects[handle.m_index].data->~HandleType();
 			++m_objects[handle.m_index].generation;
