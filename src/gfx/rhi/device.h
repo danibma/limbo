@@ -92,6 +92,11 @@ namespace limbo::gfx
 
 		void present();
 
+		uint32 getCurrentFrameIndex() const
+		{
+			return m_frameIndex;
+		}
+
 		const GPUInfo& getGPUInfo() const
 		{
 			return m_gpuInfo;
@@ -122,6 +127,8 @@ namespace limbo::gfx
 	private:
 		void pickGPU();
 		void waitGPU();
+
+		void onWindowClose();
 
 		void nextFrame();
 

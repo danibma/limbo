@@ -3,6 +3,8 @@
 #include "core.h"
 #include "input.h"
 
+#include <CppDelegates/Delegates.h>
+
 struct GLFWwindow;
 
 namespace limbo::core
@@ -43,6 +45,9 @@ namespace limbo::core
 		GLFWwindow* getGLFWHandle();
 		HWND getWin32Handle();
 
+		DECLARE_MULTICAST_DELEGATE(OnWindowShouldClose);
+		OnWindowShouldClose onWindowShouldClose;
+
 	private:
 		bool isKeyPressed(input::KeyCode key);
 		bool isKeyDown(input::KeyCode key);
@@ -60,6 +65,7 @@ namespace limbo::core
 		friend void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		friend void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 		friend void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+		friend void window_close_callback(GLFWwindow* window);
 
 		// Input
 		friend bool input::isKeyPressed(core::Window* window, input::KeyCode key);

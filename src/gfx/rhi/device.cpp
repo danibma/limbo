@@ -68,6 +68,8 @@ namespace limbo::gfx
 
 		DX_CHECK(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_device)));
 
+		window->onWindowShouldClose.AddRaw(this, &Device::onWindowClose);
+
 #if !NO_LOG
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		{
@@ -603,5 +605,10 @@ namespace limbo::gfx
 		
 		// Increment the fence value for the current frame
 		m_fenceValues[m_frameIndex]++;
+	}
+
+	void Device::onWindowClose()
+	{
+		waitGPU();
 	}
 }
