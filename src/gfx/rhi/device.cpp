@@ -254,6 +254,11 @@ namespace limbo::gfx
 			}
 			else
 			{
+				// first transition the render targets to the correct resource state
+				for (uint8 i = 0; i < pBoundShader->rtCount; ++i)
+					transitionResource(pBoundShader->renderTargets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
+				submitResourceBarriers();
+
 				Texture* depthBackbuffer = rm->getTexture(pBoundShader->depthTarget);
 				FAILIF(!depthBackbuffer);
 
@@ -397,8 +402,6 @@ namespace limbo::gfx
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
 
 		MemoryAllocator::ptr->flushUploadBuffers(m_frameIndex);
-
-		prepareFrameDelegate.Broadcast();
 
 		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
 		m_commandList->SetDescriptorHeaps(2, heaps);

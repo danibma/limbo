@@ -77,8 +77,8 @@ int main(int argc, char* argv[])
 		.type = gfx::ShaderType::Graphics
 	});
 
-	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.gltf");
-	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
+	//gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.gltf");
+	gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
 	core::Timer deltaTimer;
 	while (!window->shouldClose())

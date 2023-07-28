@@ -4,7 +4,7 @@
 
 namespace limbo::gfx
 {
-#define MEMORY_ALLOCATOR_MAX_UPLOAD 32
+#define MEMORY_ALLOCATOR_MAX_UPLOAD 1024
 
 	class MemoryAllocator
 	{

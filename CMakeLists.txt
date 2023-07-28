@@ -100,6 +100,7 @@ target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/inc)
 target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/lib/x64/dxcompiler.lib)
 AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll dxil.dll)
+AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxcompiler.dll dxcompiler.dll)
 
 # d3d12
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/include)

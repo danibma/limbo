@@ -13,6 +13,10 @@ namespace limbo::gfx
 		Device* device = Device::ptr;
 		ID3D12Device* d3ddevice = device->getDevice();
 
+		D3D12_RESOURCE_FLAGS resourceFlags = spec.resourceFlags;
+		if (!spec.bCreateSrv)
+			resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = d3dTextureType(spec.type),
 			.Alignment = 0,
@@ -26,7 +30,7 @@ namespace limbo::gfx
 				.Quality = 0
 			},
 			.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN,
-			.Flags = spec.resourceFlags
+			.Flags = resourceFlags
 		};
 
 		// #todo: use CreatePlacedResource instead of CreateCommittedResource
@@ -54,8 +58,6 @@ namespace limbo::gfx
 													initialState, 
 													clearValue,
 													IID_PPV_ARGS(&resource)));
-
-		device->prepareFrameDelegate.AddRaw(this, &Texture::resetResourceState);
 
 		initResource(spec, device);
 	}
@@ -154,11 +156,6 @@ namespace limbo::gfx
 		}
 
 		device->CreateDepthStencilView(resource.Get(), &desc, handle.cpuHandle);
-	}
-
-	void Texture::resetResourceState()
-	{
-		Device::ptr->transitionResource(this, initialState);
 	}
 
 	void Texture::initResource(const TextureSpec& spec, Device* device)
