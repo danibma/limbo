@@ -55,7 +55,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 #define INTERNAL_PLATFORM_LOG(msg) OutputDebugStringA(msg)
 #define INTERNAL_PLATFORM_WLOG(msg) OutputDebugStringW(msg)
 
-#if LIMBO_DEBUG
+#if !NO_LOG
 	#define INTERNAL_PLATFORM_BREAK() __debugbreak();
 #else
 	#define INTERNAL_PLATFORM_BREAK();
@@ -135,7 +135,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 //
 // Assertion macros
 //
-#if LIMBO_DEBUG
+#if !NO_LOG
 	#define ensure(expr) \
 		([&]() \
 		{\

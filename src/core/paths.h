@@ -6,8 +6,6 @@ namespace limbo::paths
 	void getPath(const char* path, char* result)
 	{
 		size_t strLength = strlen(path);
-		size_t resultLength = strlen(result);
-		FAILIF(strLength > resultLength);
 		size_t finalIndex;
 		for (size_t i = strLength - 1; true; --i)
 		{
@@ -29,8 +27,6 @@ namespace limbo::paths
 	void getExtension(const char* path, char* result, bool withDot = false)
 	{
 		size_t strLength = strlen(path);
-		size_t resultLength = strlen(result);
-		FAILIF(strLength > resultLength);
 		size_t dotIndex;
 		for (size_t i = strLength - 1; true; --i)
 		{
@@ -61,8 +57,6 @@ namespace limbo::paths
 	void getFilename(const char* path, char* result, bool withExtension = false)
 	{
 		size_t strLength = strlen(path);
-		size_t resultLength = strlen(result);
-		FAILIF(strLength > resultLength);
 		size_t startIndex;
 		size_t finalIndex = strLength;
 		for (size_t i = strLength - 1; true; --i)
