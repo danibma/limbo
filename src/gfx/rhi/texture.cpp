@@ -3,7 +3,8 @@
 #include <d3d12/d3dx12/d3dx12_resource_helpers.h>
 
 #include "device.h"
-#include "memoryallocator.h"
+#include "resourcemanager.h"
+#include "ringbufferallocator.h"
 #include "core/utils.h"
 
 namespace limbo::gfx
@@ -206,23 +207,15 @@ namespace limbo::gfx
 			uint64 size;
 			d3ddevice->GetCopyableFootprints(&desc, 0, 1, 0, nullptr, nullptr, nullptr, &size);
 
-			ID3D12Resource* uploadBuffer = MemoryAllocator::ptr->createUploadBuffer((uint32)size);
-			FAILIF(!uploadBuffer);
+			std::vector<D3D12_SUBRESOURCE_DATA> subresourceData;
+			subresourceData.emplace_back(spec.initialData, spec.width * 4, spec.width * spec.height * 4);
 
-			void* data;
-			uploadBuffer->Map(0, nullptr, &data);
-			memcpy(data, spec.initialData, (uint32)size);
-			uploadBuffer->Unmap(0, nullptr);
+			RingBufferAllocation allocation;
+			ensure(RingBufferAllocator::ptr->allocate(size, allocation));
 
-			device->copyBufferToTexture(resource.Get(), uploadBuffer);
-
-			if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
-			{
-				std::wstring wname;
-				utils::StringConvert(spec.debugName, wname);
-				wname.append(L"(upload buffer)");
-				DX_CHECK(uploadBuffer->SetName(wname.c_str()));
-			}
+			Buffer* allocationBuffer = ResourceManager::ptr->getBuffer(allocation.buffer);
+			FAILIF(!allocationBuffer);
+			UpdateSubresources(device->getCommandList(), resource.Get(), allocationBuffer->resource.Get(), allocation.offset, 0, 1, subresourceData.data());
 
 			currentState = D3D12_RESOURCE_STATE_COPY_DEST;
 		}

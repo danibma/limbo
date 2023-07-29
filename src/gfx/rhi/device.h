@@ -2,6 +2,7 @@
 
 #include "definitions.h"
 #include "resourcepool.h"
+#include "resourcemanager.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui/imgui.h>
@@ -70,9 +71,24 @@ namespace limbo::gfx
 		Device(core::Window* window, GfxDeviceFlags flags);
 		~Device();
 
-		void destroySwapchainBackBuffers();
-
 		void copyTextureToBackBuffer(Handle<Texture> texture);
+		void copyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst);
+		void copyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+		void copyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+
+		template<typename T1, typename T2>
+		void copyResource(Handle<T1> src, Handle<T2> dst)
+		{
+			static_assert(std::_Is_any_of_v<T1, Texture, Buffer>);
+			static_assert(std::_Is_any_of_v<T2, Texture, Buffer>);
+
+			Texture* dstResource = ResourceManager::ptr->getTexture(dst);
+			FAILIF(!dstResource);
+			Buffer* srcResource = ResourceManager::ptr->getBuffer(src);
+			FAILIF(!srcResource);
+
+			m_commandList->CopyResource(dstResource->resource.Get(), srcResource->resource.Get());
+		}
 
 		void beginEvent(const char* name, uint64 color = 0);
 		void endEvent();
@@ -102,8 +118,7 @@ namespace limbo::gfx
 
 		// D3D12 specific
 		ID3D12Device* getDevice() const { return m_device.Get(); }
-
-		void initSwapchainBackBuffers();
+		ID3D12GraphicsCommandList* getCommandList() const { return m_commandList.Get(); }
 
 		DescriptorHandle allocateHandle(DescriptorHeapType heapType);
 
@@ -113,13 +128,14 @@ namespace limbo::gfx
 		void transitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
 		void transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
 
-		void copyResource(ID3D12Resource* dst, ID3D12Resource* src);
-		void copyBufferToTexture(ID3D12Resource* dst, ID3D12Resource* src);
-
 		uint32 getBackbufferWidth();
 		uint32 getBackbufferHeight();
 
 	private:
+
+		void initSwapchainBackBuffers();
+		void destroySwapchainBackBuffers();
+
 		void pickGPU();
 		void waitGPU();
 
@@ -141,6 +157,22 @@ namespace limbo::gfx
 	inline void copyTextureToBackBuffer(Handle<Texture> texture)
 	{
 		Device::ptr->copyTextureToBackBuffer(texture);
+	}
+
+	inline void copyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
+	{
+		Device::ptr->copyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
+	}
+
+	template<typename T1, typename T2>
+	void copyResource(Handle<T1> src, Handle<T2> dst)
+	{
+		Device::ptr->copyResource(src, dst);
+	}
+
+	inline void copyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
+	{
+		Device::ptr->copyBufferToTexture(src, dst);
 	}
 
 	inline void beginEvent(const char* name, uint64 color = 0)

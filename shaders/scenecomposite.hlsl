@@ -37,8 +37,8 @@ float4 PSMain(in QuadResult quad) : SV_Target
 {
 	float3 finalColor = g_sceneTexture.Sample(LinearWrap, quad.uv).rgb;
     
-	finalColor = AcesFilm(finalColor); // tonemapping
-	finalColor = pow(finalColor, (float3) (1.0 / 2.2)); // gamma correction
+	//finalColor = AcesFilm(finalColor); // tonemapping
+	//finalColor = pow(finalColor, (float3) (1.0 / 2.2)); // gamma correction
     
 	return float4(finalColor, 1.0f);
 }

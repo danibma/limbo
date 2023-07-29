@@ -1,6 +1,6 @@
 #include "buffer.h"
 #include "device.h"
-#include "memoryallocator.h"
+#include "ringbufferallocator.h"
 
 #include "core/utils.h"
 
@@ -30,9 +30,13 @@ namespace limbo::gfx
 			.Flags = flags
 		};
 
+		D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
+		if (spec.usage == BufferUsage::Upload)
+			heapType = D3D12_HEAP_TYPE_UPLOAD;
+
 		// #todo: use CreatePlacedResource instead of CreateCommittedResource
 		D3D12_HEAP_PROPERTIES heapProps = {
-			.Type = D3D12_HEAP_TYPE_DEFAULT,
+			.Type = heapType,
 			.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
 			.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN,
 			.CreationNodeMask = 0,
@@ -40,6 +44,8 @@ namespace limbo::gfx
 		};
 
 		currentState = D3D12_RESOURCE_STATE_COMMON;
+		if (spec.usage == BufferUsage::Upload)
+			currentState = D3D12_RESOURCE_STATE_GENERIC_READ;
 		initialState = currentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
 													initialState,
@@ -48,25 +54,13 @@ namespace limbo::gfx
 
 		if (spec.initialData)
 		{
-			ID3D12Resource* uploadBuffer = MemoryAllocator::ptr->createUploadBuffer(spec.byteSize);
-			FAILIF(!uploadBuffer);
+			RingBufferAllocation allocation;
+			ensure(RingBufferAllocator::ptr->allocate(spec.byteSize, allocation));
+			memcpy((uint8*)allocation.mappedData, spec.initialData, spec.byteSize);
 
-			void* data;
-			uploadBuffer->Map(0, nullptr, &data);
-			memcpy(data, spec.initialData, spec.byteSize);
-			uploadBuffer->Unmap(0, nullptr);
-
-			device->copyResource(resource.Get(), uploadBuffer);
-
-			if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
-			{
-				std::wstring wname;
-				utils::StringConvert(spec.debugName, wname);
-				wname.append(L"(upload buffer)");
-				DX_CHECK(uploadBuffer->SetName(wname.c_str()));
-			}
-
-			currentState = D3D12_RESOURCE_STATE_COPY_DEST;
+			Buffer* allocationBuffer = ResourceManager::ptr->getBuffer(allocation.buffer);
+			FAILIF(!allocationBuffer);
+			Device::ptr->copyBufferToBuffer(allocationBuffer, this, spec.byteSize, allocation.offset, 0);
 		}
 
 		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))

@@ -160,3 +160,6 @@ Usage: just put Noop(<varName>); at any line in a function, then you can set a b
 */
 template<typename... Args>
 FORCENOINLINE void Noop(Args... args) {}
+
+#define LB_NON_COPYABLE(TYPE)  \
+    TYPE(TYPE const &) = delete; TYPE &operator =(TYPE const &) = delete

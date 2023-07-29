@@ -5,8 +5,7 @@
 #include "gfx/gfx.h"
 #include "swapchain.h"
 #include "descriptorheap.h"
-#include "resourcemanager.h"
-#include "memoryallocator.h"
+#include "ringbufferallocator.h"
 
 #include <d3d12/d3dx12/d3dx12.h>
 #include <WinPixEventRuntime/pix3.h>
@@ -112,6 +111,8 @@ namespace limbo::gfx
 		DX_CHECK(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
 
 		m_swapchain = new Swapchain(m_commandQueue.Get(), m_factory.Get(), window);
+		onPostResourceManagerInit.AddRaw(this, &Device::initSwapchainBackBuffers);
+		onPreResourceManagerShutdown.AddRaw(this, &Device::destroySwapchainBackBuffers);
 
 		m_frameIndex = m_swapchain->getCurrentIndex();
 
@@ -133,7 +134,7 @@ namespace limbo::gfx
 		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
 		m_commandList->SetDescriptorHeaps(2, heaps);
 
-		MemoryAllocator::ptr = new MemoryAllocator();
+		RingBufferAllocator::ptr = new RingBufferAllocator(utils::ToMB (128));
 
 		// ImGui Stuff
 		if (flags & GfxDeviceFlag::EnableImgui)
@@ -161,8 +162,8 @@ namespace limbo::gfx
 	{
 		waitGPU();
 
-		delete MemoryAllocator::ptr;
-		MemoryAllocator::ptr = nullptr;
+		delete RingBufferAllocator::ptr;
+		RingBufferAllocator::ptr = nullptr;
 
 		delete m_srvheap;
 		delete m_rtvheap;
@@ -208,6 +209,51 @@ namespace limbo::gfx
 		submitResourceBarriers();
 	}
 
+	void Device::copyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
+	{
+		Texture* dstTexture = ResourceManager::ptr->getTexture(dst);
+		FAILIF(!dstTexture);
+		Buffer* srcBuffer = ResourceManager::ptr->getBuffer(src);
+		FAILIF(!srcBuffer);
+
+		D3D12_RESOURCE_DESC dstDesc = dstTexture->resource->GetDesc();
+
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT srcFootprints[D3D12_REQ_MIP_LEVELS] = {};
+		m_device->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, 0, srcFootprints, nullptr, nullptr, nullptr);
+
+		D3D12_TEXTURE_COPY_LOCATION srcLocation = {
+			.pResource = srcBuffer->resource.Get(),
+			.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+			.PlacedFootprint = srcFootprints[0]
+		};
+
+		D3D12_TEXTURE_COPY_LOCATION dstLocation = {
+			.pResource = dstTexture->resource.Get(),
+			.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+			.SubresourceIndex = 0
+		};
+		m_commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+	}
+
+	void Device::copyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
+	{
+		Buffer* srcBuffer = ResourceManager::ptr->getBuffer(src);
+		FAILIF(!srcBuffer);
+		Buffer* dstBuffer = ResourceManager::ptr->getBuffer(dst);
+		FAILIF(!dstBuffer);
+
+		copyBufferToBuffer(srcBuffer, dstBuffer, numBytes, srcOffset, dstOffset);
+	}
+
+	void Device::copyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
+	{
+		transitionResource(src, D3D12_RESOURCE_STATE_GENERIC_READ);
+		transitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST);
+		submitResourceBarriers();
+
+		m_commandList->CopyBufferRegion(dst->resource.Get(), dstOffset, src->resource.Get(), srcOffset, numBytes);
+	}
+
 	void Device::bindVertexBuffer(Handle<Buffer> buffer)
 	{
 		ResourceManager* rm = ResourceManager::ptr;
@@ -216,7 +262,7 @@ namespace limbo::gfx
 
 		D3D12_VERTEX_BUFFER_VIEW vbView = {
 			.BufferLocation = vb->resource->GetGPUVirtualAddress(),
-			.SizeInBytes = vb->byteSize,
+			.SizeInBytes = (uint32)vb->byteSize,
 			.StrideInBytes = vb->byteStride
 		};
 		m_commandList->IASetVertexBuffers(0, 1, &vbView);
@@ -230,7 +276,7 @@ namespace limbo::gfx
 
 		D3D12_INDEX_BUFFER_VIEW ibView = {
 			.BufferLocation = ib->resource->GetGPUVirtualAddress(),
-			.SizeInBytes = ib->byteSize,
+			.SizeInBytes = (uint32)ib->byteSize,
 			.Format = DXGI_FORMAT_R32_UINT
 		};
 
@@ -401,8 +447,6 @@ namespace limbo::gfx
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
 
-		MemoryAllocator::ptr->flushUploadBuffers(m_frameIndex);
-
 		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
 		m_commandList->SetDescriptorHeaps(2, heaps);
 
@@ -499,32 +543,6 @@ namespace limbo::gfx
 		if (buffer->currentState == newState) return;
 		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(buffer->resource.Get(), buffer->currentState, newState));
 		buffer->currentState = newState;
-	}
-
-	void Device::copyResource(ID3D12Resource* dst, ID3D12Resource* src)
-	{
-		m_commandList->CopyResource(dst, src);
-	}
-
-	void Device::copyBufferToTexture(ID3D12Resource* dst, ID3D12Resource* src)
-	{
-		D3D12_RESOURCE_DESC dstDesc = dst->GetDesc();
-
-		D3D12_PLACED_SUBRESOURCE_FOOTPRINT srcFootprints[D3D12_REQ_MIP_LEVELS] = {};
-		m_device->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, 0, srcFootprints, nullptr, nullptr, nullptr);
-
-		D3D12_TEXTURE_COPY_LOCATION srcLocation = {
-			.pResource = src,
-			.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-			.PlacedFootprint = srcFootprints[0]
-		};
-
-		D3D12_TEXTURE_COPY_LOCATION dstLocation = {
-			.pResource = dst,
-			.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-			.SubresourceIndex = 0 
-		};
-		m_commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
 	}
 
 	void Device::beginEvent(const char* name, uint64 color)
