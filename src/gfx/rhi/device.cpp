@@ -129,7 +129,7 @@ namespace limbo::gfx
 		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
 		m_commandList->SetDescriptorHeaps(2, heaps);
 
-		RingBufferAllocator::ptr = new RingBufferAllocator(utils::ToMB (128));
+		RingBufferAllocator::ptr = new RingBufferAllocator(utils::ToMB(128));
 
 		// ImGui Stuff
 		if (flags & GfxDeviceFlag::EnableImgui)

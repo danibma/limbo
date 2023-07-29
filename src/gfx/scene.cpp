@@ -29,6 +29,9 @@ namespace limbo::gfx
 
 	Scene::Scene(const char* path)
 	{
+		LB_LOG("Starting loading %s", path);
+		core::Timer timer;
+
 		cgltf_options options = {};
 		cgltf_data* data = nullptr;
 		cgltf_result result = cgltf_parse_file(&options, path, &data);
@@ -37,12 +40,15 @@ namespace limbo::gfx
 		FAILIF(result != cgltf_result_success);
 
 		paths::getPath(path, m_folderPath);
+		paths::getFilename(path, m_sceneName);
 
 		cgltf_scene* scene = data->scene;
 		for (size_t i = 0; i < scene->nodes_count; ++i)
 			processNode(scene->nodes[i]);
 
 		cgltf_free(data);
+
+		LB_LOG("Finished loading %s (took %.2fs)", path, timer.ElapsedSeconds());
 	}
 
 	Scene* Scene::load(const char* path)
@@ -121,6 +127,12 @@ namespace limbo::gfx
 
 	Mesh Scene::processMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive)
 	{
+		std::string meshName;
+		if (mesh->name)
+			meshName = mesh->name;
+		else
+			meshName = m_sceneName;
+
 		PrimitiveData primitiveData;
 
 		// process vertices
@@ -172,11 +184,11 @@ namespace limbo::gfx
 			{
 				const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
 				{
-					std::string debugName = std::string(mesh->name) + "Albedo";
+					std::string debugName = meshName + "Albedo";
 					loadTexture(&workflow.base_color_texture, debugName.c_str(), modelMaterial.albedo);
 				}
 				{
-					std::string debugName = std::string(mesh->name) + "MetallicRoughness";
+					std::string debugName = meshName + "MetallicRoughness";
 					loadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), modelMaterial.roughnessMetal);
 				}
 			}
@@ -186,16 +198,19 @@ namespace limbo::gfx
 			}
 
 			{
-				std::string debugName = std::string(mesh->name) + "Emissive";
+				std::string debugName = meshName + "Emissive";
 				loadTexture(&material->emissive_texture, debugName.c_str(), modelMaterial.emissive);
 			}
 		}
 
-		return Mesh(mesh->name, vertices, primitiveData.indicesStream, modelMaterial);
+		return Mesh(meshName.c_str(), vertices, primitiveData.indicesStream, modelMaterial);
 	}
 
 	void Scene::loadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture)
 	{
+		if (!textureView->texture)
+			return;
+
 		int width	 = 0;
 		int height	 = 0;
 		int channels = 0;

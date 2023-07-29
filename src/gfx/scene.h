@@ -59,6 +59,7 @@ namespace limbo::gfx
 	{
 		std::vector<Mesh>		m_meshes;
 		char					m_folderPath[256];
+		char					m_sceneName[128];
 
 	protected:
 		Scene() = default;
