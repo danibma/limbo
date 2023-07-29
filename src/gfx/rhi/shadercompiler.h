@@ -2,12 +2,8 @@
 
 #include "core/core.h"
 
-#include "definitions.h"
-
 #include <dxcapi.h>
 #include <d3d12shader.h>
-
-#include <vector>
 
 namespace limbo::gfx::SC
 {

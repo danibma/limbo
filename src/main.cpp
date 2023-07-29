@@ -12,8 +12,6 @@
 
 #include "tests/tests.h"
 
-#include <CLI11/CLI11.hpp>
-
 #include "core/timer.h"
 
 using namespace limbo;
@@ -23,22 +21,13 @@ using namespace limbo;
 
 int main(int argc, char* argv[])
 {
-	CLI::App app { "limbo" };
+	argh::parser cmdl(argv);
 
-	bool bRunTests = false;
-	app.add_flag("--tests", bRunTests, "Run tests");
-	bool bComputeTriangle = false;
-	app.add_flag("--ctriangle", bComputeTriangle, "Run compute triangle test");
-	bool bGraphicsTriangle = false;
-	app.add_flag("--gtriangle", bGraphicsTriangle, "Run graphics triangle test");
-
-	CLI11_PARSE(app, argc, argv);
-
-	if (bRunTests)
+	if (cmdl[{ "--tests" }])
 		return tests::executeTests(argc, argv);
-	if (bComputeTriangle)
+	if (cmdl[{ "--ctriangle" }])
 		return tests::executeComputeTriangle();
-	if (bGraphicsTriangle)
+	if (cmdl[{ "--gtriangle" }])
 		return tests::executeGraphicsTriangle();
 
 	core::Window* window = core::createWindow({

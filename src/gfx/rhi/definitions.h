@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/core.h"
-#include "definitions.h"
 
 #include <d3d12/d3d12.h>
 #include <wrl/client.h>

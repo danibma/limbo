@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional> // for std::function
+
 #include "core/math.h"
 
 #include "rhi/resourcemanager.h"

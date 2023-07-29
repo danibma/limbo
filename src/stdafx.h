@@ -1,10 +1,12 @@
 ﻿#pragma once
 
-//Containers
+// STL
 #include <string>
 #include <queue>
 #include <vector>
 #include <unordered_map>
+#include <functional>
+
 
 // Third Party
 #include <d3d12/d3d12.h>
@@ -18,7 +20,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include <CppDelegates/Delegates.h>
-#include <CLI11/CLI11.hpp>
+#include <argh/argh.h>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
