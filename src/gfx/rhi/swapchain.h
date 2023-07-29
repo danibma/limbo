@@ -29,7 +29,7 @@ namespace limbo::gfx
 
 		void initBackBuffers();
 
-		void present();
+		void present(bool vsync);
 
 		uint32 getCurrentIndex();
 

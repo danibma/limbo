@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 		.height = HEIGHT
 	});
 
-	gfx::init(window, gfx::GfxDeviceFlag::EnableImgui);
+	gfx::init(window, gfx::GfxDeviceFlag::EnableImgui | gfx::GfxDeviceFlag::DisableVSync);
 
 	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 

@@ -82,9 +82,9 @@ namespace limbo::gfx
 		}
 	}
 
-	void Swapchain::present()
+	void Swapchain::present(bool vsync)
 	{
-		m_swapchain->Present(1, 0);
+		m_swapchain->Present(vsync, 0);
 	}
 
 	uint32 Swapchain::getCurrentIndex()

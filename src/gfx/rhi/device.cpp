@@ -427,7 +427,7 @@ namespace limbo::gfx
 
 		ID3D12CommandList* cmd[1] = { m_commandList.Get() };
 		m_commandQueue->ExecuteCommandLists(1, cmd);
-		m_swapchain->present();
+		m_swapchain->present(!(m_flags & GfxDeviceFlag::DisableVSync));
 
 		nextFrame();
 
