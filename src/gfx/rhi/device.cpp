@@ -7,19 +7,8 @@
 #include "descriptorheap.h"
 #include "ringbufferallocator.h"
 
-#include <WinPixEventRuntime/pix3.h>
-
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
-
-// imgui unity build
-#include <imgui/imgui.cpp>
-#include <imgui/imgui_draw.cpp>
-#include <imgui/imgui_demo.cpp>
-#include <imgui/imgui_tables.cpp>
-#include <imgui/imgui_widgets.cpp>
-#include <imgui/backends/imgui_impl_dx12.cpp>
-#include <imgui/backends/imgui_impl_glfw.cpp>
 
 unsigned int DelegateHandle::CURRENT_ID = 0;
 
@@ -175,9 +164,12 @@ namespace limbo::gfx
 		}
 #endif
 
-		ImGui_ImplDX12_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
+		if (m_flags & GfxDeviceFlag::EnableImgui)
+		{
+			ImGui_ImplDX12_Shutdown();
+			ImGui_ImplGlfw_Shutdown();
+			ImGui::DestroyContext();
+		}
 	}
 
 	void Device::destroySwapchainBackBuffers()

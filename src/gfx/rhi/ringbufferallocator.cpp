@@ -38,6 +38,8 @@ namespace limbo::gfx
 
 	bool RingBufferAllocator::allocate(uint64 size, RingBufferAllocation& allocation)
 	{
+		// #todo: free the allocations
+
 		if (m_currentOffset + size > m_maxSize)
 			return false;
 

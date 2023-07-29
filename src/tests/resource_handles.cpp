@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#include "tests.h"
+
+#if ENABLE_LIMBO_TESTS
 #include <catch/catch.hpp>
 
 #include "core/core.h"
@@ -51,3 +54,4 @@ TEST_CASE("resource_handles - delete handle")
 	Child* deleted = pool.get(handle1);
 	REQUIRE(deleted == nullptr);
 }
+#endif
