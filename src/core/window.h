@@ -65,7 +65,6 @@ namespace limbo::core
 		friend void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		friend void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 		friend void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-		friend void window_close_callback(GLFWwindow* window);
 
 		// Input
 		friend bool input::isKeyPressed(core::Window* window, input::KeyCode key);

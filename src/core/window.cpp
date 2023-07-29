@@ -45,14 +45,6 @@ namespace limbo::core
 		win->m_scroll = { xoffset, yoffset };
 	}
 
-	static void window_close_callback(GLFWwindow* window)
-	{
-		Window* win = (Window*)glfwGetWindowUserPointer(window);
-		ensure(win);
-
-		win->onWindowShouldClose.Broadcast();
-	}
-
 	Window::Window(const WindowInfo& info)
 		: width(info.width), height(info.height)
 	{
@@ -76,7 +68,6 @@ namespace limbo::core
 		glfwSetKeyCallback(m_handle, key_callback);
 		glfwSetMouseButtonCallback(m_handle, mouse_button_callback);
 		glfwSetScrollCallback(m_handle, scroll_callback);
-		glfwSetWindowCloseCallback(m_handle, window_close_callback);
 	}
 
 	void Window::pollEvents()
@@ -94,7 +85,10 @@ namespace limbo::core
 
 	bool Window::shouldClose()
 	{
-		return glfwWindowShouldClose(m_handle);
+		bool shouldClose = glfwWindowShouldClose(m_handle);
+		if (shouldClose)
+			onWindowShouldClose.Broadcast();
+		return shouldClose;
 	}
 
 	GLFWwindow* Window::getGLFWHandle()

@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 		.height = HEIGHT
 	});
 
-	gfx::init(window, gfx::GfxDeviceFlag::EnableImgui | gfx::GfxDeviceFlag::DisableVSync);
+	gfx::init(window, gfx::GfxDeviceFlag::EnableImgui);
 
 	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
@@ -67,8 +67,8 @@ int main(int argc, char* argv[])
 		.type = gfx::ShaderType::Graphics
 	});
 
-	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.glb");
-	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
+	//gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.glb");
+	gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
 	int tonemapMode = 0;
 	const char* tonemapModes[] = {
