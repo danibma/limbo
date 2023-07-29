@@ -15,6 +15,11 @@ namespace limbo::gfx
 		Handle() : m_index(0xFFFF), m_generation(0) {}
 		bool isValid() { return m_index != 0xFFFF; }
 
+		bool operator!=(const Handle& other)
+		{
+			return !(m_index == other.m_index && m_generation == other.m_generation);
+		}
+
 	private:
 		Handle(uint16 index, uint16 generation) : m_index(index), m_generation(generation) {}
 

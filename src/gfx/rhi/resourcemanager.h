@@ -11,10 +11,13 @@ namespace limbo::gfx
 	class ResourceManager
 	{
 	public:
-		static ResourceManager* ptr;
+		static ResourceManager*		ptr;
+
+		Handle<Texture>				emptyTexture;
+		bool						m_onShutdown = false;
 
 	public:
-		ResourceManager() = default;
+		ResourceManager();
 		virtual ~ResourceManager();
 
 		Handle<Buffer> createBuffer(const BufferSpec& spec);

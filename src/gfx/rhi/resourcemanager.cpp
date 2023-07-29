@@ -1,10 +1,31 @@
 ﻿#include "stdafx.h"
 #include "resourcemanager.h"
+#include "gfx/gfx.h"
 
 namespace limbo::gfx
 {
+	ResourceManager::ResourceManager()
+	{
+		onPostResourceManagerInit.AddLambda([&]()
+		{
+			uint32_t blackTextureData = 0x00000000;
+			emptyTexture = createTexture({
+				.width = 1,
+				.height = 1,
+				.debugName = "Empty Texture",
+				.format = Format::RGBA8_UNORM,
+				.type = TextureType::Texture2D,
+				.initialData = &blackTextureData,
+				.bCreateSrv = true
+			});
+		});
+	}
+
 	ResourceManager::~ResourceManager()
 	{
+		m_onShutdown = true;
+		destroyTexture(emptyTexture);
+
 #if LIMBO_DEBUG
 		ensure(m_buffers.isEmpty());
 		ensure(m_textures.isEmpty());
@@ -69,7 +90,8 @@ namespace limbo::gfx
 
 	void ResourceManager::destroyTexture(Handle<Texture> texture)
 	{
-		m_textures.deleteHandle(texture);
+		if (texture != emptyTexture || m_onShutdown)
+			m_textures.deleteHandle(texture);
 	}
 
 	void ResourceManager::destroySampler(Handle<Sampler> sampler)

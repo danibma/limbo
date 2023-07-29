@@ -153,13 +153,13 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 /* An empty function as breakpoint target
 Usage: just put Noop(); at any line in a function, then you can set a breakpoint there.
 */
-FORCENOINLINE void Noop();
+FORCEINLINE void Noop() {}
 
 /* An empty function to reference a variable that is not used
 Usage: just put Noop(<varName>); at any line in a function, then you can set a breakpoint there.
 */
 template<typename... Args>
-FORCENOINLINE void Noop(Args... args) {}
+FORCEINLINE void Noop(Args... args) {}
 
 #define LB_NON_COPYABLE(TYPE)  \
     TYPE(TYPE const &) = delete; TYPE &operator =(TYPE const &) = delete

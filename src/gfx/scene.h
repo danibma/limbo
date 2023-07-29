@@ -1,16 +1,15 @@
 #pragma once
 
-#include <functional>
-
 #include "core/math.h"
 
+#include "rhi/resourcemanager.h"
 #include "rhi/resourcepool.h"
 
-struct aiNode;
-struct aiScene;
-struct aiMaterial;
-struct aiMesh;
-enum   aiTextureType;
+struct cgltf_node;
+struct cgltf_scene;
+struct cgltf_mesh;
+struct cgltf_primitive;
+struct cgltf_texture_view;
 
 namespace limbo::gfx
 {
@@ -29,6 +28,14 @@ namespace limbo::gfx
 		Handle<Texture> roughnessMetal;
 		Handle<Texture> normal;
 		Handle<Texture> emissive;
+
+		MeshMaterial()
+		{
+			albedo			= ResourceManager::ptr->emptyTexture;
+			roughnessMetal	= ResourceManager::ptr->emptyTexture;
+			normal			= ResourceManager::ptr->emptyTexture;
+			emissive		= ResourceManager::ptr->emptyTexture;
+		}
 	};
 
 	struct Mesh
@@ -64,10 +71,10 @@ namespace limbo::gfx
 		void drawMesh(const std::function<void(const Mesh& mesh)>& drawFunction);
 
 	private:
-		void processNode(aiNode* node, const aiScene* scene);
-		Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+		void processNode(const cgltf_node* node);
+		Mesh processMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
 
-		void* loadTexture(const aiMaterial* material, const aiScene* scene, aiTextureType type, uint32 index, int* width, int* height, int* channels);
+		void loadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture);
 	};
 
 	inline Scene* loadScene(const char* path)

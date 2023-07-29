@@ -5,23 +5,25 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
-#include <assimp/matrix4x4.h>
+constexpr float PI = 3.14159265358979323846f;
+constexpr float INV_PI = 0.31830988618379067154f;
+constexpr float INV_2PI = 0.15915494309189533577f;
+constexpr float INV_4PI = 0.07957747154594766788f;
+constexpr float PI_DIV_2 = 1.57079632679489661923f;
+constexpr float PI_DIV_4 = 0.78539816339744830961f;
+constexpr float SQRT_2 = 1.41421356237309504880f;
+
+constexpr float RadiansToDegrees = 180.0f / PI;
+constexpr float DegreesToRadians = PI / 180.0f;
+
+inline constexpr float Radians(float degrees) { return degrees * DegreesToRadians; }
+inline constexpr float Degrees(float radians) { return radians * RadiansToDegrees; }
 
 typedef glm::vec2 float2;
 typedef glm::vec3 float3;
 typedef glm::vec4 float4;
 
+typedef glm::quat quat;
+
 typedef glm::mat3x3 float3x3;
 typedef glm::mat4x4 float4x4;
-
-inline float4x4 aiMatrix4x4ToGlm(const aiMatrix4x4* from)
-{
-    float4x4 to;
-
-    to[0][0] = (float)from->a1; to[0][1] = (float)from->b1;  to[0][2] = (float)from->c1; to[0][3] = (float)from->d1;
-    to[1][0] = (float)from->a2; to[1][1] = (float)from->b2;  to[1][2] = (float)from->c2; to[1][3] = (float)from->d2;
-    to[2][0] = (float)from->a3; to[2][1] = (float)from->b3;  to[2][2] = (float)from->c3; to[2][3] = (float)from->d3;
-    to[3][0] = (float)from->a4; to[3][1] = (float)from->b4;  to[3][2] = (float)from->c4; to[3][3] = (float)from->d4;
-
-    return to;
-}

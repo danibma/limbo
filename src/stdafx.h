@@ -19,6 +19,10 @@
 #include <imgui.h>
 #include <CppDelegates/Delegates.h>
 #include <CLI11/CLI11.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 // Own stuff
 #include "core/core.h"

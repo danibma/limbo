@@ -108,11 +108,6 @@ target_link_libraries(limbo PUBLIC dxgi.lib)
 target_link_libraries(limbo PUBLIC dxguid.lib)
 AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll D3D12/D3D12Core.dll)
 
-# assimp
-target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/include)
-target_link_libraries(limbo PUBLIC debug ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Debug/assimp-vc142-mtd.lib)
-target_link_libraries(limbo PUBLIC optimized ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Release/assimp-vc142-mt.lib)
-
 # WinPixEventRuntime
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/WinPixEventRuntime/Include)
 target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/WinPixEventRuntime/bin/x64/WinPixEventRuntime.lib)
@@ -145,22 +140,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy
             ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/d3d12SDKLayers.dll
             ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/D3D12/d3d12SDKLayers.dll)
-
-add_custom_command(
-    TARGET limbo
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Debug/assimp-vc142-mtd.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/Debug/assimp-vc142-mtd.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Release/assimp-vc142-mt.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/MinSizeRel/assimp-vc142-mt.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Release/assimp-vc142-mt.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/RelWithDebInfo/assimp-vc142-mt.dll
-    COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/third_party/assimp/bin/Release/assimp-vc142-mt.dll
-            ${CMAKE_CURRENT_BINARY_DIR}/Release/assimp-vc142-mt.dll)
 
 set_target_properties(limbo PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT limbo)

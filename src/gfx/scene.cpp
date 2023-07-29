@@ -1,12 +1,14 @@
 #include "stdafx.h"
 #include "scene.h"
+#include "core/paths.h"
 
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/material.h>
+#pragma warning(push)
+#pragma warning(disable: 4996) // disable _CRT_SECURE_NO_WARNINGS
+#define CGLTF_IMPLEMENTATION
+#include <cgltf/cgltf.h>
+#pragma warning(pop)
 
-#include <filesystem>
+#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
@@ -15,32 +17,32 @@
 
 namespace limbo::gfx
 {
+	namespace
+	{
+		struct PrimitiveData
+		{
+			std::vector<float3> positionStream;
+			std::vector<float2> texcoordsStream;
+			std::vector<uint32> indicesStream;
+		};
+	}
+
 	Scene::Scene(const char* path)
 	{
-		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-			LB_ERROR("Could not load '%s' model: %s", path, importer.GetErrorString());
+		cgltf_options options = {};
+		cgltf_data* data = nullptr;
+		cgltf_result result = cgltf_parse_file(&options, path, &data);
+		FAILIF(result != cgltf_result_success);
+		result = cgltf_load_buffers(&options, data, path);
+		FAILIF(result != cgltf_result_success);
 
-		size_t strLength = strlen(path);
-		FAILIF(strLength >= 256); // atm this is the size of m_folderPath
-		size_t finalIndex;
-		for (size_t i = strLength - 1; true; --i)
-		{
-			if (path[i] == '/' || path[i] == '\\' || i == 0)
-			{
-				finalIndex = i;
-				break;
-			}
-		}
+		paths::getPath(path, m_folderPath);
 
-		for (size_t i = 0; i <= finalIndex; ++i)
-		{
-			m_folderPath[i] = path[i];
-			if (i == finalIndex) m_folderPath[i + 1] = '\0';
-		}
+		cgltf_scene* scene = data->scene;
+		for (size_t i = 0; i < scene->nodes_count; ++i)
+			processNode(scene->nodes[i]);
 
-		processNode(scene->mRootNode, scene);
+		cgltf_free(data);
 	}
 
 	Scene* Scene::load(const char* path)
@@ -67,192 +69,167 @@ namespace limbo::gfx
 			drawFunction(m);
 	}
 
-	void Scene::processNode(aiNode* node, const aiScene* scene)
+	void Scene::processNode(const cgltf_node* node)
 	{
-		// process all the node's meshes (if any)
-		for (uint32_t i = 0; i < node->mNumMeshes; i++)
+		auto processTransformation = [](const cgltf_node* node, Mesh& mesh)
 		{
-			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-			Mesh& m = m_meshes.emplace_back(processMesh(mesh, scene));
-			m.transform = aiMatrix4x4ToGlm(&node->mTransformation);
-			aiNode* parent = node->mParent;
+			if (node->has_matrix)
+			{
+				mesh.transform = glm::make_mat4(node->matrix);
+			}
+			else
+			{
+				if (node->has_translation)
+				{
+					float3 translation = glm::make_vec3(node->translation);
+					mesh.transform = glm::translate(mesh.transform, translation);
+				}
+
+				if (node->has_rotation)
+				{
+					quat rotation = glm::make_quat(node->rotation);
+					rotation = quat(rotation.w, rotation.z, rotation.y, rotation.x);
+					mesh.transform *= float4x4(rotation);
+				}
+
+				if (node->has_scale)
+				{
+					float3 scale = glm::make_vec3(node->scale);
+					mesh.transform = glm::scale(mesh.transform, scale);
+				}
+			}
+		};
+
+		const cgltf_mesh* mesh = node->mesh;
+		for (size_t i = 0; i < mesh->primitives_count; i++)
+		{
+			const cgltf_primitive& primitive = mesh->primitives[i];
+			Mesh& m = m_meshes.emplace_back(processMesh(mesh, &primitive));
+			processTransformation(node, m);
+			cgltf_node* parent = node->parent;
 			while (parent)
 			{
-				m.transform *= aiMatrix4x4ToGlm(&parent->mTransformation);
-				parent = parent->mParent;
+				processTransformation(parent, m);
+				parent = parent->parent;
 			}
 		}
 
 		// then do the same for each of its children
-		for (uint32_t i = 0; i < node->mNumChildren; i++)
-		{
-			processNode(node->mChildren[i], scene);
-		}
+		for (size_t i = 0; i < node->children_count; i++)
+			processNode(node->children[i]);
 	}
 
-	Mesh Scene::processMesh(aiMesh* mesh, const aiScene* scene)
+	Mesh Scene::processMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive)
 	{
-		std::vector<MeshVertex> vertices;
-		vertices.reserve(mesh->mNumVertices);
-		std::vector<uint32_t> indices;
-		indices.reserve(mesh->mNumFaces * 3);
+		PrimitiveData primitiveData;
 
-		for (uint32_t i = 0; i < mesh->mNumVertices; i++)
+		// process vertices
+		for (size_t attributeIndex = 0; attributeIndex < primitive->attributes_count; ++attributeIndex)
 		{
-			MeshVertex vertex;
+			const cgltf_attribute& attribute = primitive->attributes[attributeIndex];
 
-			glm::vec3 vector;
-			vector.x = mesh->mVertices[i].x;
-			vector.y = mesh->mVertices[i].y;
-			vector.z = mesh->mVertices[i].z;
-			vertex.position = vector;
-
-			if (mesh->mTextureCoords[0])
+			auto readAttributeData = [&attribute](const char* name, auto& stream, uint32 numComponents)
 			{
-				glm::vec2 vec;
-				vec.x = mesh->mTextureCoords[0][i].x;
-				vec.y = mesh->mTextureCoords[0][i].y;
-				vertex.uv = vec;
-			}
-			else
-			{
-				vertex.uv = { 0, 0 };
-			}
+				if (strcmp(attribute.name, name) == 0)
+				{
+					stream.resize(attribute.data->count);
+					for (size_t i = 0; i < attribute.data->count; ++i)
+					{
+						ensure(cgltf_accessor_read_float(attribute.data, i, &stream[i].x, numComponents));
+					}
+				}
+			};
 
-			vertices.emplace_back(vertex);
+			readAttributeData("POSITION", primitiveData.positionStream, 3);
+			readAttributeData("TEXCOORD_0", primitiveData.texcoordsStream, 2);
+		}
+
+		// turn the attribute streams into vertex data
+		size_t vertexCount = primitiveData.positionStream.size();
+		ensure(primitiveData.texcoordsStream.size() == vertexCount);
+
+		std::vector<MeshVertex> vertices;
+		vertices.resize(vertexCount);
+		for (size_t attrIdx = 0; attrIdx < vertexCount; ++attrIdx)
+		{
+			MeshVertex& vertex = vertices[attrIdx];
+			vertex.position = primitiveData.positionStream[attrIdx];
+			vertex.uv		= primitiveData.texcoordsStream[attrIdx];
 		}
 
 		// process indices
-		for (uint32_t i = 0; i < mesh->mNumFaces; i++)
-		{
-			aiFace face = mesh->mFaces[i];
-			for (uint32_t j = 0; j < face.mNumIndices; j++)
-				indices.emplace_back(face.mIndices[j]);
-		}
+		cgltf_accessor* indices = primitive->indices;
+		primitiveData.indicesStream.resize(indices->count);
+		for (size_t idx = 0; idx < indices->count; ++idx)
+			primitiveData.indicesStream[idx] = (uint32)cgltf_accessor_read_index(primitive->indices, idx);
 
-		// process textures
-		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
+		// process material
+		cgltf_material* material = primitive->material;
 		MeshMaterial modelMaterial;
-		// Get diffuse texture
+		if (ensure(material))
 		{
-			int width, height, channels;
-			void* data = loadTexture(material, scene, AI_MATKEY_BASE_COLOR_TEXTURE, &width, &height, &channels);
-
-			std::string debugName = std::string(mesh->mName.C_Str()) + " Diffuse";
-			modelMaterial.albedo = ResourceManager::ptr->createTexture({
-				.width = (uint32)width,
-				.height = (uint32)height,
-				.debugName = debugName.c_str(),
-				.format = Format::RGBA8_UNORM,
-				.type = TextureType::Texture2D,
-				.initialData = data
-			});
-			free(data);
-		}
-
-		// Get roughness texture
-		{
-			int width, height, channels;
-			void* data = loadTexture(material, scene, aiTextureType_UNKNOWN, 0, &width, &height, &channels);
-
-			std::string debugName = std::string(mesh->mName.C_Str()) + " Roughness";
-			modelMaterial.roughnessMetal = ResourceManager::ptr->createTexture({
-				.width = (uint32)width,
-				.height = (uint32)height,
-				.debugName = debugName.c_str(),
-				.format = Format::RGBA8_UNORM,
-				.type = TextureType::Texture2D,
-				.initialData = data
-			});
-			free(data);
-		}
-
-		// Get normal map
-		{
-			int width, height, channels;
-			void* data = loadTexture(material, scene, aiTextureType_NORMALS, 0, &width, &height, &channels);
-
-			std::string debugName = std::string(mesh->mName.C_Str()) + " Normal";
-			modelMaterial.normal = ResourceManager::ptr->createTexture({
-				.width = (uint32)width,
-				.height = (uint32)height,
-				.debugName = debugName.c_str(),
-				.format = Format::RGBA8_UNORM,
-				.type = TextureType::Texture2D,
-				.initialData = data
-			});
-			free(data);
-		}
-
-		// Get emissive map
-		{
-			int width, height, channels;
-			void* data = loadTexture(material, scene, aiTextureType_EMISSIVE, 0, &width, &height, &channels);
-
-			std::string debugName = std::string(mesh->mName.C_Str()) + " Emissive";
-			modelMaterial.emissive = ResourceManager::ptr->createTexture({
-				.width = (uint32)width,
-				.height = (uint32)height,
-				.debugName = debugName.c_str(),
-				.format = Format::RGBA8_UNORM,
-				.type = TextureType::Texture2D,
-				.initialData = data
-			});
-			free(data);
-		}
-
-		return Mesh(mesh->mName.C_Str(), vertices, indices, modelMaterial);
-	}
-
-	void* Scene::loadTexture(const aiMaterial* material, const aiScene* scene, aiTextureType type, uint32 index, int* width, int* height, int* channels)
-	{
-		*width = 1;
-		*height = 1;
-		*channels = 4;
-
-		int count = material->GetTextureCount(type);
-		ensure(count <= 1); // if this breaks here, it's time to update this _syste
-		if (count == 1)
-		{
-			aiString path;
-			aiReturn result = material->GetTexture(type, index, &path);
-			ensure(result == aiReturn_SUCCESS);
-			// check if the texture is embedded or if we need to load it from a file
-			if (const aiTexture* texture = scene->GetEmbeddedTexture(path.C_Str()))
+			if (material->has_pbr_metallic_roughness)
 			{
-				ensure(texture->mHeight == 0); // read mWidth comment
-
-				unsigned char* data = stbi_load_from_memory((stbi_uc*)texture->pcData, texture->mWidth, width, height, channels, 4);
-				ensure(data);
-				return data;
+				const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
+				{
+					std::string debugName = std::string(mesh->name) + "Albedo";
+					loadTexture(&workflow.base_color_texture, debugName.c_str(), modelMaterial.albedo);
+				}
+				{
+					std::string debugName = std::string(mesh->name) + "MetallicRoughness";
+					loadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), modelMaterial.roughnessMetal);
+				}
 			}
 			else
 			{
-				std::string filename = std::string(m_folderPath) + std::string(path.C_Str());
-				unsigned char* data = stbi_load(filename.c_str(), width, height, channels, STBI_rgb_alpha); // Load the image as RGBA
-				if (!data)
-					LB_ERROR("Failed to load texture file '%s'", path.C_Str());
-				return data;
+				ensure(false);
+			}
+
+			{
+				std::string debugName = std::string(mesh->name) + "Emissive";
+				loadTexture(&material->emissive_texture, debugName.c_str(), modelMaterial.emissive);
 			}
 		}
 
-		float4* baseColor;
-		if (type == aiTextureType_DIFFUSE || type == aiTextureType_BASE_COLOR)
+		return Mesh(mesh->name, vertices, primitiveData.indicesStream, modelMaterial);
+	}
+
+	void Scene::loadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture)
+	{
+		int width	 = 0;
+		int height	 = 0;
+		int channels = 0;
+		void* data;
+
+		cgltf_image* image = textureView->texture->image;
+		if (image->uri)
 		{
-			aiColor3D color(0.f, 0.f, 0.f);
-			material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-			baseColor = new float4(color.r, color.g, color.b, 1.0f);
+			std::string filename = std::string(m_folderPath) + std::string(image->uri);
+			data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
 		}
 		else
 		{
-			baseColor = new float4(0.0f);
+			cgltf_buffer_view* bufferView = image->buffer_view;
+			cgltf_buffer* buffer = bufferView->buffer;
+			uint32 size = (uint32)bufferView->size;
+			void* bufferLocation = (uint8*)buffer->data + bufferView->offset;
+			data = stbi_load_from_memory((stbi_uc*)bufferLocation, size, &width, &height, &channels, 4);
 		}
+		ensure(data);
 
-		return baseColor;
+		outTexture = ResourceManager::ptr->createTexture({
+			.width = (uint32)width,
+			.height = (uint32)height,
+			.debugName = debugName,
+			.format = Format::RGBA8_UNORM,
+			.type = TextureType::Texture2D,
+			.initialData = data
+		});
+		free(data);
 	}
 
 	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const MeshMaterial& meshMaterial)
+		: transform(float4x4(1.0f))
 	{
 		indexCount = indices.size();
 		vertexCount = vertices.size();
