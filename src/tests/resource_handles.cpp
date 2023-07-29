@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include <catch/catch.hpp>
 
 #include "core/core.h"

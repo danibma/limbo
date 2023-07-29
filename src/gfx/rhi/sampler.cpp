@@ -1,4 +1,5 @@
-﻿#include "sampler.h"
+﻿#include "stdafx.h"
+#include "sampler.h"
 #include "device.h"
 
 namespace limbo::gfx

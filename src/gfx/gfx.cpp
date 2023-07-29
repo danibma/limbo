@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "gfx.h"
 
 #include "rhi/device.h"

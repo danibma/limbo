@@ -98,12 +98,14 @@ target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/
 
 # dxc
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/inc)
-target_link_libraries(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/lib/x64/dxcompiler.lib)
 AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxil.dll dxil.dll)
 AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/dxc/bin/x64/dxcompiler.dll dxcompiler.dll)
 
 # d3d12
 target_include_directories(limbo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/include)
+target_link_libraries(limbo PUBLIC d3d12.lib)
+target_link_libraries(limbo PUBLIC dxgi.lib)
+target_link_libraries(limbo PUBLIC dxguid.lib)
 AddDLL(${CMAKE_CURRENT_SOURCE_DIR}/third_party/d3d12/bin/D3D12Core.dll D3D12/D3D12Core.dll)
 
 # assimp
@@ -125,8 +127,10 @@ target_compile_features(limbo PUBLIC cxx_std_20)
 
 target_compile_options(limbo PRIVATE
     /W3 /WX /MP
+    /Yustdafx.h
     -D_HAS_EXCEPTIONS=0
 )
+set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/stdafx.cpp PROPERTIES COMPILE_FLAGS "/Ycstdafx.h")
 
 # special DLL's...
 add_custom_command(

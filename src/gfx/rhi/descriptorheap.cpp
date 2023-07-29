@@ -1,4 +1,5 @@
-﻿#include "descriptorheap.h"
+﻿#include "stdafx.h"
+#include "descriptorheap.h"
 
 #include <d3d12/d3dx12/d3dx12.h>
 

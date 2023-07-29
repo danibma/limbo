@@ -2,11 +2,15 @@
 
 #include "definitions.h"
 #include "resourcepool.h"
-#include "shadercompiler.h"
 
 #include <unordered_map>
 
 struct CD3DX12_ROOT_PARAMETER1;
+
+namespace limbo::gfx::SC
+{
+	struct Kernel;
+}
 
 namespace limbo::gfx
 {

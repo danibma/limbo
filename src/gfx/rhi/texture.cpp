@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "texture.h"
 
 #include <d3d12/d3dx12/d3dx12_resource_helpers.h>

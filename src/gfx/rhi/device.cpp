@@ -1,13 +1,12 @@
-﻿#include "device.h"
+﻿#include "stdafx.h"
+#include "device.h"
 
 #include "core/window.h"
-#include "core/utils.h"
 #include "gfx/gfx.h"
 #include "swapchain.h"
 #include "descriptorheap.h"
 #include "ringbufferallocator.h"
 
-#include <d3d12/d3dx12/d3dx12.h>
 #include <WinPixEventRuntime/pix3.h>
 
 #include <imgui/backends/imgui_impl_dx12.h>
@@ -23,10 +22,6 @@
 #include <imgui/backends/imgui_impl_glfw.cpp>
 
 unsigned int DelegateHandle::CURRENT_ID = 0;
-
-#pragma comment(lib, "d3d12.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "dxguid.lib")
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 610; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }

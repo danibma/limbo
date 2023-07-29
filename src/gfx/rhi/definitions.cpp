@@ -1,4 +1,5 @@
-﻿#include "definitions.h"
+﻿#include "stdafx.h"
+#include "definitions.h"
 
 #include <comdef.h>
 

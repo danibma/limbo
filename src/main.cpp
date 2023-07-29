@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "gfx/gfx.h"
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"

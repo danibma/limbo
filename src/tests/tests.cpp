@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "tests.h"
 
 #define CATCH_CONFIG_RUNNER

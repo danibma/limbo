@@ -1,4 +1,5 @@
-﻿#include "input.h"
+﻿#include "stdafx.h"
+#include "input.h"
 
 #include "window.h"
 

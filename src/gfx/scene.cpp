@@ -1,3 +1,4 @@
+#include "stdafx.h"
 #include "scene.h"
 
 #include <assimp/Importer.hpp>

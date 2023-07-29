@@ -1,4 +1,5 @@
-﻿#include "shadercompiler.h"
+﻿#include "stdafx.h"
+#include "shadercompiler.h"
 
 #include "core/utils.h"
 
@@ -11,8 +12,11 @@ namespace limbo::gfx::SC
         static IDxcIncludeHandler* includeHandler;
         if (!dxcCompiler)
         {
-            DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
-            DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
+            HMODULE lib = LoadLibraryA("dxcompiler.dll");
+            DxcCreateInstanceProc DxcCreateInstanceFn = (DxcCreateInstanceProc)GetProcAddress(lib, "DxcCreateInstance");
+
+            DxcCreateInstanceFn(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+            DxcCreateInstanceFn(CLSID_DxcCompiler, IID_PPV_ARGS(&dxcCompiler));
             dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
         }
 

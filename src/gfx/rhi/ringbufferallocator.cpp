@@ -1,4 +1,5 @@
-﻿#include "ringbufferallocator.h"
+﻿#include "stdafx.h"
+#include "ringbufferallocator.h"
 #include "device.h"
 #include "resourcemanager.h"
 #include "gfx/gfx.h"

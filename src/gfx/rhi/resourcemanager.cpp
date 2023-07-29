@@ -1,4 +1,5 @@
-﻿#include "resourcemanager.h"
+﻿#include "stdafx.h"
+#include "resourcemanager.h"
 
 namespace limbo::gfx
 {

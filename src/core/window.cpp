@@ -1,4 +1,5 @@
-﻿#include "window.h"
+﻿#include "stdafx.h"
+#include "window.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>

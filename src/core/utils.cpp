@@ -1,4 +1,5 @@
-﻿#include "utils.h"
+﻿#include "stdafx.h"
+#include "utils.h"
 
 #include <windows.h>
 
