@@ -80,6 +80,13 @@ int main(int argc, char* argv[])
 	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.gltf");
 	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
+	int tonemapMode = 0;
+	const char* tonemapModes[] = {
+		"None",
+		"Aces Film",
+		"Reinhard"
+	};
+
 	core::Timer deltaTimer;
 	while (!window->shouldClose())
 	{
@@ -101,6 +108,11 @@ int main(int argc, char* argv[])
 		if (ImGui::CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			ImGui::Text("Frame Time: %.2f ms (%.2f fps)", deltaTime, 1000.0f / deltaTime);
+		}
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Combo("Tonemap", &tonemapMode, tonemapModes, 3);
 		}
 		ImGui::End();
 
@@ -124,6 +136,7 @@ int main(int argc, char* argv[])
 
 		gfx::beginEvent("Scene Composite");
 		gfx::bindShader(compositeShader);
+		gfx::setParameter(compositeShader, "g_TonemapMode", tonemapMode);
 		gfx::setParameter(compositeShader, "g_sceneTexture", deferredShader, 0);
 		gfx::setParameter(compositeShader, "LinearWrap", linearWrapSampler);
 		gfx::draw(6);
