@@ -25,6 +25,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+#if !NO_LOG
+#	define USE_PIX
+#endif
 #include <WinPixEventRuntime/pix3.h>
 
 // Own stuff
