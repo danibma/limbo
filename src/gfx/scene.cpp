@@ -92,33 +92,6 @@ namespace limbo::gfx
 
 	void Scene::processNode(const cgltf_node* node)
 	{
-		auto processTransformation = [](const cgltf_node* node, Mesh& mesh)
-		{
-			if (node->has_matrix)
-			{
-				mesh.transform = glm::make_mat4(node->matrix);
-			}
-			else
-			{
-				{
-					float3 translation = glm::make_vec3(node->translation);
-					mesh.transform = glm::translate(mesh.transform, translation);
-				}
-
-				{
-					quat rotation = glm::make_quat(node->rotation);
-					rotation = quat(rotation.w, rotation.x, rotation.y, rotation.z);
-					mesh.transform *= float4x4(rotation);
-				}
-
-				
-				{
-					float3 scale = glm::make_vec3(node->scale);
-					mesh.transform = glm::scale(mesh.transform, scale);
-				}
-			}
-		};
-
 		const cgltf_mesh* mesh = node->mesh;
 		if (mesh)
 		{
@@ -126,13 +99,7 @@ namespace limbo::gfx
 			{
 				const cgltf_primitive& primitive = mesh->primitives[i];
 				Mesh& m = m_meshes.emplace_back(processMesh(mesh, &primitive));
-				processTransformation(node, m);
-				cgltf_node* parent = node->parent;
-				while (parent)
-				{
-					processTransformation(parent, m);
-					parent = parent->parent;
-				}
+				cgltf_node_transform_world(node, &m.transform[0][0]);
 			}
 		}
 
