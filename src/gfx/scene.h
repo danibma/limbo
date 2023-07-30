@@ -12,6 +12,7 @@ struct cgltf_scene;
 struct cgltf_mesh;
 struct cgltf_primitive;
 struct cgltf_texture_view;
+struct cgltf_material;
 
 namespace limbo::gfx
 {
@@ -45,7 +46,7 @@ namespace limbo::gfx
 		Handle<Buffer>			vertexBuffer;
 		Handle<Buffer>			indexBuffer;
 
-		MeshMaterial			material;
+		uintptr_t				materialID;
 
 		float4x4				transform;
 
@@ -54,14 +55,16 @@ namespace limbo::gfx
 
 		const char*				name;
 
-		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const MeshMaterial& meshMaterial);
+		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uintptr_t material);
 	};
 
 	class Scene
 	{
-		std::vector<Mesh>		m_meshes;
-		char					m_folderPath[256];
-		char					m_sceneName[128];
+		std::vector<Mesh>								m_meshes;
+		char											m_folderPath[256];
+		char											m_sceneName[128];
+
+		std::unordered_map<uintptr_t, MeshMaterial>	m_meshMaterials;
 
 	protected:
 		Scene() = default;
@@ -72,9 +75,11 @@ namespace limbo::gfx
 		void destroy();
 
 		void drawMesh(const std::function<void(const Mesh& mesh)>& drawFunction);
+		MeshMaterial getMaterial(uintptr_t pMaterial);
 
 	private:
 		void processNode(const cgltf_node* node);
+		void processMaterial(const cgltf_material* material);
 		Mesh processMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
 
 		void loadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture);

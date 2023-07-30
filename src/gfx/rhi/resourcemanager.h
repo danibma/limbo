@@ -52,14 +52,14 @@ namespace limbo::gfx
 		void forceDeletionQueue();
 
 	private:
-		Pool<Buffer>		m_buffers;
-		Pool<Shader>		m_shaders;
-		Pool<Texture>		m_textures;
-		Pool<Sampler>		m_samplers;
+		Pool<Buffer, 2048>		m_buffers;
+		Pool<Texture, 512>		m_textures;
+		Pool<Shader,  128>		m_shaders;
+		Pool<Sampler,   8>		m_samplers;
 
-		bool				m_onShutdown = false;
+		bool					m_onShutdown = false;
 
-		std::deque<Deletion> m_deletionQueue;
+		std::deque<Deletion>	m_deletionQueue;
 	};
 
 

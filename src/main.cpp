@@ -113,9 +113,11 @@ int main(int argc, char* argv[])
 
 		scene->drawMesh([&](const gfx::Mesh& mesh)
 		{
-			gfx::setParameter(deferredShader, "g_albedoTexture", mesh.material.albedo);
-			gfx::setParameter(deferredShader, "g_roughnessMetalTexture", mesh.material.roughnessMetal);
-			gfx::setParameter(deferredShader, "g_emissiveTexture", mesh.material.emissive);
+			const gfx::MeshMaterial& material = scene->getMaterial(mesh.materialID);
+
+			gfx::setParameter(deferredShader, "g_albedoTexture", material.albedo);
+			gfx::setParameter(deferredShader, "g_roughnessMetalTexture", material.roughnessMetal);
+			gfx::setParameter(deferredShader, "g_emissiveTexture", material.emissive);
 			gfx::setParameter(deferredShader, "model", mesh.transform);
 
 			gfx::bindVertexBuffer(mesh.vertexBuffer);

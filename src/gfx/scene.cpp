@@ -42,6 +42,10 @@ namespace limbo::gfx
 		paths::getPath(path, m_folderPath);
 		paths::getFilename(path, m_sceneName);
 
+		// process materials
+		for (size_t i = 0; i < data->materials_count; ++i)
+			processMaterial(&data->materials[i]);
+
 		cgltf_scene* scene = data->scene;
 		for (size_t i = 0; i < scene->nodes_count; ++i)
 			processNode(scene->nodes[i]);
@@ -62,10 +66,14 @@ namespace limbo::gfx
 		{
 			gfx::destroyBuffer(mesh.vertexBuffer);
 			gfx::destroyBuffer(mesh.indexBuffer);
-			gfx::destroyTexture(mesh.material.albedo);
-			gfx::destroyTexture(mesh.material.roughnessMetal);
-			gfx::destroyTexture(mesh.material.normal);
-			gfx::destroyTexture(mesh.material.emissive);
+		}
+
+		for (const auto& [name, material] : m_meshMaterials)
+		{
+			gfx::destroyTexture(material.albedo);
+			gfx::destroyTexture(material.roughnessMetal);
+			gfx::destroyTexture(material.normal);
+			gfx::destroyTexture(material.emissive);
 		}
 	}
 
@@ -73,6 +81,13 @@ namespace limbo::gfx
 	{
 		for (const Mesh& m : m_meshes)
 			drawFunction(m);
+	}
+
+	MeshMaterial Scene::getMaterial(uintptr_t pMaterial)
+	{
+		if (m_meshMaterials.contains(pMaterial))
+			return m_meshMaterials[pMaterial];
+		return MeshMaterial();
 	}
 
 	void Scene::processNode(const cgltf_node* node)
@@ -107,22 +122,51 @@ namespace limbo::gfx
 		};
 
 		const cgltf_mesh* mesh = node->mesh;
-		for (size_t i = 0; i < mesh->primitives_count; i++)
+		if (mesh)
 		{
-			const cgltf_primitive& primitive = mesh->primitives[i];
-			Mesh& m = m_meshes.emplace_back(processMesh(mesh, &primitive));
-			processTransformation(node, m);
-			cgltf_node* parent = node->parent;
-			while (parent)
+			for (size_t i = 0; i < mesh->primitives_count; i++)
 			{
-				processTransformation(parent, m);
-				parent = parent->parent;
+				const cgltf_primitive& primitive = mesh->primitives[i];
+				Mesh& m = m_meshes.emplace_back(processMesh(mesh, &primitive));
+				processTransformation(node, m);
+				cgltf_node* parent = node->parent;
+				while (parent)
+				{
+					processTransformation(parent, m);
+					parent = parent->parent;
+				}
 			}
 		}
 
 		// then do the same for each of its children
 		for (size_t i = 0; i < node->children_count; i++)
 			processNode(node->children[i]);
+	}
+
+	void Scene::processMaterial(const cgltf_material* material)
+	{
+		MeshMaterial& meshMaterial = m_meshMaterials[(uintptr_t)material];
+		if (material->has_pbr_metallic_roughness)
+		{
+			const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
+			{
+				std::string debugName = std::format("{} Material({}) {}", m_sceneName, m_meshMaterials.size(), "Albedo");
+				loadTexture(&workflow.base_color_texture, debugName.c_str(), meshMaterial.albedo);
+			}
+			{
+				std::string debugName = std::format("{} Material({}) {}", m_sceneName, m_meshMaterials.size(), "MetallicRoughness");
+				loadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), meshMaterial.roughnessMetal);
+			}
+		}
+		else
+		{
+			ensure(false);
+		}
+
+		{
+			std::string debugName = std::format("{} Material({}) {}", m_sceneName, m_meshMaterials.size(), "Emissive");
+			loadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.emissive);
+		}
 	}
 
 	Mesh Scene::processMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive)
@@ -175,35 +219,10 @@ namespace limbo::gfx
 		for (size_t idx = 0; idx < indices->count; ++idx)
 			primitiveData.indicesStream[idx] = (uint32)cgltf_accessor_read_index(primitive->indices, idx);
 
-		// process material
 		cgltf_material* material = primitive->material;
-		MeshMaterial modelMaterial;
-		if (ensure(material))
-		{
-			if (material->has_pbr_metallic_roughness)
-			{
-				const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
-				{
-					std::string debugName = meshName + "Albedo";
-					loadTexture(&workflow.base_color_texture, debugName.c_str(), modelMaterial.albedo);
-				}
-				{
-					std::string debugName = meshName + "MetallicRoughness";
-					loadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), modelMaterial.roughnessMetal);
-				}
-			}
-			else
-			{
-				ensure(false);
-			}
+		uintptr_t materialID = (uintptr_t)material;
 
-			{
-				std::string debugName = meshName + "Emissive";
-				loadTexture(&material->emissive_texture, debugName.c_str(), modelMaterial.emissive);
-			}
-		}
-
-		return Mesh(meshName.c_str(), vertices, primitiveData.indicesStream, modelMaterial);
+		return Mesh(meshName.c_str(), vertices, primitiveData.indicesStream, materialID);
 	}
 
 	void Scene::loadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture)
@@ -243,12 +262,12 @@ namespace limbo::gfx
 		free(data);
 	}
 
-	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, const MeshMaterial& meshMaterial)
+	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uintptr_t material)
 		: transform(float4x4(1.0f))
 	{
 		indexCount = indices.size();
 		vertexCount = vertices.size();
-		material = meshMaterial;
+		materialID = material;
 		name = meshName;
 
 		// create vertex buffer

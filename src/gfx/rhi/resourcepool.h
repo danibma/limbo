@@ -26,10 +26,10 @@ namespace limbo::gfx
 		uint16 m_index;
 		uint16 m_generation;
 
-		template<typename T1> friend class Pool;
+		template<typename T1, size_t MaxSize> friend class Pool;
 	};
 
-	template<typename HandleType>
+	template<typename HandleType, size_t MaxSize>
 	class Pool
 	{
 	public:
@@ -93,6 +93,6 @@ namespace limbo::gfx
 		std::vector<Object> m_objects;
 		std::queue<uint16> m_freeSlots;
 
-		const uint16 MAX_SIZE = 1024;
+		const uint16 MAX_SIZE = MaxSize;
 	};
 }
