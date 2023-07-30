@@ -22,7 +22,7 @@ bool operator==(const Child& left, const Child& right)
 
 TEST_CASE("resource_handles - allocate handle") 
 {
-	limbo::gfx::Pool<Child> pool;
+	limbo::gfx::Pool<Child, 5> pool;
 	limbo::gfx::Handle<Child> handle1 = pool.allocateHandle();
 	limbo::gfx::Handle<Child> handle2 = pool.allocateHandle();
 	REQUIRE(handle1.isValid());
@@ -33,7 +33,7 @@ TEST_CASE("resource_handles - get handle")
 {
 	Child c1 = Child(1);
 	Child c2 = Child(2);
-	limbo::gfx::Pool<Child> pool;
+	limbo::gfx::Pool<Child, 5> pool;
 	limbo::gfx::Handle<Child> handle1 = pool.allocateHandle(c1);
 	limbo::gfx::Handle<Child> handle2 = pool.allocateHandle(c2);
 	Child* cc1 = pool.get(handle1);
@@ -46,7 +46,7 @@ TEST_CASE("resource_handles - delete handle")
 {
 	Child c1 = Child(1);
 
-	limbo::gfx::Pool<Child> pool;
+	limbo::gfx::Pool<Child, 5> pool;
 	limbo::gfx::Handle<Child> handle1 = pool.allocateHandle(c1);
 	Child* cc1 = pool.get(handle1);
 	REQUIRE(c1 == *cc1);
