@@ -70,7 +70,7 @@ file(GLOB_RECURSE CPP_FILES
     CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*)
 
-add_executable(limbo ${CPP_FILES})
+add_executable(limbo WIN32 ${CPP_FILES})
 GroupSourcesByFolder(limbo)
 
 target_sources(limbo PRIVATE ${SHADER_FILES} ${TEST_SHADER_FILES})

@@ -12,18 +12,18 @@
 
 namespace limbo::tests
 {
-	int executeTests(int argc, char* argv[])
+	int executeTests(char* args)
 	{
 #if ENABLE_LIMBO_TESTS
 		Catch::Session session;
 		session.configData().waitForKeypress = Catch::WaitForKeypress::BeforeExit;
 
-		const char* args[4];
-		args[0] = argv[0];
-		args[1] = "-r compact";
-		args[2] = "--break";
-		args[3] = "--success";
-		return session.run(4, args);
+		const char* arr_args[4];
+		arr_args[0] = args;
+		arr_args[1] = "-r compact";
+		arr_args[2] = "--break";
+		arr_args[3] = "--success";
+		return session.run(4, arr_args);
 #else
 		LIMBO_TESTS_WARNING
 #endif

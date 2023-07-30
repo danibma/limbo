@@ -1,4 +1,5 @@
 #include "stdafx.h"
+
 #include "gfx/gfx.h"
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"
@@ -8,26 +9,26 @@
 #include "gfx/scene.h"
 #include "gfx/fpscamera.h"
 
+#include "core/timer.h"
 #include "core/window.h"
+#include "core/commandline.h"
 
 #include "tests/tests.h"
 
-#include "core/timer.h"
 
 using namespace limbo;
 
 #define WIDTH  1280
 #define HEIGHT 720
 
-int main(int argc, char* argv[])
+int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lpCmdLine, int nCmdShow)
 {
-	argh::parser cmdl(argv);
-
-	if (cmdl[{ "--tests" }])
-		return tests::executeTests(argc, argv);
-	if (cmdl[{ "--ctriangle" }])
+	core::CommandLine::init(lpCmdLine);
+	if (core::CommandLine::hasArg("--tests"))
+		return tests::executeTests(lpCmdLine);
+	else if (core::CommandLine::hasArg("--ctriangle"))
 		return tests::executeComputeTriangle();
-	if (cmdl[{ "--gtriangle" }])
+	else if (core::CommandLine::hasArg("--gtriangle"))
 		return tests::executeGraphicsTriangle();
 
 	core::Window* window = core::createWindow({
@@ -67,8 +68,9 @@ int main(int argc, char* argv[])
 		.type = gfx::ShaderType::Graphics
 	});
 
-	//gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.glb");
-	gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
+	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.glb");
+	//gfx::Scene* scene = gfx::loadScene("E:\\IntelGraphicsSample\\Main.1_Sponza\\NewSponza_Main_glTF_002.gltf");
+	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
 	int tonemapMode = 0;
 	const char* tonemapModes[] = {

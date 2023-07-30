@@ -7,7 +7,7 @@
 
 namespace limbo::tests
 {
-	int executeTests(int argc, char* argv[]);
+	int executeTests(char* args);
 	int executeComputeTriangle();
 	int executeGraphicsTriangle();
 }
