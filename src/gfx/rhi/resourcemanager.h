@@ -8,13 +8,25 @@
 
 namespace limbo::gfx
 {
+	struct Deletion
+	{
+		DECLARE_DELEGATE(DestroyDelegate);
+		DestroyDelegate		delegate;
+		uint8				deletionCounter = 0;
+
+		~Deletion()
+		{
+			if (!!deletionCounter)
+				delegate.ExecuteIfBound();
+		}
+	};
+
 	class ResourceManager
 	{
 	public:
 		static ResourceManager*		ptr;
 
 		Handle<Texture>				emptyTexture;
-		bool						m_onShutdown = false;
 
 	public:
 		ResourceManager();
@@ -36,11 +48,18 @@ namespace limbo::gfx
 		void destroyTexture(Handle<Texture> texture);
 		void destroySampler(Handle<Sampler> sampler);
 
+		void runDeletionQueue();
+		void forceDeletionQueue();
+
 	private:
-		Pool<Buffer> m_buffers;
-		Pool<Shader> m_shaders;
-		Pool<Texture> m_textures;
-		Pool<Sampler> m_samplers;
+		Pool<Buffer>		m_buffers;
+		Pool<Shader>		m_shaders;
+		Pool<Texture>		m_textures;
+		Pool<Sampler>		m_samplers;
+
+		bool				m_onShutdown = false;
+
+		std::deque<Deletion> m_deletionQueue;
 	};
 
 

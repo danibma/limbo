@@ -33,6 +33,7 @@ namespace limbo::gfx
 		D3D12_RESOURCE_STATES	currentState;
 		D3D12_RESOURCE_STATES	initialState;
 		DescriptorHandle		handle;
+		void*					mappedData;
 
 		uint32					byteStride = 0;
 		uint64					byteSize = 0;

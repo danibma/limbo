@@ -5,7 +5,6 @@
 #include "gfx/gfx.h"
 #include "swapchain.h"
 #include "descriptorheap.h"
-#include "ringbufferallocator.h"
 
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
@@ -51,8 +50,6 @@ namespace limbo::gfx
 
 		DX_CHECK(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_device)));
 
-		window->onWindowShouldClose.AddRaw(this, &Device::onWindowClose);
-
 #if !NO_LOG
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		{
@@ -76,7 +73,8 @@ namespace limbo::gfx
 				DX_CHECK(m_device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
 				ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
 				DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
-				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(internal::dxMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &m_messageCallbackCookie));
+				DWORD messageCallbackCookie;
+				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(internal::dxMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
 			}
 		}
 #endif
@@ -97,6 +95,7 @@ namespace limbo::gfx
 		m_swapchain = new Swapchain(m_commandQueue.Get(), m_factory.Get(), window);
 		onPostResourceManagerInit.AddRaw(this, &Device::initSwapchainBackBuffers);
 		onPreResourceManagerShutdown.AddRaw(this, &Device::destroySwapchainBackBuffers);
+		onPreResourceManagerShutdown.AddRaw(this, &Device::waitGPU);
 
 		m_frameIndex = m_swapchain->getCurrentIndex();
 
@@ -117,8 +116,6 @@ namespace limbo::gfx
 
 		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
 		m_commandList->SetDescriptorHeaps(2, heaps);
-
-		RingBufferAllocator::ptr = new RingBufferAllocator(utils::ToGB(2));
 
 		// ImGui Stuff
 		if (flags & GfxDeviceFlag::EnableImgui)
@@ -145,9 +142,6 @@ namespace limbo::gfx
 	Device::~Device()
 	{
 		waitGPU();
-
-		delete RingBufferAllocator::ptr;
-		RingBufferAllocator::ptr = nullptr;
 
 		delete m_srvheap;
 		delete m_rtvheap;
@@ -431,6 +425,8 @@ namespace limbo::gfx
 
 		nextFrame();
 
+		ResourceManager::ptr->runDeletionQueue();
+
 		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
 		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
 
@@ -613,10 +609,5 @@ namespace limbo::gfx
 		
 		// Increment the fence value for the current frame
 		m_fenceValues[m_frameIndex]++;
-	}
-
-	void Device::onWindowClose()
-	{
-		waitGPU();
 	}
 }

@@ -46,6 +46,7 @@ namespace limbo::gfx
 		template<class... Args>
 		Handle<HandleType> allocateHandle(Args&&... args)
 		{
+			ensure(m_freeSlots.size() > 0);
 			uint16 freeSlot = m_freeSlots.front();
 			m_freeSlots.pop();
 			ensure(freeSlot < MAX_SIZE);
@@ -92,6 +93,6 @@ namespace limbo::gfx
 		std::vector<Object> m_objects;
 		std::queue<uint16> m_freeSlots;
 
-		const uint16 MAX_SIZE = 512;
+		const uint16 MAX_SIZE = 1024;
 	};
 }

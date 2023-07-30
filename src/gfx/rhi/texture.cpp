@@ -5,7 +5,6 @@
 
 #include "device.h"
 #include "resourcemanager.h"
-#include "ringbufferallocator.h"
 #include "core/utils.h"
 
 namespace limbo::gfx
@@ -211,12 +210,18 @@ namespace limbo::gfx
 			std::vector<D3D12_SUBRESOURCE_DATA> subresourceData;
 			subresourceData.emplace_back(spec.initialData, spec.width * 4, spec.width * spec.height * 4);
 
-			RingBufferAllocation allocation;
-			ensure(RingBufferAllocator::ptr->allocate(size, allocation));
-
-			Buffer* allocationBuffer = ResourceManager::ptr->getBuffer(allocation.buffer);
+			std::string uploadName = std::string(spec.debugName) + " (Upload Buffer)";
+			Handle<Buffer> uploadBuffer = createBuffer({
+				.debugName = uploadName.c_str(),
+				.byteSize = spec.width * spec.height * 4,
+				.usage = BufferUsage::Upload,
+				.initialData = spec.initialData
+				});
+			
+			Buffer* allocationBuffer = ResourceManager::ptr->getBuffer(uploadBuffer);
 			FAILIF(!allocationBuffer);
-			UpdateSubresources(device->getCommandList(), resource.Get(), allocationBuffer->resource.Get(), allocation.offset, 0, 1, subresourceData.data());
+			UpdateSubresources(device->getCommandList(), resource.Get(), allocationBuffer->resource.Get(), 0, 0, 1, subresourceData.data());
+			destroyBuffer(uploadBuffer);
 
 			currentState = D3D12_RESOURCE_STATE_COPY_DEST;
 		}

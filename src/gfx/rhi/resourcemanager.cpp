@@ -4,6 +4,15 @@
 
 namespace limbo::gfx
 {
+#define DELETE_RESOURCE(ResourceHandle, ResourceList) \
+	Deletion deletion = {}; \
+	deletion.delegate.BindLambda([this, ResourceHandle]() \
+		{ \
+			ResourceList.deleteHandle(ResourceHandle); \
+		}); \
+	deletion.deletionCounter = 0; \
+	m_deletionQueue.push_back(std::move(deletion))
+
 	ResourceManager::ResourceManager()
 	{
 		onPostResourceManagerInit.AddLambda([&]()
@@ -25,6 +34,8 @@ namespace limbo::gfx
 	{
 		m_onShutdown = true;
 		destroyTexture(emptyTexture);
+
+		forceDeletionQueue();
 
 #if LIMBO_DEBUG
 		ensure(m_buffers.isEmpty());
@@ -80,22 +91,44 @@ namespace limbo::gfx
 
 	void ResourceManager::destroyBuffer(Handle<Buffer> buffer)
 	{
-		m_buffers.deleteHandle(buffer);
+		DELETE_RESOURCE(buffer, m_buffers);
 	}
 
 	void ResourceManager::destroyShader(Handle<Shader> shader)
 	{
-		m_shaders.deleteHandle(shader);
+		DELETE_RESOURCE(shader, m_shaders);;
 	}
 
 	void ResourceManager::destroyTexture(Handle<Texture> texture)
 	{
 		if (texture != emptyTexture || m_onShutdown)
-			m_textures.deleteHandle(texture);
+		{
+			DELETE_RESOURCE(texture, m_textures);
+		}
 	}
 
 	void ResourceManager::destroySampler(Handle<Sampler> sampler)
 	{
-		m_samplers.deleteHandle(sampler);
+		DELETE_RESOURCE(sampler, m_samplers);
+	}
+
+	void ResourceManager::runDeletionQueue()
+	{
+		for (uint32 i = 0; i < m_deletionQueue.size();)
+		{
+			if (++m_deletionQueue[i].deletionCounter >= NUM_BACK_BUFFERS)
+				m_deletionQueue.pop_front();
+			else
+				++i;
+		}
+	}
+
+	void ResourceManager::forceDeletionQueue()
+	{
+		while (!m_deletionQueue.empty())
+		{
+			++m_deletionQueue.front().deletionCounter;
+			m_deletionQueue.pop_front();
+		}
 	}
 }

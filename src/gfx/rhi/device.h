@@ -35,7 +35,6 @@ namespace limbo::gfx
 		ComPtr<IDXGIFactory2>				m_factory;
 		ComPtr<IDXGIAdapter1>				m_adapter;
 		ComPtr<ID3D12Device>				m_device;
-		DWORD								m_messageCallbackCookie;
 
 		ComPtr<ID3D12CommandAllocator>		m_commandAllocators[NUM_BACK_BUFFERS];
 		ComPtr<ID3D12GraphicsCommandList>	m_commandList;
@@ -129,14 +128,11 @@ namespace limbo::gfx
 		uint32 getBackbufferHeight();
 
 	private:
-
 		void initSwapchainBackBuffers();
 		void destroySwapchainBackBuffers();
 
 		void pickGPU();
 		void waitGPU();
-
-		void onWindowClose();
 
 		void nextFrame();
 

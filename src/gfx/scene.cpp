@@ -232,7 +232,7 @@ namespace limbo::gfx
 		}
 		ensure(data);
 
-		outTexture = ResourceManager::ptr->createTexture({
+		outTexture = createTexture({
 			.width = (uint32)width,
 			.height = (uint32)height,
 			.debugName = debugName,
@@ -253,7 +253,7 @@ namespace limbo::gfx
 
 		// create vertex buffer
 		std::string debugName = std::string(name) + " VB";
-		vertexBuffer = ResourceManager::ptr->createBuffer({
+		vertexBuffer = createBuffer({
 			.debugName = debugName.c_str(),
 			.byteStride = sizeof(MeshVertex),
 			.byteSize = sizeof(MeshVertex) * (uint32)vertices.size(),
@@ -263,7 +263,7 @@ namespace limbo::gfx
 
 		// create index buffer
 		debugName = std::string(name) + " IB";
-		indexBuffer = ResourceManager::ptr->createBuffer({
+		indexBuffer = createBuffer({
 			.debugName = debugName.c_str(),
 			.byteSize = sizeof(uint32) * (uint32)indices.size(),
 			.usage = BufferUsage::Index,
