@@ -351,12 +351,26 @@ namespace limbo::gfx
 		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 		rasterizerDesc.FrontCounterClockwise = true;
 
+		D3D12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		blendDesc.RenderTarget[0] = {
+			.BlendEnable = true,
+			.LogicOpEnable = false,
+			.SrcBlend = D3D12_BLEND_SRC_ALPHA,
+			.DestBlend = D3D12_BLEND_INV_SRC_ALPHA,
+			.BlendOp = D3D12_BLEND_OP_ADD,
+			.SrcBlendAlpha = D3D12_BLEND_ONE,
+			.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA,
+			.BlendOpAlpha = D3D12_BLEND_OP_ADD,
+			.LogicOp = D3D12_LOGIC_OP_NOOP,
+			.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL
+		};
+
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
 			.pRootSignature = rootSignature.Get(),
 			.VS = vsBytecode,
 			.PS = psBytecode,
 			.StreamOutput = nullptr,
-			.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT),
+			.BlendState = blendDesc,
 			.SampleMask = 0xFFFFFFFF,
 			.RasterizerState = rasterizerDesc,
 			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),

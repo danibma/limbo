@@ -100,20 +100,18 @@ namespace limbo::gfx
 			}
 			else
 			{
-				if (node->has_translation)
 				{
 					float3 translation = glm::make_vec3(node->translation);
 					mesh.transform = glm::translate(mesh.transform, translation);
 				}
 
-				if (node->has_rotation)
 				{
 					quat rotation = glm::make_quat(node->rotation);
-					rotation = quat(rotation.w, rotation.z, rotation.y, rotation.x);
+					rotation = quat(rotation.w, rotation.x, rotation.y, rotation.z);
 					mesh.transform *= float4x4(rotation);
 				}
 
-				if (node->has_scale)
+				
 				{
 					float3 scale = glm::make_vec3(node->scale);
 					mesh.transform = glm::scale(mesh.transform, scale);
@@ -150,11 +148,11 @@ namespace limbo::gfx
 		{
 			const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
 			{
-				std::string debugName = std::format("{} Material({}) {}", m_sceneName, m_meshMaterials.size(), "Albedo");
+				std::string debugName = std::format(" Material({}) {}", m_meshMaterials.size(), "Albedo");
 				loadTexture(&workflow.base_color_texture, debugName.c_str(), meshMaterial.albedo);
 			}
 			{
-				std::string debugName = std::format("{} Material({}) {}", m_sceneName, m_meshMaterials.size(), "MetallicRoughness");
+				std::string debugName = std::format(" Material({}) {}", m_meshMaterials.size(), "MetallicRoughness");
 				loadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), meshMaterial.roughnessMetal);
 			}
 		}
@@ -164,7 +162,7 @@ namespace limbo::gfx
 		}
 
 		{
-			std::string debugName = std::format("{} Material({}) {}", m_sceneName, m_meshMaterials.size(), "Emissive");
+			std::string debugName = std::format(" Material({}) {}", m_meshMaterials.size(), "Emissive");
 			loadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.emissive);
 		}
 	}
@@ -235,14 +233,17 @@ namespace limbo::gfx
 		int channels = 0;
 		void* data;
 
+		std::string dname;
 		cgltf_image* image = textureView->texture->image;
 		if (image->uri)
 		{
+			dname = image->uri;
 			std::string filename = std::string(m_folderPath) + std::string(image->uri);
 			data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
 		}
 		else
 		{
+			dname = m_sceneName;
 			cgltf_buffer_view* bufferView = image->buffer_view;
 			cgltf_buffer* buffer = bufferView->buffer;
 			uint32 size = (uint32)bufferView->size;
@@ -251,10 +252,12 @@ namespace limbo::gfx
 		}
 		ensure(data);
 
+		dname += debugName;
+
 		outTexture = createTexture({
 			.width = (uint32)width,
 			.height = (uint32)height,
-			.debugName = debugName,
+			.debugName = dname.c_str(),
 			.format = Format::RGBA8_UNORM,
 			.type = TextureType::Texture2D,
 			.initialData = data
