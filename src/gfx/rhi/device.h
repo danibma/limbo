@@ -69,6 +69,7 @@ namespace limbo::gfx
 
 		void copyTextureToBackBuffer(Handle<Texture> texture);
 		void copyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst);
+		void copyBufferToTexture(Buffer* src, Texture* dst);
 		void copyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 		void copyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 

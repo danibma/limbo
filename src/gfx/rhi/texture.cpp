@@ -211,16 +211,17 @@ namespace limbo::gfx
 			subresourceData.emplace_back(spec.initialData, spec.width * 4, spec.width * spec.height * 4);
 
 			std::string uploadName = std::string(spec.debugName) + " (Upload Buffer)";
+			uint32 rowPitch = math::align(spec.width * 4, (uint32)D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
 			Handle<Buffer> uploadBuffer = createBuffer({
 				.debugName = uploadName.c_str(),
-				.byteSize = spec.width * spec.height * 4,
+				.byteSize = rowPitch * spec.height,
 				.usage = BufferUsage::Upload,
 				.initialData = spec.initialData
-				});
+			});
 			
 			Buffer* allocationBuffer = ResourceManager::ptr->getBuffer(uploadBuffer);
 			FAILIF(!allocationBuffer);
-			UpdateSubresources(device->getCommandList(), resource.Get(), allocationBuffer->resource.Get(), 0, 0, 1, subresourceData.data());
+			Device::ptr->copyBufferToTexture(allocationBuffer, this);
 			destroyBuffer(uploadBuffer);
 
 			currentState = D3D12_RESOURCE_STATE_COPY_DEST;

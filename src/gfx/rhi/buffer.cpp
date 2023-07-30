@@ -14,10 +14,11 @@ namespace limbo::gfx
 
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
+		const uint64 alignment = spec.usage == BufferUsage::Upload ? 256 : 4;
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-			.Width = spec.byteSize,
+			.Width = math::max(math::align(spec.byteSize, alignment), 256ull),
 			.Height = 1,
 			.DepthOrArraySize = 1,
 			.MipLevels = 1,

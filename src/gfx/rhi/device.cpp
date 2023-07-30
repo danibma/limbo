@@ -197,19 +197,24 @@ namespace limbo::gfx
 		Buffer* srcBuffer = ResourceManager::ptr->getBuffer(src);
 		FAILIF(!srcBuffer);
 
-		D3D12_RESOURCE_DESC dstDesc = dstTexture->resource->GetDesc();
+		copyBufferToTexture(srcBuffer, dstTexture);
+	}
+
+	void Device::copyBufferToTexture(Buffer* src, Texture* dst)
+	{
+		D3D12_RESOURCE_DESC dstDesc = dst->resource->GetDesc();
 
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT srcFootprints[D3D12_REQ_MIP_LEVELS] = {};
 		m_device->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, 0, srcFootprints, nullptr, nullptr, nullptr);
 
 		D3D12_TEXTURE_COPY_LOCATION srcLocation = {
-			.pResource = srcBuffer->resource.Get(),
+			.pResource = src->resource.Get(),
 			.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
 			.PlacedFootprint = srcFootprints[0]
 		};
 
 		D3D12_TEXTURE_COPY_LOCATION dstLocation = {
-			.pResource = dstTexture->resource.Get(),
+			.pResource = dst->resource.Get(),
 			.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 			.SubresourceIndex = 0
 		};
