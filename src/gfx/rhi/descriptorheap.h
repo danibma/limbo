@@ -3,7 +3,7 @@
 #include "core/core.h"
 #include "definitions.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	enum class DescriptorHeapType : uint8
 	{
@@ -15,16 +15,16 @@ namespace limbo::gfx
 
 	struct DescriptorHandle
 	{
-		D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle;
-		D3D12_GPU_DESCRIPTOR_HANDLE gpuHandle;
+		D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle;
+		D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle;
 	};
 
 	class DescriptorHeap
 	{
-		ComPtr<ID3D12DescriptorHeap>			m_heap;
+		ComPtr<ID3D12DescriptorHeap>			m_Heap;
 
-		uint32									m_currentDescriptor;
-		uint32									m_descriptorSize;
+		uint32									m_CurrentDescriptor;
+		uint32									m_DescriptorSize;
 
 		const uint32							MAX_DESCRIPTOR_NUM = 1000;
 
@@ -38,14 +38,14 @@ namespace limbo::gfx
 		DescriptorHeap(DescriptorHeap& heap) = delete;
 		DescriptorHeap(DescriptorHeap&& heap) = delete;
 
-		DescriptorHandle allocateHandle();
+		DescriptorHandle AllocateHandle();
 
-		DescriptorHandle getHandleByIndex(uint32 index);
+		DescriptorHandle GetHandleByIndex(uint32 index);
 
-		ID3D12DescriptorHeap* getHeap() const { return m_heap.Get(); }
+		ID3D12DescriptorHeap* GetHeap() const { return m_Heap.Get(); }
 	};
 
-	inline D3D12_DESCRIPTOR_HEAP_TYPE d3dDescriptorHeapType(DescriptorHeapType heapType)
+	inline D3D12_DESCRIPTOR_HEAP_TYPE D3DDescriptorHeapType(DescriptorHeapType heapType)
 	{
 		switch (heapType)
 		{

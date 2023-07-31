@@ -12,143 +12,143 @@
 #include <d3d12/d3dx12/d3dx12.h>
 
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	Shader::Shader(const ShaderSpec& spec)
 	{
-		Device* device = Device::ptr;
-		ID3D12Device* d3ddevice = device->getDevice();
+		Device* device = Device::Ptr;
+		ID3D12Device* d3ddevice = device->GetDevice();
 
-		type = spec.type;
+		Type = spec.Type;
 
-		if (spec.type == ShaderType::Compute)
-			createComputePipeline(d3ddevice, spec);
-		else if (spec.type == ShaderType::Graphics)
-			createGraphicsPipeline(d3ddevice, spec);
+		if (spec.Type == ShaderType::Compute)
+			CreateComputePipeline(d3ddevice, spec);
+		else if (spec.Type == ShaderType::Graphics)
+			CreateGraphicsPipeline(d3ddevice, spec);
 	}
 
 	Shader::~Shader()
 	{
-		for (uint8 i = 0; i < rtCount; ++i)
-			destroyTexture(renderTargets[i]);
+		for (uint8 i = 0; i < RTCount; ++i)
+			DestroyTexture(RenderTargets[i]);
 
-		if (depthTarget.isValid())
-			destroyTexture(depthTarget);
+		if (DepthTarget.IsValid())
+			DestroyTexture(DepthTarget);
 	}
 
-	void Shader::setComputeRootParameters(ID3D12GraphicsCommandList* cmd)
+	void Shader::SetComputeRootParameters(ID3D12GraphicsCommandList* cmd)
 	{
-		for (const auto& [name, parameter] : parameterMap)
+		for (const auto& [name, parameter] : ParameterMap)
 		{
-			if (parameter.type == ParameterType::Constants)
+			if (parameter.Type == ParameterType::Constants)
 			{
-				FAILIF(!parameter.data);
-				cmd->SetComputeRoot32BitConstants(parameter.rpIndex, parameter.numValues, parameter.data, parameter.offset);
+				FAILIF(!parameter.Data);
+				cmd->SetComputeRoot32BitConstants(parameter.RPIndex, parameter.NumValues, parameter.Data, parameter.Offset);
 			}
 			else
 			{
-				FAILIF(!parameter.descriptor.ptr);
-				cmd->SetComputeRootDescriptorTable(parameter.rpIndex, parameter.descriptor);
+				FAILIF(!parameter.Descriptor.ptr);
+				cmd->SetComputeRootDescriptorTable(parameter.RPIndex, parameter.Descriptor);
 			}
 		}
 	}
 
-	void Shader::setGraphicsRootParameters(ID3D12GraphicsCommandList* cmd)
+	void Shader::SetGraphicsRootParameters(ID3D12GraphicsCommandList* cmd)
 	{
-		for (const auto& [hash, parameter] : parameterMap)
+		for (const auto& [hash, parameter] : ParameterMap)
 		{
-			if (parameter.type == ParameterType::Constants)
+			if (parameter.Type == ParameterType::Constants)
 			{
-				if (!parameter.data)
+				if (!parameter.Data)
 				{
-					LB_WARN("Shader parameter at index %d has no value!", parameter.rpIndex);
+					LB_WARN("Shader parameter at index %d has no value!", parameter.RPIndex);
 					continue;
 				}
 
-				cmd->SetGraphicsRoot32BitConstants(parameter.rpIndex, parameter.numValues, parameter.data, parameter.offset);
+				cmd->SetGraphicsRoot32BitConstants(parameter.RPIndex, parameter.NumValues, parameter.Data, parameter.Offset);
 			}
 			else
 			{
-				if (!parameter.descriptor.ptr)
+				if (!parameter.Descriptor.ptr)
 				{
-					LB_WARN("Shader parameter at index %d has no value!", parameter.rpIndex);
+					LB_WARN("Shader parameter at index %d has no value!", parameter.RPIndex);
 					continue;
 				}
 
-				cmd->SetGraphicsRootDescriptorTable(parameter.rpIndex, parameter.descriptor);
+				cmd->SetGraphicsRootDescriptorTable(parameter.RPIndex, parameter.Descriptor);
 			}
 		}
 	}
 
-	void Shader::setConstant(const char* parameterName, const void* data)
+	void Shader::SetConstant(const char* parameterName, const void* data)
 	{
-		uint32 hash = algo::hash(parameterName);
-		FAILIF(!parameterMap.contains(hash));
-		parameterMap[hash].data = data;
+		uint32 hash = Algo::Hash(parameterName);
+		FAILIF(!ParameterMap.contains(hash));
+		ParameterMap[hash].Data = data;
 	}
 
-	void Shader::setTexture(const char* parameterName, Handle<Texture> texture)
+	void Shader::SetTexture(const char* parameterName, Handle<Texture> texture)
 	{
-		uint32 hash = algo::hash(parameterName);
-		if (!parameterMap.contains(hash))
+		uint32 hash = Algo::Hash(parameterName);
+		if (!ParameterMap.contains(hash))
 		{
 			LB_WARN("Tried to setTexture to parameter '%s' but the parameter was not found in the shader", parameterName);
 			return;
 		}
-		ParameterInfo& parameter = parameterMap[hash];
+		ParameterInfo& parameter = ParameterMap[hash];
 
-		Texture* t = ResourceManager::ptr->getTexture(texture);
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t);
-		FAILIF(t->srvhandle.gpuHandle.ptr == 0); // texture is not a SRV
+		FAILIF(t->SRVHandle.GPUHandle.ptr == 0); // texture is not a SRV
 
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
-		if (parameter.type == ParameterType::UAV)
+		if (parameter.Type == ParameterType::UAV)
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		else if (parameter.type == ParameterType::SRV)
+		else if (parameter.Type == ParameterType::SRV)
 			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 		else
 			ensure(false);
 
-		Device::ptr->transitionResource(t, newState);
+		Device::Ptr->TransitionResource(t, newState);
 
-		parameter.descriptor = t->srvhandle.gpuHandle;
+		parameter.Descriptor = t->SRVHandle.GPUHandle;
 	}
 
-	void Shader::setBuffer(const char* parameterName, Handle<Buffer> buffer)
+	void Shader::SetBuffer(const char* parameterName, Handle<Buffer> buffer)
 	{
-		uint32 hash = algo::hash(parameterName);
-		FAILIF(!parameterMap.contains(hash));
-		ParameterInfo& parameter = parameterMap[hash];
+		uint32 hash = Algo::Hash(parameterName);
+		FAILIF(!ParameterMap.contains(hash));
+		ParameterInfo& parameter = ParameterMap[hash];
 
-		Buffer* b = ResourceManager::ptr->getBuffer(buffer);
+		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
 		FAILIF(!b);
 
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
-		if (parameter.type == ParameterType::UAV)
+		if (parameter.Type == ParameterType::UAV)
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		else if (parameter.type == ParameterType::SRV)
+		else if (parameter.Type == ParameterType::SRV)
 			newState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 		else
 			ensure(false);
 
-		Device::ptr->transitionResource(b, newState);
+		Device::Ptr->TransitionResource(b, newState);
 
-		parameter.descriptor = b->handle.gpuHandle;
+		parameter.Descriptor = b->BasicHandle.GPUHandle;
 	}
 
-	void Shader::setSampler(const char* parameterName, Handle<Sampler> sampler)
+	void Shader::SetSampler(const char* parameterName, Handle<Sampler> sampler)
 	{
-		uint32 hash = algo::hash(parameterName);
-		FAILIF(!parameterMap.contains(hash));
-		ParameterInfo& parameter = parameterMap[hash];
+		uint32 hash = Algo::Hash(parameterName);
+		FAILIF(!ParameterMap.contains(hash));
+		ParameterInfo& parameter = ParameterMap[hash];
 
-		Sampler* s = ResourceManager::ptr->getSampler(sampler);
+		Sampler* s = ResourceManager::Ptr->GetSampler(sampler);
 		FAILIF(!s);
 
-		parameter.descriptor = s->handle.gpuHandle;
+		parameter.Descriptor = s->Handle.GPUHandle;
 	}
 
-	void Shader::createRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel const* kernels, uint32 kernelsCount)
+	void Shader::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel const* kernels, uint32 kernelsCount)
 	{
 		CD3DX12_ROOT_PARAMETER1   rootParameters[64] = {}; // root signature limits https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits#memory-limits-and-costs
 		CD3DX12_DESCRIPTOR_RANGE1 ranges[64] = {};
@@ -173,17 +173,17 @@ namespace limbo::gfx
 						D3D12_SHADER_VARIABLE_DESC varDesc;
 						var->GetDesc(&varDesc);
 
-						uint32 hashedName = algo::hash(varDesc.Name);
-						if (parameterMap.contains(hashedName)) continue;
+						uint32 hashedName = Algo::Hash(varDesc.Name);
+						if (ParameterMap.contains(hashedName)) continue;
 
 						bAddedVar = true;
 
 						uint32 numValues = varDesc.Size / sizeof(uint32);
-						parameterMap[hashedName] = {
-							.type = ParameterType::Constants,
-							.rpIndex = currentRP,
-							.numValues = numValues,
-							.offset = varDesc.StartOffset / sizeof(uint32)
+						ParameterMap[hashedName] = {
+							.Type = ParameterType::Constants,
+							.RPIndex = currentRP,
+							.NumValues = numValues,
+							.Offset = varDesc.StartOffset / sizeof(uint32)
 						};
 						
 						num32BitValues += numValues;
@@ -209,9 +209,9 @@ namespace limbo::gfx
 			case D3D_SIT_UAV_FEEDBACKTEXTURE:
 			case D3D_SIT_UAV_RWTYPED: 
 			{
-				parameterMap[algo::hash(bindDesc.Name)] = {
-					.type = ParameterType::UAV,
-					.rpIndex = currentRP,
+				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+					.Type = ParameterType::UAV,
+					.RPIndex = currentRP,
 				};
 
 				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, bindDesc.BindPoint, bindDesc.Space);
@@ -229,9 +229,9 @@ namespace limbo::gfx
 			case D3D_SIT_TBUFFER: ensure(false); break;
 			case D3D_SIT_TEXTURE:
 			{
-				parameterMap[algo::hash(bindDesc.Name)] = {
-					.type = ParameterType::SRV,
-					.rpIndex = currentRP,
+				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+					.Type = ParameterType::SRV,
+					.RPIndex = currentRP,
 				};
 
 				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bindDesc.BindPoint, bindDesc.Space);
@@ -245,9 +245,9 @@ namespace limbo::gfx
 			}
 			case D3D_SIT_SAMPLER:
 			{
-				parameterMap[algo::hash(bindDesc.Name)] = {
-					.type = ParameterType::Samplers,
-					.rpIndex = currentRP,
+				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+					.Type = ParameterType::Samplers,
+					.RPIndex = currentRP,
 				};
 
 				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, bindDesc.BindPoint, bindDesc.Space);
@@ -265,7 +265,7 @@ namespace limbo::gfx
 
 		for (uint32 i = 0; i < kernelsCount; ++i)
 		{
-			ID3D12ShaderReflection* reflection = kernels[i].reflection.Get();
+			ID3D12ShaderReflection* reflection = kernels[i].Reflection.Get();
 
 			D3D12_SHADER_DESC shaderDesc;
 			reflection->GetDesc(&shaderDesc);
@@ -291,60 +291,60 @@ namespace limbo::gfx
 		if (errorBlob)
 			LB_ERROR("%s", (char*)errorBlob->GetBufferPointer());
 
-		DX_CHECK(device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+		DX_CHECK(device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
 	}
 
-	void Shader::createComputePipeline(ID3D12Device* device, const ShaderSpec& spec)
+	void Shader::CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec)
 	{
-		FAILIF(!spec.programName);
+		FAILIF(!spec.ProgramName);
 
 		SC::Kernel cs;
-		FAILIF(!SC::compile(cs, spec.programName, spec.cs_entryPoint, SC::KernelType::Compute));
+		FAILIF(!SC::Compile(cs, spec.ProgramName, spec.CsEntryPoint, SC::KernelType::Compute));
 
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
 
-		createRootSignature(device, rootSignatureFlags, &cs, 1);
+		CreateRootSignature(device, rootSignatureFlags, &cs, 1);
 
 		D3D12_SHADER_BYTECODE shaderByteCode = {
-			.pShaderBytecode = cs.bytecode->GetBufferPointer(),
-			.BytecodeLength = cs.bytecode->GetBufferSize()
+			.pShaderBytecode = cs.Bytecode->GetBufferPointer(),
+			.BytecodeLength = cs.Bytecode->GetBufferSize()
 		};
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = rootSignature.Get(),
+			.pRootSignature = RootSignature.Get(),
 			.CS = shaderByteCode,
 			.NodeMask = 0,
 			.CachedPSO = nullptr,
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
-		DX_CHECK(device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&pipelineState)));
+		DX_CHECK(device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&PipelineState)));
 	}
 
-	void Shader::createGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec)
+	void Shader::CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec)
 	{
-		FAILIF(!spec.programName);
+		FAILIF(!spec.ProgramName);
 
 		SC::Kernel vs;
-		FAILIF(!SC::compile(vs, spec.programName, spec.vs_entryPoint, SC::KernelType::Vertex));
+		FAILIF(!SC::Compile(vs, spec.ProgramName, spec.VSEntryPoint, SC::KernelType::Vertex));
 		SC::Kernel ps;
-		FAILIF(!SC::compile(ps, spec.programName, spec.ps_entryPoint, SC::KernelType::Pixel));
+		FAILIF(!SC::Compile(ps, spec.ProgramName, spec.PSEntryPoint, SC::KernelType::Pixel));
 
 		InputLayout inputLayout;
-		createInputLayout(vs, inputLayout);
+		CreateInputLayout(vs, inputLayout);
 
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 		SC::Kernel kernels[2] = { vs, ps };
-		createRootSignature(device, rootSignatureFlags, kernels, 2);
+		CreateRootSignature(device, rootSignatureFlags, kernels, 2);
 
 		D3D12_SHADER_BYTECODE vsBytecode = {
-			.pShaderBytecode = vs.bytecode->GetBufferPointer(),
-			.BytecodeLength = vs.bytecode->GetBufferSize()
+			.pShaderBytecode = vs.Bytecode->GetBufferPointer(),
+			.BytecodeLength = vs.Bytecode->GetBufferSize()
 		};
 
 		D3D12_SHADER_BYTECODE psBytecode = {
-			.pShaderBytecode = ps.bytecode->GetBufferPointer(),
-			.BytecodeLength = ps.bytecode->GetBufferSize()
+			.pShaderBytecode = ps.Bytecode->GetBufferPointer(),
+			.BytecodeLength = ps.Bytecode->GetBufferSize()
 		};
 
 		D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -366,7 +366,7 @@ namespace limbo::gfx
 		};
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = rootSignature.Get(),
+			.pRootSignature = RootSignature.Get(),
 			.VS = vsBytecode,
 			.PS = psBytecode,
 			.StreamOutput = nullptr,
@@ -379,7 +379,7 @@ namespace limbo::gfx
 				(uint32)inputLayout.size(),
 			},
 			.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
-			.PrimitiveTopologyType = spec.topology,
+			.PrimitiveTopologyType = spec.Topology,
 			.SampleDesc = {
 				.Count = 1,
 				.Quality = 0 
@@ -389,74 +389,74 @@ namespace limbo::gfx
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
 
-		rtCount = 0;
-		for (uint8 i = 0; spec.rtFormats[i] != Format::UNKNOWN; ++i)
-			rtCount++;
+		RTCount = 0;
+		for (uint8 i = 0; spec.RTFormats[i] != Format::UNKNOWN; ++i)
+			RTCount++;
 
-		if (rtCount <= 0)
+		if (RTCount <= 0)
 		{
-			desc.RTVFormats[0]		= d3dFormat(Device::ptr->getSwapchainFormat());
-			desc.DSVFormat			= d3dFormat(Device::ptr->getSwapchainDepthFormat());
+			desc.RTVFormats[0]		= D3DFormat(Device::Ptr->GetSwapchainFormat());
+			desc.DSVFormat			= D3DFormat(Device::Ptr->GetSwapchainDepthFormat());
 			desc.NumRenderTargets	= 1;
-			useSwapchainRT			= true;
+			UseSwapchainRT			= true;
 		}
 		else
 		{
-			useSwapchainRT = false;
+			UseSwapchainRT = false;
 
-			for (uint8 i = 0; i < rtCount; ++i)
+			for (uint8 i = 0; i < RTCount; ++i)
 			{
-				desc.RTVFormats[i] = d3dFormat(spec.rtFormats[i]);
+				desc.RTVFormats[i] = D3DFormat(spec.RTFormats[i]);
 
-				std::string debugName = std::format("{} RT {}", spec.programName, i);
-				renderTargets[i] = createTexture({
-					.width = Device::ptr->getBackbufferWidth(),
-					.height = Device::ptr->getBackbufferHeight(),
-					.debugName = debugName.c_str(),
-					.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
-					.clearValue = {
-						.Format = d3dFormat(spec.rtFormats[i]),
+				std::string debugName = std::format("{} RT {}", spec.ProgramName, i);
+				RenderTargets[i] = CreateTexture({
+					.Width = Device::Ptr->GetBackbufferWidth(),
+					.Height = Device::Ptr->GetBackbufferHeight(),
+					.DebugName = debugName.c_str(),
+					.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+					.ClearValue = {
+						.Format = D3DFormat(spec.RTFormats[i]),
 						.Color = { 0.0f, 0.0f, 0.0f, 0.0f }
 					},
-					.format = spec.rtFormats[i],
-					.type = TextureType::Texture2D,
+					.Format = spec.RTFormats[i],
+					.Type = TextureType::Texture2D,
 				});
 			}
-			desc.NumRenderTargets = rtCount;
+			desc.NumRenderTargets = RTCount;
 
-			if (spec.depthFormat == Format::UNKNOWN)
+			if (spec.DepthFormat == Format::UNKNOWN)
 			{
 				desc.DepthStencilState.DepthEnable = false;
 			}
 			else
 			{
-				desc.DSVFormat = d3dFormat(spec.depthFormat);
+				desc.DSVFormat = D3DFormat(spec.DepthFormat);
 
-				std::string debugName = std::format("{} DSV", spec.programName);
-				depthTarget = createTexture({
-					.width = Device::ptr->getBackbufferWidth(),
-					.height = Device::ptr->getBackbufferHeight(),
-					.debugName = debugName.c_str(),
-					.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
-					.clearValue = {
-						.Format = d3dFormat(spec.depthFormat),
+				std::string debugName = std::format("{} DSV", spec.ProgramName);
+				DepthTarget = CreateTexture({
+					.Width = Device::Ptr->GetBackbufferWidth(),
+					.Height = Device::Ptr->GetBackbufferHeight(),
+					.DebugName = debugName.c_str(),
+					.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+					.ClearValue = {
+						.Format = D3DFormat(spec.DepthFormat),
 						.DepthStencil = {
 							.Depth = 1.0f,
 							.Stencil = 0
 						}
 					},
-					.format = spec.depthFormat,
-					.type = TextureType::Texture2D,
+					.Format = spec.DepthFormat,
+					.Type = TextureType::Texture2D,
 				});
 			}
 		}
 
-		DX_CHECK(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState)));
+		DX_CHECK(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&PipelineState)));
 	}
 
-	void Shader::createInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout)
+	void Shader::CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout)
 	{
-		ID3D12ShaderReflection* reflection = vs.reflection.Get();
+		ID3D12ShaderReflection* reflection = vs.Reflection.Get();
 
 		D3D12_SHADER_DESC shaderDesc;
 		reflection->GetDesc(&shaderDesc);

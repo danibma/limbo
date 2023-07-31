@@ -5,85 +5,85 @@
 
 #include "core/input.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
-	FPSCamera createCamera(const float3& eye, const float3& center)
+	FPSCamera CreateCamera(const float3& eye, const float3& center)
 	{
 		FPSCamera fpsCamera = {};
 
-		const float aspect_ratio = (float)gfx::getBackbufferWidth() / (float)gfx::getBackbufferHeight();
+		const float aspectRatio = (float)Gfx::GetBackbufferWidth() / (float)Gfx::GetBackbufferHeight();
 
-		fpsCamera.eye = eye;
-		fpsCamera.center = center;
-		fpsCamera.up = float3(0.0f, 1.0f, 0.0f);
+		fpsCamera.Eye = eye;
+		fpsCamera.Center = center;
+		fpsCamera.Up = float3(0.0f, 1.0f, 0.0f);
 
-		fpsCamera.view = glm::lookAt(eye, center, fpsCamera.up);
-		fpsCamera.proj = glm::perspective(0.6f, aspect_ratio, 1e-1f, 1e4f);
-		fpsCamera.viewProj = fpsCamera.proj * fpsCamera.view;
+		fpsCamera.View = glm::lookAt(eye, center, fpsCamera.Up);
+		fpsCamera.Proj = glm::perspective(0.6f, aspectRatio, 1e-1f, 1e4f);
+		fpsCamera.ViewProj = fpsCamera.Proj * fpsCamera.View;
 
-		fpsCamera.prevView = fpsCamera.view;
-		fpsCamera.prevProj = fpsCamera.proj;
-		fpsCamera.prevViewProj = fpsCamera.viewProj;
+		fpsCamera.PrevView		= fpsCamera.View;
+		fpsCamera.PrevProj		= fpsCamera.Proj;
+		fpsCamera.PrevViewProj	= fpsCamera.ViewProj;
 
 		return fpsCamera;
 	}
 
-	void updateCamera(core::Window* window, FPSCamera& fpsCamera, float deltaTime)
+	void UpdateCamera(Core::Window* window, FPSCamera& fpsCamera, float deltaTime)
 	{
 		// Update camera history
-		fpsCamera.prevView = fpsCamera.view;
-		fpsCamera.prevProj = fpsCamera.proj;
+		fpsCamera.PrevView = fpsCamera.View;
+		fpsCamera.PrevProj = fpsCamera.Proj;
 
 		// Update projection aspect ratio
-		const float aspect_ratio = (float)gfx::getBackbufferWidth() / (float)gfx::getBackbufferHeight();
+		const float aspectRatio = (float)Gfx::GetBackbufferWidth() / (float)Gfx::GetBackbufferHeight();
 
-		fpsCamera.proj = glm::perspective(45.0f, aspect_ratio, 1e-1f, 1e4f);
+		fpsCamera.Proj = glm::perspective(45.0f, aspectRatio, 1e-1f, 1e4f);
 
-		fpsCamera.cameraSpeed += input::getScrollY(window) / 2.0f;
-		if (fpsCamera.cameraSpeed <= 0.0f) fpsCamera.cameraSpeed = 0.1f;
+		fpsCamera.CameraSpeed += Input::GetScrollY(window) / 2.0f;
+		if (fpsCamera.CameraSpeed <= 0.0f) fpsCamera.CameraSpeed = 0.1f;
 
 		// Update view
-		float cameraSpeed = (fpsCamera.cameraSpeed / 100.0f) * deltaTime;
+		float cameraSpeed = (fpsCamera.CameraSpeed / 100.0f) * deltaTime;
 
 		// Keyboard input
-		float3 rightDirection = glm::cross(fpsCamera.center, fpsCamera.up);
-		if (input::isKeyDown(window, input::KeyCode::W)) // W
-			fpsCamera.eye += fpsCamera.center * cameraSpeed;
-		if (input::isKeyDown(window, input::KeyCode::S)) // S
-			fpsCamera.eye -= fpsCamera.center * cameraSpeed;
-		if (input::isKeyDown(window, input::KeyCode::A)) // A
-			fpsCamera.eye -= rightDirection * cameraSpeed;
-		if (input::isKeyDown(window, input::KeyCode::D)) // D
-			fpsCamera.eye += rightDirection * cameraSpeed;
-		if (input::isKeyDown(window, input::KeyCode::LeftShift)) // Shift
-			fpsCamera.eye -= fpsCamera.up * cameraSpeed;
-		if (input::isKeyDown(window, input::KeyCode::Space)) // Spacebar
-			fpsCamera.eye += fpsCamera.up * cameraSpeed;
+		float3 rightDirection = glm::cross(fpsCamera.Center, fpsCamera.Up);
+		if (Input::IsKeyDown(window, Input::KeyCode::W)) // W
+			fpsCamera.Eye += fpsCamera.Center * cameraSpeed;
+		if (Input::IsKeyDown(window, Input::KeyCode::S)) // S
+			fpsCamera.Eye -= fpsCamera.Center * cameraSpeed;
+		if (Input::IsKeyDown(window, Input::KeyCode::A)) // A
+			fpsCamera.Eye -= rightDirection * cameraSpeed;
+		if (Input::IsKeyDown(window, Input::KeyCode::D)) // D
+			fpsCamera.Eye += rightDirection * cameraSpeed;
+		if (Input::IsKeyDown(window, Input::KeyCode::LeftShift)) // Shift
+			fpsCamera.Eye -= fpsCamera.Up * cameraSpeed;
+		if (Input::IsKeyDown(window, Input::KeyCode::Space)) // Spacebar
+			fpsCamera.Eye += fpsCamera.Up * cameraSpeed;
 
 		// mouse input
-		float2 mousePos = input::getMousePos(window);
-		float2 delta    = (mousePos - fpsCamera.lastMousePos) * 0.002f;
-		fpsCamera.lastMousePos = mousePos;
+		float2 mousePos = Input::GetMousePos(window);
+		float2 delta    = (mousePos - fpsCamera.LastMousePos) * 0.002f;
+		fpsCamera.LastMousePos = mousePos;
 
-		if (input::isMouseButtonDown(window, input::MouseButton::Right))
+		if (Input::IsMouseButtonDown(window, Input::MouseButton::Right))
 		{
 			// Rotation
 			if (delta.x != 0.0f || delta.y != 0.0f)
 			{
-				constexpr float rotation_speed = 1.5f;
-				float pitchDelta = delta.y * rotation_speed;
-				float yawDelta = delta.x * rotation_speed;
+				constexpr float rotationSpeed = 1.5f;
+				float pitchDelta = delta.y * rotationSpeed;
+				float yawDelta = delta.x * rotationSpeed;
 
 				glm::quat q = glm::normalize(glm::cross(glm::angleAxis(-pitchDelta, rightDirection), glm::angleAxis(-yawDelta, float3(0.f, 1.0f, 0.0f))));
-				fpsCamera.center = glm::rotate(q, fpsCamera.center);
+				fpsCamera.Center = glm::rotate(q, fpsCamera.Center);
 			}
 		}
 
-		fpsCamera.view = glm::lookAt(fpsCamera.eye, fpsCamera.eye + fpsCamera.center, fpsCamera.up);
+		fpsCamera.View = glm::lookAt(fpsCamera.Eye, fpsCamera.Eye + fpsCamera.Center, fpsCamera.Up);
 
 		// Update view projection matrix
-		fpsCamera.viewProj = fpsCamera.proj * fpsCamera.view;
-		fpsCamera.prevViewProj = fpsCamera.prevProj * fpsCamera.prevView;
+		fpsCamera.ViewProj = fpsCamera.Proj * fpsCamera.View;
+		fpsCamera.PrevViewProj = fpsCamera.PrevProj * fpsCamera.PrevView;
 	}
 
 }

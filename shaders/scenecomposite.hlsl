@@ -5,13 +5,13 @@ QuadResult VSMain(uint vertexID : SV_VertexID)
 	uint vertex = vertexID * 4;
     
 	QuadResult result;
-	result.position.x = quadVertices[vertex];
-	result.position.y = quadVertices[vertex + 1];
-	result.position.z = 0.0f;
-	result.position.w = 1.0f;
+	result.Position.x = quadVertices[vertex];
+	result.Position.y = quadVertices[vertex + 1];
+	result.Position.z = 0.0f;
+	result.Position.w = 1.0f;
     
-	result.uv.x = quadVertices[vertex + 2];
-	result.uv.y = quadVertices[vertex + 3];
+	result.UV.x = quadVertices[vertex + 2];
+	result.UV.y = quadVertices[vertex + 3];
     
 	return result;
 }
@@ -36,7 +36,7 @@ float3 ReinhardTonemap(float3 finalColor)
 
 float4 PSMain(in QuadResult quad) : SV_Target
 {
-	float3 finalColor = g_sceneTexture.Sample(LinearWrap, quad.uv).rgb;
+	float3 finalColor = g_sceneTexture.Sample(LinearWrap, quad.UV).rgb;
 
     if (g_TonemapMode == 1)
     {

@@ -3,7 +3,7 @@
 
 #include <windows.h>
 
-namespace limbo::utils
+namespace limbo::Utils
 {
 	void StringConvert(const std::string& from, std::wstring& to)
 	{

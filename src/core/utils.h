@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace limbo::utils
+namespace limbo::Utils
 {
 	void StringConvert(const std::string& from, std::wstring& to);
 	void StringConvert(const wchar_t* from, char* to);

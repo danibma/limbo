@@ -3,52 +3,52 @@
 
 #include <d3d12/d3dx12/d3dx12.h>
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	DescriptorHeap::DescriptorHeap(ID3D12Device* device, DescriptorHeapType heapType, bool bShaderVisible)
 		: m_bShaderVisible(bShaderVisible)
 	{
-		m_currentDescriptor = 0;
+		m_CurrentDescriptor = 0;
 
 		D3D12_DESCRIPTOR_HEAP_DESC desc = {
-			.Type = d3dDescriptorHeapType(heapType),
+			.Type = D3DDescriptorHeapType(heapType),
 			.NumDescriptors = MAX_DESCRIPTOR_NUM,
 			.Flags = bShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 			.NodeMask = 0
 		};
-		DX_CHECK(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_heap)));
+		DX_CHECK(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_Heap)));
 
-		m_descriptorSize = device->GetDescriptorHandleIncrementSize(d3dDescriptorHeapType(heapType));
+		m_DescriptorSize = device->GetDescriptorHandleIncrementSize(D3DDescriptorHeapType(heapType));
 	}
 
 	DescriptorHeap::~DescriptorHeap()
 	{
 	}
 
-	DescriptorHandle DescriptorHeap::allocateHandle()
+	DescriptorHandle DescriptorHeap::AllocateHandle()
 	{
 		DescriptorHandle handle = {};
 
-		if (m_currentDescriptor >= MAX_DESCRIPTOR_NUM)
+		if (m_CurrentDescriptor >= MAX_DESCRIPTOR_NUM)
 		{
 			LB_ERROR("Ran out of descriptor heap handles, need to increase heap size.");
 			return handle;
 		}
-		++m_currentDescriptor;
+		++m_CurrentDescriptor;
 
-		handle.cpuHandle.ptr = m_heap->GetCPUDescriptorHandleForHeapStart().ptr + (m_currentDescriptor * m_descriptorSize);
+		handle.CpuHandle.ptr = m_Heap->GetCPUDescriptorHandleForHeapStart().ptr + (m_CurrentDescriptor * m_DescriptorSize);
 		if (m_bShaderVisible)
-			handle.gpuHandle.ptr = m_heap->GetGPUDescriptorHandleForHeapStart().ptr + (m_currentDescriptor * m_descriptorSize);
+			handle.GPUHandle.ptr = m_Heap->GetGPUDescriptorHandleForHeapStart().ptr + (m_CurrentDescriptor * m_DescriptorSize);
 
 		return handle;
 	}
 
-	DescriptorHandle DescriptorHeap::getHandleByIndex(uint32 index)
+	DescriptorHandle DescriptorHeap::GetHandleByIndex(uint32 index)
 	{
 		DescriptorHandle handle;
 
-		handle.cpuHandle.ptr = m_heap->GetCPUDescriptorHandleForHeapStart().ptr + (index * m_descriptorSize);
-		handle.gpuHandle.ptr = m_heap->GetGPUDescriptorHandleForHeapStart().ptr + (index * m_descriptorSize);
+		handle.CpuHandle.ptr = m_Heap->GetCPUDescriptorHandleForHeapStart().ptr + (index * m_DescriptorSize);
+		handle.GPUHandle.ptr = m_Heap->GetGPUDescriptorHandleForHeapStart().ptr + (index * m_DescriptorSize);
 
 		return handle;
 	}

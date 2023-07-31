@@ -7,26 +7,26 @@
 
 struct CD3DX12_ROOT_PARAMETER1;
 
-namespace limbo::gfx::SC
+namespace limbo::Gfx::SC
 {
 	struct Kernel;
 }
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	struct ShaderSpec
 	{
-		const char* programName;
-		const char* vs_entryPoint = "VSMain";
-		const char* ps_entryPoint = "PSMain";
-		const char* cs_entryPoint = "CSMain";
+		const char*						ProgramName;
+		const char*						VSEntryPoint = "VSMain";
+		const char*						PSEntryPoint = "PSMain";
+		const char*						CsEntryPoint = "CSMain";
 
-		Format rtFormats[8];
-		Format depthFormat = Format::UNKNOWN;
+		Format							RTFormats[8];
+		Format							DepthFormat = Format::UNKNOWN;
 
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE	topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
-		ShaderType						type = ShaderType::Graphics;
+		ShaderType						Type = ShaderType::Graphics;
 	};
 
 	class Shader
@@ -42,39 +42,39 @@ namespace limbo::gfx
 
 		struct ParameterInfo
 		{
-			ParameterType	type;
-			uint32			rpIndex;
+			ParameterType	Type;
+			uint32			RPIndex;
 
 			union
 			{
 				// 16 bytes
 				struct
 				{
-					const void*  data;
-					uint32		 numValues; // Num32BitValuesToSet
-					uint32		 offset; // DestOffsetIn32BitValues
+					const void*  Data;
+					uint32		 NumValues; // Num32BitValuesToSet
+					uint32		 Offset;    // DestOffsetIn32BitValues
 				};
 
 				// 8 bytes
 				struct
 				{
-					D3D12_GPU_DESCRIPTOR_HANDLE descriptor;
+					D3D12_GPU_DESCRIPTOR_HANDLE Descriptor;
 				};
 			};
 		};
-		using ParameterMap = std::unordered_map<uint32, ParameterInfo>;
+		using TParameterMap = std::unordered_map<uint32, ParameterInfo>;
 		using InputLayout = std::vector<D3D12_INPUT_ELEMENT_DESC>;
 
 	public:
-		ComPtr<ID3D12PipelineState>			pipelineState;
-		ComPtr<ID3D12RootSignature>			rootSignature;
-		ParameterMap						parameterMap;
-		ShaderType							type;
-		bool								useSwapchainRT;
+		ComPtr<ID3D12PipelineState>			PipelineState;
+		ComPtr<ID3D12RootSignature>			RootSignature;
+		TParameterMap						ParameterMap;
+		ShaderType							Type;
+		bool								UseSwapchainRT;
 
-		uint8								rtCount;
-		Handle<class Texture>				renderTargets[8];
-		Handle<class Texture>				depthTarget;
+		uint8								RTCount;
+		Handle<class Texture>				RenderTargets[8];
+		Handle<class Texture>				DepthTarget;
 
 	public:
 		Shader() = default;
@@ -82,18 +82,18 @@ namespace limbo::gfx
 
 		~Shader();
 
-		void setComputeRootParameters(ID3D12GraphicsCommandList* cmd);
-		void setGraphicsRootParameters(ID3D12GraphicsCommandList* cmd);
+		void SetComputeRootParameters(ID3D12GraphicsCommandList* cmd);
+		void SetGraphicsRootParameters(ID3D12GraphicsCommandList* cmd);
 
-		void setConstant(const char* parameterName, const void* data);
-		void setTexture(const char* parameterName, Handle<class Texture> texture);
-		void setBuffer(const char* parameterName, Handle<class Buffer> buffer);
-		void setSampler(const char* parameterName, Handle<class Sampler> sampler);
+		void SetConstant(const char* parameterName, const void* data);
+		void SetTexture(const char* parameterName, Handle<class Texture> texture);
+		void SetBuffer(const char* parameterName, Handle<class Buffer> buffer);
+		void SetSampler(const char* parameterName, Handle<class Sampler> sampler);
 
 	private:
-		void createInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);
-		void createRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, const SC::Kernel* kernels, uint32 kernelsCount);
-		void createComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
-		void createGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec);
+		void CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);
+		void CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, const SC::Kernel* kernels, uint32 kernelsCount);
+		void CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
+		void CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec);
 	};
 }

@@ -2,32 +2,32 @@
 
 #include "core/math.h"
 
-namespace limbo::core
+namespace limbo::Core
 {
 	class Window;
 }
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	struct FPSCamera
 	{
-		float2 lastMousePos;
+		float2		LastMousePos;
 
-		float3 eye;
-		float3 center;
-		float3 up;
+		float3		Eye;
+		float3		Center;
+		float3		Up;
 
-		float cameraSpeed = 2.0f;
+		float		CameraSpeed = 2.0f;
 
-		float4x4 view;
-		float4x4 proj;
-		float4x4 viewProj;
+		float4x4	View;
+		float4x4	Proj;
+		float4x4	ViewProj;
 
-		float4x4 prevView;
-		float4x4 prevProj;
-		float4x4 prevViewProj;
+		float4x4	PrevView;
+		float4x4	PrevProj;
+		float4x4	PrevViewProj;
 	};
 
-	FPSCamera createCamera(const float3& eye, const float3& center);
-	void updateCamera(core::Window* window, FPSCamera& fpsCamera, float deltaTime);
+	FPSCamera CreateCamera(const float3& eye, const float3& center);
+	void UpdateCamera(Core::Window* window, FPSCamera& fpsCamera, float deltaTime);
 }

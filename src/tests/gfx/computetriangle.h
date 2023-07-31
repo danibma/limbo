@@ -8,55 +8,55 @@
 
 #include "core/window.h"
 
-namespace limbo::tests::gfx
+namespace limbo::Tests::gfx
 {
-	int runComputeTriangle()
+	int RunComputeTriangle()
 	{
 		constexpr uint32 WIDTH = 1280;
 		constexpr uint32 HEIGHT = 720;
 
-		core::Window* window = core::createWindow({
-			.title = "limbo -> compute triangle test",
-			.width = WIDTH,
-			.height = HEIGHT
+		Core::Window* window = Core::NewWindow({
+			.Title = "limbo -> compute triangle test",
+			.Width = WIDTH,
+			.Height = HEIGHT
 		});
 
-		limbo::gfx::init(window);
+		limbo::Gfx::Init(window);
 
-		limbo::gfx::Handle<limbo::gfx::Texture> outputTexture = limbo::gfx::createTexture({
-			.width = WIDTH,
-			.height = HEIGHT,
-			.debugName = "triangle output texture",
-			.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-			.format = limbo::gfx::Format::RGBA8_UNORM,
-			.type = limbo::gfx::TextureType::Texture2D
+		limbo::Gfx::Handle<limbo::Gfx::Texture> outputTexture = limbo::Gfx::CreateTexture({
+			.Width = WIDTH,
+			.Height = HEIGHT,
+			.DebugName = "triangle output texture",
+			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Format = limbo::Gfx::Format::RGBA8_UNORM,
+			.Type = limbo::Gfx::TextureType::Texture2D
 			});
 
-		limbo::gfx::Handle<limbo::gfx::Shader> triangleShader = limbo::gfx::createShader({
-			.programName = "../src/tests/gfx/shaders/compute_triangle",
-			.cs_entryPoint = "DrawTriangle",
-			.type = limbo::gfx::ShaderType::Compute
+		limbo::Gfx::Handle<limbo::Gfx::Shader> triangleShader = limbo::Gfx::CreateShader({
+			.ProgramName = "../src/tests/gfx/shaders/compute_triangle",
+			.CsEntryPoint = "DrawTriangle",
+			.Type = limbo::Gfx::ShaderType::Compute
 			});
 
 
-		while (!window->shouldClose())
+		while (!window->ShouldClose())
 		{
-			window->pollEvents();
+			window->PollEvents();
 
-			limbo::gfx::setParameter(triangleShader, "output", outputTexture);
-			limbo::gfx::bindShader(triangleShader);
-			limbo::gfx::dispatch(WIDTH / 8, HEIGHT / 8, 1);
+			limbo::Gfx::SetParameter(triangleShader, "output", outputTexture);
+			limbo::Gfx::BindShader(triangleShader);
+			limbo::Gfx::Dispatch(WIDTH / 8, HEIGHT / 8, 1);
 
-			limbo::gfx::copyTextureToBackBuffer(outputTexture);
+			limbo::Gfx::CopyTextureToBackBuffer(outputTexture);
 
-			limbo::gfx::present();
+			limbo::Gfx::Present();
 		}
 
-		limbo::gfx::destroyTexture(outputTexture);
-		limbo::gfx::destroyShader(triangleShader);
+		limbo::Gfx::DestroyTexture(outputTexture);
+		limbo::Gfx::DestroyShader(triangleShader);
 
-		limbo::gfx::shutdown();
-		core::destroyWindow(window);
+		limbo::Gfx::Shutdown();
+		Core::DestroyWindow(window);
 
 		return 0;
 	}

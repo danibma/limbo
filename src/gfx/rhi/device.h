@@ -6,12 +6,12 @@
 
 #include <vector>
 
-namespace limbo::core
+namespace limbo::Core
 {
 	class Window;
 }
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	enum class DescriptorHeapType : uint8;
 	struct DescriptorHandle;
@@ -27,205 +27,205 @@ namespace limbo::gfx
 
 	struct GPUInfo
 	{
-		char name[128];
+		char Name[128];
 	};
 
 	class Device
 	{
-		ComPtr<IDXGIFactory2>				m_factory;
-		ComPtr<IDXGIAdapter1>				m_adapter;
-		ComPtr<ID3D12Device>				m_device;
+		ComPtr<IDXGIFactory2>				m_Factory;
+		ComPtr<IDXGIAdapter1>				m_Adapter;
+		ComPtr<ID3D12Device>				m_Device;
 
-		ComPtr<ID3D12CommandAllocator>		m_commandAllocators[NUM_BACK_BUFFERS];
-		ComPtr<ID3D12GraphicsCommandList>	m_commandList;
-		ComPtr<ID3D12CommandQueue>			m_commandQueue;
+		ComPtr<ID3D12CommandAllocator>		m_CommandAllocators[NUM_BACK_BUFFERS];
+		ComPtr<ID3D12GraphicsCommandList>	m_CommandList;
+		ComPtr<ID3D12CommandQueue>			m_CommandQueue;
 
-		ComPtr<ID3D12Fence>					m_fence;
-		HANDLE								m_fenceEvent;
-		uint64								m_fenceValues[3] = { 0, 0, 0 };
+		ComPtr<ID3D12Fence>					m_Fence;
+		HANDLE								m_FenceEvent;
+		uint64								m_FenceValues[3] = { 0, 0, 0 };
 
-		Swapchain*							m_swapchain;
-		uint32								m_frameIndex;
+		Swapchain*							m_Swapchain;
+		uint32								m_FrameIndex;
 
-		DescriptorHeap*						m_srvheap;
-		DescriptorHeap*						m_dsvheap;
-		DescriptorHeap*						m_rtvheap;
-		DescriptorHeap*						m_samplerheap;
+		DescriptorHeap*						m_Srvheap;
+		DescriptorHeap*						m_Dsvheap;
+		DescriptorHeap*						m_Rtvheap;
+		DescriptorHeap*						m_Samplerheap;
 
-		std::vector<D3D12_RESOURCE_BARRIER> m_resourceBarriers;
+		std::vector<D3D12_RESOURCE_BARRIER> m_ResourceBarriers;
 
-		GfxDeviceFlags						m_flags;
+		GfxDeviceFlags						m_Flags;
 
-		GPUInfo								m_gpuInfo;
+		GPUInfo								m_GPUInfo;
 
-		Handle<Shader>						m_boundShader;
-
-	public:
-		static Device* ptr;
+		Handle<Shader>						m_BoundShader;
 
 	public:
-		Device(core::Window* window, GfxDeviceFlags flags);
+		static Device* Ptr;
+
+	public:
+		Device(Core::Window* window, GfxDeviceFlags flags);
 		~Device();
 
-		void copyTextureToBackBuffer(Handle<Texture> texture);
-		void copyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst);
-		void copyBufferToTexture(Buffer* src, Texture* dst);
-		void copyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
-		void copyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+		void CopyTextureToBackBuffer(Handle<Texture> texture);
+		void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst);
+		void CopyBufferToTexture(Buffer* src, Texture* dst);
+		void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+		void CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 
 		template<typename T1, typename T2>
-		void copyResource(Handle<T1> src, Handle<T2> dst)
+		void CopyResource(Handle<T1> src, Handle<T2> dst)
 		{
 			static_assert(std::_Is_any_of_v<T1, Texture, Buffer>);
 			static_assert(std::_Is_any_of_v<T2, Texture, Buffer>);
 
-			Texture* dstResource = ResourceManager::ptr->getTexture(dst);
+			Texture* dstResource = ResourceManager::Ptr->GetTexture(dst);
 			FAILIF(!dstResource);
-			Buffer* srcResource = ResourceManager::ptr->getBuffer(src);
+			Buffer* srcResource = ResourceManager::Ptr->GetBuffer(src);
 			FAILIF(!srcResource);
 
-			m_commandList->CopyResource(dstResource->resource.Get(), srcResource->resource.Get());
+			m_CommandList->CopyResource(dstResource->Resource.Get(), srcResource->Resource.Get());
 		}
 
-		void beginEvent(const char* name, uint64 color = 0);
-		void endEvent();
+		void BeginEvent(const char* name, uint64 color = 0);
+		void EndEvent();
 
-		void bindVertexBuffer(Handle<Buffer> buffer);
-		void bindIndexBuffer(Handle<Buffer> buffer);
-		void bindShader(Handle<Shader> shader);
-		void draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
-		void drawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
+		void BindVertexBuffer(Handle<Buffer> buffer);
+		void BindIndexBuffer(Handle<Buffer> buffer);
+		void BindShader(Handle<Shader> shader);
+		void Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
+		void DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
 
-		void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
+		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 
-		void present();
+		void Present();
 
-		uint32 getCurrentFrameIndex() const
+		uint32 GetCurrentFrameIndex() const
 		{
-			return m_frameIndex;
+			return m_FrameIndex;
 		}
 
-		const GPUInfo& getGPUInfo() const
+		const GPUInfo& GetGPUInfo() const
 		{
-			return m_gpuInfo;
+			return m_GPUInfo;
 		}
 
-		Format getSwapchainFormat();
-		Format getSwapchainDepthFormat();
+		Format GetSwapchainFormat();
+		Format GetSwapchainDepthFormat();
 
 		// D3D12 specific
-		ID3D12Device* getDevice() const { return m_device.Get(); }
-		ID3D12GraphicsCommandList* getCommandList() const { return m_commandList.Get(); }
+		ID3D12Device* GetDevice() const { return m_Device.Get(); }
+		ID3D12GraphicsCommandList* GetCommandList() const { return m_CommandList.Get(); }
 
-		DescriptorHandle allocateHandle(DescriptorHeapType heapType);
+		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
 
-		void transitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState);
-		void transitionResource(Texture* texture, D3D12_RESOURCE_STATES newState);
+		void TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState);
+		void TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState);
 
-		void transitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
-		void transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
+		void TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
+		void TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
 
-		uint32 getBackbufferWidth();
-		uint32 getBackbufferHeight();
+		uint32 GetBackbufferWidth();
+		uint32 GetBackbufferHeight();
 
 	private:
-		void initSwapchainBackBuffers();
-		void destroySwapchainBackBuffers();
+		void InitSwapchainBackBuffers();
+		void DestroySwapchainBackBuffers();
 
-		void pickGPU();
-		void waitGPU();
+		void PickGPU();
+		void WaitGPU();
 
-		void nextFrame();
+		void NextFrame();
 
-		void submitResourceBarriers();
+		void SubmitResourceBarriers();
 
-		void installDrawState();
-		void bindSwapchainRenderTargets();
+		void InstallDrawState();
+		void BindSwapchainRenderTargets();
 	};
 
-	inline const GPUInfo& getGPUInfo()
+	inline const GPUInfo& GetGPUInfo()
 	{
-		return Device::ptr->getGPUInfo();
+		return Device::Ptr->GetGPUInfo();
 	}
 
-	inline void copyTextureToBackBuffer(Handle<Texture> texture)
+	inline void CopyTextureToBackBuffer(Handle<Texture> texture)
 	{
-		Device::ptr->copyTextureToBackBuffer(texture);
+		Device::Ptr->CopyTextureToBackBuffer(texture);
 	}
 
-	inline void copyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
+	inline void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
 	{
-		Device::ptr->copyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
+		Device::Ptr->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
 	}
 
 	template<typename T1, typename T2>
-	void copyResource(Handle<T1> src, Handle<T2> dst)
+	void CopyResource(Handle<T1> src, Handle<T2> dst)
 	{
-		Device::ptr->copyResource(src, dst);
+		Device::Ptr->CopyResource(src, dst);
 	}
 
-	inline void copyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
+	inline void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
 	{
-		Device::ptr->copyBufferToTexture(src, dst);
+		Device::Ptr->CopyBufferToTexture(src, dst);
 	}
 
-	inline void beginEvent(const char* name, uint64 color = 0)
+	inline void BeginEvent(const char* name, uint64 color = 0)
 	{
-		Device::ptr->beginEvent(name, color);
+		Device::Ptr->BeginEvent(name, color);
 	}
 
-	inline void endEvent()
+	inline void EndEvent()
 	{
-		Device::ptr->endEvent();
+		Device::Ptr->EndEvent();
 	}
 
-	inline void bindVertexBuffer(Handle<Buffer> buffer)
+	inline void BindVertexBuffer(Handle<Buffer> buffer)
 	{
-		Device::ptr->bindVertexBuffer(buffer);
+		Device::Ptr->BindVertexBuffer(buffer);
 	}
 
-	inline void bindIndexBuffer(Handle<Buffer> buffer)
+	inline void BindIndexBuffer(Handle<Buffer> buffer)
 	{
-		Device::ptr->bindIndexBuffer(buffer);
+		Device::Ptr->BindIndexBuffer(buffer);
 	}
 
-	inline void bindShader(Handle<Shader> shader)
+	inline void BindShader(Handle<Shader> shader)
 	{
-		Device::ptr->bindShader(shader);
+		Device::Ptr->BindShader(shader);
 	}
 
-	inline void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
+	inline void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
 	{
-		Device::ptr->draw(vertexCount, instanceCount, firstVertex, firstInstance);
+		Device::Ptr->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
-	inline void drawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
+	inline void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
 	{
-		Device::ptr->drawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+		Device::Ptr->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
-	inline void dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	inline void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
-		Device::ptr->dispatch(groupCountX, groupCountY, groupCountZ);
+		Device::Ptr->Dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 
-	inline void present()
+	inline void Present()
 	{
-		Device::ptr->present();
+		Device::Ptr->Present();
 	}
 
-	inline Format getSwapchainFormat()
+	inline Format GetSwapchainFormat()
 	{
-		return Device::ptr->getSwapchainFormat();
+		return Device::Ptr->GetSwapchainFormat();
 	}
 
-	inline uint32 getBackbufferWidth()
+	inline uint32 GetBackbufferWidth()
 	{
-		return Device::ptr->getBackbufferWidth();
+		return Device::Ptr->GetBackbufferWidth();
 	}
 
-	inline uint32 getBackbufferHeight()
+	inline uint32 GetBackbufferHeight()
 	{
-		return Device::ptr->getBackbufferHeight();
+		return Device::Ptr->GetBackbufferHeight();
 	}
 }

@@ -6,152 +6,152 @@
 #include "texture.h"
 #include "sampler.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	struct Deletion
 	{
 		DECLARE_DELEGATE(DestroyDelegate);
-		DestroyDelegate		delegate;
-		uint8				deletionCounter = 0;
+		DestroyDelegate		Delegate;
+		uint8				DeletionCounter = 0;
 
 		~Deletion()
 		{
-			if (!!deletionCounter)
-				delegate.ExecuteIfBound();
+			if (!!DeletionCounter)
+				Delegate.ExecuteIfBound();
 		}
 	};
 
 	class ResourceManager
 	{
 	public:
-		static ResourceManager*		ptr;
+		static ResourceManager*		Ptr;
 
-		Handle<Texture>				emptyTexture;
+		Handle<Texture>				EmptyTexture;
 
 	public:
 		ResourceManager();
 		virtual ~ResourceManager();
 
-		Handle<Buffer> createBuffer(const BufferSpec& spec);
-		Handle<Shader> createShader(const ShaderSpec& spec);
-		Handle<Texture> createTexture(const TextureSpec& spec);
-		Handle<Texture> createTexture(ID3D12Resource* resource, const TextureSpec& spec);
-		Handle<Sampler> createSampler(const D3D12_SAMPLER_DESC& spec);
+		Handle<Buffer> CreateBuffer(const BufferSpec& spec);
+		Handle<Shader> CreateShader(const ShaderSpec& spec);
+		Handle<Texture> CreateTexture(const TextureSpec& spec);
+		Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
+		Handle<Sampler> CreateSampler(const D3D12_SAMPLER_DESC& spec);
 
-		Buffer* getBuffer(Handle<Buffer> buffer);
-		Shader* getShader(Handle<Shader> shader);
-		Texture* getTexture(Handle<Texture> texture);
-		Sampler* getSampler(Handle<Sampler> sampler);
+		Buffer* GetBuffer(Handle<Buffer> buffer);
+		Shader* GetShader(Handle<Shader> shader);
+		Texture* GetTexture(Handle<Texture> texture);
+		Sampler* GetSampler(Handle<Sampler> sampler);
 
-		void destroyBuffer(Handle<Buffer> buffer);
-		void destroyShader(Handle<Shader> shader);
-		void destroyTexture(Handle<Texture> texture);
-		void destroySampler(Handle<Sampler> sampler);
+		void DestroyBuffer(Handle<Buffer> buffer);
+		void DestroyShader(Handle<Shader> shader);
+		void DestroyTexture(Handle<Texture> texture);
+		void DestroySampler(Handle<Sampler> sampler);
 
-		void runDeletionQueue();
-		void forceDeletionQueue();
+		void RunDeletionQueue();
+		void ForceDeletionQueue();
 
 	private:
-		Pool<Buffer, 2048>		m_buffers;
-		Pool<Texture, 512>		m_textures;
-		Pool<Shader,  128>		m_shaders;
-		Pool<Sampler,   8>		m_samplers;
+		Pool<Buffer, 2048>		m_Buffers;
+		Pool<Texture, 512>		m_Textures;
+		Pool<Shader,  128>		m_Shaders;
+		Pool<Sampler,   8>		m_Samplers;
 
-		bool					m_onShutdown = false;
+		bool					m_bOnShutdown = false;
 
-		std::deque<Deletion>	m_deletionQueue;
+		std::deque<Deletion>	m_DeletionQueue;
 	};
 
 
 	// Global definitions
-	inline Handle<Buffer> createBuffer(const BufferSpec& spec)
+	inline Handle<Buffer> CreateBuffer(const BufferSpec& spec)
 	{
-		return ResourceManager::ptr->createBuffer(spec);
+		return ResourceManager::Ptr->CreateBuffer(spec);
 	}
 
-	inline Handle<Shader> createShader(const ShaderSpec& spec)
+	inline Handle<Shader> CreateShader(const ShaderSpec& spec)
 	{
-		return ResourceManager::ptr->createShader(spec);
+		return ResourceManager::Ptr->CreateShader(spec);
 	}
 
-	inline Handle<Texture> createTexture(const TextureSpec& spec)
+	inline Handle<Texture> CreateTexture(const TextureSpec& spec)
 	{
-		return ResourceManager::ptr->createTexture(spec);
+		return ResourceManager::Ptr->CreateTexture(spec);
 	}
 
-	inline Handle<Texture> createTexture(ID3D12Resource* resource, const TextureSpec& spec)
+	inline Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
 	{
-		return ResourceManager::ptr->createTexture(resource, spec);
+		return ResourceManager::Ptr->CreateTexture(resource, spec);
 	}
 
-	inline Handle<Sampler> createSampler(const D3D12_SAMPLER_DESC& spec)
+	inline Handle<Sampler> CreateSampler(const D3D12_SAMPLER_DESC& spec)
 	{
-		return ResourceManager::ptr->createSampler(spec);
+		return ResourceManager::Ptr->CreateSampler(spec);
 	}
 
-	inline void destroyBuffer(Handle<Buffer> handle)
+	inline void DestroyBuffer(Handle<Buffer> handle)
 	{
-		ResourceManager::ptr->destroyBuffer(handle);
+		ResourceManager::Ptr->DestroyBuffer(handle);
 	}
 
-	inline void destroyShader(Handle<Shader> handle)
+	inline void DestroyShader(Handle<Shader> handle)
 	{
-		ResourceManager::ptr->destroyShader(handle);
+		ResourceManager::Ptr->DestroyShader(handle);
 	}
 
-	inline void destroyTexture(Handle<Texture> handle)
+	inline void DestroyTexture(Handle<Texture> handle)
 	{
-		ResourceManager::ptr->destroyTexture(handle);
+		ResourceManager::Ptr->DestroyTexture(handle);
 	}
 
-	inline void destroySampler(Handle<Sampler> sampler)
+	inline void DestroySampler(Handle<Sampler> sampler)
 	{
-		ResourceManager::ptr->destroySampler(sampler);
+		ResourceManager::Ptr->DestroySampler(sampler);
 	}
 
-	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture)
+	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture)
 	{
-		Shader* s = ResourceManager::ptr->getShader(shader);
+		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
-		s->setTexture(parameterName, texture);
+		s->SetTexture(parameterName, texture);
 	}
 
-	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Buffer> buffer)
+	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Buffer> buffer)
 	{
-		Shader* s = ResourceManager::ptr->getShader(shader);
+		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
-		s->setBuffer(parameterName, buffer);
+		s->SetBuffer(parameterName, buffer);
 	}
 
-	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Sampler> sampler)
+	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Sampler> sampler)
 	{
-		Shader* s = ResourceManager::ptr->getShader(shader);
+		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
-		s->setSampler(parameterName, sampler);
+		s->SetSampler(parameterName, sampler);
 	}
 
 	// Used to bind render targets, from other shaders, as a texture
-	inline void setParameter(Handle<Shader> shader, const char* parameterName, Handle<Shader> rtShader, uint8 rtIndex)
+	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Shader> rtShader, uint8 rtIndex)
 	{
-		Shader* s = ResourceManager::ptr->getShader(shader);
+		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
-		Shader* renderTargetShader = ResourceManager::ptr->getShader(rtShader);
+		Shader* renderTargetShader = ResourceManager::Ptr->GetShader(rtShader);
 		FAILIF(!renderTargetShader);
 
-		if (rtIndex >= renderTargetShader->rtCount)
+		if (rtIndex >= renderTargetShader->RTCount)
 		{
 			LB_WARN("Failed to set parameter '%s' because the render target index '%d' is not valid!", parameterName, rtIndex);
 			return;
 		}
 
-		s->setTexture(parameterName, renderTargetShader->renderTargets[rtIndex]);
+		s->SetTexture(parameterName, renderTargetShader->RenderTargets[rtIndex]);
 	}
 
 	template<typename T>
-	inline void setParameter(Handle<Shader> shader, const char* parameterName, const T& value)
+	inline void SetParameter(Handle<Shader> shader, const char* parameterName, const T& value)
 	{
-		Shader* s = ResourceManager::ptr->getShader(shader);
+		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
-		s->setConstant(parameterName, &value);
+		s->SetConstant(parameterName, &value);
 	}
 }

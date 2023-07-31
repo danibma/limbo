@@ -6,25 +6,25 @@
 #include <queue>
 #include <type_traits>
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	template<typename T>
 	class Handle
 	{
 	public:
-		Handle() : m_index(0xFFFF), m_generation(0) {}
-		bool isValid() { return m_index != 0xFFFF; }
+		Handle() : m_Index(0xFFFF), m_Generation(0) {}
+		bool IsValid() { return m_Index != 0xFFFF; }
 
 		bool operator!=(const Handle& other)
 		{
-			return !(m_index == other.m_index && m_generation == other.m_generation);
+			return !(m_Index == other.m_Index && m_Generation == other.m_Generation);
 		}
 
 	private:
-		Handle(uint16 index, uint16 generation) : m_index(index), m_generation(generation) {}
+		Handle(uint16 index, uint16 generation) : m_Index(index), m_Generation(generation) {}
 
-		uint16 m_index;
-		uint16 m_generation;
+		uint16 m_Index;
+		uint16 m_Generation;
 
 		template<typename T1, size_t MaxSize> friend class Pool;
 	};
@@ -35,63 +35,63 @@ namespace limbo::gfx
 	public:
 		Pool()
 		{
-			m_objects.resize(MAX_SIZE);
+			m_Objects.resize(MAX_SIZE);
 			for (uint16 i = 0; i < MAX_SIZE; ++i)
 			{
-				m_freeSlots.push(i);
-				m_objects[i].data = new HandleType();
+				m_FreeSlots.push(i);
+				m_Objects[i].Data = new HandleType();
 			}
 		}
 
 		template<class... Args>
-		Handle<HandleType> allocateHandle(Args&&... args)
+		Handle<HandleType> AllocateHandle(Args&&... args)
 		{
-			ensure(m_freeSlots.size() > 0);
-			uint16 freeSlot = m_freeSlots.front();
-			m_freeSlots.pop();
+			ensure(m_FreeSlots.size() > 0);
+			uint16 freeSlot = m_FreeSlots.front();
+			m_FreeSlots.pop();
 			ensure(freeSlot < MAX_SIZE);
-			Object& obj = m_objects[freeSlot];
-			new(obj.data) HandleType(std::forward<Args>(args)...);
-			return Handle<HandleType>(freeSlot, obj.generation);
+			Object& obj = m_Objects[freeSlot];
+			new(obj.Data) HandleType(std::forward<Args>(args)...);
+			return Handle<HandleType>(freeSlot, obj.Generation);
 		}
 
-		void deleteHandle(Handle<HandleType> handle)
+		void DeleteHandle(Handle<HandleType> handle)
 		{
-			m_freeSlots.push(handle.m_index);
-			ensure(m_freeSlots.size() <= MAX_SIZE);
-			ensure(handle.isValid());
-			m_objects[handle.m_index].data->~HandleType();
-			++m_objects[handle.m_index].generation;
+			m_FreeSlots.push(handle.m_Index);
+			ensure(m_FreeSlots.size() <= MAX_SIZE);
+			ensure(handle.IsValid());
+			m_Objects[handle.m_Index].Data->~HandleType();
+			++m_Objects[handle.m_Index].Generation;
 		}
 
-		HandleType* get(Handle<HandleType> handle)
+		HandleType* Get(Handle<HandleType> handle)
 		{
-			ensure(handle.isValid());
-			const Object& obj = m_objects[handle.m_index];
-			if (handle.m_generation != obj.generation)
+			ensure(handle.IsValid());
+			const Object& obj = m_Objects[handle.m_Index];
+			if (handle.m_Generation != obj.Generation)
 				return nullptr;
-			return obj.data;
+			return obj.Data;
 		}
 
-		uint16 getSize()
+		uint16 GetSize()
 		{
 			return MAX_SIZE;
 		}
 
-		bool isEmpty()
+		bool IsEmpty()
 		{
-			return m_objects.size() == m_freeSlots.size();
+			return m_Objects.size() == m_FreeSlots.size();
 		}
 
 	private:
 		struct Object
 		{
-			HandleType* data;
-			uint16 generation;
+			HandleType* Data;
+			uint16		Generation;
 		};
 
-		std::vector<Object> m_objects;
-		std::queue<uint16> m_freeSlots;
+		std::vector<Object> m_Objects;
+		std::queue<uint16> m_FreeSlots;
 
 		const uint16 MAX_SIZE = MaxSize;
 	};

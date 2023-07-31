@@ -15,7 +15,7 @@
 
 #include "rhi/resourcemanager.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	namespace
 	{
@@ -30,7 +30,7 @@ namespace limbo::gfx
 	Scene::Scene(const char* path)
 	{
 		LB_LOG("Starting loading %s", path);
-		core::Timer timer;
+		Core::Timer timer;
 
 		cgltf_options options = {};
 		cgltf_data* data = nullptr;
@@ -39,58 +39,58 @@ namespace limbo::gfx
 		result = cgltf_load_buffers(&options, data, path);
 		FAILIF(result != cgltf_result_success);
 
-		paths::getPath(path, m_folderPath);
-		paths::getFilename(path, m_sceneName);
+		Paths::GetPath(path, m_FolderPath);
+		Paths::GetFilename(path, m_SceneName);
 
 		// process materials
 		for (size_t i = 0; i < data->materials_count; ++i)
-			processMaterial(&data->materials[i]);
+			ProcessMaterial(&data->materials[i]);
 
 		cgltf_scene* scene = data->scene;
 		for (size_t i = 0; i < scene->nodes_count; ++i)
-			processNode(scene->nodes[i]);
+			ProcessNode(scene->nodes[i]);
 
 		cgltf_free(data);
 
 		LB_LOG("Finished loading %s (took %.2fs)", path, timer.ElapsedSeconds());
 	}
 
-	Scene* Scene::load(const char* path)
+	Scene* Scene::Load(const char* path)
 	{
 		return new Scene(path);
 	}
 
-	void Scene::destroy()
+	void Scene::Destroy()
 	{
-		for (const Mesh& mesh : m_meshes)
+		for (const Mesh& mesh : m_Meshes)
 		{
-			gfx::destroyBuffer(mesh.vertexBuffer);
-			gfx::destroyBuffer(mesh.indexBuffer);
+			Gfx::DestroyBuffer(mesh.VertexBuffer);
+			Gfx::DestroyBuffer(mesh.IndexBuffer);
 		}
 
-		for (const auto& [name, material] : m_meshMaterials)
+		for (const auto& [name, material] : m_MeshMaterials)
 		{
-			gfx::destroyTexture(material.albedo);
-			gfx::destroyTexture(material.roughnessMetal);
-			gfx::destroyTexture(material.normal);
-			gfx::destroyTexture(material.emissive);
+			Gfx::DestroyTexture(material.Albedo);
+			Gfx::DestroyTexture(material.RoughnessMetal);
+			Gfx::DestroyTexture(material.Normal);
+			Gfx::DestroyTexture(material.Emissive);
 		}
 	}
 
-	void Scene::drawMesh(const std::function<void(const Mesh& mesh)>& drawFunction)
+	void Scene::DrawMesh(const std::function<void(const Mesh& mesh)>& drawFunction)
 	{
-		for (const Mesh& m : m_meshes)
+		for (const Mesh& m : m_Meshes)
 			drawFunction(m);
 	}
 
-	MeshMaterial Scene::getMaterial(uintptr_t pMaterial)
+	MeshMaterial Scene::GetMaterial(uintptr_t pMaterial)
 	{
-		if (m_meshMaterials.contains(pMaterial))
-			return m_meshMaterials[pMaterial];
+		if (m_MeshMaterials.contains(pMaterial))
+			return m_MeshMaterials[pMaterial];
 		return MeshMaterial();
 	}
 
-	void Scene::processNode(const cgltf_node* node)
+	void Scene::ProcessNode(const cgltf_node* node)
 	{
 		const cgltf_mesh* mesh = node->mesh;
 		if (mesh)
@@ -98,29 +98,29 @@ namespace limbo::gfx
 			for (size_t i = 0; i < mesh->primitives_count; i++)
 			{
 				const cgltf_primitive& primitive = mesh->primitives[i];
-				Mesh& m = m_meshes.emplace_back(processMesh(mesh, &primitive));
-				cgltf_node_transform_world(node, &m.transform[0][0]);
+				Mesh& m = m_Meshes.emplace_back(ProcessMesh(mesh, &primitive));
+				cgltf_node_transform_world(node, &m.Transform[0][0]);
 			}
 		}
 
 		// then do the same for each of its children
 		for (size_t i = 0; i < node->children_count; i++)
-			processNode(node->children[i]);
+			ProcessNode(node->children[i]);
 	}
 
-	void Scene::processMaterial(const cgltf_material* material)
+	void Scene::ProcessMaterial(const cgltf_material* material)
 	{
-		MeshMaterial& meshMaterial = m_meshMaterials[(uintptr_t)material];
+		MeshMaterial& meshMaterial = m_MeshMaterials[(uintptr_t)material];
 		if (material->has_pbr_metallic_roughness)
 		{
 			const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
 			{
-				std::string debugName = std::format(" Material({}) {}", m_meshMaterials.size(), "Albedo");
-				loadTexture(&workflow.base_color_texture, debugName.c_str(), meshMaterial.albedo);
+				std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Albedo");
+				LoadTexture(&workflow.base_color_texture, debugName.c_str(), meshMaterial.Albedo);
 			}
 			{
-				std::string debugName = std::format(" Material({}) {}", m_meshMaterials.size(), "MetallicRoughness");
-				loadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), meshMaterial.roughnessMetal);
+				std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "MetallicRoughness");
+				LoadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), meshMaterial.RoughnessMetal);
 			}
 		}
 		else
@@ -129,18 +129,18 @@ namespace limbo::gfx
 		}
 
 		{
-			std::string debugName = std::format(" Material({}) {}", m_meshMaterials.size(), "Emissive");
-			loadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.emissive);
+			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Emissive");
+			LoadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.Emissive);
 		}
 	}
 
-	Mesh Scene::processMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive)
+	Mesh Scene::ProcessMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive)
 	{
 		std::string meshName;
 		if (mesh->name)
 			meshName = mesh->name;
 		else
-			meshName = m_sceneName;
+			meshName = m_SceneName;
 
 		PrimitiveData primitiveData;
 
@@ -174,8 +174,8 @@ namespace limbo::gfx
 		for (size_t attrIdx = 0; attrIdx < vertexCount; ++attrIdx)
 		{
 			MeshVertex& vertex = vertices[attrIdx];
-			vertex.position = primitiveData.positionStream[attrIdx];
-			vertex.uv		= primitiveData.texcoordsStream[attrIdx];
+			vertex.Position = primitiveData.positionStream[attrIdx];
+			vertex.UV		= primitiveData.texcoordsStream[attrIdx];
 		}
 
 		// process indices
@@ -190,7 +190,7 @@ namespace limbo::gfx
 		return Mesh(meshName.c_str(), vertices, primitiveData.indicesStream, materialID);
 	}
 
-	void Scene::loadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture)
+	void Scene::LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture)
 	{
 		if (!textureView->texture)
 			return;
@@ -205,12 +205,12 @@ namespace limbo::gfx
 		if (image->uri)
 		{
 			dname = image->uri;
-			std::string filename = std::string(m_folderPath) + std::string(image->uri);
+			std::string filename = std::string(m_FolderPath) + std::string(image->uri);
 			data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
 		}
 		else
 		{
-			dname = m_sceneName;
+			dname = m_SceneName;
 			cgltf_buffer_view* bufferView = image->buffer_view;
 			cgltf_buffer* buffer = bufferView->buffer;
 			uint32 size = (uint32)bufferView->size;
@@ -221,42 +221,42 @@ namespace limbo::gfx
 
 		dname += debugName;
 
-		outTexture = createTexture({
-			.width = (uint32)width,
-			.height = (uint32)height,
-			.debugName = dname.c_str(),
-			.format = Format::RGBA8_UNORM,
-			.type = TextureType::Texture2D,
-			.initialData = data
+		outTexture = CreateTexture({
+			.Width = (uint32)width,
+			.Height = (uint32)height,
+			.DebugName = dname.c_str(),
+			.Format = Format::RGBA8_UNORM,
+			.Type = TextureType::Texture2D,
+			.InitialData = data
 		});
 		free(data);
 	}
 
 	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uintptr_t material)
-		: transform(float4x4(1.0f))
+		: Transform(float4x4(1.0f))
 	{
-		indexCount = indices.size();
-		vertexCount = vertices.size();
-		materialID = material;
-		name = meshName;
+		IndexCount = indices.size();
+		VertexCount = vertices.size();
+		MaterialID = material;
+		Name = meshName;
 
 		// create vertex buffer
-		std::string debugName = std::string(name) + " VB";
-		vertexBuffer = createBuffer({
-			.debugName = debugName.c_str(),
-			.byteStride = sizeof(MeshVertex),
-			.byteSize = sizeof(MeshVertex) * (uint32)vertices.size(),
-			.usage = BufferUsage::Vertex,
-			.initialData = vertices.data()
+		std::string debugName = std::string(Name) + " VB";
+		VertexBuffer = CreateBuffer({
+			.DebugName = debugName.c_str(),
+			.ByteStride = sizeof(MeshVertex),
+			.ByteSize = sizeof(MeshVertex) * (uint32)vertices.size(),
+			.Usage = BufferUsage::Vertex,
+			.InitialData = vertices.data()
 		});
 
 		// create index buffer
-		debugName = std::string(name) + " IB";
-		indexBuffer = createBuffer({
-			.debugName = debugName.c_str(),
-			.byteSize = sizeof(uint32) * (uint32)indices.size(),
-			.usage = BufferUsage::Index,
-			.initialData = indices.data()
+		debugName = std::string(Name) + " IB";
+		IndexBuffer = CreateBuffer({
+			.DebugName = debugName.c_str(),
+			.ByteSize = sizeof(uint32) * (uint32)indices.size(),
+			.Usage = BufferUsage::Index,
+			.InitialData = indices.data()
 		});
 	}
 

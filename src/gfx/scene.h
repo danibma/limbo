@@ -14,85 +14,85 @@ struct cgltf_primitive;
 struct cgltf_texture_view;
 struct cgltf_material;
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	class Texture;
 	class Buffer;
 
 	struct MeshVertex
 	{
-		float3 position;
-		float2 uv;
+		float3 Position;
+		float2 UV;
 	};
 
 	struct MeshMaterial
 	{
-		Handle<Texture> albedo;
-		Handle<Texture> roughnessMetal;
-		Handle<Texture> normal;
-		Handle<Texture> emissive;
+		Handle<Texture> Albedo;
+		Handle<Texture> RoughnessMetal;
+		Handle<Texture> Normal;
+		Handle<Texture> Emissive;
 
 		MeshMaterial()
 		{
-			albedo			= ResourceManager::ptr->emptyTexture;
-			roughnessMetal	= ResourceManager::ptr->emptyTexture;
-			normal			= ResourceManager::ptr->emptyTexture;
-			emissive		= ResourceManager::ptr->emptyTexture;
+			Albedo			= ResourceManager::Ptr->EmptyTexture;
+			RoughnessMetal	= ResourceManager::Ptr->EmptyTexture;
+			Normal			= ResourceManager::Ptr->EmptyTexture;
+			Emissive		= ResourceManager::Ptr->EmptyTexture;
 		}
 	};
 
 	struct Mesh
 	{
-		Handle<Buffer>			vertexBuffer;
-		Handle<Buffer>			indexBuffer;
+		Handle<Buffer>			VertexBuffer;
+		Handle<Buffer>			IndexBuffer;
 
-		uintptr_t				materialID;
+		uintptr_t				MaterialID;
 
-		float4x4				transform;
+		float4x4				Transform;
 
-		size_t					indexCount = 0;
-		size_t					vertexCount = 0;
+		size_t					IndexCount = 0;
+		size_t					VertexCount = 0;
 
-		const char*				name;
+		const char*				Name;
 
 		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uintptr_t material);
 	};
 
 	class Scene
 	{
-		std::vector<Mesh>								m_meshes;
-		char											m_folderPath[256];
-		char											m_sceneName[128];
+		std::vector<Mesh>								m_Meshes;
+		char											m_FolderPath[256];
+		char											m_SceneName[128];
 
-		std::unordered_map<uintptr_t, MeshMaterial>	m_meshMaterials;
+		std::unordered_map<uintptr_t, MeshMaterial>		m_MeshMaterials;
 
 	protected:
 		Scene() = default;
 		Scene(const char* path);
 
 	public:
-		static Scene* load(const char* path);
-		void destroy();
+		static Scene* Load(const char* path);
+		void Destroy();
 
-		void drawMesh(const std::function<void(const Mesh& mesh)>& drawFunction);
-		MeshMaterial getMaterial(uintptr_t pMaterial);
+		void DrawMesh(const std::function<void(const Mesh& mesh)>& drawFunction);
+		MeshMaterial GetMaterial(uintptr_t pMaterial);
 
 	private:
-		void processNode(const cgltf_node* node);
-		void processMaterial(const cgltf_material* material);
-		Mesh processMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
+		void ProcessNode(const cgltf_node* node);
+		void ProcessMaterial(const cgltf_material* material);
+		Mesh ProcessMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
 
-		void loadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture);
+		void LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture);
 	};
 
-	inline Scene* loadScene(const char* path)
+	inline Scene* LoadScene(const char* path)
 	{
-		return Scene::load(path);
+		return Scene::Load(path);
 	}
 
-	inline void destroyScene(Scene* scene)
+	inline void DestroyScene(Scene* scene)
 	{
-		scene->destroy();
+		scene->Destroy();
 		delete scene;
 	}
 }

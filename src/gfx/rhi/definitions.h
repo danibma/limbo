@@ -7,7 +7,7 @@
 
 using namespace Microsoft::WRL;
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	constexpr uint8	NUM_BACK_BUFFERS = 3;
 
@@ -80,7 +80,7 @@ namespace limbo::gfx
 		BGRA8_UNORM
 	};
 
-	inline D3D12_RESOURCE_DIMENSION d3dTextureType(TextureType type)
+	inline D3D12_RESOURCE_DIMENSION D3DTextureType(TextureType type)
 	{
 		switch (type)
 		{
@@ -96,7 +96,7 @@ namespace limbo::gfx
 		}
 	}
 
-	inline DXGI_FORMAT d3dFormat(Format format)
+	inline DXGI_FORMAT D3DFormat(Format format)
 	{
 		switch (format)
 		{
@@ -155,10 +155,10 @@ namespace limbo::gfx
 		}
 	}
 
-	namespace internal
+	namespace Internal
 	{
-		void dxHandleError(HRESULT hr, const char* file, int line);
-		void dxMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext);
+		void DXHandleError(HRESULT hr, const char* file, int line);
+		void DXMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext);
 	}
 }
-#define DX_CHECK(expression) { HRESULT _hr = expression; if (_hr != S_OK) limbo::gfx::internal::dxHandleError(_hr, __FILE__, __LINE__); }
+#define DX_CHECK(expression) { HRESULT _hr = expression; if (_hr != S_OK) limbo::Gfx::Internal::DXHandleError(_hr, __FILE__, __LINE__); }

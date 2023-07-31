@@ -4,30 +4,30 @@
 #include "definitions.h"
 #include "descriptorheap.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	struct TextureSpec
 	{
 	public:
-		uint32					width;
-		uint32					height;
-		const char*				debugName;
-		D3D12_RESOURCE_FLAGS	resourceFlags = D3D12_RESOURCE_FLAG_NONE;
-		D3D12_CLEAR_VALUE		clearValue;
-		Format					format = Format::R8_UNORM;
-		TextureType				type = TextureType::Texture2D;
-		void*					initialData;
+		uint32					Width;
+		uint32					Height;
+		const char*				DebugName;
+		D3D12_RESOURCE_FLAGS	ResourceFlags = D3D12_RESOURCE_FLAG_NONE;
+		D3D12_CLEAR_VALUE		ClearValue;
+		Format					Format = Format::R8_UNORM;
+		TextureType				Type = TextureType::Texture2D;
+		void*					InitialData;
 		bool					bCreateSrv = true;
 	};
 
 	class Texture
 	{
 	public:
-		ComPtr<ID3D12Resource>		resource;
-		D3D12_RESOURCE_STATES		currentState;
-		D3D12_RESOURCE_STATES		initialState;
-		DescriptorHandle			handle;
-		DescriptorHandle			srvhandle;
+		ComPtr<ID3D12Resource>		Resource;
+		D3D12_RESOURCE_STATES		CurrentState;
+		D3D12_RESOURCE_STATES		InitialState;
+		DescriptorHandle			BasicHandle;
+		DescriptorHandle			SRVHandle;
 
 	public:
 		Texture() = default;
@@ -37,11 +37,11 @@ namespace limbo::gfx
 		~Texture();
 
 		// D3D12 Specific
-		void createSRV(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
-		void createUAV(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
-		void createRTV(const TextureSpec& spec, ID3D12Device* device);
-		void createDSV(const TextureSpec& spec, ID3D12Device* device);
+		void CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
+		void CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
+		void CreateRtv(const TextureSpec& spec, ID3D12Device* device);
+		void CreateDsv(const TextureSpec& spec, ID3D12Device* device);
 
-		void initResource(const TextureSpec& spec, class Device* device);
+		void InitResource(const TextureSpec& spec, class Device* device);
 	};
 }

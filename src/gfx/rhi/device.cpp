@@ -14,10 +14,10 @@ unsigned int DelegateHandle::CURRENT_ID = 0;
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 610; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
-	Device::Device(core::Window* window, GfxDeviceFlags flags)
-		: m_flags(flags), m_gpuInfo()
+	Device::Device(Core::Window* window, GfxDeviceFlags flags)
+		: m_Flags(flags), m_GPUInfo()
 	{
 		uint32_t dxgiFactoryFlags = 0;
 
@@ -44,11 +44,11 @@ namespace limbo::gfx
 		}
 #endif
 
-		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_factory)));
+		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_Factory)));
 
-		pickGPU();
+		PickGPU();
 
-		DX_CHECK(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_device)));
+		DX_CHECK(D3D12CreateDevice(m_Adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_Device)));
 
 #if !NO_LOG
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
@@ -59,7 +59,7 @@ namespace limbo::gfx
 			if (SUCCEEDED(IIDFromString(L"{A7AA6116-9C8D-4BBA-9083-B4D816B71B78}", &renderDocID)))
 			{
 				ComPtr<IUnknown> renderDoc;
-				if (SUCCEEDED(m_device->QueryInterface(renderDocID, &renderDoc)))
+				if (SUCCEEDED(m_Device->QueryInterface(renderDocID, &renderDoc)))
 				{
 					// Running under RenderDoc, so enable capturing mode
 					bUnderRenderDoc = true;
@@ -70,19 +70,19 @@ namespace limbo::gfx
 			if (!bUnderRenderDoc)
 			{
 				ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
-				DX_CHECK(m_device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
+				DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
 				ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
 				DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
 				DWORD messageCallbackCookie;
-				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(internal::dxMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
+				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
 			}
 		}
 #endif
 
-		m_srvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SRV, true);
-		m_rtvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::RTV);
-		m_dsvheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::DSV);
-		m_samplerheap = new DescriptorHeap(m_device.Get(), DescriptorHeapType::SAMPLERS, true);
+		m_Srvheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV, true);
+		m_Rtvheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV);
+		m_Dsvheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV);
+		m_Samplerheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SAMPLERS, true);
 
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {
 			.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -90,32 +90,32 @@ namespace limbo::gfx
 			.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE,
 			.NodeMask = 0
 		};
-		DX_CHECK(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+		DX_CHECK(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_CommandQueue)));
 
-		m_swapchain = new Swapchain(m_commandQueue.Get(), m_factory.Get(), window);
-		onPostResourceManagerInit.AddRaw(this, &Device::initSwapchainBackBuffers);
-		onPreResourceManagerShutdown.AddRaw(this, &Device::destroySwapchainBackBuffers);
-		onPreResourceManagerShutdown.AddRaw(this, &Device::waitGPU);
+		m_Swapchain = new Swapchain(m_CommandQueue.Get(), m_Factory.Get(), window);
+		OnPostResourceManagerInit.AddRaw(this, &Device::InitSwapchainBackBuffers);
+		OnPreResourceManagerShutdown.AddRaw(this, &Device::DestroySwapchainBackBuffers);
+		OnPreResourceManagerShutdown.AddRaw(this, &Device::WaitGPU);
 
-		m_frameIndex = m_swapchain->getCurrentIndex();
+		m_FrameIndex = m_Swapchain->GetCurrentIndex();
 
 		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
-			DX_CHECK(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocators[i])));
+			DX_CHECK(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocators[i])));
 
-		DX_CHECK(m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocators[m_frameIndex].Get(), nullptr, IID_PPV_ARGS(&m_commandList)));
+		DX_CHECK(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocators[m_FrameIndex].Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
 
 		// Create synchronization objects
 		{
-			DX_CHECK(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-			m_fenceValues[m_frameIndex]++;
+			DX_CHECK(m_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)));
+			m_FenceValues[m_FrameIndex]++;
 
 			// Create an event handler to use for frame synchronization
-			m_fenceEvent = CreateEvent(nullptr, false, false, nullptr);
-			ensure(m_fenceEvent);
+			m_FenceEvent = CreateEvent(nullptr, false, false, nullptr);
+			ensure(m_FenceEvent);
 		}
 
-		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
-		m_commandList->SetDescriptorHeaps(2, heaps);
+		ID3D12DescriptorHeap* heaps[] = { m_Srvheap->GetHeap(), m_Samplerheap->GetHeap() };
+		m_CommandList->SetDescriptorHeaps(2, heaps);
 
 		// ImGui Stuff
 		if (flags & GfxDeviceFlag::EnableImgui)
@@ -127,11 +127,11 @@ namespace limbo::gfx
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
-			DescriptorHandle imguiDescriptor = m_srvheap->allocateHandle();
+			DescriptorHandle imguiDescriptor = m_Srvheap->AllocateHandle();
 
-			ImGui_ImplGlfw_InitForOther(window->getGLFWHandle(), true);
-			ImGui_ImplDX12_Init(m_device.Get(), NUM_BACK_BUFFERS, d3dFormat(m_swapchain->getFormat()),
-			                    m_srvheap->getHeap(), imguiDescriptor.cpuHandle, imguiDescriptor.gpuHandle);
+			ImGui_ImplGlfw_InitForOther(window->GetGlfwHandle(), true);
+			ImGui_ImplDX12_Init(m_Device.Get(), NUM_BACK_BUFFERS, D3DFormat(m_Swapchain->GetFormat()),
+			                    m_Srvheap->GetHeap(), imguiDescriptor.CpuHandle, imguiDescriptor.GPUHandle);
 
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
@@ -141,15 +141,15 @@ namespace limbo::gfx
 
 	Device::~Device()
 	{
-		waitGPU();
+		WaitGPU();
 
-		delete m_srvheap;
-		delete m_rtvheap;
-		delete m_dsvheap;
-		delete m_samplerheap;
+		delete m_Srvheap;
+		delete m_Rtvheap;
+		delete m_Dsvheap;
+		delete m_Samplerheap;
 
 #if !NO_LOG
-		if (m_flags & GfxDeviceFlag::DetailedLogging)
+		if (m_Flags & GfxDeviceFlag::DetailedLogging)
 		{
 			IDXGIDebug1* dxgiDebug;
 			DX_CHECK(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
@@ -158,7 +158,7 @@ namespace limbo::gfx
 		}
 #endif
 
-		if (m_flags & GfxDeviceFlag::EnableImgui)
+		if (m_Flags & GfxDeviceFlag::EnableImgui)
 		{
 			ImGui_ImplDX12_Shutdown();
 			ImGui_ImplGlfw_Shutdown();
@@ -166,148 +166,148 @@ namespace limbo::gfx
 		}
 	}
 
-	void Device::destroySwapchainBackBuffers()
+	void Device::DestroySwapchainBackBuffers()
 	{
-		delete m_swapchain;
+		delete m_Swapchain;
 	}
 
-	void Device::copyTextureToBackBuffer(Handle<Texture> texture)
+	void Device::CopyTextureToBackBuffer(Handle<Texture> texture)
 	{
-		ResourceManager* rm = ResourceManager::ptr;
+		ResourceManager* rm = ResourceManager::Ptr;
 
-		Texture* d3dTexture = rm->getTexture(texture);
+		Texture* d3dTexture = rm->GetTexture(texture);
 
-		Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
-		Texture* backbuffer = rm->getTexture(backBufferHandle);
+		Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+		Texture* backbuffer = rm->GetTexture(backBufferHandle);
 
-		transitionResource(d3dTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		transitionResource(backbuffer, D3D12_RESOURCE_STATE_COPY_DEST);
+		TransitionResource(d3dTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		TransitionResource(backbuffer, D3D12_RESOURCE_STATE_COPY_DEST);
 
-		submitResourceBarriers();
-		m_commandList->CopyResource(backbuffer->resource.Get(), d3dTexture->resource.Get());
+		SubmitResourceBarriers();
+		m_CommandList->CopyResource(backbuffer->Resource.Get(), d3dTexture->Resource.Get());
 
-		transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		submitResourceBarriers();
+		TransitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		SubmitResourceBarriers();
 	}
 
-	void Device::copyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
+	void Device::CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
 	{
-		Texture* dstTexture = ResourceManager::ptr->getTexture(dst);
+		Texture* dstTexture = ResourceManager::Ptr->GetTexture(dst);
 		FAILIF(!dstTexture);
-		Buffer* srcBuffer = ResourceManager::ptr->getBuffer(src);
+		Buffer* srcBuffer = ResourceManager::Ptr->GetBuffer(src);
 		FAILIF(!srcBuffer);
 
-		copyBufferToTexture(srcBuffer, dstTexture);
+		CopyBufferToTexture(srcBuffer, dstTexture);
 	}
 
-	void Device::copyBufferToTexture(Buffer* src, Texture* dst)
+	void Device::CopyBufferToTexture(Buffer* src, Texture* dst)
 	{
-		D3D12_RESOURCE_DESC dstDesc = dst->resource->GetDesc();
+		D3D12_RESOURCE_DESC dstDesc = dst->Resource->GetDesc();
 
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT srcFootprints[D3D12_REQ_MIP_LEVELS] = {};
-		m_device->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, 0, srcFootprints, nullptr, nullptr, nullptr);
+		m_Device->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, 0, srcFootprints, nullptr, nullptr, nullptr);
 
 		D3D12_TEXTURE_COPY_LOCATION srcLocation = {
-			.pResource = src->resource.Get(),
+			.pResource = src->Resource.Get(),
 			.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
 			.PlacedFootprint = srcFootprints[0]
 		};
 
 		D3D12_TEXTURE_COPY_LOCATION dstLocation = {
-			.pResource = dst->resource.Get(),
+			.pResource = dst->Resource.Get(),
 			.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
 			.SubresourceIndex = 0
 		};
-		m_commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
+		m_CommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
 	}
 
-	void Device::copyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
+	void Device::CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
 	{
-		Buffer* srcBuffer = ResourceManager::ptr->getBuffer(src);
+		Buffer* srcBuffer = ResourceManager::Ptr->GetBuffer(src);
 		FAILIF(!srcBuffer);
-		Buffer* dstBuffer = ResourceManager::ptr->getBuffer(dst);
+		Buffer* dstBuffer = ResourceManager::Ptr->GetBuffer(dst);
 		FAILIF(!dstBuffer);
 
-		copyBufferToBuffer(srcBuffer, dstBuffer, numBytes, srcOffset, dstOffset);
+		CopyBufferToBuffer(srcBuffer, dstBuffer, numBytes, srcOffset, dstOffset);
 	}
 
-	void Device::copyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
+	void Device::CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
 	{
-		transitionResource(src, D3D12_RESOURCE_STATE_GENERIC_READ);
-		transitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST);
-		submitResourceBarriers();
+		TransitionResource(src, D3D12_RESOURCE_STATE_GENERIC_READ);
+		TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST);
+		SubmitResourceBarriers();
 
-		m_commandList->CopyBufferRegion(dst->resource.Get(), dstOffset, src->resource.Get(), srcOffset, numBytes);
+		m_CommandList->CopyBufferRegion(dst->Resource.Get(), dstOffset, src->Resource.Get(), srcOffset, numBytes);
 	}
 
-	void Device::bindVertexBuffer(Handle<Buffer> buffer)
+	void Device::BindVertexBuffer(Handle<Buffer> buffer)
 	{
-		ResourceManager* rm = ResourceManager::ptr;
-		Buffer* vb = rm->getBuffer(buffer);
-		transitionResource(vb, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		ResourceManager* rm = ResourceManager::Ptr;
+		Buffer* vb = rm->GetBuffer(buffer);
+		TransitionResource(vb, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
 		D3D12_VERTEX_BUFFER_VIEW vbView = {
-			.BufferLocation = vb->resource->GetGPUVirtualAddress(),
-			.SizeInBytes = (uint32)vb->byteSize,
-			.StrideInBytes = vb->byteStride
+			.BufferLocation = vb->Resource->GetGPUVirtualAddress(),
+			.SizeInBytes = (uint32)vb->ByteSize,
+			.StrideInBytes = vb->ByteStride
 		};
-		m_commandList->IASetVertexBuffers(0, 1, &vbView);
+		m_CommandList->IASetVertexBuffers(0, 1, &vbView);
 	}
 
-	void Device::bindIndexBuffer(Handle<Buffer> buffer)
+	void Device::BindIndexBuffer(Handle<Buffer> buffer)
 	{
-		ResourceManager* rm = ResourceManager::ptr;
-		Buffer* ib = rm->getBuffer(buffer);
-		transitionResource(ib, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+		ResourceManager* rm = ResourceManager::Ptr;
+		Buffer* ib = rm->GetBuffer(buffer);
+		TransitionResource(ib, D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
 		D3D12_INDEX_BUFFER_VIEW ibView = {
-			.BufferLocation = ib->resource->GetGPUVirtualAddress(),
-			.SizeInBytes = (uint32)ib->byteSize,
+			.BufferLocation = ib->Resource->GetGPUVirtualAddress(),
+			.SizeInBytes = (uint32)ib->ByteSize,
 			.Format = DXGI_FORMAT_R32_UINT
 		};
 
-		m_commandList->IASetIndexBuffer(&ibView);
+		m_CommandList->IASetIndexBuffer(&ibView);
 	}
 
-	void Device::bindShader(Handle<Shader> shader)
+	void Device::BindShader(Handle<Shader> shader)
 	{
-		m_boundShader = shader;
+		m_BoundShader = shader;
 
-		ResourceManager* rm = ResourceManager::ptr;
-		Shader* pBoundShader = rm->getShader(m_boundShader);
+		ResourceManager* rm = ResourceManager::Ptr;
+		Shader* pBoundShader = rm->GetShader(m_BoundShader);
 
-		if (pBoundShader->type == ShaderType::Graphics)
+		if (pBoundShader->Type == ShaderType::Graphics)
 		{
-			int32 width  = m_swapchain->getBackbufferWidth();
-			int32 height = m_swapchain->getBackbufferHeight();
-			if (pBoundShader->useSwapchainRT)
+			int32 width  = m_Swapchain->GetBackbufferWidth();
+			int32 height = m_Swapchain->GetBackbufferHeight();
+			if (pBoundShader->UseSwapchainRT)
 			{
-				bindSwapchainRenderTargets();
+				BindSwapchainRenderTargets();
 			}
 			else
 			{
 				// first transition the render targets to the correct resource state
-				for (uint8 i = 0; i < pBoundShader->rtCount; ++i)
-					transitionResource(pBoundShader->renderTargets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
-				submitResourceBarriers();
+				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
+					TransitionResource(pBoundShader->RenderTargets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
+				SubmitResourceBarriers();
 
-				Texture* depthBackbuffer = rm->getTexture(pBoundShader->depthTarget);
+				Texture* depthBackbuffer = rm->GetTexture(pBoundShader->DepthTarget);
 				FAILIF(!depthBackbuffer);
 
 				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-				m_commandList->ClearDepthStencilView(depthBackbuffer->handle.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+				m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 				D3D12_CPU_DESCRIPTOR_HANDLE rtHandles[8];
-				for (uint8 i = 0; i < pBoundShader->rtCount; ++i)
+				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
 				{
-					Texture* rt = rm->getTexture(pBoundShader->renderTargets[i]);
+					Texture* rt = rm->GetTexture(pBoundShader->RenderTargets[i]);
 					FAILIF(!rt);
 
-					m_commandList->ClearRenderTargetView(rt->handle.cpuHandle, clearColor, 0, nullptr);
-					rtHandles[i] = rt->handle.cpuHandle;
+					m_CommandList->ClearRenderTargetView(rt->BasicHandle.CpuHandle, clearColor, 0, nullptr);
+					rtHandles[i] = rt->BasicHandle.CpuHandle;
 				}
 
-				m_commandList->OMSetRenderTargets(pBoundShader->rtCount, rtHandles, false, &depthBackbuffer->handle.cpuHandle);
+				m_CommandList->OMSetRenderTargets(pBoundShader->RTCount, rtHandles, false, &depthBackbuffer->BasicHandle.CpuHandle);
 			}
 
 			D3D12_VIEWPORT viewport = {
@@ -326,134 +326,134 @@ namespace limbo::gfx
 				.bottom = height
 			};
 
-			m_commandList->RSSetViewports(1, &viewport);
-			m_commandList->RSSetScissorRects(1, &scissor);
+			m_CommandList->RSSetViewports(1, &viewport);
+			m_CommandList->RSSetScissorRects(1, &scissor);
 		}
 	}
 
-	void Device::installDrawState()
+	void Device::InstallDrawState()
 	{
-		submitResourceBarriers();
+		SubmitResourceBarriers();
 
-		ResourceManager* rm = ResourceManager::ptr;
-		Shader* shader = rm->getShader(m_boundShader);
+		ResourceManager* rm = ResourceManager::Ptr;
+		Shader* shader = rm->GetShader(m_BoundShader);
 
-		if (shader->type == ShaderType::Compute)
+		if (shader->Type == ShaderType::Compute)
 		{
-			m_commandList->SetComputeRootSignature(shader->rootSignature.Get());
-			shader->setComputeRootParameters(m_commandList.Get());
+			m_CommandList->SetComputeRootSignature(shader->RootSignature.Get());
+			shader->SetComputeRootParameters(m_CommandList.Get());
 		}
-		else if (shader->type == ShaderType::Graphics)
+		else if (shader->Type == ShaderType::Graphics)
 		{
-			m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			m_commandList->SetGraphicsRootSignature(shader->rootSignature.Get());
-			shader->setGraphicsRootParameters(m_commandList.Get());
+			m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			m_CommandList->SetGraphicsRootSignature(shader->RootSignature.Get());
+			shader->SetGraphicsRootParameters(m_CommandList.Get());
 		}
 
-		m_commandList->SetPipelineState(shader->pipelineState.Get());
+		m_CommandList->SetPipelineState(shader->PipelineState.Get());
 	}
 
-	void Device::bindSwapchainRenderTargets()
+	void Device::BindSwapchainRenderTargets()
 	{
-		ResourceManager* rm = ResourceManager::ptr;
+		ResourceManager* rm = ResourceManager::Ptr;
 
-		Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
-		Texture* backbuffer = rm->getTexture(backBufferHandle);
+		Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+		Texture* backbuffer = rm->GetTexture(backBufferHandle);
 		FAILIF(!backbuffer);
 
-		Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
-		Texture* depthBackbuffer = rm->getTexture(depthBackBufferHandle);
+		Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
+		Texture* depthBackbuffer = rm->GetTexture(depthBackBufferHandle);
 		FAILIF(!depthBackbuffer);
 
-		m_commandList->OMSetRenderTargets(1, &backbuffer->handle.cpuHandle, false, &depthBackbuffer->handle.cpuHandle);
+		m_CommandList->OMSetRenderTargets(1, &backbuffer->BasicHandle.CpuHandle, false, &depthBackbuffer->BasicHandle.CpuHandle);
 
 		constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		m_commandList->ClearDepthStencilView(depthBackbuffer->handle.cpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-		m_commandList->ClearRenderTargetView(backbuffer->handle.cpuHandle, clearColor, 0, nullptr);
+		m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		m_CommandList->ClearRenderTargetView(backbuffer->BasicHandle.CpuHandle, clearColor, 0, nullptr);
 	}
 
-	void Device::draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
+	void Device::Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
 	{
-		installDrawState();
-		m_commandList->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
+		InstallDrawState();
+		m_CommandList->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
-	void Device::drawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance)
+	void Device::DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance)
 	{
-		installDrawState();
-		m_commandList->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+		InstallDrawState();
+		m_CommandList->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
-	void Device::dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	void Device::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
-		installDrawState();
-		m_commandList->Dispatch(groupCountX, groupCountY, groupCountZ);
+		InstallDrawState();
+		m_CommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 
-	void Device::submitResourceBarriers()
+	void Device::SubmitResourceBarriers()
 	{
-		if (m_resourceBarriers.empty()) return;
-		m_commandList->ResourceBarrier((uint32)m_resourceBarriers.size(), m_resourceBarriers.data());
-		m_resourceBarriers.clear();
+		if (m_ResourceBarriers.empty()) return;
+		m_CommandList->ResourceBarrier((uint32)m_ResourceBarriers.size(), m_ResourceBarriers.data());
+		m_ResourceBarriers.clear();
 	}
 
-	void Device::present()
+	void Device::Present()
 	{
-		if (m_flags & GfxDeviceFlag::EnableImgui)
+		if (m_Flags & GfxDeviceFlag::EnableImgui)
 		{
-			beginEvent("ImGui");
+			BeginEvent("ImGui");
 
-			ResourceManager* rm = ResourceManager::ptr;
-			Shader* shader = rm->getShader(m_boundShader);
-			if (!shader->useSwapchainRT)
-				bindSwapchainRenderTargets();
+			ResourceManager* rm = ResourceManager::Ptr;
+			Shader* shader = rm->GetShader(m_BoundShader);
+			if (!shader->UseSwapchainRT)
+				BindSwapchainRenderTargets();
 
 			ImGui::Render();
-			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_commandList.Get());
+			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), m_CommandList.Get());
 
-			endEvent();
+			EndEvent();
 		}
 
 		{
-			Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
-			Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
-			transitionResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
+			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+			Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
+			TransitionResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
 
-			submitResourceBarriers();
+			SubmitResourceBarriers();
 		}
 
-		DX_CHECK(m_commandList->Close());
+		DX_CHECK(m_CommandList->Close());
 
-		ID3D12CommandList* cmd[1] = { m_commandList.Get() };
-		m_commandQueue->ExecuteCommandLists(1, cmd);
-		m_swapchain->present(!(m_flags & GfxDeviceFlag::DisableVSync));
+		ID3D12CommandList* cmd[1] = { m_CommandList.Get() };
+		m_CommandQueue->ExecuteCommandLists(1, cmd);
+		m_Swapchain->Present(!(m_Flags & GfxDeviceFlag::DisableVSync));
 
-		nextFrame();
+		NextFrame();
 
-		ResourceManager::ptr->runDeletionQueue();
+		ResourceManager::Ptr->RunDeletionQueue();
 
-		DX_CHECK(m_commandAllocators[m_frameIndex]->Reset());
-		DX_CHECK(m_commandList->Reset(m_commandAllocators[m_frameIndex].Get(), nullptr));
+		DX_CHECK(m_CommandAllocators[m_FrameIndex]->Reset());
+		DX_CHECK(m_CommandList->Reset(m_CommandAllocators[m_FrameIndex].Get(), nullptr));
 
-		ID3D12DescriptorHeap* heaps[] = { m_srvheap->getHeap(), m_samplerheap->getHeap() };
-		m_commandList->SetDescriptorHeaps(2, heaps);
+		ID3D12DescriptorHeap* heaps[] = { m_Srvheap->GetHeap(), m_Samplerheap->GetHeap() };
+		m_CommandList->SetDescriptorHeaps(2, heaps);
 
 		// Prepare frame render targets
 		{
-			Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
-			Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
+			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+			Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
 			FAILIF(!backbuffer);
-			transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			TransitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-			Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
-			Texture* depthBackbuffer = ResourceManager::ptr->getTexture(depthBackBufferHandle);
+			Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
+			Texture* depthBackbuffer = ResourceManager::Ptr->GetTexture(depthBackBufferHandle);
 			FAILIF(!depthBackbuffer);
-			transitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			TransitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
-			submitResourceBarriers();
+			SubmitResourceBarriers();
 		}
 
-		if (m_flags & GfxDeviceFlag::EnableImgui)
+		if (m_Flags & GfxDeviceFlag::EnableImgui)
 		{
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
@@ -461,111 +461,111 @@ namespace limbo::gfx
 		}
 	}
 
-	Format Device::getSwapchainFormat()
+	Format Device::GetSwapchainFormat()
 	{
-		return m_swapchain->getFormat();
+		return m_Swapchain->GetFormat();
 	}
 
-	Format Device::getSwapchainDepthFormat()
+	Format Device::GetSwapchainDepthFormat()
 	{
-		return m_swapchain->getDepthFormat();
+		return m_Swapchain->GetDepthFormat();
 	}
 
-	void Device::initSwapchainBackBuffers()
+	void Device::InitSwapchainBackBuffers()
 	{
-		m_swapchain->initBackBuffers();
+		m_Swapchain->InitBackBuffers();
 
-		Handle<Texture> backBufferHandle = m_swapchain->getBackbuffer(m_frameIndex);
-		Texture* backbuffer = ResourceManager::ptr->getTexture(backBufferHandle);
+		Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+		Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
 		FAILIF(!backbuffer);
-		transitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		TransitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-		Handle<Texture> depthBackBufferHandle = m_swapchain->getDepthBackbuffer(m_frameIndex);
-		Texture* depthBackbuffer = ResourceManager::ptr->getTexture(depthBackBufferHandle);
+		Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
+		Texture* depthBackbuffer = ResourceManager::Ptr->GetTexture(depthBackBufferHandle);
 		FAILIF(!depthBackbuffer);
-		transitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+		TransitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
-		submitResourceBarriers();
+		SubmitResourceBarriers();
 	}
 
-	DescriptorHandle Device::allocateHandle(DescriptorHeapType heapType)
+	DescriptorHandle Device::AllocateHandle(DescriptorHeapType heapType)
 	{
 		switch (heapType)
 		{
 		case DescriptorHeapType::SRV:
-			return m_srvheap->allocateHandle();
+			return m_Srvheap->AllocateHandle();
 		case DescriptorHeapType::RTV:
-			return m_rtvheap->allocateHandle();
+			return m_Rtvheap->AllocateHandle();
 		case DescriptorHeapType::DSV:
-			return m_dsvheap->allocateHandle();
+			return m_Dsvheap->AllocateHandle();
 		case DescriptorHeapType::SAMPLERS:
-			return m_samplerheap->allocateHandle();
+			return m_Samplerheap->AllocateHandle();
 		default: 
 			return DescriptorHandle();
 		}
 	}
 
-	void Device::transitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState)
+	void Device::TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState)
 	{
-		Texture* t = ResourceManager::ptr->getTexture(texture);
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t);
-		transitionResource(t, newState);
+		TransitionResource(t, newState);
 	}
 
-	void Device::transitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState)
+	void Device::TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState)
 	{
-		Buffer* b = ResourceManager::ptr->getBuffer(buffer);
+		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
 		FAILIF(!b);
-		transitionResource(b, newState);
+		TransitionResource(b, newState);
 	}
 
-	void Device::transitionResource(Texture* texture, D3D12_RESOURCE_STATES newState)
+	void Device::TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState)
 	{
-		if (texture->currentState == newState) return;
-		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->resource.Get(), texture->currentState, newState));
-		texture->currentState = newState;
+		if (texture->CurrentState == newState) return;
+		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->Resource.Get(), texture->CurrentState, newState));
+		texture->CurrentState = newState;
 	}
 
-	void Device::transitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState)
+	void Device::TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState)
 	{
-		if (buffer->currentState == newState) return;
-		m_resourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(buffer->resource.Get(), buffer->currentState, newState));
-		buffer->currentState = newState;
+		if (buffer->CurrentState == newState) return;
+		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(buffer->Resource.Get(), buffer->CurrentState, newState));
+		buffer->CurrentState = newState;
 	}
 
-	void Device::beginEvent(const char* name, uint64 color)
+	void Device::BeginEvent(const char* name, uint64 color)
 	{
-		PIXBeginEvent(m_commandList.Get(), color, name);
+		PIXBeginEvent(m_CommandList.Get(), color, name);
 	}
 
-	void Device::endEvent()
+	void Device::EndEvent()
 	{
-		PIXEndEvent(m_commandList.Get());
+		PIXEndEvent(m_CommandList.Get());
 	}
 
-	uint32 Device::getBackbufferWidth()
+	uint32 Device::GetBackbufferWidth()
 	{
-		return m_swapchain->getBackbufferWidth();
+		return m_Swapchain->GetBackbufferWidth();
 	}
 
-	uint32 Device::getBackbufferHeight()
+	uint32 Device::GetBackbufferHeight()
 	{
-		return m_swapchain->getBackbufferHeight();
+		return m_Swapchain->GetBackbufferHeight();
 	}
 
-	void Device::pickGPU()
+	void Device::PickGPU()
 	{
-		m_adapter = nullptr;
+		m_Adapter = nullptr;
 
 		// Get IDXGIFactory6
 		ComPtr<IDXGIFactory6> factory6;
-		DX_CHECK(m_factory->QueryInterface(IID_PPV_ARGS(&factory6)));
+		DX_CHECK(m_Factory->QueryInterface(IID_PPV_ARGS(&factory6)));
 		for (uint32_t adapterIndex = 0;
-			!FAILED(factory6->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&m_adapter)));
+			!FAILED(factory6->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&m_Adapter)));
 			adapterIndex++)
 		{
 			DXGI_ADAPTER_DESC1 desc;
-			m_adapter->GetDesc1(&desc);
+			m_Adapter->GetDesc1(&desc);
 
 			// Don't select the Basic Render Driver adapter.
 			if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
@@ -573,46 +573,46 @@ namespace limbo::gfx
 
 			// Check to see whether the adapter supports Direct3D 12, but don't create the
 			// actual device yet.
-			if (SUCCEEDED(D3D12CreateDevice(m_adapter.Get(), D3D_FEATURE_LEVEL_12_2, _uuidof(ID3D12Device), nullptr)))
+			if (SUCCEEDED(D3D12CreateDevice(m_Adapter.Get(), D3D_FEATURE_LEVEL_12_2, _uuidof(ID3D12Device), nullptr)))
 				break;
 		}
 
-		if (!ensure(m_adapter))
+		if (!ensure(m_Adapter))
 			LB_ERROR("Failed to pick an adapter");
 
 		DXGI_ADAPTER_DESC1 desc;
-		DX_CHECK(m_adapter->GetDesc1(&desc));
+		DX_CHECK(m_Adapter->GetDesc1(&desc));
 		LB_WLOG("Initiliazed D3D12 on %ls", desc.Description);
 
-		utils::StringConvert(desc.Description, m_gpuInfo.name);
+		Utils::StringConvert(desc.Description, m_GPUInfo.Name);
 	}
 
-	void Device::nextFrame()
+	void Device::NextFrame()
 	{
-		uint64 currentFenceValue = m_fenceValues[m_frameIndex];
-		DX_CHECK(m_commandQueue->Signal(m_fence.Get(), currentFenceValue));
+		uint64 currentFenceValue = m_FenceValues[m_FrameIndex];
+		DX_CHECK(m_CommandQueue->Signal(m_Fence.Get(), currentFenceValue));
 
-		m_frameIndex = m_swapchain->getCurrentIndex();
+		m_FrameIndex = m_Swapchain->GetCurrentIndex();
 
-		if (m_fence->GetCompletedValue() < m_fenceValues[m_frameIndex])
+		if (m_Fence->GetCompletedValue() < m_FenceValues[m_FrameIndex])
 		{
-			DX_CHECK(m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent));
-			WaitForSingleObject(m_fenceEvent, INFINITE);
+			DX_CHECK(m_Fence->SetEventOnCompletion(m_FenceValues[m_FrameIndex], m_FenceEvent));
+			WaitForSingleObject(m_FenceEvent, INFINITE);
 		}
 
-		m_fenceValues[m_frameIndex] = currentFenceValue + 1;
+		m_FenceValues[m_FrameIndex] = currentFenceValue + 1;
 	}
 
-	void Device::waitGPU()
+	void Device::WaitGPU()
 	{
 		// Schedule a signal command in the queue
-		m_commandQueue->Signal(m_fence.Get(), m_fenceValues[m_frameIndex]);
+		m_CommandQueue->Signal(m_Fence.Get(), m_FenceValues[m_FrameIndex]);
 		
 		// Wait until the fence has been processed
-		m_fence->SetEventOnCompletion(m_fenceValues[m_frameIndex], m_fenceEvent);
-		WaitForSingleObject(m_fenceEvent, INFINITE);
+		m_Fence->SetEventOnCompletion(m_FenceValues[m_FrameIndex], m_FenceEvent);
+		WaitForSingleObject(m_FenceEvent, INFINITE);
 		
 		// Increment the fence value for the current frame
-		m_fenceValues[m_frameIndex]++;
+		m_FenceValues[m_FrameIndex]++;
 	}
 }

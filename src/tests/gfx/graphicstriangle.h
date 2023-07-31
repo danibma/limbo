@@ -12,72 +12,72 @@
 
 #include "core/timer.h"
 
-namespace limbo::tests::gfx
+namespace limbo::Tests::gfx
 {
-	int runGfxTriangle()
+	int RunGfxTriangle()
 	{
 		struct Vertex
 		{
-			float position[3];
+			float Position[3];
 		};
 
 		constexpr uint32 WIDTH  = 1280;
 		constexpr uint32 HEIGHT = 720;
 
-		core::Window* window = core::createWindow({
-			.title = "limbo -> graphics triangle test",
-			.width = WIDTH,
-			.height = HEIGHT
+		Core::Window* window = Core::NewWindow({
+			.Title = "limbo -> graphics triangle test",
+			.Width = WIDTH,
+			.Height = HEIGHT
 		});
 
-		limbo::gfx::init(window);
+		limbo::Gfx::Init(window);
 
-		limbo::gfx::FPSCamera camera = limbo::gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
+		limbo::Gfx::FPSCamera camera = limbo::Gfx::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
 		Vertex vertices[] = { {  0.0,  1.0, -1.0 },
 							  { -1.0, -1.0, -1.0 },
 							  {  1.0, -1.0, -1.0 } };
-		limbo::gfx::Handle<limbo::gfx::Buffer> vertexBuffer = limbo::gfx::createBuffer({
-			.debugName = "triangle vb",
-			.byteStride = sizeof(Vertex),
-			.byteSize = sizeof(Vertex) * 3,
-			.usage = limbo::gfx::BufferUsage::Vertex,
-			.initialData = vertices
+		limbo::Gfx::Handle<limbo::Gfx::Buffer> vertexBuffer = limbo::Gfx::CreateBuffer({
+			.DebugName = "triangle vb",
+			.ByteStride = sizeof(Vertex),
+			.ByteSize = sizeof(Vertex) * 3,
+			.Usage = limbo::Gfx::BufferUsage::Vertex,
+			.InitialData = vertices
 			});
 
-		limbo::gfx::Handle<limbo::gfx::Shader> triangleShader = limbo::gfx::createShader({
-			.programName = "../src/tests/gfx/shaders/triangle",
-			.type = limbo::gfx::ShaderType::Graphics
+		limbo::Gfx::Handle<limbo::Gfx::Shader> triangleShader = limbo::Gfx::CreateShader({
+			.ProgramName = "../src/tests/gfx/shaders/triangle",
+			.Type = limbo::Gfx::ShaderType::Graphics
 			});
 
-		core::Timer deltaTimer;
-		for (float time = 0.0f; !window->shouldClose(); time += 0.1f)
+		Core::Timer deltaTimer;
+		for (float time = 0.0f; !window->ShouldClose(); time += 0.1f)
 		{
 			float deltaTime = deltaTimer.ElapsedMilliseconds();
 			deltaTimer.Record();
 
-			window->pollEvents();
+			window->PollEvents();
 			Noop(time); // remove warning
-			limbo::gfx::updateCamera(window, camera, deltaTime);
+			limbo::Gfx::UpdateCamera(window, camera, deltaTime);
 
 			float color[] = { 0.5f * cosf(time) + 0.5f,
 							  0.5f * sinf(time) + 0.5f,
 							  1.0f };
-			limbo::gfx::setParameter(triangleShader, "viewProj", camera.viewProj);
-			limbo::gfx::setParameter(triangleShader, "model", float4x4(1.0f));
-			limbo::gfx::setParameter(triangleShader, "color", color);
-			limbo::gfx::bindShader(triangleShader);
-			limbo::gfx::bindVertexBuffer(vertexBuffer);
+			limbo::Gfx::SetParameter(triangleShader, "viewProj", camera.ViewProj);
+			limbo::Gfx::SetParameter(triangleShader, "model", float4x4(1.0f));
+			limbo::Gfx::SetParameter(triangleShader, "color", color);
+			limbo::Gfx::BindShader(triangleShader);
+			limbo::Gfx::BindVertexBuffer(vertexBuffer);
 
-			limbo::gfx::draw(3);
-			limbo::gfx::present();
+			limbo::Gfx::Draw(3);
+			limbo::Gfx::Present();
 		}
 
-		limbo::gfx::destroyBuffer(vertexBuffer);
-		limbo::gfx::destroyShader(triangleShader);
+		limbo::Gfx::DestroyBuffer(vertexBuffer);
+		limbo::Gfx::DestroyShader(triangleShader);
 
-		limbo::gfx::shutdown();
-		core::destroyWindow(window);
+		limbo::Gfx::Shutdown();
+		Core::DestroyWindow(window);
 
 		return 0;
 	}

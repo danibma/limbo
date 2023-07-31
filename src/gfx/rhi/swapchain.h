@@ -4,41 +4,41 @@
 #include "resourcepool.h"
 #include "texture.h"
 
-namespace limbo::core
+namespace limbo::Core
 {
 	class Window;
 }
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	struct WindowInfo;
 
 	class Swapchain
 	{
-		ComPtr<IDXGISwapChain3>			m_swapchain;
-		Handle<Texture>					m_backbuffers[NUM_BACK_BUFFERS];
-		Handle<Texture>					m_depthBackbuffers[NUM_BACK_BUFFERS];
-		const Format					m_format      = Format::RGBA8_UNORM;
-		const Format					m_depthFormat = Format::D32_SFLOAT;
-		uint32							m_backbufferWidth;
-		uint32							m_backbufferHeight;
+		ComPtr<IDXGISwapChain3>			m_Swapchain;
+		Handle<Texture>					m_Backbuffers[NUM_BACK_BUFFERS];
+		Handle<Texture>					m_DepthBackbuffers[NUM_BACK_BUFFERS];
+		const Format					m_Format      = Format::RGBA8_UNORM;
+		const Format					m_DepthFormat = Format::D32_SFLOAT;
+		uint32							m_BackbufferWidth;
+		uint32							m_BackbufferHeight;
 
 	public:
-		Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, core::Window* window);
+		Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, Core::Window* window);
 		~Swapchain();
 
-		void initBackBuffers();
+		void InitBackBuffers();
 
-		void present(bool vsync);
+		void Present(bool vsync);
 
-		uint32 getCurrentIndex();
+		uint32 GetCurrentIndex();
 
-		Handle<Texture> getBackbuffer(uint32 index);
-		Handle<Texture> getDepthBackbuffer(uint32 index);
-		Format getFormat();
-		Format getDepthFormat();
+		Handle<Texture> GetBackbuffer(uint32 index);
+		Handle<Texture> GetDepthBackbuffer(uint32 index);
+		Format GetFormat();
+		Format GetDepthFormat();
 
-		uint32 getBackbufferWidth();
-		uint32 getBackbufferHeight();
+		uint32 GetBackbufferWidth();
+		uint32 GetBackbufferHeight();
 	};
 }

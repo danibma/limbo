@@ -3,18 +3,18 @@
 
 #include <comdef.h>
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
-	namespace internal
+	namespace Internal
 	{
-		void dxHandleError(HRESULT hr, const char* file, int line)
+		void DXHandleError(HRESULT hr, const char* file, int line)
 		{
 			_com_error err(hr);
 			const char* errMsg = err.ErrorMessage();
 			LB_ERROR("D3D12 Error: %s in %s:%d", errMsg, file, line);
 		}
 
-		void dxMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
+		void DXMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext)
 		{
 			switch (Severity)
 			{

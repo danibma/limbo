@@ -1,11 +1,11 @@
 ﻿#include "stdafx.h"
 #include "commandline.h"
 
-namespace limbo::core
+namespace limbo::Core
 {
 	namespace Win32Console
 	{
-		static HANDLE open()
+		static HANDLE Open()
 		{
 			HANDLE handle = NULL;
 			if (AllocConsole())
@@ -32,19 +32,19 @@ namespace limbo::core
 			return handle;
 		}
 
-		static void close(HANDLE handle)
+		static void Close(HANDLE handle)
 		{
 			if (handle)
 				CloseHandle(handle);
 		}
 	};
 
-	static std::vector<std::string> s_commandLineArgs;
-	HANDLE CommandLine::m_consoleHandle;
+	static std::vector<std::string> s_CommandLineArgs;
+	HANDLE CommandLine::m_ConsoleHandle;
 
-	void CommandLine::init(const char* args)
+	void CommandLine::Init(const char* args)
 	{
-		m_consoleHandle = Win32Console::open();
+		m_ConsoleHandle = Win32Console::Open();
 
 		size_t charNum = strlen(args);
 		std::string arg = "";
@@ -52,14 +52,14 @@ namespace limbo::core
 		{
 			if (args[i] == ' ')
 			{
-				s_commandLineArgs.emplace_back(arg);
+				s_CommandLineArgs.emplace_back(arg);
 				arg.clear();
 				continue;
 			}
 
 			if (i == charNum)
 			{
-				s_commandLineArgs.emplace_back(arg);
+				s_CommandLineArgs.emplace_back(arg);
 				continue;
 			}
 
@@ -67,25 +67,25 @@ namespace limbo::core
 		}
 	}
 
-	bool CommandLine::hasArg(const char* arg)
+	bool CommandLine::HasArg(const char* arg)
 	{
-		for (size_t i = 0; i < s_commandLineArgs.size(); ++i)
+		for (size_t i = 0; i < s_CommandLineArgs.size(); ++i)
 		{
-			if (s_commandLineArgs[i] == arg)
+			if (s_CommandLineArgs[i] == arg)
 				return true;
 		}
 
 		return false;
 	}
 
-	void CommandLine::parse(const char* arg, std::string& value)
+	void CommandLine::Parse(const char* arg, std::string& value)
 	{
 		value = "";
 
 		size_t argSize = strlen(arg);
-		for (size_t i = 0; i < s_commandLineArgs.size(); ++i)
+		for (size_t i = 0; i < s_CommandLineArgs.size(); ++i)
 		{
-			std::string_view currentArg = s_commandLineArgs[i];
+			std::string_view currentArg = s_CommandLineArgs[i];
 
 			if (currentArg.size() <= argSize)
 				continue;
@@ -103,6 +103,6 @@ namespace limbo::core
 
 	CommandLine::~CommandLine()
 	{
-		Win32Console::close(m_consoleHandle);
+		Win32Console::Close(m_ConsoleHandle);
 	}
 }

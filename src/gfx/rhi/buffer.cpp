@@ -4,21 +4,21 @@
 
 #include "core/utils.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	Buffer::Buffer(const BufferSpec& spec)
-		: byteStride(spec.byteStride), byteSize(spec.byteSize)
+		: ByteStride(spec.ByteStride), ByteSize(spec.ByteSize)
 	{
-		Device* device = Device::ptr;
-		ID3D12Device* d3ddevice = device->getDevice();
+		Device* device = Device::Ptr;
+		ID3D12Device* d3ddevice = device->GetDevice();
 
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-		const uint64 alignment = spec.usage == BufferUsage::Upload ? 256 : 4;
+		const uint64 alignment = spec.Usage == BufferUsage::Upload ? 256 : 4;
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-			.Width = math::max(math::align(spec.byteSize, alignment), 256ull),
+			.Width = Math::Max(Math::Align(spec.ByteSize, alignment), 256ull),
 			.Height = 1,
 			.DepthOrArraySize = 1,
 			.MipLevels = 1,
@@ -32,7 +32,7 @@ namespace limbo::gfx
 		};
 
 		D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
-		if (spec.usage == BufferUsage::Upload)
+		if (spec.Usage == BufferUsage::Upload)
 			heapType = D3D12_HEAP_TYPE_UPLOAD;
 
 		// #todo: use CreatePlacedResource instead of CreateCommittedResource
@@ -44,43 +44,43 @@ namespace limbo::gfx
 			.VisibleNodeMask = 0
 		};
 
-		currentState = D3D12_RESOURCE_STATE_COMMON;
-		if (spec.usage == BufferUsage::Upload)
-			currentState = D3D12_RESOURCE_STATE_GENERIC_READ;
-		initialState = currentState;
+		CurrentState = D3D12_RESOURCE_STATE_COMMON;
+		if (spec.Usage == BufferUsage::Upload)
+			CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
+		InitialState = CurrentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
-													initialState,
+													InitialState,
 													nullptr,
-													IID_PPV_ARGS(&resource)));
+													IID_PPV_ARGS(&Resource)));
 
-		if (spec.initialData)
+		if (spec.InitialData)
 		{
-			if (spec.usage == BufferUsage::Upload)
+			if (spec.Usage == BufferUsage::Upload)
 			{
-				DX_CHECK(resource->Map(0, nullptr, &mappedData));
-				memcpy(mappedData, spec.initialData, spec.byteSize);
+				DX_CHECK(Resource->Map(0, nullptr, &MappedData));
+				memcpy(MappedData, spec.InitialData, spec.ByteSize);
 			}
 			else
 			{
-				std::string uploadName = std::string(spec.debugName) + " (Upload Buffer)";
-				Handle<Buffer> uploadBuffer = createBuffer({
-					.debugName = uploadName.c_str(),
-					.byteSize = spec.byteSize,
-					.usage = BufferUsage::Upload,
-					.initialData = spec.initialData
+				std::string uploadName = std::string(spec.DebugName) + " (Upload Buffer)";
+				Handle<Buffer> uploadBuffer = CreateBuffer({
+					.DebugName = uploadName.c_str(),
+					.ByteSize = spec.ByteSize,
+					.Usage = BufferUsage::Upload,
+					.InitialData = spec.InitialData
 				});
-				Buffer* allocationBuffer = ResourceManager::ptr->getBuffer(uploadBuffer);
+				Buffer* allocationBuffer = ResourceManager::Ptr->GetBuffer(uploadBuffer);
 				FAILIF(!allocationBuffer);
-				Device::ptr->copyBufferToBuffer(allocationBuffer, this, spec.byteSize, 0, 0);
-				destroyBuffer(uploadBuffer);
+				Device::Ptr->CopyBufferToBuffer(allocationBuffer, this, spec.ByteSize, 0, 0);
+				DestroyBuffer(uploadBuffer);
 			}
 		}
 
-		if ((spec.debugName != nullptr) && (spec.debugName[0] != '\0'))
+		if ((spec.DebugName != nullptr) && (spec.DebugName[0] != '\0'))
 		{
 			std::wstring wname;
-			utils::StringConvert(spec.debugName, wname);
-			DX_CHECK(resource->SetName(wname.c_str()));
+			Utils::StringConvert(spec.DebugName, wname);
+			DX_CHECK(Resource->SetName(wname.c_str()));
 		}
 	}
 

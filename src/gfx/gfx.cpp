@@ -4,27 +4,27 @@
 #include "rhi/device.h"
 #include "rhi/resourcemanager.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
-	Device* Device::ptr = nullptr;
-	ResourceManager* ResourceManager::ptr = nullptr;
+	Device* Device::Ptr = nullptr;
+	ResourceManager* ResourceManager::Ptr = nullptr;
 
-	void init(core::Window* window, GfxDeviceFlags flags)
+	void Init(Core::Window* window, GfxDeviceFlags flags)
 	{
-		Device::ptr = new Device(window, flags);
-		ResourceManager::ptr = new ResourceManager();
+		Device::Ptr = new Device(window, flags);
+		ResourceManager::Ptr = new ResourceManager();
 
-		onPostResourceManagerInit.Broadcast();
+		OnPostResourceManagerInit.Broadcast();
 	}
 
-	void shutdown()
+	void Shutdown()
 	{
-		onPreResourceManagerShutdown.Broadcast();
+		OnPreResourceManagerShutdown.Broadcast();
 
-		delete ResourceManager::ptr;
-		ResourceManager::ptr = nullptr;
+		delete ResourceManager::Ptr;
+		ResourceManager::Ptr = nullptr;
 
-		delete Device::ptr;
-		Device::ptr = nullptr;
+		delete Device::Ptr;
+		Device::Ptr = nullptr;
 	}
 }

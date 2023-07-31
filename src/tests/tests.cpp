@@ -10,9 +10,9 @@
 #include "gfx/graphicstriangle.h"
 #endif
 
-namespace limbo::tests
+namespace limbo::Tests
 {
-	int executeTests(char* args)
+	int ExecuteTests(char* args)
 	{
 #if ENABLE_LIMBO_TESTS
 		Catch::Session session;
@@ -29,7 +29,7 @@ namespace limbo::tests
 #endif
 	}
 
-	int executeComputeTriangle()
+	int ExecuteComputeTriangle()
 	{
 #if ENABLE_LIMBO_TESTS
 		return gfx::runComputeTriangle();
@@ -38,7 +38,7 @@ namespace limbo::tests
 #endif
 	}
 
-	int executeGraphicsTriangle()
+	int ExecuteGraphicsTriangle()
 	{
 #if ENABLE_LIMBO_TESTS
 		return gfx::runGfxTriangle();

@@ -2,15 +2,15 @@
 #include "sampler.h"
 #include "device.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	Sampler::Sampler(const D3D12_SAMPLER_DESC& desc)
 	{
-		Device* device = Device::ptr;
-		ID3D12Device* d3ddevice = device->getDevice();
+		Device* device = Device::Ptr;
+		ID3D12Device* d3ddevice = device->GetDevice();
 
-		handle = device->allocateHandle(DescriptorHeapType::SAMPLERS);
+		Handle = device->AllocateHandle(DescriptorHeapType::SAMPLERS);
 
-		d3ddevice->CreateSampler(&desc, handle.cpuHandle);
+		d3ddevice->CreateSampler(&desc, Handle.CpuHandle);
 	}
 }

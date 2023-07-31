@@ -2,29 +2,29 @@
 #include "resourcemanager.h"
 #include "gfx/gfx.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 #define DELETE_RESOURCE(ResourceHandle, ResourceList) \
 	Deletion deletion = {}; \
-	deletion.delegate.BindLambda([this, ResourceHandle]() \
+	deletion.Delegate.BindLambda([this, ResourceHandle]() \
 		{ \
-			ResourceList.deleteHandle(ResourceHandle); \
+			ResourceList.DeleteHandle(ResourceHandle); \
 		}); \
-	deletion.deletionCounter = 0; \
-	m_deletionQueue.push_back(std::move(deletion))
+	deletion.DeletionCounter = 0; \
+	m_DeletionQueue.push_back(std::move(deletion))
 
 	ResourceManager::ResourceManager()
 	{
-		onPostResourceManagerInit.AddLambda([&]()
+		OnPostResourceManagerInit.AddLambda([&]()
 		{
 			uint32_t blackTextureData = 0x00000000;
-			emptyTexture = createTexture({
-				.width = 1,
-				.height = 1,
-				.debugName = "Empty Texture",
-				.format = Format::RGBA8_UNORM,
-				.type = TextureType::Texture2D,
-				.initialData = &blackTextureData,
+			EmptyTexture = CreateTexture({
+				.Width = 1,
+				.Height = 1,
+				.DebugName = "Empty Texture",
+				.Format = Format::RGBA8_UNORM,
+				.Type = TextureType::Texture2D,
+				.InitialData = &blackTextureData,
 				.bCreateSrv = true
 			});
 		});
@@ -32,103 +32,103 @@ namespace limbo::gfx
 
 	ResourceManager::~ResourceManager()
 	{
-		m_onShutdown = true;
-		destroyTexture(emptyTexture);
+		m_bOnShutdown = true;
+		DestroyTexture(EmptyTexture);
 
-		forceDeletionQueue();
+		ForceDeletionQueue();
 
 #if LIMBO_DEBUG
-		ensure(m_buffers.isEmpty());
-		ensure(m_textures.isEmpty());
-		ensure(m_shaders.isEmpty());
+		ensure(m_Buffers.IsEmpty());
+		ensure(m_Textures.IsEmpty());
+		ensure(m_Shaders.IsEmpty());
 #endif
 	}
 
-	Handle<Buffer> ResourceManager::createBuffer(const BufferSpec& spec)
+	Handle<Buffer> ResourceManager::CreateBuffer(const BufferSpec& spec)
 	{
-		return m_buffers.allocateHandle(spec);
+		return m_Buffers.AllocateHandle(spec);
 	}
 
-	Handle<Shader> ResourceManager::createShader(const ShaderSpec& spec)
+	Handle<Shader> ResourceManager::CreateShader(const ShaderSpec& spec)
 	{
-		return m_shaders.allocateHandle(spec);
+		return m_Shaders.AllocateHandle(spec);
 	}
 
-	Handle<Texture> ResourceManager::createTexture(const TextureSpec& spec)
+	Handle<Texture> ResourceManager::CreateTexture(const TextureSpec& spec)
 	{
-		return m_textures.allocateHandle(spec);
+		return m_Textures.AllocateHandle(spec);
 	}
 
-	Handle<Texture> ResourceManager::createTexture(ID3D12Resource* resource, const TextureSpec& spec)
+	Handle<Texture> ResourceManager::CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
 	{
-		return m_textures.allocateHandle(resource, spec);
+		return m_Textures.AllocateHandle(resource, spec);
 	}
 
-	Handle<Sampler> ResourceManager::createSampler(const D3D12_SAMPLER_DESC& spec)
+	Handle<Sampler> ResourceManager::CreateSampler(const D3D12_SAMPLER_DESC& spec)
 	{
-		return m_samplers.allocateHandle(spec);
+		return m_Samplers.AllocateHandle(spec);
 	}
 
-	gfx::Buffer* ResourceManager::getBuffer(Handle<Buffer> buffer)
+	Gfx::Buffer* ResourceManager::GetBuffer(Handle<Buffer> buffer)
 	{
-		return m_buffers.get(buffer);
+		return m_Buffers.Get(buffer);
 	}
 
-	gfx::Shader* ResourceManager::getShader(Handle<Shader> shader)
+	Gfx::Shader* ResourceManager::GetShader(Handle<Shader> shader)
 	{
-		return m_shaders.get(shader);
+		return m_Shaders.Get(shader);
 	}
 
-	gfx::Texture* ResourceManager::getTexture(Handle<Texture> texture)
+	Gfx::Texture* ResourceManager::GetTexture(Handle<Texture> texture)
 	{
-		return m_textures.get(texture);
+		return m_Textures.Get(texture);
 	}
 
-	Sampler* ResourceManager::getSampler(Handle<Sampler> sampler)
+	Sampler* ResourceManager::GetSampler(Handle<Sampler> sampler)
 	{
-		return m_samplers.get(sampler);
+		return m_Samplers.Get(sampler);
 	}
 
-	void ResourceManager::destroyBuffer(Handle<Buffer> buffer)
+	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer)
 	{
-		DELETE_RESOURCE(buffer, m_buffers);
+		DELETE_RESOURCE(buffer, m_Buffers);
 	}
 
-	void ResourceManager::destroyShader(Handle<Shader> shader)
+	void ResourceManager::DestroyShader(Handle<Shader> shader)
 	{
-		DELETE_RESOURCE(shader, m_shaders);;
+		DELETE_RESOURCE(shader, m_Shaders);;
 	}
 
-	void ResourceManager::destroyTexture(Handle<Texture> texture)
+	void ResourceManager::DestroyTexture(Handle<Texture> texture)
 	{
-		if (texture != emptyTexture || m_onShutdown)
+		if (texture != EmptyTexture || m_bOnShutdown)
 		{
-			DELETE_RESOURCE(texture, m_textures);
+			DELETE_RESOURCE(texture, m_Textures);
 		}
 	}
 
-	void ResourceManager::destroySampler(Handle<Sampler> sampler)
+	void ResourceManager::DestroySampler(Handle<Sampler> sampler)
 	{
-		DELETE_RESOURCE(sampler, m_samplers);
+		DELETE_RESOURCE(sampler, m_Samplers);
 	}
 
-	void ResourceManager::runDeletionQueue()
+	void ResourceManager::RunDeletionQueue()
 	{
-		for (uint32 i = 0; i < m_deletionQueue.size();)
+		for (uint32 i = 0; i < m_DeletionQueue.size();)
 		{
-			if (++m_deletionQueue[i].deletionCounter >= NUM_BACK_BUFFERS)
-				m_deletionQueue.pop_front();
+			if (++m_DeletionQueue[i].DeletionCounter >= NUM_BACK_BUFFERS)
+				m_DeletionQueue.pop_front();
 			else
 				++i;
 		}
 	}
 
-	void ResourceManager::forceDeletionQueue()
+	void ResourceManager::ForceDeletionQueue()
 	{
-		while (!m_deletionQueue.empty())
+		while (!m_DeletionQueue.empty())
 		{
-			++m_deletionQueue.front().deletionCounter;
-			m_deletionQueue.pop_front();
+			++m_DeletionQueue.front().DeletionCounter;
+			m_DeletionQueue.pop_front();
 		}
 	}
 }

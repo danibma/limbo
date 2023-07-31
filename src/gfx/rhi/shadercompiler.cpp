@@ -3,9 +3,9 @@
 
 #include "core/utils.h"
 
-namespace limbo::gfx::SC
+namespace limbo::Gfx::SC
 {
-	bool compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel )
+	bool Compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel )
 	{
         static IDxcUtils* dxcUtils;
         static IDxcCompiler3* dxcCompiler;
@@ -23,7 +23,7 @@ namespace limbo::gfx::SC
         // setup arguments
         std::string cpath = std::string("shaders/" + std::string(programName) + ".hlsl");
         std::wstring path;
-        utils::StringConvert(cpath, path);
+        Utils::StringConvert(cpath, path);
 
         std::wstring profile = L"-T ";
         switch (kernel)
@@ -41,7 +41,7 @@ namespace limbo::gfx::SC
         profile.append(L"_6_0");
 
         std::wstring wentrypoint;
-        utils::StringConvert(entryPoint, wentrypoint);
+        Utils::StringConvert(entryPoint, wentrypoint);
         wentrypoint.insert(0, L"-E ");
 
         std::vector<const wchar_t*> arguments;
@@ -95,10 +95,10 @@ namespace limbo::gfx::SC
             .Encoding = 0,
         };
 
-        DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.reflection)));
+        DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.Reflection)));
 
         // Get shader blob
-        DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&result.bytecode), nullptr));
+        DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&result.Bytecode), nullptr));
 
         return true;
 	}

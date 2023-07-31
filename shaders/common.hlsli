@@ -7,8 +7,8 @@ static const float TwoPI = 2 * PI;
 
 struct QuadResult
 {
-	float4 position : SV_Position;
-	float2 uv		: TEXCOORD0;
+	float4 Position : SV_Position;
+	float2 UV		: TEXCOORD0;
 };
 
 static const float quadVertices[] =

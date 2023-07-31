@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-namespace limbo::paths
+namespace limbo::Paths
 {
 	// Returns the path of a file without the file name
-	void getPath(const char* path, char* result)
+	void GetPath(const char* path, char* result)
 	{
 		size_t strLength = strlen(path);
 		size_t finalIndex;
@@ -24,7 +24,7 @@ namespace limbo::paths
 	}
 
 	// Returns the extension of a file, without filename
-	void getExtension(const char* path, char* result, bool withDot = false)
+	void GetExtension(const char* path, char* result, bool withDot = false)
 	{
 		size_t strLength = strlen(path);
 		size_t dotIndex;
@@ -54,7 +54,7 @@ namespace limbo::paths
 	}
 
 	// Returns the extension of a file
-	void getFilename(const char* path, char* result, bool withExtension = false)
+	void GetFilename(const char* path, char* result, bool withExtension = false)
 	{
 		size_t strLength = strlen(path);
 		size_t startIndex;

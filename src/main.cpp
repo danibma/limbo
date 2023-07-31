@@ -23,25 +23,25 @@ using namespace limbo;
 
 int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lpCmdLine, int nCmdShow)
 {
-	core::CommandLine::init(lpCmdLine);
-	if (core::CommandLine::hasArg("--tests"))
-		return tests::executeTests(lpCmdLine);
-	else if (core::CommandLine::hasArg("--ctriangle"))
-		return tests::executeComputeTriangle();
-	else if (core::CommandLine::hasArg("--gtriangle"))
-		return tests::executeGraphicsTriangle();
+	Core::CommandLine::Init(lpCmdLine);
+	if (Core::CommandLine::HasArg("--tests"))
+		return Tests::ExecuteTests(lpCmdLine);
+	else if (Core::CommandLine::HasArg("--ctriangle"))
+		return Tests::ExecuteComputeTriangle();
+	else if (Core::CommandLine::HasArg("--gtriangle"))
+		return Tests::ExecuteGraphicsTriangle();
 
-	core::Window* window = core::createWindow({
-		.title = "limbo",
-		.width = WIDTH,
-		.height = HEIGHT
+	Core::Window* window = Core::NewWindow({
+		.Title = "limbo",
+		.Width = WIDTH,
+		.Height = HEIGHT
 	});
 
-	gfx::init(window, gfx::GfxDeviceFlag::EnableImgui);
+	Gfx::Init(window, Gfx::GfxDeviceFlag::EnableImgui);
 
-	gfx::FPSCamera camera = gfx::createCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
+	Gfx::FPSCamera camera = Gfx::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
-	gfx::Handle<gfx::Sampler> linearWrapSampler = gfx::createSampler({
+	Gfx::Handle<Gfx::Sampler> linearWrapSampler = Gfx::CreateSampler({
 		.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
 		.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
 		.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
@@ -51,24 +51,24 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.MaxLOD = 1.0f
 		});
 
-	gfx::Handle<gfx::Shader> deferredShader = gfx::createShader({
-		.programName = "deferredshading",
-		.rtFormats = {
-			gfx::Format::RGBA8_UNORM,
-			gfx::Format::RGBA8_UNORM,
-			gfx::Format::RGBA8_UNORM,
-			gfx::Format::RGBA8_UNORM
+	Gfx::Handle<Gfx::Shader> deferredShader = Gfx::CreateShader({
+		.ProgramName = "deferredshading",
+		.RTFormats = {
+			Gfx::Format::RGBA8_UNORM,
+			Gfx::Format::RGBA8_UNORM,
+			Gfx::Format::RGBA8_UNORM,
+			Gfx::Format::RGBA8_UNORM
 		},
-		.depthFormat = gfx::Format::D32_SFLOAT,
-		.type = gfx::ShaderType::Graphics
+		.DepthFormat = Gfx::Format::D32_SFLOAT,
+		.Type = Gfx::ShaderType::Graphics
 	});
 
-	gfx::Handle<gfx::Shader> compositeShader = gfx::createShader({
-		.programName = "scenecomposite",
-		.type = gfx::ShaderType::Graphics
+	Gfx::Handle<Gfx::Shader> compositeShader = Gfx::CreateShader({
+		.ProgramName = "scenecomposite",
+		.Type = Gfx::ShaderType::Graphics
 	});
 
-	gfx::Scene* scene = gfx::loadScene("models/DamagedHelmet/DamagedHelmet.glb");
+	Gfx::Scene* scene = Gfx::LoadScene("models/DamagedHelmet/DamagedHelmet.glb");
 	//gfx::Scene* scene = gfx::loadScene("E:\\IntelGraphicsSample\\Main.1_Sponza\\NewSponza_Main_glTF_002.gltf");
 	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
@@ -79,22 +79,22 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		"Reinhard"
 	};
 
-	core::Timer deltaTimer;
-	while (!window->shouldClose())
+	Core::Timer deltaTimer;
+	while (!window->ShouldClose())
 	{
 		float deltaTime = deltaTimer.ElapsedMilliseconds();
 		deltaTimer.Record();
 
-		window->pollEvents();
+		window->PollEvents();
 
-		gfx::updateCamera(window, camera, deltaTime);
+		Gfx::UpdateCamera(window, camera, deltaTime);
 
 		ImGui::Begin("Limbo", nullptr);
-		ImGui::Text("Selected device: %s", gfx::getGPUInfo().name);
+		ImGui::Text("Selected device: %s", Gfx::GetGPUInfo().Name);
 		ImGui::Separator();
 		if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			ImGui::DragFloat("Speed", &camera.cameraSpeed, 0.1f, 0.1f);
+			ImGui::DragFloat("Speed", &camera.CameraSpeed, 0.1f, 0.1f);
 		}
 		ImGui::Separator();
 		if (ImGui::CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen))
@@ -108,44 +108,44 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		}
 		ImGui::End();
 
-		gfx::beginEvent("Geometry Pass");
-		gfx::bindShader(deferredShader);
-		gfx::setParameter(deferredShader, "viewProj", camera.viewProj);
-		gfx::setParameter(deferredShader, "LinearWrap", linearWrapSampler);
+		Gfx::BeginEvent("Geometry Pass");
+		Gfx::BindShader(deferredShader);
+		Gfx::SetParameter(deferredShader, "viewProj", camera.ViewProj);
+		Gfx::SetParameter(deferredShader, "LinearWrap", linearWrapSampler);
 
-		scene->drawMesh([&](const gfx::Mesh& mesh)
+		scene->DrawMesh([&](const Gfx::Mesh& mesh)
 		{
-			const gfx::MeshMaterial& material = scene->getMaterial(mesh.materialID);
+			const Gfx::MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
 
-			gfx::setParameter(deferredShader, "g_albedoTexture", material.albedo);
-			gfx::setParameter(deferredShader, "g_roughnessMetalTexture", material.roughnessMetal);
-			gfx::setParameter(deferredShader, "g_emissiveTexture", material.emissive);
-			gfx::setParameter(deferredShader, "model", mesh.transform);
+			Gfx::SetParameter(deferredShader, "g_albedoTexture", material.Albedo);
+			Gfx::SetParameter(deferredShader, "g_roughnessMetalTexture", material.RoughnessMetal);
+			Gfx::SetParameter(deferredShader, "g_emissiveTexture", material.Emissive);
+			Gfx::SetParameter(deferredShader, "model", mesh.Transform);
 
-			gfx::bindVertexBuffer(mesh.vertexBuffer);
-			gfx::bindIndexBuffer(mesh.indexBuffer);
-			gfx::drawIndexed((uint32)mesh.indexCount);
+			Gfx::BindVertexBuffer(mesh.VertexBuffer);
+			Gfx::BindIndexBuffer(mesh.IndexBuffer);
+			Gfx::DrawIndexed((uint32)mesh.IndexCount);
 		});
-		gfx::endEvent();
+		Gfx::EndEvent();
 
-		gfx::beginEvent("Scene Composite");
-		gfx::bindShader(compositeShader);
-		gfx::setParameter(compositeShader, "g_TonemapMode", tonemapMode);
-		gfx::setParameter(compositeShader, "g_sceneTexture", deferredShader, 0);
-		gfx::setParameter(compositeShader, "LinearWrap", linearWrapSampler);
-		gfx::draw(6);
-		gfx::endEvent();
+		Gfx::BeginEvent("Scene Composite");
+		Gfx::BindShader(compositeShader);
+		Gfx::SetParameter(compositeShader, "g_TonemapMode", tonemapMode);
+		Gfx::SetParameter(compositeShader, "g_sceneTexture", deferredShader, 0);
+		Gfx::SetParameter(compositeShader, "LinearWrap", linearWrapSampler);
+		Gfx::Draw(6);
+		Gfx::EndEvent();
 
-		gfx::present();
+		Gfx::Present();
 	}
 
-	gfx::destroyShader(deferredShader);
-	gfx::destroyShader(compositeShader);
+	Gfx::DestroyShader(deferredShader);
+	Gfx::DestroyShader(compositeShader);
 
-	gfx::destroyScene(scene);
+	Gfx::DestroyScene(scene);
 
-	gfx::shutdown();
-	core::destroyWindow(window);
+	Gfx::Shutdown();
+	Core::DestroyWindow(window);
 
 	return 0;
 }

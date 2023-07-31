@@ -7,46 +7,34 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 
-namespace limbo::core
+namespace limbo::Core
 {
-	Window* createWindow(const WindowInfo&& info)
-	{
-		Window* result = new Window(info);
-		return result;
-	}
-
-	void destroyWindow(Window* window)
-	{
-		window->destroy();
-		delete window;
-	}
-
-	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		Window* win = (Window*)glfwGetWindowUserPointer(window);
 		ensure(win);
 
-		win->m_keysDown[key] = (action == GLFW_PRESS || action == GLFW_REPEAT);
+		win->m_KeysDown[key] = (action == GLFW_PRESS || action == GLFW_REPEAT);
 	}
 
-	static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+	static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 	{
 		Window* win = (Window*)glfwGetWindowUserPointer(window);
 		ensure(win);
 
-		win->m_buttonsDown[button] = action == GLFW_PRESS;
+		win->m_ButtonsDown[button] = action == GLFW_PRESS;
 	}
 
-	static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+	static void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 	{
 		Window* win = (Window*)glfwGetWindowUserPointer(window);
 		ensure(win);
 
-		win->m_scroll = { xoffset, yoffset };
+		win->m_Scroll = { xoffset, yoffset };
 	}
 
 	Window::Window(const WindowInfo& info)
-		: width(info.width), height(info.height)
+		: Width(info.Width), Height(info.Height)
 	{
 		if (!glfwInit())
 		{
@@ -56,100 +44,100 @@ namespace limbo::core
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		m_handle = glfwCreateWindow(width, height, "limbo", nullptr, nullptr);
-		if (!m_handle)
+		m_Handle = glfwCreateWindow(Width, Height, "limbo", nullptr, nullptr);
+		if (!m_Handle)
 		{
 			LB_ERROR("Failed to create GLFW window!");
 			return;
 		}
 
-		glfwSetWindowUserPointer(m_handle, this);
+		glfwSetWindowUserPointer(m_Handle, this);
 
-		glfwSetKeyCallback(m_handle, key_callback);
-		glfwSetMouseButtonCallback(m_handle, mouse_button_callback);
-		glfwSetScrollCallback(m_handle, scroll_callback);
+		glfwSetKeyCallback(m_Handle, KeyCallback);
+		glfwSetMouseButtonCallback(m_Handle, MouseButtonCallback);
+		glfwSetScrollCallback(m_Handle, ScrollCallback);
 	}
 
-	void Window::pollEvents()
+	void Window::PollEvents()
 	{
-		memcpy(m_lastKeysDown, m_keysDown, sizeof(m_keysDown));
-		memcpy(m_lastButtonsDown, m_buttonsDown, sizeof(m_buttonsDown));
-		m_scroll = { 0, 0 };
+		memcpy(m_LastKeysDown, m_KeysDown, sizeof(m_KeysDown));
+		memcpy(m_LastButtonsDown, m_ButtonsDown, sizeof(m_ButtonsDown));
+		m_Scroll = { 0, 0 };
 		glfwPollEvents();
 	}
 
-	void Window::destroy()
+	void Window::Destroy()
 	{
-		glfwDestroyWindow(m_handle);
+		glfwDestroyWindow(m_Handle);
 	}
 
-	bool Window::shouldClose()
+	bool Window::ShouldClose()
 	{
-		bool shouldClose = glfwWindowShouldClose(m_handle);
+		bool shouldClose = glfwWindowShouldClose(m_Handle);
 		if (shouldClose)
-			onWindowShouldClose.Broadcast();
+			OnWindowShouldClose.Broadcast();
 		return shouldClose;
 	}
 
-	GLFWwindow* Window::getGLFWHandle()
+	GLFWwindow* Window::GetGlfwHandle()
 	{
-		return m_handle;
+		return m_Handle;
 	}
 
-	HWND Window::getWin32Handle()
+	HWND Window::GetWin32Handle()
 	{
-		return glfwGetWin32Window(m_handle);
+		return glfwGetWin32Window(m_Handle);
 	}
 
 	//
 	// Input
 	//
-	bool Window::isKeyPressed(input::KeyCode key)
+	bool Window::IsKeyPressed(Input::KeyCode key)
 	{
-		return m_keysDown[(int)key] && !m_lastKeysDown[(int)key];
+		return m_KeysDown[(int)key] && !m_LastKeysDown[(int)key];
 	}
 
-	bool Window::isKeyDown(input::KeyCode key)
+	bool Window::IsKeyDown(Input::KeyCode key)
 	{
-		ensure(key != input::KeyCode::Unknown);
-		return m_keysDown[(int)key];
+		ensure(key != Input::KeyCode::Unknown);
+		return m_KeysDown[(int)key];
 	}
 
-	bool Window::isKeyUp(input::KeyCode key)
+	bool Window::IsKeyUp(Input::KeyCode key)
 	{
-		ensure(key != input::KeyCode::Unknown);
-		return !m_keysDown[(int)key];
+		ensure(key != Input::KeyCode::Unknown);
+		return !m_KeysDown[(int)key];
 	}
 
-	bool Window::isMouseButtonPressed(input::MouseButton button)
+	bool Window::IsMouseButtonPressed(Input::MouseButton button)
 	{
-		return m_buttonsDown[(int)button] && !m_lastButtonsDown[(int)button];
+		return m_ButtonsDown[(int)button] && !m_LastButtonsDown[(int)button];
 	}
 
-	bool Window::isMouseButtonDown(input::MouseButton button)
+	bool Window::IsMouseButtonDown(Input::MouseButton button)
 	{
-		return m_buttonsDown[(int)button];
+		return m_ButtonsDown[(int)button];
 	}
 
-	bool Window::isMouseButtonUp(input::MouseButton button)
+	bool Window::IsMouseButtonUp(Input::MouseButton button)
 	{
-		return !m_buttonsDown[(int)button];
+		return !m_ButtonsDown[(int)button];
 	}
 
-	float2 Window::getMousePos()
+	float2 Window::GetMousePos()
 	{
 		double x, y;
-		glfwGetCursorPos(m_handle, &x, &y);
+		glfwGetCursorPos(m_Handle, &x, &y);
 		return { x, y };
 	}
 
-	float Window::getScrollX()
+	float Window::GetScrollX()
 	{
-		return m_scroll.x;
+		return m_Scroll.x;
 	}
 
-	float Window::getScrollY()
+	float Window::GetScrollY()
 	{
-		return m_scroll.y;
+		return m_Scroll.y;
 	}
 }

@@ -5,9 +5,9 @@
 #define ENABLE_LIMBO_TESTS 0
 #define LIMBO_TESTS_WARNING LB_ERROR("To run the tests, please set ENABLE_LIMBO_TESTS to 1 in tests.h"); return 0;
 
-namespace limbo::tests
+namespace limbo::Tests
 {
-	int executeTests(char* args);
-	int executeComputeTriangle();
-	int executeGraphicsTriangle();
+	int ExecuteTests(char* args);
+	int ExecuteComputeTriangle();
+	int ExecuteGraphicsTriangle();
 }

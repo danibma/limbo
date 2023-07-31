@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-namespace limbo::core
+namespace limbo::Core
 {
 	struct Timer
 	{
@@ -14,14 +14,14 @@ namespace limbo::core
 		// Record a reference timestamp
 		inline void Record()
 		{
-			m_timestamp = std::chrono::high_resolution_clock::now();
+			m_Timestamp = std::chrono::high_resolution_clock::now();
 		}
 
 		// Elapsed time in seconds since the Timer creation or last call to record()
 		inline float ElapsedSeconds()
 		{
 			auto timestamp2 = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<float> timeSpan = std::chrono::duration_cast<std::chrono::duration<float>>(timestamp2 - m_timestamp);
+			std::chrono::duration<float> timeSpan = std::chrono::duration_cast<std::chrono::duration<float>>(timestamp2 - m_Timestamp);
 			return timeSpan.count();
 		}
 
@@ -32,6 +32,6 @@ namespace limbo::core
 		}
 
 	private:
-		std::chrono::high_resolution_clock::time_point m_timestamp;
+		std::chrono::high_resolution_clock::time_point m_Timestamp;
 	};
 }

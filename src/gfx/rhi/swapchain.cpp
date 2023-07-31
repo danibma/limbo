@@ -9,15 +9,15 @@
 #include <format>
 
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
-	Swapchain::Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, core::Window* window)
-		: m_backbufferWidth(window->width), m_backbufferHeight(window->height)
+	Swapchain::Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, Core::Window* window)
+		: m_BackbufferWidth(window->Width), m_BackbufferHeight(window->Height)
 	{
 		DXGI_SWAP_CHAIN_DESC1 desc = {
-			.Width = m_backbufferWidth,
-			.Height = m_backbufferHeight,
-			.Format = d3dFormat(m_format),
+			.Width = m_BackbufferWidth,
+			.Height = m_BackbufferHeight,
+			.Format = D3DFormat(m_Format),
 			.Stereo = false,
 			.SampleDesc = {
 				.Count = 1,
@@ -31,50 +31,50 @@ namespace limbo::gfx
 			.Flags = 0
 		};
 		ComPtr<IDXGISwapChain1> tempSwapchain;
-		DX_CHECK(factory->CreateSwapChainForHwnd(queue, window->getWin32Handle(), &desc, nullptr, nullptr, &tempSwapchain));
-		tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_swapchain));
+		DX_CHECK(factory->CreateSwapChainForHwnd(queue, window->GetWin32Handle(), &desc, nullptr, nullptr, &tempSwapchain));
+		tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain));
 	}
 
 	Swapchain::~Swapchain()
 	{
 		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
 		{
-			destroyTexture(m_backbuffers[i]);
-			destroyTexture(m_depthBackbuffers[i]);
+			DestroyTexture(m_Backbuffers[i]);
+			DestroyTexture(m_DepthBackbuffers[i]);
 		}
 	}
 
-	void Swapchain::initBackBuffers()
+	void Swapchain::InitBackBuffers()
 	{
 		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
 		{
 			ID3D12Resource* tempBuffer;
-			m_swapchain->GetBuffer(i, IID_PPV_ARGS(&tempBuffer));
+			m_Swapchain->GetBuffer(i, IID_PPV_ARGS(&tempBuffer));
 
 			std::string debugName = std::format("swapchain backbuffer({})", i);
-			m_backbuffers[i] = createTexture(tempBuffer, {
-				.debugName = debugName.c_str(),
-				.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
-				.format = m_format,
-				.type = TextureType::Texture2D,
+			m_Backbuffers[i] = CreateTexture(tempBuffer, {
+				.DebugName = debugName.c_str(),
+				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+				.Format = m_Format,
+				.Type = TextureType::Texture2D,
 				.bCreateSrv = false
 			});
 
 			std::string depthDebugName = std::format("swapchain depth backbuffer({})", i);
-			m_depthBackbuffers[i] = createTexture({
-				.width = m_backbufferWidth,
-				.height = m_backbufferHeight,
-				.debugName = depthDebugName.c_str(),
-				.resourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
-				.clearValue = {
-					.Format = d3dFormat(m_depthFormat),
+			m_DepthBackbuffers[i] = CreateTexture({
+				.Width = m_BackbufferWidth,
+				.Height = m_BackbufferHeight,
+				.DebugName = depthDebugName.c_str(),
+				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+				.ClearValue = {
+					.Format = D3DFormat(m_DepthFormat),
 					.DepthStencil = {
 						.Depth = 1.0f,
 						.Stencil = 0
 					}
 				},
-				.format = m_depthFormat,
-				.type = TextureType::Texture2D,
+				.Format = m_DepthFormat,
+				.Type = TextureType::Texture2D,
 				.bCreateSrv = false
 			});
 
@@ -82,45 +82,45 @@ namespace limbo::gfx
 		}
 	}
 
-	void Swapchain::present(bool vsync)
+	void Swapchain::Present(bool vsync)
 	{
-		m_swapchain->Present(vsync, 0);
+		m_Swapchain->Present(vsync, 0);
 	}
 
-	uint32 Swapchain::getCurrentIndex()
+	uint32 Swapchain::GetCurrentIndex()
 	{
-		return m_swapchain->GetCurrentBackBufferIndex();
+		return m_Swapchain->GetCurrentBackBufferIndex();
 	}
 
-	Handle<Texture> Swapchain::getBackbuffer(uint32 index)
+	Handle<Texture> Swapchain::GetBackbuffer(uint32 index)
 	{
 		ensure(index < NUM_BACK_BUFFERS);
-		return m_backbuffers[index];
+		return m_Backbuffers[index];
 	}
 
-	Handle<Texture> Swapchain::getDepthBackbuffer(uint32 index)
+	Handle<Texture> Swapchain::GetDepthBackbuffer(uint32 index)
 	{
 		ensure(index < NUM_BACK_BUFFERS);
-		return m_depthBackbuffers[index];
+		return m_DepthBackbuffers[index];
 	}
 
-	Format Swapchain::getFormat()
+	Format Swapchain::GetFormat()
 	{
-		return m_format;
+		return m_Format;
 	}
 
-	Format Swapchain::getDepthFormat()
+	Format Swapchain::GetDepthFormat()
 	{
-		return m_depthFormat;
+		return m_DepthFormat;
 	}
 
-	uint32 Swapchain::getBackbufferWidth()
+	uint32 Swapchain::GetBackbufferWidth()
 	{
-		return m_backbufferWidth;
+		return m_BackbufferWidth;
 	}
 
-	uint32 Swapchain::getBackbufferHeight()
+	uint32 Swapchain::GetBackbufferHeight()
 	{
-		return m_backbufferHeight;
+		return m_BackbufferHeight;
 	}
 }

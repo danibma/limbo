@@ -5,7 +5,7 @@
 #include <dxcapi.h>
 #include <d3d12shader.h>
 
-namespace limbo::gfx::SC
+namespace limbo::Gfx::SC
 {
     /*
 	   Version: dxcompiler.dll: 1.7 - 1.7.2212.40 (e043f4a12); dxil.dll: 1.7(101.7.2212.36)
@@ -189,8 +189,8 @@ namespace limbo::gfx::SC
 
 	struct Kernel
 	{
-		ComPtr<IDxcBlob>				bytecode;
-		ComPtr<ID3D12ShaderReflection>  reflection;
+		ComPtr<IDxcBlob>				Bytecode;
+		ComPtr<ID3D12ShaderReflection>  Reflection;
 	};
 
 	enum class KernelType : uint8
@@ -200,6 +200,6 @@ namespace limbo::gfx::SC
 		Pixel
 	};
 
-	bool compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel);
+	bool Compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel);
 }
 

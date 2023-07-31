@@ -2,10 +2,10 @@
 
 #include "core.h"
 
-namespace limbo::algo
+namespace limbo::Algo
 {
     // sdbm hash function - http://www.cse.yorku.ca/~oz/hash.html
-	static uint32 hash(const char* str)
+	static uint32 Hash(const char* str)
 	{
         FAILIF(!str, ~0);
 

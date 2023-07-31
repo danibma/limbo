@@ -3,12 +3,12 @@
 #include "core/core.h"
 #include "core/math.h"
 
-namespace limbo::core
+namespace limbo::Core
 {
 	class Window;
 }
 
-namespace limbo::input
+namespace limbo::Input
 {
 	// wrapper of the GLFW_KEY codes
 	enum class KeyCode : int32
@@ -160,19 +160,19 @@ namespace limbo::input
 	};
 
 #define DECLARE_INPUT_EVENT_PARAM(returnType, functionName, codeType)\
-	returnType functionName(core::Window* window, codeType code)
+	returnType functionName(Core::Window* window, codeType code)
 
-	DECLARE_INPUT_EVENT_PARAM(bool, isKeyPressed, KeyCode);
-	DECLARE_INPUT_EVENT_PARAM(bool, isKeyDown, KeyCode);
-	DECLARE_INPUT_EVENT_PARAM(bool, isKeyUp, KeyCode);
-	DECLARE_INPUT_EVENT_PARAM(bool, isMouseButtonPressed, MouseButton);
-	DECLARE_INPUT_EVENT_PARAM(bool, isMouseButtonDown, MouseButton);
-	DECLARE_INPUT_EVENT_PARAM(bool, isMouseButtonUp, MouseButton);
+	DECLARE_INPUT_EVENT_PARAM(bool, IsKeyPressed, KeyCode);
+	DECLARE_INPUT_EVENT_PARAM(bool, IsKeyDown, KeyCode);
+	DECLARE_INPUT_EVENT_PARAM(bool, IsKeyUp, KeyCode);
+	DECLARE_INPUT_EVENT_PARAM(bool, IsMouseButtonPressed, MouseButton);
+	DECLARE_INPUT_EVENT_PARAM(bool, IsMouseButtonDown, MouseButton);
+	DECLARE_INPUT_EVENT_PARAM(bool, IsMouseButtonUp, MouseButton);
 
 #define DECLARE_INPUT_EVENT(returnType, functionName)\
-	returnType functionName(core::Window* window)
+	returnType functionName(Core::Window* window)
 
-	DECLARE_INPUT_EVENT(float2, getMousePos);
-	DECLARE_INPUT_EVENT(float, getScrollX);
-	DECLARE_INPUT_EVENT(float, getScrollY);
+	DECLARE_INPUT_EVENT(float2, GetMousePos);
+	DECLARE_INPUT_EVENT(float, GetScrollX);
+	DECLARE_INPUT_EVENT(float, GetScrollY);
 }

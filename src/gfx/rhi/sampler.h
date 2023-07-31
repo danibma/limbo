@@ -2,12 +2,12 @@
 
 #include "descriptorheap.h"
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	class Sampler
 	{
 	public:
-		DescriptorHandle handle;
+		DescriptorHandle Handle;
 
 	public:
 		Sampler() = default;

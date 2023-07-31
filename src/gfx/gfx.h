@@ -4,12 +4,12 @@
 
 #include <CppDelegates/Delegates.h>
 
-namespace limbo::core
+namespace limbo::Core
 {
 	class Window;
 }
 
-namespace limbo::gfx
+namespace limbo::Gfx
 {
 	enum GfxDeviceFlag
 	{
@@ -20,13 +20,13 @@ namespace limbo::gfx
 	typedef uint8 GfxDeviceFlags;
 
 	// init callbacks
-	DECLARE_MULTICAST_DELEGATE(OnPostResourceManagerInit);
-	inline OnPostResourceManagerInit onPostResourceManagerInit;
+	DECLARE_MULTICAST_DELEGATE(TOnPostResourceManagerInit);
+	inline TOnPostResourceManagerInit OnPostResourceManagerInit;
 
-	DECLARE_MULTICAST_DELEGATE(OnPreResourceManagerShutdown);
-	inline OnPreResourceManagerShutdown onPreResourceManagerShutdown;
+	DECLARE_MULTICAST_DELEGATE(TOnPreResourceManagerShutdown);
+	inline TOnPreResourceManagerShutdown OnPreResourceManagerShutdown;
 
 	// init functions
-	void init(core::Window* window, GfxDeviceFlags flags = 0);
-	void shutdown();
+	void Init(Core::Window* window, GfxDeviceFlags flags = 0);
+	void Shutdown();
 }
