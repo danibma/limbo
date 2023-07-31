@@ -54,13 +54,13 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Gfx::Handle<Gfx::Shader> deferredShader = Gfx::CreateShader({
 		.ProgramName = "deferredshading",
 		.RTFormats = {
-			Gfx::Format::RGBA8_UNORM,
-			Gfx::Format::RGBA8_UNORM,
-			Gfx::Format::RGBA8_UNORM,
-			Gfx::Format::RGBA8_UNORM,
-			Gfx::Format::RGBA8_UNORM
+			{ Gfx::Format::RGBA8_UNORM, "Albedo"},
+			{ Gfx::Format::RGBA8_UNORM, "Normal" },
+			{ Gfx::Format::RGBA8_UNORM, "Roughness" },
+			{ Gfx::Format::RGBA8_UNORM, "Metallic" },
+			{ Gfx::Format::RGBA8_UNORM, "Emissive" }
 		},
-		.DepthFormat = Gfx::Format::D32_SFLOAT,
+		.DepthFormat = { Gfx::Format::D32_SFLOAT },
 		.Type = Gfx::ShaderType::Graphics
 	});
 

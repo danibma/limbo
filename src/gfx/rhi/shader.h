@@ -16,13 +16,21 @@ namespace limbo::Gfx
 {
 	struct ShaderSpec
 	{
+	public:
+		struct RenderTarget
+		{
+			Format			RTFormat;
+			const char*		DebugName = "";
+		};
+
+	public:
 		const char*						ProgramName;
 		const char*						VSEntryPoint = "VSMain";
 		const char*						PSEntryPoint = "PSMain";
 		const char*						CsEntryPoint = "CSMain";
 
-		Format							RTFormats[8];
-		Format							DepthFormat = Format::UNKNOWN;
+		RenderTarget					RTFormats[8];
+		RenderTarget					DepthFormat = { Format::UNKNOWN };
 
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 

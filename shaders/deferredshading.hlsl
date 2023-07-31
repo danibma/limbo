@@ -29,7 +29,7 @@ Texture2D g_emissiveTexture;
 struct DeferredShadingOutput
 {
     float4 Albedo       : SV_Target0;
-    float4 Normals      : SV_Target1;
+    float4 Normal       : SV_Target1;
     float4 Roughness    : SV_Target2;
     float4 Metallic     : SV_Target3;
     float4 Emissive     : SV_Target4;
@@ -47,7 +47,7 @@ DeferredShadingOutput PSMain(VSOut input)
     float metallic      = roughnessMetalMap.b;
 
     result.Albedo       = albedo;
-    result.Normals      = input.Normal;
+    result.Normal       = input.Normal;
     result.Roughness    = roughness;
     result.Metallic     = metallic;
     result.Emissive     = emissiveMap;
