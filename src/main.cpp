@@ -68,9 +68,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
-	Gfx::Scene* scene = nullptr;
-	//gfx::Scene* scene = gfx::loadScene("E:\\IntelGraphicsSample\\Main.1_Sponza\\NewSponza_Main_glTF_002.gltf");
-	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
+	std::vector<Gfx::Scene*> scenes;
 
 	int tonemapMode = 0;
 	const char* tonemapModes[] = {
@@ -97,13 +95,11 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				if (ImGui::MenuItem("Load Scene"))
 				{
 					std::vector<wchar_t*> results;
-					if (Utils::OpenFileDialog(window, L"Choose scene to load", results, L"", { L"*.gltf" }))
+					if (Utils::OpenFileDialog(window, L"Choose scene to load", results, L"", { L"*.gltf; *.glb"}))
 					{
 						char path[MAX_PATH];
 						Utils::StringConvert(results[0], path);
-						if (scene)
-							Gfx::DestroyScene(scene);
-						scene = Gfx::Scene::Load(path);
+						scenes.emplace_back(Gfx::Scene::Load(path));
 					}
 				}
 				ImGui::EndMenu();
@@ -130,13 +126,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		}
 #pragma endregion UI
 
-		if (scene)
+		Gfx::BeginEvent("Geometry Pass");
+		Gfx::BindShader(deferredShader);
+		Gfx::SetParameter(deferredShader, "viewProj", camera.ViewProj);
+		Gfx::SetParameter(deferredShader, "LinearWrap", linearWrapSampler);
+		for (Gfx::Scene* scene : scenes)
 		{
-			Gfx::BeginEvent("Geometry Pass");
-			Gfx::BindShader(deferredShader);
-			Gfx::SetParameter(deferredShader, "viewProj", camera.ViewProj);
-			Gfx::SetParameter(deferredShader, "LinearWrap", linearWrapSampler);
-
 			scene->DrawMesh([&](const Gfx::Mesh& mesh)
 			{
 				const Gfx::MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
@@ -150,8 +145,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				Gfx::BindIndexBuffer(mesh.IndexBuffer);
 				Gfx::DrawIndexed((uint32)mesh.IndexCount);
 			});
-			Gfx::EndEvent();
 		}
+		Gfx::EndEvent();
 
 		Gfx::BeginEvent("Scene Composite");
 		Gfx::BindShader(compositeShader);
@@ -167,7 +162,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Gfx::DestroyShader(deferredShader);
 	Gfx::DestroyShader(compositeShader);
 
-	if (scene)
+	for (Gfx::Scene* scene : scenes)
 		Gfx::DestroyScene(scene);
 
 	Gfx::Shutdown();
