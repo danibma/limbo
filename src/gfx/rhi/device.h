@@ -55,6 +55,7 @@ namespace limbo::Gfx
 		std::vector<D3D12_RESOURCE_BARRIER> m_ResourceBarriers;
 
 		GfxDeviceFlags						m_Flags;
+		bool								m_bPIXCanCapture = false;
 
 		GPUInfo								m_GPUInfo;
 
@@ -89,6 +90,8 @@ namespace limbo::Gfx
 
 		void BeginEvent(const char* name, uint64 color = 0);
 		void EndEvent();
+		// This will capture the next frame and create a .wpix file, in the root directory, with a random name
+		void TakeGPUCapture();
 
 		void BindVertexBuffer(Handle<Buffer> buffer);
 		void BindIndexBuffer(Handle<Buffer> buffer);
@@ -177,6 +180,11 @@ namespace limbo::Gfx
 	inline void EndEvent()
 	{
 		Device::Ptr->EndEvent();
+	}
+
+	inline void TakeGPUCapture()
+	{
+		Device::Ptr->TakeGPUCapture();
 	}
 
 	inline void BindVertexBuffer(Handle<Buffer> buffer)

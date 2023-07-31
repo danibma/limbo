@@ -115,6 +115,10 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				}
 				ImGui::Separator();
 				ImGui::Combo("Tonemap", &tonemapMode, tonemapModes, 3);
+
+				if (ImGui::MenuItem("Take GPU Capture"))
+					Gfx::TakeGPUCapture();
+
 				ImGui::EndMenu();
 			}
 

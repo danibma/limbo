@@ -101,4 +101,17 @@ namespace limbo::Utils
 		return bSuccess;
 	}
 
+	bool PathExists(const wchar_t* path)
+	{
+		DWORD dwAttrib = GetFileAttributesW(path);
+
+		return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+	}
+
+	bool PathExists(const char* path)
+	{
+		DWORD dwAttrib = GetFileAttributesA(path);
+
+		return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+	}
 }

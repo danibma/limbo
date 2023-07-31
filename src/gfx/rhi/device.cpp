@@ -21,6 +21,14 @@ namespace limbo::Gfx
 	{
 		uint32_t dxgiFactoryFlags = 0;
 
+		HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
+		if (pixGPUCapturer)
+		{
+			DX_CHECK(PIXSetTargetWindow(window->GetWin32Handle()));
+			DX_CHECK(PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS));
+			m_bPIXCanCapture = true;
+		}
+
 #if !NO_LOG
 		{
 			ComPtr<ID3D12Debug> debugController;
@@ -540,6 +548,23 @@ namespace limbo::Gfx
 	void Device::EndEvent()
 	{
 		PIXEndEvent(m_CommandList.Get());
+	}
+
+	void Device::TakeGPUCapture()
+	{
+		wchar_t currDir[MAX_PATH];
+		GetCurrentDirectoryW(MAX_PATH, currDir);
+		std::wstring directory = currDir;
+		directory.append(L"\\gpucaptures\\");
+		if (!Utils::PathExists(directory.c_str()))
+			CreateDirectoryW(directory.c_str(), 0);
+		std::wstring filename = directory;
+		filename.append(L"LB_");
+		filename.append(std::format(L"{:%d_%m_%Y_%H_%M_%OS}", std::chrono::system_clock::now()));
+		filename.append(L".wpix");
+
+		DX_CHECK(PIXGpuCaptureNextFrames(filename.c_str(), 1));
+		LB_WLOG("Saved the GPU capture to '%ls'", filename.c_str());
 	}
 
 	uint32 Device::GetBackbufferWidth()
