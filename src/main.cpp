@@ -57,6 +57,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			Gfx::Format::RGBA8_UNORM,
 			Gfx::Format::RGBA8_UNORM,
 			Gfx::Format::RGBA8_UNORM,
+			Gfx::Format::RGBA8_UNORM,
 			Gfx::Format::RGBA8_UNORM
 		},
 		.DepthFormat = Gfx::Format::D32_SFLOAT,

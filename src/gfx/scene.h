@@ -22,6 +22,7 @@ namespace limbo::Gfx
 	struct MeshVertex
 	{
 		float3 Position;
+		float3 Normal;
 		float2 UV;
 	};
 
@@ -29,14 +30,12 @@ namespace limbo::Gfx
 	{
 		Handle<Texture> Albedo;
 		Handle<Texture> RoughnessMetal;
-		Handle<Texture> Normal;
 		Handle<Texture> Emissive;
 
 		MeshMaterial()
 		{
 			Albedo			= ResourceManager::Ptr->EmptyTexture;
 			RoughnessMetal	= ResourceManager::Ptr->EmptyTexture;
-			Normal			= ResourceManager::Ptr->EmptyTexture;
 			Emissive		= ResourceManager::Ptr->EmptyTexture;
 		}
 	};

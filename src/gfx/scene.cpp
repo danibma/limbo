@@ -22,6 +22,7 @@ namespace limbo::Gfx
 		struct PrimitiveData
 		{
 			std::vector<float3> positionStream;
+			std::vector<float3> normalsStream;
 			std::vector<float2> texcoordsStream;
 			std::vector<uint32> indicesStream;
 		};
@@ -72,7 +73,6 @@ namespace limbo::Gfx
 		{
 			Gfx::DestroyTexture(material.Albedo);
 			Gfx::DestroyTexture(material.RoughnessMetal);
-			Gfx::DestroyTexture(material.Normal);
 			Gfx::DestroyTexture(material.Emissive);
 		}
 	}
@@ -162,6 +162,7 @@ namespace limbo::Gfx
 			};
 
 			readAttributeData("POSITION", primitiveData.positionStream, 3);
+			readAttributeData("NORMAL", primitiveData.normalsStream, 3);
 			readAttributeData("TEXCOORD_0", primitiveData.texcoordsStream, 2);
 		}
 
@@ -175,6 +176,7 @@ namespace limbo::Gfx
 		{
 			MeshVertex& vertex = vertices[attrIdx];
 			vertex.Position = primitiveData.positionStream[attrIdx];
+			vertex.Normal	= primitiveData.normalsStream[attrIdx];
 			vertex.UV		= primitiveData.texcoordsStream[attrIdx];
 		}
 

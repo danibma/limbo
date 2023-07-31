@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "commandline.h"
+
 //
 // General Macro
 //
@@ -68,6 +70,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		char header[bufferSize], body[bufferSize]; \
 		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
 		snprintf(body, bufferSize, "[Limbo] Info: %s\n", header); \
+		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY); \
 		printf("%s", body); \
 		INTERNAL_PLATFORM_LOG(body); \
 	}
@@ -78,6 +81,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		wchar_t header[bufferSize], body[bufferSize]; \
 		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
 		_snwprintf_s(body, bufferSize, L"[Limbo] Info: %ls\n", header); \
+		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY); \
 		printf("%ls", body); \
 		INTERNAL_PLATFORM_WLOG(body); \
 	}
@@ -88,6 +92,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		char header[bufferSize], body[bufferSize]; \
 		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
 		snprintf(body, bufferSize, "[Limbo] Warn: %s\n", header); \
+		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY); \
 		printf("%s", body); \
 		INTERNAL_PLATFORM_LOG(body); \
 	}
@@ -98,6 +103,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		wchar_t header[bufferSize], body[bufferSize]; \
 		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
 		_snwprintf_s(body, bufferSize, L"[Limbo] Warning: %ls\n", header); \
+		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY); \
 		printf("%ls", body); \
 		INTERNAL_PLATFORM_WLOG(body); \
 	}
@@ -108,6 +114,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		char header[bufferSize], body[bufferSize]; \
 		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
 		snprintf(body, bufferSize, "[Limbo] Error: %s\n", header); \
+		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_INTENSITY); \
 		printf("%s", body); \
 		INTERNAL_PLATFORM_LOG(body); \
 		INTERNAL_PLATFORM_BREAK(); \
@@ -119,6 +126,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 		wchar_t header[bufferSize], body[bufferSize]; \
 		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
 		_snwprintf_s(body, bufferSize, L"[Limbo] Error: %ls\n", header); \
+		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_INTENSITY); \
 		printf("%ls", body); \
 		INTERNAL_PLATFORM_WLOG(body); \
 		INTERNAL_PLATFORM_BREAK(); \

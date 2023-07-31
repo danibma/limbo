@@ -6,15 +6,17 @@ float4x4 model;
 struct VSOut
 {
     float4 Position : SV_Position;
+    float4 Normal   : Normal;
     float2 UV       : TEXCOORD;
 };
 
-VSOut VSMain(float3 pos : Position, float2 uv : UV)
+VSOut VSMain(float3 pos : Position, float3 normal : Normal, float2 uv : UV)
 {
     VSOut result;
 
     float4x4 mvp = mul(viewProj, model);
     result.Position = mul(mvp, float4(pos, 1.0f));
+    result.Normal = float4(normal, 1.0f);
     result.UV = uv;
 
 	return result;
@@ -27,9 +29,10 @@ Texture2D g_emissiveTexture;
 struct DeferredShadingOutput
 {
     float4 Albedo       : SV_Target0;
-    float4 Roughness    : SV_Target1;
-    float4 Metallic     : SV_Target2;
-    float4 Emissive     : SV_Target3;
+    float4 Normals      : SV_Target1;
+    float4 Roughness    : SV_Target2;
+    float4 Metallic     : SV_Target3;
+    float4 Emissive     : SV_Target4;
 };
 
 DeferredShadingOutput PSMain(VSOut input)
@@ -44,6 +47,7 @@ DeferredShadingOutput PSMain(VSOut input)
     float metallic      = roughnessMetalMap.b;
 
     result.Albedo       = albedo;
+    result.Normals      = input.Normal;
     result.Roughness    = roughness;
     result.Metallic     = metallic;
     result.Emissive     = emissiveMap;

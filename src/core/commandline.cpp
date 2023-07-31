@@ -40,11 +40,11 @@ namespace limbo::Core
 	};
 
 	static std::vector<std::string> s_CommandLineArgs;
-	HANDLE CommandLine::m_ConsoleHandle;
+	HANDLE CommandLine::ConsoleHandle;
 
 	void CommandLine::Init(const char* args)
 	{
-		m_ConsoleHandle = Win32Console::Open();
+		ConsoleHandle = Win32Console::Open();
 
 		size_t charNum = strlen(args);
 		std::string arg = "";
@@ -103,6 +103,6 @@ namespace limbo::Core
 
 	CommandLine::~CommandLine()
 	{
-		Win32Console::Close(m_ConsoleHandle);
+		Win32Console::Close(ConsoleHandle);
 	}
 }

@@ -13,7 +13,6 @@ namespace limbo::Core
 		static bool HasArg(const char* arg);
 		static void Parse(const char* arg, std::string& value);
 
-	private:
-		static HANDLE m_ConsoleHandle;
+		static HANDLE ConsoleHandle;
 	};
 }
