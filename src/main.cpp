@@ -68,7 +68,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
-	Gfx::Scene* scene = Gfx::LoadScene("models/DamagedHelmet/DamagedHelmet.glb");
+	Gfx::Scene* scene = nullptr;
 	//gfx::Scene* scene = gfx::loadScene("E:\\IntelGraphicsSample\\Main.1_Sponza\\NewSponza_Main_glTF_002.gltf");
 	//gfx::Scene* scene = gfx::loadScene("models/Sponza/Sponza.gltf");
 
@@ -89,44 +89,69 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		Gfx::UpdateCamera(window, camera, deltaTime);
 
-		ImGui::Begin("Limbo", nullptr);
-		ImGui::Text("Selected device: %s", Gfx::GetGPUInfo().Name);
-		ImGui::Separator();
-		if (ImGui::CollapsingHeader("Camera Settings", ImGuiTreeNodeFlags_DefaultOpen))
+#pragma region UI
+		if (ImGui::BeginMainMenuBar())
 		{
-			ImGui::DragFloat("Speed", &camera.CameraSpeed, 0.1f, 0.1f);
+			if (ImGui::BeginMenu("File"))
+			{
+				if (ImGui::MenuItem("Load Scene"))
+				{
+					std::vector<wchar_t*> results;
+					if (Utils::OpenFileDialog(window, L"Choose scene to load", results, L"", { L"*.gltf" }))
+					{
+						char path[MAX_PATH];
+						Utils::StringConvert(results[0], path);
+						if (scene)
+							Gfx::DestroyScene(scene);
+						scene = Gfx::Scene::Load(path);
+					}
+				}
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Renderer"))
+			{
+				if (ImGui::BeginMenu("Camera"))
+				{
+					ImGui::DragFloat("Speed", &camera.CameraSpeed, 0.1f, 0.1f);
+					ImGui::EndMenu();
+				}
+				ImGui::Separator();
+				ImGui::Combo("Tonemap", &tonemapMode, tonemapModes, 3);
+				ImGui::EndMenu();
+			}
+
+			char menuText[256];
+			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps)", Gfx::GetGPUInfo().Name, deltaTime, 1000.0f / deltaTime);
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(menuText).x) - 10.0f);
+			ImGui::Text(menuText);
+
+			ImGui::EndMainMenuBar();
 		}
-		ImGui::Separator();
-		if (ImGui::CollapsingHeader("Profiling", ImGuiTreeNodeFlags_DefaultOpen))
+#pragma endregion UI
+
+		if (scene)
 		{
-			ImGui::Text("Frame Time: %.2f ms (%.2f fps)", deltaTime, 1000.0f / deltaTime);
+			Gfx::BeginEvent("Geometry Pass");
+			Gfx::BindShader(deferredShader);
+			Gfx::SetParameter(deferredShader, "viewProj", camera.ViewProj);
+			Gfx::SetParameter(deferredShader, "LinearWrap", linearWrapSampler);
+
+			scene->DrawMesh([&](const Gfx::Mesh& mesh)
+			{
+				const Gfx::MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
+
+				Gfx::SetParameter(deferredShader, "g_albedoTexture", material.Albedo);
+				Gfx::SetParameter(deferredShader, "g_roughnessMetalTexture", material.RoughnessMetal);
+				Gfx::SetParameter(deferredShader, "g_emissiveTexture", material.Emissive);
+				Gfx::SetParameter(deferredShader, "model", mesh.Transform);
+
+				Gfx::BindVertexBuffer(mesh.VertexBuffer);
+				Gfx::BindIndexBuffer(mesh.IndexBuffer);
+				Gfx::DrawIndexed((uint32)mesh.IndexCount);
+			});
+			Gfx::EndEvent();
 		}
-		ImGui::Separator();
-		if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			ImGui::Combo("Tonemap", &tonemapMode, tonemapModes, 3);
-		}
-		ImGui::End();
-
-		Gfx::BeginEvent("Geometry Pass");
-		Gfx::BindShader(deferredShader);
-		Gfx::SetParameter(deferredShader, "viewProj", camera.ViewProj);
-		Gfx::SetParameter(deferredShader, "LinearWrap", linearWrapSampler);
-
-		scene->DrawMesh([&](const Gfx::Mesh& mesh)
-		{
-			const Gfx::MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
-
-			Gfx::SetParameter(deferredShader, "g_albedoTexture", material.Albedo);
-			Gfx::SetParameter(deferredShader, "g_roughnessMetalTexture", material.RoughnessMetal);
-			Gfx::SetParameter(deferredShader, "g_emissiveTexture", material.Emissive);
-			Gfx::SetParameter(deferredShader, "model", mesh.Transform);
-
-			Gfx::BindVertexBuffer(mesh.VertexBuffer);
-			Gfx::BindIndexBuffer(mesh.IndexBuffer);
-			Gfx::DrawIndexed((uint32)mesh.IndexCount);
-		});
-		Gfx::EndEvent();
 
 		Gfx::BeginEvent("Scene Composite");
 		Gfx::BindShader(compositeShader);
@@ -142,7 +167,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Gfx::DestroyShader(deferredShader);
 	Gfx::DestroyShader(compositeShader);
 
-	Gfx::DestroyScene(scene);
+	if (scene)
+		Gfx::DestroyScene(scene);
 
 	Gfx::Shutdown();
 	Core::DestroyWindow(window);

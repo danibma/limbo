@@ -124,8 +124,7 @@ namespace limbo::Gfx
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
 			ImGuiIO& io = ImGui::GetIO();
-			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-			io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+			io.Fonts->AddFontFromFileTTF("fonts/NotoSans/NotoSans-Regular.ttf", 18.0f);
 
 			DescriptorHandle imguiDescriptor = m_Srvheap->AllocateHandle();
 
