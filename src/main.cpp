@@ -51,6 +51,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.MaxLOD = 1.0f
 		});
 
+	// Deferred shader
 	Gfx::Handle<Gfx::Shader> deferredShader = Gfx::CreateShader({
 		.ProgramName = "deferredshading",
 		.RTFormats = {
@@ -64,6 +65,37 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
+	// transform an equirectangular map into a cubemap
+	{
+		Gfx::Handle<Gfx::Texture> equirectangularTexture = Gfx::CreateTextureFromFile("assets/environment/a_rotes_rathaus_4k.hdr", "Equirectangular Texture");
+		Gfx::Handle<Gfx::Texture> environmentCubemap = Gfx::CreateTexture({
+			.Width = 1024,
+			.Height = 1024,
+			.DebugName = "Environment Cubemap",
+			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Format = Gfx::Format::RGBA16_SFLOAT,
+			.Type = Gfx::TextureType::TextureCube,
+		});
+
+		Gfx::Handle<Gfx::Shader> equirectToCubemap = Gfx::CreateShader({
+			.ProgramName = "sky",
+			.CsEntryPoint = "EquirectToCubemap",
+			.Type = Gfx::ShaderType::Compute
+		});
+
+		Gfx::BindShader(equirectToCubemap);
+		Gfx::SetParameter(equirectToCubemap, "g_EnvironmentEquirectangular", equirectangularTexture);
+		Gfx::SetParameter(equirectToCubemap, "g_OutEnvironmentCubemap", environmentCubemap);
+		Gfx::SetParameter(equirectToCubemap, "LinearWrap", linearWrapSampler);
+		Gfx::Dispatch(1024 / 32, 1024 / 32, 6);
+
+		Gfx::DestroyTexture(environmentCubemap);
+		Gfx::DestroyTexture(equirectangularTexture);
+		Gfx::DestroyShader(equirectToCubemap);
+	}
+	
+
+	// Composite shader
 	Gfx::Handle<Gfx::Shader> compositeShader = Gfx::CreateShader({
 		.ProgramName = "scenecomposite",
 		.Type = Gfx::ShaderType::Graphics
@@ -110,11 +142,15 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			{
 				if (ImGui::BeginMenu("Camera"))
 				{
+					ImGui::PushItemWidth(150.0f);
 					ImGui::DragFloat("Speed", &camera.CameraSpeed, 0.1f, 0.1f);
+					ImGui::PopItemWidth();
 					ImGui::EndMenu();
 				}
 				ImGui::Separator();
+				ImGui::PushItemWidth(200.0f);
 				ImGui::Combo("Tonemap", &tonemapMode, tonemapModes, 3);
+				ImGui::PopItemWidth();
 
 				if (ImGui::MenuItem("Take GPU Capture"))
 					Gfx::TakeGPUCapture();

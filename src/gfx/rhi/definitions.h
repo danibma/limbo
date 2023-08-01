@@ -96,6 +96,44 @@ namespace limbo::Gfx
 		}
 	}
 
+	inline uint8 D3DBytesPerChannel(Format format)
+	{
+		switch (format)
+		{
+		case Format::R8_UNORM:
+		case Format::R8_UINT:
+		case Format::RG8_UNORM:
+		case Format::RGBA8_UNORM:
+		case Format::BGRA8_UNORM:
+			return 1;
+		case Format::R16_UNORM:
+		case Format::R16_UINT:
+		case Format::R16_SFLOAT:
+		case Format::D16_UNORM:
+		case Format::RG16_SFLOAT:
+		case Format::RGBA16_UNORM:
+		case Format::RGBA16_SNORM:
+		case Format::RGBA16_SFLOAT:
+			return 2;
+		case Format::R32_UINT:
+		case Format::R32_SFLOAT:
+		case Format::RG32_SFLOAT:
+		case Format::RGB32_SFLOAT:
+		case Format::RGBA32_SFLOAT:
+		case Format::D32_SFLOAT:
+			return 4;
+		case Format::D32_SFLOAT_S8_UINT:
+		case Format::BC7_UNORM_BLOCK:
+		case Format::B10GR11_UFLOAT_PACK32:
+		case Format::A2RGB10_UNORM_PACK32:
+		case Format::ASTC_4x4_UNORM_BLOCK:
+		case Format::UNKNOWN:
+		default:
+			ensure(false);
+			return 0;
+		}
+	}
+
 	inline DXGI_FORMAT D3DFormat(Format format)
 	{
 		switch (format)

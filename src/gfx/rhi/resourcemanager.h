@@ -34,6 +34,7 @@ namespace limbo::Gfx
 
 		Handle<Buffer> CreateBuffer(const BufferSpec& spec);
 		Handle<Shader> CreateShader(const ShaderSpec& spec);
+		Handle<Texture> CreateTextureFromFile(const char* path, const char* debugName);
 		Handle<Texture> CreateTexture(const TextureSpec& spec);
 		Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
 		Handle<Sampler> CreateSampler(const D3D12_SAMPLER_DESC& spec);
@@ -72,6 +73,11 @@ namespace limbo::Gfx
 	inline Handle<Shader> CreateShader(const ShaderSpec& spec)
 	{
 		return ResourceManager::Ptr->CreateShader(spec);
+	}
+
+	inline Handle<Texture> CreateTextureFromFile(const char* path, const char* debugName)
+	{
+		return ResourceManager::Ptr->CreateTextureFromFile(path, debugName);
 	}
 
 	inline Handle<Texture> CreateTexture(const TextureSpec& spec)

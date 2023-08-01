@@ -132,7 +132,9 @@ namespace limbo::Gfx
 			IMGUI_CHECKVERSION();
 			ImGui::CreateContext();
 			ImGuiIO& io = ImGui::GetIO();
-			io.Fonts->AddFontFromFileTTF("fonts/NotoSans/NotoSans-Regular.ttf", 18.0f);
+			io.Fonts->AddFontFromFileTTF("assets/fonts/NotoSans/NotoSans-Regular.ttf", 18.0f);
+			ImGuiStyle& style = ImGui::GetStyle();
+			style.ItemInnerSpacing = ImVec2(10.0f, 0.0f);
 
 			DescriptorHandle imguiDescriptor = m_Srvheap->AllocateHandle();
 

@@ -3,7 +3,7 @@
 namespace limbo::Paths
 {
 	// Returns the path of a file without the file name
-	void GetPath(const char* path, char* result)
+	inline void GetPath(const char* path, char* result)
 	{
 		size_t strLength = strlen(path);
 		size_t finalIndex;
@@ -24,7 +24,7 @@ namespace limbo::Paths
 	}
 
 	// Returns the extension of a file, without filename
-	void GetExtension(const char* path, char* result, bool withDot = false)
+	inline void GetExtension(const char* path, char* result, bool withDot = false)
 	{
 		size_t strLength = strlen(path);
 		size_t dotIndex;
@@ -54,7 +54,7 @@ namespace limbo::Paths
 	}
 
 	// Returns the extension of a file
-	void GetFilename(const char* path, char* result, bool withExtension = false)
+	inline void GetFilename(const char* path, char* result, bool withExtension = false)
 	{
 		size_t strLength = strlen(path);
 		size_t startIndex;

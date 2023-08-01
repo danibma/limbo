@@ -3,10 +3,13 @@
 #include "device.h"
 #include "resourcemanager.h"
 #include "core/utils.h"
+#include "core/paths.h"
+
+#include <stb/stb_image.h>
 
 namespace limbo::Gfx
 {
-	Texture::Texture(const TextureSpec& spec)
+	void Texture::CreateResource(const TextureSpec& spec)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
@@ -20,7 +23,7 @@ namespace limbo::Gfx
 			.Alignment = 0,
 			.Width = spec.Width,
 			.Height = spec.Height,
-			.DepthOrArraySize = 1,
+			.DepthOrArraySize = spec.Type == TextureType::TextureCube ? 6u : 1u,
 			.MipLevels = 1,
 			.Format = D3DFormat(spec.Format),
 			.SampleDesc = {
@@ -53,17 +56,60 @@ namespace limbo::Gfx
 
 		InitialState = CurrentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
-													InitialState, 
-													clearValue,
-													IID_PPV_ARGS(&Resource)));
+			         InitialState, 
+			         clearValue,
+			         IID_PPV_ARGS(&Resource)));
+	}
 
-		InitResource(spec, device);
+	Texture::Texture(const TextureSpec& spec)
+	{
+		CreateResource(spec);
+		InitResource(spec);
+	}
+
+	Texture::Texture(const char* path, const char* debugName)
+	{
+		void* data;
+		int width, height, numChannels;
+		Format format;
+
+		char extension[16];
+		Paths::GetExtension(path, extension, true);
+
+		if (strcmp(extension, ".hdr") == 0)
+		{
+			data = stbi_loadf(path, &width, &height, &numChannels, 4);
+			FAILIF(!data);
+			format = Format::RGBA32_SFLOAT;
+		}
+		else
+		{
+			data = stbi_load(path, &width, &height, &numChannels, 4);
+			FAILIF(!data);
+			if (stbi_is_16_bit(path))
+				format = Format::RGBA16_UNORM;
+			else
+				format = Format::RGBA8_UNORM;
+		}
+
+		const TextureSpec spec = {
+			.Width = (uint32)width,
+			.Height = (uint32)height,
+			.DebugName = debugName,
+			.Format = format,
+			.Type = TextureType::Texture2D,
+			.InitialData = data,
+		};
+		CreateResource(spec);
+		InitResource(spec);
+
+		stbi_image_free(data);
 	}
 
 	Texture::Texture(ID3D12Resource* inResource, const TextureSpec& spec)
 		: Resource(inResource)
 	{
-		InitResource(spec, Device::Ptr);
+		InitResource(spec);
 	}
 
 	void Texture::CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
@@ -93,6 +139,16 @@ namespace limbo::Gfx
 			uavDesc.Texture3D.MipSlice = 0;
 			uavDesc.Texture3D.FirstWSlice = 0;
 			uavDesc.Texture3D.WSize = -1;
+		}
+		else if (spec.Type == TextureType::TextureCube)
+		{
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+			uavDesc.Texture2DArray = {
+				.MipSlice = 0,
+				.FirstArraySlice = 0,
+				.ArraySize = 6,
+				.PlaneSlice = 0
+			};
 		}
 
 		device->CreateUnorderedAccessView(Resource.Get(), nullptr, &uavDesc, SRVHandle.CpuHandle);
@@ -156,8 +212,9 @@ namespace limbo::Gfx
 		device->CreateDepthStencilView(Resource.Get(), &desc, BasicHandle.CpuHandle);
 	}
 
-	void Texture::InitResource(const TextureSpec& spec, Device* device)
+	void Texture::InitResource(const TextureSpec& spec)
 	{
+		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
 
 		DXGI_FORMAT srvformat = D3DFormat(spec.Format);
@@ -199,19 +256,14 @@ namespace limbo::Gfx
 
 		if (spec.InitialData)
 		{
-			D3D12_RESOURCE_DESC desc = Resource->GetDesc();
-
-			uint64 size;
-			d3ddevice->GetCopyableFootprints(&desc, 0, 1, 0, nullptr, nullptr, nullptr, &size);
-
-			std::vector<D3D12_SUBRESOURCE_DATA> subresourceData;
-			subresourceData.emplace_back(spec.InitialData, spec.Width * 4, spec.Width * spec.Height * 4);
+			uint8 bytesPerChannel = D3DBytesPerChannel(spec.Format);
+			uint8 numChannels = 4;
 
 			std::string uploadName = std::string(spec.DebugName) + " (Upload Buffer)";
-			uint32 rowPitch = Math::Align(spec.Width * 4, (uint32)D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+			uint32 rowPitch = Math::Align(spec.Width * numChannels, (uint32)D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
 			Handle<Buffer> uploadBuffer = CreateBuffer({
 				.DebugName = uploadName.c_str(),
-				.ByteSize = rowPitch * spec.Height,
+				.ByteSize = rowPitch * spec.Height * bytesPerChannel,
 				.Usage = BufferUsage::Upload,
 				.InitialData = spec.InitialData
 			});

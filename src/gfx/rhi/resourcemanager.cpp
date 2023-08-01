@@ -1,5 +1,6 @@
 ﻿#include "stdafx.h"
 #include "resourcemanager.h"
+
 #include "gfx/gfx.h"
 
 namespace limbo::Gfx
@@ -52,6 +53,11 @@ namespace limbo::Gfx
 	Handle<Shader> ResourceManager::CreateShader(const ShaderSpec& spec)
 	{
 		return m_Shaders.AllocateHandle(spec);
+	}
+
+	Handle<Texture> ResourceManager::CreateTextureFromFile(const char* path, const char* debugName)
+	{
+		return m_Textures.AllocateHandle(path, debugName);
 	}
 
 	Handle<Texture> ResourceManager::CreateTexture(const TextureSpec& spec)

@@ -32,6 +32,7 @@ namespace limbo::Gfx
 	public:
 		Texture() = default;
 		Texture(const TextureSpec& spec);
+		Texture(const char* path, const char* debugName);
 		Texture(ID3D12Resource* inResource, const TextureSpec& spec);
 
 		~Texture();
@@ -42,6 +43,7 @@ namespace limbo::Gfx
 		void CreateRtv(const TextureSpec& spec, ID3D12Device* device);
 		void CreateDsv(const TextureSpec& spec, ID3D12Device* device);
 
-		void InitResource(const TextureSpec& spec, class Device* device);
+		void CreateResource(const TextureSpec& spec);
+		void InitResource(const TextureSpec& spec);
 	};
 }
