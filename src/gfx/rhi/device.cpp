@@ -300,12 +300,17 @@ namespace limbo::Gfx
 					TransitionResource(pBoundShader->RenderTargets[i], D3D12_RESOURCE_STATE_RENDER_TARGET);
 				SubmitResourceBarriers();
 
-				Texture* depthBackbuffer = rm->GetTexture(pBoundShader->DepthTarget);
-				FAILIF(!depthBackbuffer);
+				D3D12_CPU_DESCRIPTOR_HANDLE* dsvhandle = nullptr;
 
+				if (pBoundShader->DepthTarget.IsValid())
+				{
+					Texture* depthBackbuffer = rm->GetTexture(pBoundShader->DepthTarget);
+					FAILIF(!depthBackbuffer);
+					dsvhandle = &depthBackbuffer->BasicHandle.CpuHandle;
+					m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+				}
+				
 				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-				m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
 				D3D12_CPU_DESCRIPTOR_HANDLE rtHandles[8];
 				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
 				{
@@ -316,7 +321,7 @@ namespace limbo::Gfx
 					rtHandles[i] = rt->BasicHandle.CpuHandle;
 				}
 
-				m_CommandList->OMSetRenderTargets(pBoundShader->RTCount, rtHandles, false, &depthBackbuffer->BasicHandle.CpuHandle);
+				m_CommandList->OMSetRenderTargets(pBoundShader->RTCount, rtHandles, false, dsvhandle);
 			}
 
 			D3D12_VIEWPORT viewport = {
