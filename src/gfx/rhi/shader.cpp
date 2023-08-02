@@ -15,6 +15,7 @@
 namespace limbo::Gfx
 {
 	Shader::Shader(const ShaderSpec& spec)
+		: m_Name(spec.ProgramName)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
@@ -61,7 +62,7 @@ namespace limbo::Gfx
 			{
 				if (!parameter.Data)
 				{
-					LB_WARN("Shader parameter at index %d has no value!", parameter.RPIndex);
+					LB_WARN("'%s': Shader root parameter at index %d of ParameterType::%s has no value!", m_Name.data(), parameter.RPIndex, ParameterTypeToStr(parameter.Type).data());
 					continue;
 				}
 
@@ -71,7 +72,7 @@ namespace limbo::Gfx
 			{
 				if (!parameter.Descriptor.ptr)
 				{
-					LB_WARN("Shader parameter at index %d has no value!", parameter.RPIndex);
+					LB_WARN("'%s': Shader root parameter at index %d of ParameterType::%s has no value!", m_Name.data(), parameter.RPIndex, ParameterTypeToStr(parameter.Type).data());
 					continue;
 				}
 
@@ -519,6 +520,19 @@ namespace limbo::Gfx
 				.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
 				.InstanceDataStepRate = 0
 			};
+		}
+	}
+
+	std::string_view Shader::ParameterTypeToStr(ParameterType type)
+	{
+		switch (type)
+		{
+		case ParameterType::SRV: return "SRV";
+		case ParameterType::UAV: return "UAV";
+		case ParameterType::Samplers: return "Samplers";
+		case ParameterType::Constants: return "Constants";
+		case ParameterType::MAX:
+		default: return "";
 		}
 	}
 }

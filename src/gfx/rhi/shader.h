@@ -73,6 +73,8 @@ namespace limbo::Gfx
 		using TParameterMap = std::unordered_map<uint32, ParameterInfo>;
 		using InputLayout = std::vector<D3D12_INPUT_ELEMENT_DESC>;
 
+		std::string							m_Name;
+
 	public:
 		ComPtr<ID3D12PipelineState>			PipelineState;
 		ComPtr<ID3D12RootSignature>			RootSignature;
@@ -103,5 +105,7 @@ namespace limbo::Gfx
 		void CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, const SC::Kernel* kernels, uint32 kernelsCount);
 		void CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
 		void CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec);
+
+		std::string_view ParameterTypeToStr(ParameterType type);
 	};
 }
