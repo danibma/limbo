@@ -101,11 +101,30 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		skyboxShader = Gfx::CreateShader({
 			.ProgramName = "sky",
 			.RTFormats = {
-				{ Gfx::Format::RGBA8_UNORM, "Skybox RT" }
+				{ Gfx::Format::RGBA8_UNORM, "PBR RT" }
 			},
+			.DepthFormat = { Gfx::Format::D32_SFLOAT, "PBR Depth" },
 			.Type = Gfx::ShaderType::Graphics
 		});
 	}
+
+	// PBR
+	Gfx::Handle<Gfx::Shader> pbrShader = Gfx::CreateShader({
+		.ProgramName = "pbrlighting",
+		.RTFormats = {
+			{
+				.RTFormat = Gfx::Format::RGBA8_UNORM,
+				.RTTexture = Gfx::GetShaderRT(skyboxShader, 0),
+				.LoadRenderPassOp = Gfx::RenderPassOp::Load
+			}
+		},
+		.DepthFormat = {
+			.RTFormat = Gfx::Format::D32_SFLOAT,
+			.RTTexture = Gfx::GetShaderDepthTarget(skyboxShader),
+			.LoadRenderPassOp = Gfx::RenderPassOp::Load
+		},
+		.Type = Gfx::ShaderType::Graphics
+	});
 
 	// Composite shader
 	Gfx::Handle<Gfx::Shader> compositeShader = Gfx::CreateShader({
@@ -215,10 +234,17 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		});
 		Gfx::EndEvent();
 
+		Gfx::BeginEvent("PBR Lighting");
+		Gfx::BindShader(pbrShader);
+		Gfx::SetParameter(pbrShader, "LinearWrap", linearWrapSampler);
+		Gfx::SetParameter(pbrShader, "g_Albedo", deferredShader, 0);
+		Gfx::Draw(6);
+		Gfx::EndEvent();
+
 		Gfx::BeginEvent("Scene Composite");
 		Gfx::BindShader(compositeShader);
 		Gfx::SetParameter(compositeShader, "g_TonemapMode", tonemapMode);
-		Gfx::SetParameter(compositeShader, "g_sceneTexture", skyboxShader, 0);
+		Gfx::SetParameter(compositeShader, "g_sceneTexture", pbrShader, 0);
 		Gfx::SetParameter(compositeShader, "LinearWrap", linearWrapSampler);
 		Gfx::Draw(6);
 		Gfx::EndEvent();
@@ -228,6 +254,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 	Gfx::DestroyTexture(environmentCubemap);
 
+	Gfx::DestroyShader(pbrShader);
 	Gfx::DestroyShader(skyboxShader);
 	Gfx::DestroyShader(deferredShader);
 	Gfx::DestroyShader(compositeShader);

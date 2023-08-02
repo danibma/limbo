@@ -31,10 +31,13 @@ namespace limbo::Gfx
 	Shader::~Shader()
 	{
 		for (uint8 i = 0; i < RTCount; ++i)
-			DestroyTexture(RenderTargets[i]);
+		{
+			if (RenderTargets[i].bIsExternal) continue;
+			DestroyTexture(RenderTargets[i].Texture);
+		}
 
-		if (DepthTarget.IsValid())
-			DestroyTexture(DepthTarget);
+		if (DepthTarget.Texture.IsValid() && !DepthTarget.bIsExternal)
+			DestroyTexture(DepthTarget.Texture);
 	}
 
 	void Shader::SetComputeRootParameters(ID3D12GraphicsCommandList* cmd)
@@ -395,10 +398,31 @@ namespace limbo::Gfx
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
 
-		RTCount = 0;
-		for (uint8 i = 0; spec.RTFormats[i].RTFormat != Format::UNKNOWN; ++i)
-			RTCount++;
+		auto createRenderTarget = [this, &desc, &spec](int index)
+		{
+			std::string debugName;
+			if (spec.RTFormats[index].DebugName[0] != '\0')
+				debugName = std::format("{} - {}", spec.ProgramName, spec.RTFormats[index].DebugName);
+			else
+				debugName = std::format("{} RT {}", spec.ProgramName, index);
 
+			return CreateTexture({
+				.Width = Device::Ptr->GetBackbufferWidth(),
+				.Height = Device::Ptr->GetBackbufferHeight(),
+				.DebugName = debugName.c_str(),
+				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+				.ClearValue = {
+					.Format = D3DFormat(spec.RTFormats[index].RTFormat),
+					.Color = { 0.0f, 0.0f, 0.0f, 0.0f }
+				},
+				.Format = spec.RTFormats[index].RTFormat,
+				.Type = TextureType::Texture2D,
+			});
+		};
+
+		RTCount = 0;
+		for (uint8 i = 0; spec.RTFormats[i].RTFormat != Format::UNKNOWN || spec.RTFormats[i].RTTexture.IsValid(); ++i)
+			RTCount++;
 		if (RTCount <= 0)
 		{
 			desc.RTVFormats[0]		= D3DFormat(Device::Ptr->GetSwapchainFormat());
@@ -413,29 +437,27 @@ namespace limbo::Gfx
 			for (uint8 i = 0; i < RTCount; ++i)
 			{
 				desc.RTVFormats[i] = D3DFormat(spec.RTFormats[i].RTFormat);
-
-				std::string debugName;
-				if (spec.RTFormats[i].DebugName[0] != '\0')
-					debugName = std::format("{} - {}", spec.ProgramName, spec.RTFormats[i].DebugName);
+				if (spec.RTFormats[i].RTTexture.IsValid())
+				{
+					RenderTargets[i] = {
+						.Texture = spec.RTFormats[i].RTTexture,
+						.LoadRenderPassOp = spec.RTFormats[i].LoadRenderPassOp,
+						.bIsExternal = true
+					};
+				}
 				else
-					debugName = std::format("{} RT {}", spec.ProgramName, i);
-
-				RenderTargets[i] = CreateTexture({
-					.Width = Device::Ptr->GetBackbufferWidth(),
-					.Height = Device::Ptr->GetBackbufferHeight(),
-					.DebugName = debugName.c_str(),
-					.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
-					.ClearValue = {
-						.Format = D3DFormat(spec.RTFormats[i].RTFormat),
-						.Color = { 0.0f, 0.0f, 0.0f, 0.0f }
-					},
-					.Format = spec.RTFormats[i].RTFormat,
-					.Type = TextureType::Texture2D,
-				});
+				{
+					RenderTargets[i] = {
+						.Texture = createRenderTarget(i),
+						.LoadRenderPassOp = spec.RTFormats[i].LoadRenderPassOp,
+						.bIsExternal = false
+					};
+					
+				}
 			}
 			desc.NumRenderTargets = RTCount;
 
-			if (spec.DepthFormat.RTFormat == Format::UNKNOWN)
+			if (spec.DepthFormat.RTFormat == Format::UNKNOWN && !spec.DepthFormat.RTTexture.IsValid())
 			{
 				desc.DepthStencilState.DepthEnable = false;
 			}
@@ -443,27 +465,42 @@ namespace limbo::Gfx
 			{
 				desc.DSVFormat = D3DFormat(spec.DepthFormat.RTFormat);
 
-				std::string debugName;
-				if (spec.DepthFormat.DebugName[0] != '\0')
-					debugName = std::format("{} - {}", spec.ProgramName, spec.DepthFormat.DebugName);
+				if (spec.DepthFormat.RTTexture.IsValid())
+				{
+					DepthTarget = {
+						.Texture = spec.DepthFormat.RTTexture,
+						.LoadRenderPassOp = spec.DepthFormat.LoadRenderPassOp,
+						.bIsExternal = true
+					};
+				}
 				else
-					debugName = std::format("{} DSV", spec.ProgramName);
+				{
+					std::string debugName;
+					if (spec.DepthFormat.DebugName[0] != '\0')
+						debugName = std::format("{} - {}", spec.ProgramName, spec.DepthFormat.DebugName);
+					else
+						debugName = std::format("{} DSV", spec.ProgramName);
 
-				DepthTarget = CreateTexture({
-					.Width = Device::Ptr->GetBackbufferWidth(),
-					.Height = Device::Ptr->GetBackbufferHeight(),
-					.DebugName = debugName.c_str(),
-					.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
-					.ClearValue = {
-						.Format = D3DFormat(spec.DepthFormat.RTFormat),
-						.DepthStencil = {
-							.Depth = 1.0f,
-							.Stencil = 0
-						}
-					},
-					.Format = spec.DepthFormat.RTFormat,
-					.Type = TextureType::Texture2D,
-				});
+					DepthTarget = {
+						.Texture = CreateTexture({
+							.Width = Device::Ptr->GetBackbufferWidth(),
+							.Height = Device::Ptr->GetBackbufferHeight(),
+							.DebugName = debugName.c_str(),
+							.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+							.ClearValue = {
+								.Format = D3DFormat(spec.DepthFormat.RTFormat),
+								.DepthStencil = {
+									.Depth = 1.0f,
+									.Stencil = 0
+								}
+							},
+							.Format = spec.DepthFormat.RTFormat,
+							.Type = TextureType::Texture2D,
+						}),
+						.LoadRenderPassOp = RenderPassOp::Clear,
+						.bIsExternal = false
+					};
+				}
 			}
 		}
 

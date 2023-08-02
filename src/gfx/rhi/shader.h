@@ -17,10 +17,14 @@ namespace limbo::Gfx
 	struct ShaderSpec
 	{
 	public:
-		struct RenderTarget
+		struct RenderTargetDesc
 		{
-			Format			RTFormat;
-			const char*		DebugName = "";
+			Format					RTFormat;
+			const char*				DebugName = ""; // If the RTTexture is set, this does nothing
+
+			Handle<class Texture>	RTTexture;
+
+			RenderPassOp			LoadRenderPassOp = RenderPassOp::Clear;
 		};
 
 	public:
@@ -29,8 +33,8 @@ namespace limbo::Gfx
 		const char*						PSEntryPoint = "PSMain";
 		const char*						CsEntryPoint = "CSMain";
 
-		RenderTarget					RTFormats[8];
-		RenderTarget					DepthFormat = { Format::UNKNOWN };
+		RenderTargetDesc				RTFormats[8];
+		RenderTargetDesc				DepthFormat = { Format::UNKNOWN };
 
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
@@ -46,6 +50,13 @@ namespace limbo::Gfx
 			Samplers,
 			Constants,
 			MAX
+		};
+
+		struct RenderTarget
+		{
+			Handle<class Texture>	Texture;
+			RenderPassOp			LoadRenderPassOp;
+			bool					bIsExternal = false; // if the render target comes from another shader, this is true
 		};
 
 		struct ParameterInfo
@@ -83,8 +94,8 @@ namespace limbo::Gfx
 		bool								UseSwapchainRT;
 
 		uint8								RTCount;
-		Handle<class Texture>				RenderTargets[8];
-		Handle<class Texture>				DepthTarget;
+		RenderTarget						RenderTargets[8];
+		RenderTarget						DepthTarget;
 
 	public:
 		Shader() = default;

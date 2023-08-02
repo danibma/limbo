@@ -43,6 +43,12 @@ namespace limbo::Gfx
 		Compute
 	};
 
+	enum class RenderPassOp : uint8
+	{
+		Clear,
+		Load
+	};
+
 	enum class Format : uint8
 	{
 		UNKNOWN,

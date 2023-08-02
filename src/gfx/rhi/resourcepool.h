@@ -13,7 +13,7 @@ namespace limbo::Gfx
 	{
 	public:
 		Handle() : m_Index(0xFFFF), m_Generation(0) {}
-		bool IsValid() { return m_Index != 0xFFFF; }
+		bool IsValid() const { return m_Index != 0xFFFF; }
 
 		bool operator!=(const Handle& other)
 		{
@@ -57,9 +57,9 @@ namespace limbo::Gfx
 
 		void DeleteHandle(Handle<HandleType> handle)
 		{
+			ensure(handle.IsValid());
 			m_FreeSlots.push(handle.m_Index);
 			ensure(m_FreeSlots.size() <= MAX_SIZE);
-			ensure(handle.IsValid());
 			m_Objects[handle.m_Index].Data->~HandleType();
 			++m_Objects[handle.m_Index].Generation;
 		}

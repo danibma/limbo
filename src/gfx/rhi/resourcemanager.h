@@ -115,6 +115,27 @@ namespace limbo::Gfx
 		ResourceManager::Ptr->DestroySampler(sampler);
 	}
 
+	inline Handle<Texture> GetShaderRT(Handle<Shader> shader, uint8 rtIndex)
+	{
+		Shader* renderTargetShader = ResourceManager::Ptr->GetShader(shader);
+		ensure(renderTargetShader);
+
+		if (rtIndex >= renderTargetShader->RTCount)
+		{
+			LB_WARN("Failed to get render target index '%d'!", rtIndex);
+			return Handle<Texture>();
+		}
+
+		return renderTargetShader->RenderTargets[rtIndex].Texture;
+	}
+
+	inline Handle<Texture> GetShaderDepthTarget(Handle<Shader> shader)
+	{
+		Shader* renderTargetShader = ResourceManager::Ptr->GetShader(shader);
+		ensure(renderTargetShader);
+		return renderTargetShader->DepthTarget.Texture;
+	}
+
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture)
 	{
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
@@ -141,16 +162,8 @@ namespace limbo::Gfx
 	{
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
-		Shader* renderTargetShader = ResourceManager::Ptr->GetShader(rtShader);
-		FAILIF(!renderTargetShader);
 
-		if (rtIndex >= renderTargetShader->RTCount)
-		{
-			LB_WARN("Failed to set parameter '%s' because the render target index '%d' is not valid!", parameterName, rtIndex);
-			return;
-		}
-
-		s->SetTexture(parameterName, renderTargetShader->RenderTargets[rtIndex]);
+		s->SetTexture(parameterName, GetShaderRT(rtShader, rtIndex));
 	}
 
 	template<typename T>
