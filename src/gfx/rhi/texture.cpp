@@ -151,7 +151,7 @@ namespace limbo::Gfx
 			};
 		}
 
-		device->CreateUnorderedAccessView(Resource.Get(), nullptr, &uavDesc, SRVHandle.CpuHandle);
+		device->CreateUnorderedAccessView(Resource.Get(), nullptr, &uavDesc, BasicHandle.CpuHandle);
 	}
 
 	void Texture::CreateRtv(const TextureSpec& spec, ID3D12Device* device)
@@ -243,15 +243,16 @@ namespace limbo::Gfx
 				break;
 			}
 		}
+		else if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+		{
+			BasicHandle = device->AllocateHandle(DescriptorHeapType::SRV);
+			CreateUav(spec, d3ddevice, srvformat);
+		}
 
 		if (spec.bCreateSrv)
 		{
 			SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);
-
-			if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-				CreateUav(spec, d3ddevice, srvformat);
-			else
-				CreateSrv(spec, d3ddevice, srvformat);
+			CreateSrv(spec, d3ddevice, srvformat);
 		}
 
 		if (spec.InitialData)
@@ -318,6 +319,15 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 			srvDesc.Texture3D = {
+				.MostDetailedMip = 0,
+				.MipLevels = 1,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (spec.Type == TextureType::TextureCube)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			srvDesc.TextureCube = {
 				.MostDetailedMip = 0,
 				.MipLevels = 1,
 				.ResourceMinLODClamp = 0.0f

@@ -66,9 +66,10 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	});
 
 	// transform an equirectangular map into a cubemap
+	Gfx::Handle<Gfx::Texture> environmentCubemap;
 	{
 		Gfx::Handle<Gfx::Texture> equirectangularTexture = Gfx::CreateTextureFromFile("assets/environment/a_rotes_rathaus_4k.hdr", "Equirectangular Texture");
-		Gfx::Handle<Gfx::Texture> environmentCubemap = Gfx::CreateTexture({
+		environmentCubemap = Gfx::CreateTexture({
 			.Width = 1024,
 			.Height = 1024,
 			.DebugName = "Environment Cubemap",
@@ -89,11 +90,22 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::SetParameter(equirectToCubemap, "LinearWrap", linearWrapSampler);
 		Gfx::Dispatch(1024 / 32, 1024 / 32, 6);
 
-		Gfx::DestroyTexture(environmentCubemap);
 		Gfx::DestroyTexture(equirectangularTexture);
 		Gfx::DestroyShader(equirectToCubemap);
 	}
-	
+
+	// Skybox
+	Gfx::Handle<Gfx::Shader> skyboxShader;
+	Gfx::Scene* skyboxCube = Gfx::Scene::Load("assets/models/skybox.glb");
+	{
+		skyboxShader = Gfx::CreateShader({
+			.ProgramName = "sky",
+			.RTFormats = {
+				{ Gfx::Format::RGBA8_UNORM, "Skybox RT" }
+			},
+			.Type = Gfx::ShaderType::Graphics
+		});
+	}
 
 	// Composite shader
 	Gfx::Handle<Gfx::Shader> compositeShader = Gfx::CreateShader({
@@ -189,10 +201,24 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		}
 		Gfx::EndEvent();
 
+		Gfx::BeginEvent("Render Skybox");
+		Gfx::BindShader(skyboxShader);
+		Gfx::SetParameter(skyboxShader, "g_EnvironmentCube", environmentCubemap);
+		Gfx::SetParameter(skyboxShader, "view", camera.View);
+		Gfx::SetParameter(skyboxShader, "proj", camera.Proj);
+		Gfx::SetParameter(skyboxShader, "LinearWrap", linearWrapSampler);
+		skyboxCube->DrawMesh([&](const Gfx::Mesh& mesh)
+		{
+			Gfx::BindVertexBuffer(mesh.VertexBuffer);
+			Gfx::BindIndexBuffer(mesh.IndexBuffer);
+			Gfx::DrawIndexed((uint32)mesh.IndexCount);
+		});
+		Gfx::EndEvent();
+
 		Gfx::BeginEvent("Scene Composite");
 		Gfx::BindShader(compositeShader);
 		Gfx::SetParameter(compositeShader, "g_TonemapMode", tonemapMode);
-		Gfx::SetParameter(compositeShader, "g_sceneTexture", deferredShader, 0);
+		Gfx::SetParameter(compositeShader, "g_sceneTexture", skyboxShader, 0);
 		Gfx::SetParameter(compositeShader, "LinearWrap", linearWrapSampler);
 		Gfx::Draw(6);
 		Gfx::EndEvent();
@@ -200,9 +226,13 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::Present();
 	}
 
+	Gfx::DestroyTexture(environmentCubemap);
+
+	Gfx::DestroyShader(skyboxShader);
 	Gfx::DestroyShader(deferredShader);
 	Gfx::DestroyShader(compositeShader);
 
+	Gfx::DestroyScene(skyboxCube);
 	for (Gfx::Scene* scene : scenes)
 		Gfx::DestroyScene(scene);
 

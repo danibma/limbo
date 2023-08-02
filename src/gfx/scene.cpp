@@ -168,16 +168,19 @@ namespace limbo::Gfx
 
 		// turn the attribute streams into vertex data
 		size_t vertexCount = primitiveData.positionStream.size();
-		ensure(primitiveData.texcoordsStream.size() == vertexCount);
 
 		std::vector<MeshVertex> vertices;
 		vertices.resize(vertexCount);
 		for (size_t attrIdx = 0; attrIdx < vertexCount; ++attrIdx)
 		{
 			MeshVertex& vertex = vertices[attrIdx];
-			vertex.Position = primitiveData.positionStream[attrIdx];
-			vertex.Normal	= primitiveData.normalsStream[attrIdx];
-			vertex.UV		= primitiveData.texcoordsStream[attrIdx];
+
+			if (attrIdx < primitiveData.positionStream.size())
+				vertex.Position = primitiveData.positionStream[attrIdx];
+			if (attrIdx < primitiveData.normalsStream.size())
+				vertex.Normal	= primitiveData.normalsStream[attrIdx];
+			if (attrIdx < primitiveData.texcoordsStream.size())
+				vertex.UV = primitiveData.texcoordsStream[attrIdx];
 		}
 
 		// process indices
