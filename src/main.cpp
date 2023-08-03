@@ -65,33 +65,129 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
-	// transform an equirectangular map into a cubemap
+	// IBL stuff
 	Gfx::Handle<Gfx::Texture> environmentCubemap;
+	Gfx::Handle<Gfx::Texture> irradianceMap;
+	Gfx::Handle<Gfx::Texture> prefilterMap;
+	Gfx::Handle<Gfx::Texture> brdfLUTMap;
 	{
-		Gfx::Handle<Gfx::Texture> equirectangularTexture = Gfx::CreateTextureFromFile("assets/environment/a_rotes_rathaus_4k.hdr", "Equirectangular Texture");
+		uint2 equirectangularTextureSize = { 1024, 1024 };
 		environmentCubemap = Gfx::CreateTexture({
-			.Width = 1024,
-			.Height = 1024,
+			.Width = equirectangularTextureSize.x,
+			.Height = equirectangularTextureSize.y,
 			.DebugName = "Environment Cubemap",
 			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
 			.Format = Gfx::Format::RGBA16_SFLOAT,
 			.Type = Gfx::TextureType::TextureCube,
 		});
 
-		Gfx::Handle<Gfx::Shader> equirectToCubemap = Gfx::CreateShader({
-			.ProgramName = "sky",
-			.CsEntryPoint = "EquirectToCubemap",
-			.Type = Gfx::ShaderType::Compute
-		});
+		// transform an equirectangular map into a cubemap
+		{
+			Gfx::Handle<Gfx::Texture> equirectangularTexture = Gfx::CreateTextureFromFile("assets/environment/a_rotes_rathaus_4k.hdr", "Equirectangular Texture");
+			Gfx::Handle<Gfx::Shader> equirectToCubemap = Gfx::CreateShader({
+				.ProgramName = "ibl",
+				.CsEntryPoint = "EquirectToCubemap",
+				.Type = Gfx::ShaderType::Compute
+			});
 
-		Gfx::BindShader(equirectToCubemap);
-		Gfx::SetParameter(equirectToCubemap, "g_EnvironmentEquirectangular", equirectangularTexture);
-		Gfx::SetParameter(equirectToCubemap, "g_OutEnvironmentCubemap", environmentCubemap);
-		Gfx::SetParameter(equirectToCubemap, "LinearWrap", linearWrapSampler);
-		Gfx::Dispatch(1024 / 32, 1024 / 32, 6);
+			Gfx::BindShader(equirectToCubemap);
+			Gfx::SetParameter(equirectToCubemap, "g_EnvironmentEquirectangular", equirectangularTexture);
+			Gfx::SetParameter(equirectToCubemap, "g_OutEnvironmentCubemap", environmentCubemap);
+			Gfx::SetParameter(equirectToCubemap, "LinearWrap", linearWrapSampler);
+			Gfx::Dispatch(equirectangularTextureSize.x / 32, equirectangularTextureSize.y / 32, 6);
 
-		Gfx::DestroyTexture(equirectangularTexture);
-		Gfx::DestroyShader(equirectToCubemap);
+			Gfx::DestroyShader(equirectToCubemap);
+			Gfx::DestroyTexture(equirectangularTexture);
+		}
+
+		// irradiance map
+		{
+			uint2 irradianceSize = { 1024, 1024 };
+			irradianceMap = Gfx::CreateTexture({
+				.Width = irradianceSize.x,
+				.Height = irradianceSize.y,
+				.DebugName = "Irradiance Map",
+				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				.Format = Gfx::Format::RGBA16_SFLOAT,
+				.Type = Gfx::TextureType::TextureCube,
+			});
+
+			Gfx::Handle<Gfx::Shader> irradianceShader = Gfx::CreateShader({
+				.ProgramName = "ibl",
+				.CsEntryPoint = "DrawIrradianceMap",
+				.Type = Gfx::ShaderType::Compute
+			});
+
+			Gfx::BindShader(irradianceShader);
+			Gfx::SetParameter(irradianceShader, "g_EnvironmentCubemap", environmentCubemap);
+			Gfx::SetParameter(irradianceShader, "g_IrradianceMap", irradianceMap);
+			Gfx::SetParameter(irradianceShader, "LinearWrap", linearWrapSampler);
+			Gfx::Dispatch(irradianceSize.x / 32, irradianceSize.y / 32, 6);
+
+			Gfx::DestroyShader(irradianceShader);
+		}
+
+		// Pre filter env map
+		{
+			uint2 prefilterSize			= { 1024, 1024 };
+			uint16 prefilterMipLevels	= 5;
+
+			prefilterMap = Gfx::CreateTexture({
+				.Width = prefilterSize.x,
+				.Height = prefilterSize.y,
+				.MipLevels = prefilterMipLevels,
+				.DebugName = "PreFilter Map",
+				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				.Format = Gfx::Format::RGBA16_SFLOAT,
+				.Type = Gfx::TextureType::TextureCube,
+			});
+
+			Gfx::Handle<Gfx::Shader> prefilterShader = Gfx::CreateShader({
+				.ProgramName = "ibl",
+				.CsEntryPoint = "PreFilterEnvMap",
+				.Type = Gfx::ShaderType::Compute
+			});
+
+			Gfx::BindShader(prefilterShader);
+			Gfx::SetParameter(prefilterShader, "g_EnvironmentCubemap", environmentCubemap);
+			Gfx::SetParameter(prefilterShader, "LinearWrap", linearWrapSampler);
+
+			const float deltaRoughness = 1.0f / glm::max(float(prefilterMipLevels - 1), 1.0f);
+			for (uint32_t level = 0, size = prefilterSize.x; level < prefilterMipLevels; ++level, size /= 2)
+			{
+				const uint32_t numGroups = glm::max<uint32_t>(1, size / 32);
+
+				Gfx::SetParameter(prefilterShader, "g_PreFilteredMap", prefilterMap, level);
+				Gfx::SetParameter(prefilterShader, "roughness", level * deltaRoughness);
+				Gfx::Dispatch(numGroups, numGroups, 6);
+			}
+
+			Gfx::DestroyShader(prefilterShader);
+		}
+
+		// Compute BRDF LUT map
+		{
+			uint2 brdfLUTMapSize = { 256, 256 };
+			brdfLUTMap = Gfx::CreateTexture({
+				.Width = brdfLUTMapSize.x,
+				.Height = brdfLUTMapSize.y,
+				.DebugName = "BRDF LUT Map",
+				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				.Format = Gfx::Format::RG16_SFLOAT,
+				.Type = Gfx::TextureType::Texture2D,
+			});
+
+			Gfx::Handle<Gfx::Shader> brdfLUTShader = Gfx::CreateShader({
+				.ProgramName = "ibl",
+				.CsEntryPoint = "ComputeBRDFLUT",
+				.Type = Gfx::ShaderType::Compute
+				});
+			Gfx::BindShader(brdfLUTShader);
+			Gfx::SetParameter(brdfLUTShader, "LUT", brdfLUTMap);
+			Gfx::Dispatch(brdfLUTMapSize.x / 32, brdfLUTMapSize.y / 32, 6);
+
+			Gfx::DestroyShader(brdfLUTShader);
+		}
 	}
 
 	// Skybox
@@ -253,6 +349,9 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	}
 
 	Gfx::DestroyTexture(environmentCubemap);
+	Gfx::DestroyTexture(irradianceMap);
+	Gfx::DestroyTexture(prefilterMap);
+	Gfx::DestroyTexture(brdfLUTMap);
 
 	Gfx::DestroyShader(pbrShader);
 	Gfx::DestroyShader(skyboxShader);

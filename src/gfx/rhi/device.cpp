@@ -306,9 +306,9 @@ namespace limbo::Gfx
 				{
 					Texture* depthBackbuffer = rm->GetTexture(pBoundShader->DepthTarget.Texture);
 					FAILIF(!depthBackbuffer);
-					dsvhandle = &depthBackbuffer->BasicHandle.CpuHandle;
+					dsvhandle = &depthBackbuffer->BasicHandle[0].CpuHandle;
 					if (pBoundShader->DepthTarget.LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+						m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 				}
 				
 				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -319,9 +319,9 @@ namespace limbo::Gfx
 					FAILIF(!rt);
 
 					if (pBoundShader->RenderTargets[i].LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearRenderTargetView(rt->BasicHandle.CpuHandle, clearColor, 0, nullptr);
+						m_CommandList->ClearRenderTargetView(rt->BasicHandle[0].CpuHandle, clearColor, 0, nullptr);
 
-					rtHandles[i] = rt->BasicHandle.CpuHandle;
+					rtHandles[i] = rt->BasicHandle[0].CpuHandle;
 				}
 
 				m_CommandList->OMSetRenderTargets(pBoundShader->RTCount, rtHandles, false, dsvhandle);
@@ -382,11 +382,11 @@ namespace limbo::Gfx
 		Texture* depthBackbuffer = rm->GetTexture(depthBackBufferHandle);
 		FAILIF(!depthBackbuffer);
 
-		m_CommandList->OMSetRenderTargets(1, &backbuffer->BasicHandle.CpuHandle, false, &depthBackbuffer->BasicHandle.CpuHandle);
+		m_CommandList->OMSetRenderTargets(1, &backbuffer->BasicHandle[0].CpuHandle, false, &depthBackbuffer->BasicHandle[0].CpuHandle);
 
 		constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle.CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-		m_CommandList->ClearRenderTargetView(backbuffer->BasicHandle.CpuHandle, clearColor, 0, nullptr);
+		m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		m_CommandList->ClearRenderTargetView(backbuffer->BasicHandle[0].CpuHandle, clearColor, 0, nullptr);
 	}
 
 	void Device::Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
@@ -522,11 +522,11 @@ namespace limbo::Gfx
 		}
 	}
 
-	void Device::TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState)
+	void Device::TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel)
 	{
 		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t);
-		TransitionResource(t, newState);
+		TransitionResource(t, newState, mipLevel);
 	}
 
 	void Device::TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState)
@@ -536,11 +536,12 @@ namespace limbo::Gfx
 		TransitionResource(b, newState);
 	}
 
-	void Device::TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState)
+	void Device::TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel)
 	{
-		if (texture->CurrentState == newState) return;
-		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->Resource.Get(), texture->CurrentState, newState));
-		texture->CurrentState = newState;
+		uint32 level = mipLevel == ~0 ? 0 : mipLevel;
+		if (texture->CurrentState[level] == newState) return;
+		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->Resource.Get(), texture->CurrentState[level], newState, mipLevel));
+		texture->CurrentState[level] = newState;
 	}
 
 	void Device::TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState)

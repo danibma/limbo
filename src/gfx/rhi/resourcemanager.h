@@ -136,11 +136,11 @@ namespace limbo::Gfx
 		return renderTargetShader->DepthTarget.Texture;
 	}
 
-	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture)
+	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture, uint32 mipLevel = ~0)
 	{
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
-		s->SetTexture(parameterName, texture);
+		s->SetTexture(parameterName, texture, mipLevel);
 	}
 
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Buffer> buffer)
@@ -163,7 +163,7 @@ namespace limbo::Gfx
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 
-		s->SetTexture(parameterName, GetShaderRT(rtShader, rtIndex));
+		s->SetTexture(parameterName, GetShaderRT(rtShader, rtIndex), 0);
 	}
 
 	template<typename T>

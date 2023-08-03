@@ -91,8 +91,9 @@ namespace limbo::Gfx
 		ParameterMap[hash].Data = data;
 	}
 
-	void Shader::SetTexture(const char* parameterName, Handle<Texture> texture)
+	void Shader::SetTexture(const char* parameterName, Handle<Texture> texture, uint32 mipLevel)
 	{
+		uint32 level = mipLevel == ~0 ? 0 : mipLevel;
 		uint32 hash = Algo::Hash(parameterName);
 		if (!ParameterMap.contains(hash))
 		{
@@ -107,9 +108,9 @@ namespace limbo::Gfx
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
 		if (parameter.Type == ParameterType::UAV)
 		{
-			FAILIF(t->BasicHandle.GPUHandle.ptr == 0); // texture is not a SRV
+			FAILIF(t->BasicHandle[level].GPUHandle.ptr == 0); // texture is not a SRV
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-			parameter.Descriptor = t->BasicHandle.GPUHandle;
+			parameter.Descriptor = t->BasicHandle[level].GPUHandle;
 		}
 		else if (parameter.Type == ParameterType::SRV)
 		{
@@ -118,9 +119,11 @@ namespace limbo::Gfx
 			parameter.Descriptor = t->SRVHandle.GPUHandle;
 		}
 		else
+		{
 			ensure(false);
+		}
 
-		Device::Ptr->TransitionResource(t, newState);
+		Device::Ptr->TransitionResource(t, newState, mipLevel);
 	}
 
 	void Shader::SetBuffer(const char* parameterName, Handle<Buffer> buffer)

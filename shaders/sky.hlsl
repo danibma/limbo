@@ -1,26 +1,5 @@
 ﻿#include "common.hlsli"
 
-Texture2D g_EnvironmentEquirectangular : register(t0);
-RWTexture2DArray<float4> g_OutEnvironmentCubemap : register(u0);
-
-[numthreads(32, 32, 1)]
-void EquirectToCubemap(uint3 ThreadID : SV_DispatchThreadID)
-{
-	float outputWidth, outputHeight, outputDepth;
-	g_OutEnvironmentCubemap.GetDimensions(outputWidth, outputHeight, outputDepth);
-	float3 v = GetSamplingVector(ThreadID, outputWidth, outputHeight);
-	
-	// Convert Cartesian direction vector to spherical coordinates.
-	float phi = atan2(v.z, v.x);
-	float theta = acos(v.y);
-
-	// Sample equirectangular texture.
-	float4 color = g_EnvironmentEquirectangular.SampleLevel(LinearWrap, float2(phi / TwoPI, theta / PI), 0);
-
-	// Write out color to output cubemap.
-	g_OutEnvironmentCubemap[ThreadID] = color;
-}
-
 //
 // Vertex Shader
 //

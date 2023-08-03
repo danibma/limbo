@@ -9,6 +9,10 @@ typedef glm::vec2 float2;
 typedef glm::vec3 float3;
 typedef glm::vec4 float4;
 
+typedef glm::uvec2 uint2;
+typedef glm::uvec3 uint3;
+typedef glm::uvec4 uint4;
+
 typedef glm::quat quat;
 
 typedef glm::mat3x3 float3x3;

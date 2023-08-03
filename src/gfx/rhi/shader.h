@@ -107,7 +107,7 @@ namespace limbo::Gfx
 		void SetGraphicsRootParameters(ID3D12GraphicsCommandList* cmd);
 
 		void SetConstant(const char* parameterName, const void* data);
-		void SetTexture(const char* parameterName, Handle<class Texture> texture);
+		void SetTexture(const char* parameterName, Handle<class Texture> texture, uint32 mipLevel = ~0);
 		void SetBuffer(const char* parameterName, Handle<class Buffer> buffer);
 		void SetSampler(const char* parameterName, Handle<class Sampler> sampler);
 

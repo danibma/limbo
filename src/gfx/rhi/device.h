@@ -122,8 +122,8 @@ namespace limbo::Gfx
 
 		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
 
-		void TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState);
-		void TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState);
+		void TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel = ~0);
+		void TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel = ~0);
 
 		void TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
 		void TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);

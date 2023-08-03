@@ -11,6 +11,7 @@ namespace limbo::Gfx
 	public:
 		uint32					Width;
 		uint32					Height;
+		uint16					MipLevels = 1;
 		const char*				DebugName;
 		D3D12_RESOURCE_FLAGS	ResourceFlags = D3D12_RESOURCE_FLAG_NONE;
 		D3D12_CLEAR_VALUE		ClearValue;
@@ -24,9 +25,9 @@ namespace limbo::Gfx
 	{
 	public:
 		ComPtr<ID3D12Resource>		Resource;
-		D3D12_RESOURCE_STATES		CurrentState;
+		D3D12_RESOURCE_STATES		CurrentState[D3D12_REQ_MIP_LEVELS];
 		D3D12_RESOURCE_STATES		InitialState;
-		DescriptorHandle			BasicHandle;
+		DescriptorHandle			BasicHandle[D3D12_REQ_MIP_LEVELS];
 		DescriptorHandle			SRVHandle;
 
 	public:
@@ -38,8 +39,8 @@ namespace limbo::Gfx
 		~Texture();
 
 		// D3D12 Specific
+		void CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel);
 		void CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
-		void CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
 		void CreateRtv(const TextureSpec& spec, ID3D12Device* device);
 		void CreateDsv(const TextureSpec& spec, ID3D12Device* device);
 
