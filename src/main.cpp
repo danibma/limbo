@@ -15,6 +15,8 @@
 
 #include "tests/tests.h"
 
+#include <array>
+
 
 using namespace limbo;
 
@@ -49,17 +51,28 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
 		.MinLOD = 0.0f,
 		.MaxLOD = 1.0f
-		});
+	});
+
+	Gfx::Handle<Gfx::Sampler> linearClampSampler = Gfx::CreateSampler({
+		.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+		.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+		.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+		.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+		.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
+		.MinLOD = 0.0f,
+		.MaxLOD = 1.0f
+	});
 
 	// Deferred shader
 	Gfx::Handle<Gfx::Shader> deferredShader = Gfx::CreateShader({
 		.ProgramName = "deferredshading",
 		.RTFormats = {
-			{ Gfx::Format::RGBA8_UNORM, "Albedo"},
-			{ Gfx::Format::RGBA8_UNORM, "Normal" },
-			{ Gfx::Format::RGBA8_UNORM, "Roughness" },
-			{ Gfx::Format::RGBA8_UNORM, "Metallic" },
-			{ Gfx::Format::RGBA8_UNORM, "Emissive" }
+			{ Gfx::Format::RGBA16_SFLOAT, "WorldPosition"},
+			{ Gfx::Format::RGBA16_SFLOAT, "Albedo"},
+			{ Gfx::Format::RGBA16_SFLOAT, "Normal" },
+			{ Gfx::Format::RGBA16_SFLOAT, "Roughness" },
+			{ Gfx::Format::RGBA16_SFLOAT, "Metallic" },
+			{ Gfx::Format::RGBA16_SFLOAT, "Emissive" }
 		},
 		.DepthFormat = { Gfx::Format::D32_SFLOAT },
 		.Type = Gfx::ShaderType::Graphics
@@ -228,14 +241,21 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
-	std::vector<Gfx::Scene*> scenes;
+	std::vector<Gfx::Scene*> scenes = { Gfx::Scene::Load("assets/models/Sponza/Sponza.gltf") };
 
-	int tonemapMode = 0;
+	int tonemapMode = 1;
 	const char* tonemapModes[] = {
 		"None",
 		"Aces Film",
 		"Reinhard"
 	};
+
+	// Debug views
+	std::array<const char*, 7> debug_views = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive" };
+	int selected_debug_view = 0;
+
+	float3 lightPosition(-1.0f, 1.0f, 2.0f);
+	float3 lightColor(1.0f);
 
 	Core::Timer deltaTimer;
 	while (!window->ShouldClose())
@@ -277,6 +297,22 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				ImGui::Separator();
 				ImGui::PushItemWidth(200.0f);
 				ImGui::Combo("Tonemap", &tonemapMode, tonemapModes, 3);
+
+				const char* combo_preview_value = debug_views[selected_debug_view];
+				if (ImGui::BeginCombo("Debug Views##debug_view", combo_preview_value))
+				{
+					for (int i = 0; i < debug_views.size(); i++)
+					{
+						const bool is_selected = (selected_debug_view == i);
+						if (ImGui::Selectable(debug_views[i], is_selected))
+							selected_debug_view = i;
+
+						// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+						if (is_selected)
+							ImGui::SetItemDefaultFocus();
+					}
+					ImGui::EndCombo();
+				}
 				ImGui::PopItemWidth();
 
 				if (ImGui::MenuItem("Take GPU Capture"))
@@ -332,15 +368,45 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		Gfx::BeginEvent("PBR Lighting");
 		Gfx::BindShader(pbrShader);
-		Gfx::SetParameter(pbrShader, "LinearWrap", linearWrapSampler);
-		Gfx::SetParameter(pbrShader, "g_Albedo", deferredShader, 0);
+		// PBR scene info
+		Gfx::SetParameter(pbrShader, "camPos", camera.Eye);
+		Gfx::SetParameter(pbrShader, "lightPos", lightPosition);
+		Gfx::SetParameter(pbrShader, "lightColor", lightColor);
+		Gfx::SetParameter(pbrShader, "LinearClamp", linearClampSampler);
+		// Bind deferred shading render targets
+		Gfx::SetParameter(pbrShader, "g_WorldPosition", deferredShader, 0);
+		Gfx::SetParameter(pbrShader, "g_Albedo",		deferredShader, 1);
+		Gfx::SetParameter(pbrShader, "g_Normal",		deferredShader, 2);
+		Gfx::SetParameter(pbrShader, "g_Roughness",		deferredShader, 3);
+		Gfx::SetParameter(pbrShader, "g_Metallic",		deferredShader, 4);
+		Gfx::SetParameter(pbrShader, "g_Emissive",		deferredShader, 5);
+		// Bind irradiance map
+		Gfx::SetParameter(pbrShader, "g_IrradianceMap", irradianceMap);
+		Gfx::SetParameter(pbrShader, "g_PrefilterMap", prefilterMap);
+		Gfx::SetParameter(pbrShader, "g_LUT", brdfLUTMap);
 		Gfx::Draw(6);
 		Gfx::EndEvent();
 
+		// render scene composite
+		Gfx::Handle<Gfx::Texture> sceneTexture;
+		if (selected_debug_view == 1)
+			sceneTexture = Gfx::GetShaderRT(deferredShader, 1);
+		else if (selected_debug_view == 2)
+			sceneTexture = Gfx::GetShaderRT(deferredShader, 2);
+		else if (selected_debug_view == 3)
+			sceneTexture = Gfx::GetShaderRT(deferredShader, 0);
+		else if (selected_debug_view == 4)
+			sceneTexture = Gfx::GetShaderRT(deferredShader, 4);
+		else if (selected_debug_view == 5)
+			sceneTexture = Gfx::GetShaderRT(deferredShader, 3);
+		else if (selected_debug_view == 6)
+			sceneTexture = Gfx::GetShaderRT(deferredShader, 5);
+		else
+			sceneTexture = Gfx::GetShaderRT(pbrShader, 0);
 		Gfx::BeginEvent("Scene Composite");
 		Gfx::BindShader(compositeShader);
 		Gfx::SetParameter(compositeShader, "g_TonemapMode", tonemapMode);
-		Gfx::SetParameter(compositeShader, "g_sceneTexture", pbrShader, 0);
+		Gfx::SetParameter(compositeShader, "g_sceneTexture", sceneTexture);
 		Gfx::SetParameter(compositeShader, "LinearWrap", linearWrapSampler);
 		Gfx::Draw(6);
 		Gfx::EndEvent();

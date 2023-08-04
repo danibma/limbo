@@ -70,6 +70,7 @@ namespace limbo::Gfx
 		RGB32_SFLOAT,
 		// RGBA
 		RGBA8_UNORM,
+		RGBA8_UNORM_SRGB,
 		A2RGB10_UNORM_PACK32,
 		RGBA16_UNORM,
 		RGBA16_SNORM,
@@ -81,7 +82,6 @@ namespace limbo::Gfx
 		D32_SFLOAT_S8_UINT,
 		// Compressed
 		BC7_UNORM_BLOCK,
-		ASTC_4x4_UNORM_BLOCK,
 		//Surface
 		BGRA8_UNORM
 	};
@@ -110,6 +110,7 @@ namespace limbo::Gfx
 		case Format::R8_UINT:
 		case Format::RG8_UNORM:
 		case Format::RGBA8_UNORM:
+		case Format::RGBA8_UNORM_SRGB:
 		case Format::BGRA8_UNORM:
 			return 1;
 		case Format::R16_UNORM:
@@ -132,7 +133,6 @@ namespace limbo::Gfx
 		case Format::BC7_UNORM_BLOCK:
 		case Format::B10GR11_UFLOAT_PACK32:
 		case Format::A2RGB10_UNORM_PACK32:
-		case Format::ASTC_4x4_UNORM_BLOCK:
 		case Format::UNKNOWN:
 		default:
 			ensure(false);
@@ -170,6 +170,8 @@ namespace limbo::Gfx
 			return DXGI_FORMAT_R32G32B32_FLOAT;
 		case Format::RGBA8_UNORM:
 			return DXGI_FORMAT_R8G8B8A8_UNORM;
+		case Format::RGBA8_UNORM_SRGB:
+			return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 		case Format::A2RGB10_UNORM_PACK32:
 			return DXGI_FORMAT_R10G10B10A2_UNORM;
 		case Format::RGBA16_UNORM:
@@ -188,9 +190,6 @@ namespace limbo::Gfx
 			return DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 		case Format::BC7_UNORM_BLOCK:
 			return DXGI_FORMAT_BC7_UNORM;
-		case Format::ASTC_4x4_UNORM_BLOCK:
-			ensure(false);
-			return DXGI_FORMAT_UNKNOWN; // No support in D3D12
 		case Format::BGRA8_UNORM:
 			return DXGI_FORMAT_B8G8R8A8_UNORM;
 		case Format::UNKNOWN:

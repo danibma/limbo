@@ -117,6 +117,9 @@ namespace limbo::Gfx
 		void CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
 		void CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec);
 
+		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultBlendDesc();
+		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultEnabledBlendDesc();
+
 		std::string_view ParameterTypeToStr(ParameterType type);
 	};
 }

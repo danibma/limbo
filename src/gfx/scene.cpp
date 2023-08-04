@@ -230,7 +230,7 @@ namespace limbo::Gfx
 			.Width = (uint32)width,
 			.Height = (uint32)height,
 			.DebugName = dname.c_str(),
-			.Format = Format::RGBA8_UNORM,
+			.Format = Format::RGBA8_UNORM_SRGB,
 			.Type = TextureType::Texture2D,
 			.InitialData = data
 		});

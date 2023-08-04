@@ -87,7 +87,11 @@ namespace limbo::Gfx
 	void Shader::SetConstant(const char* parameterName, const void* data)
 	{
 		uint32 hash = Algo::Hash(parameterName);
-		FAILIF(!ParameterMap.contains(hash));
+		if (!ParameterMap.contains(hash))
+		{
+			LB_WARN("'%s': Tried to set constant '%s' but couldn't it be found", m_Name.c_str(), parameterName);
+			return;
+		}
 		ParameterMap[hash].Data = data;
 	}
 
@@ -177,7 +181,7 @@ namespace limbo::Gfx
 				{
 					D3D12_SHADER_BUFFER_DESC desc;
 					cb->GetDesc(&desc);
-					uint32 num32BitValues = 0;
+					uint32 num32BitValues = desc.Size / sizeof(uint32);
 					bool   bAddedVar = false;
 					for (uint32 v = 0; v < desc.Variables; ++v)
 					{
@@ -197,8 +201,6 @@ namespace limbo::Gfx
 							.NumValues = numValues,
 							.Offset = varDesc.StartOffset / sizeof(uint32)
 						};
-						
-						num32BitValues += numValues;
 					}
 
 					if (bAddedVar)
@@ -363,26 +365,11 @@ namespace limbo::Gfx
 		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 		rasterizerDesc.FrontCounterClockwise = true;
 
-		D3D12_BLEND_DESC blendDesc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		blendDesc.RenderTarget[0] = {
-			.BlendEnable = true,
-			.LogicOpEnable = false,
-			.SrcBlend = D3D12_BLEND_SRC_ALPHA,
-			.DestBlend = D3D12_BLEND_INV_SRC_ALPHA,
-			.BlendOp = D3D12_BLEND_OP_ADD,
-			.SrcBlendAlpha = D3D12_BLEND_ONE,
-			.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA,
-			.BlendOpAlpha = D3D12_BLEND_OP_ADD,
-			.LogicOp = D3D12_LOGIC_OP_NOOP,
-			.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL
-		};
-
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
 			.pRootSignature = RootSignature.Get(),
 			.VS = vsBytecode,
 			.PS = psBytecode,
 			.StreamOutput = nullptr,
-			.BlendState = blendDesc,
 			.SampleMask = 0xFFFFFFFF,
 			.RasterizerState = rasterizerDesc,
 			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
@@ -507,7 +494,49 @@ namespace limbo::Gfx
 			}
 		}
 
+		if (UseSwapchainRT)
+		{
+			desc.BlendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();
+		}
+		else
+		{
+			for (uint8 i = 0; i < RTCount; ++i)
+				desc.BlendState.RenderTarget[i] = GetDefaultBlendDesc();
+		}
+
 		DX_CHECK(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&PipelineState)));
+	}
+
+	D3D12_RENDER_TARGET_BLEND_DESC Shader::GetDefaultBlendDesc()
+	{
+		return {
+			.BlendEnable = false,
+			.LogicOpEnable = false,
+			.SrcBlend = D3D12_BLEND_ONE,
+			.DestBlend = D3D12_BLEND_ZERO,
+			.BlendOp = D3D12_BLEND_OP_ADD,
+			.SrcBlendAlpha = D3D12_BLEND_ONE,
+			.DestBlendAlpha = D3D12_BLEND_ZERO,
+			.BlendOpAlpha = D3D12_BLEND_OP_ADD,
+			.LogicOp = D3D12_LOGIC_OP_NOOP,
+			.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL
+		};
+	}
+
+	D3D12_RENDER_TARGET_BLEND_DESC Shader::GetDefaultEnabledBlendDesc()
+	{
+		return {
+			.BlendEnable = true,
+			.LogicOpEnable = false,
+			.SrcBlend = D3D12_BLEND_SRC_ALPHA,
+			.DestBlend = D3D12_BLEND_INV_SRC_ALPHA,
+			.BlendOp = D3D12_BLEND_OP_ADD,
+			.SrcBlendAlpha = D3D12_BLEND_ONE,
+			.DestBlendAlpha = D3D12_BLEND_INV_SRC_ALPHA,
+			.BlendOpAlpha = D3D12_BLEND_OP_ADD,
+			.LogicOp = D3D12_LOGIC_OP_NOOP,
+			.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL
+		};
 	}
 
 	void Shader::CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout)
