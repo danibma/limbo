@@ -74,14 +74,18 @@ DeferredShadingOutput PSMain(VSOut input)
     float4 roughnessMetalMap    = g_roughnessMetalTexture.Sample(LinearWrap, input.UV);
     float4 emissiveMap          = g_emissiveTexture.Sample(LinearWrap, input.UV);
 
+    // not sure if this is a good solution, but it works with the normal sponza and with the Intel sponza, so it will stay like this for now
+    if (albedo.a < 0.99f)
+        discard;
+
     float roughness     = roughnessMetalMap.g;
     float metallic      = roughnessMetalMap.b;
 
     result.WorldPosition = input.WorldPos;
     result.Albedo        = albedo;
     result.Normal        = input.Normal;
-    result.Roughness     = roughness;
-    result.Metallic      = metallic;
+    result.Roughness     = float4((float3)roughness, 1.0f);
+    result.Metallic      = float4((float3)metallic, 1.0f);
     result.Emissive      = emissiveMap;
 
     return result;

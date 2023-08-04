@@ -241,7 +241,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
-	std::vector<Gfx::Scene*> scenes = { Gfx::Scene::Load("assets/models/Sponza/Sponza.gltf") };
+	std::vector<Gfx::Scene*> scenes;
 
 	int tonemapMode = 1;
 	const char* tonemapModes[] = {

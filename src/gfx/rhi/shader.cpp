@@ -365,11 +365,15 @@ namespace limbo::Gfx
 		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 		rasterizerDesc.FrontCounterClockwise = true;
 
+		D3D12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		blendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();
+
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
 			.pRootSignature = RootSignature.Get(),
 			.VS = vsBytecode,
 			.PS = psBytecode,
 			.StreamOutput = nullptr,
+			.BlendState = blendState,
 			.SampleMask = 0xFFFFFFFF,
 			.RasterizerState = rasterizerDesc,
 			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
@@ -492,16 +496,6 @@ namespace limbo::Gfx
 					};
 				}
 			}
-		}
-
-		if (UseSwapchainRT)
-		{
-			desc.BlendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();
-		}
-		else
-		{
-			for (uint8 i = 0; i < RTCount; ++i)
-				desc.BlendState.RenderTarget[i] = GetDefaultBlendDesc();
 		}
 
 		DX_CHECK(device->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&PipelineState)));
