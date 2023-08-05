@@ -3,6 +3,7 @@
 #include <functional> // for std::function
 
 #include "core/math.h"
+#include "gfx/shaderinterop.h"
 
 #include "rhi/resourcemanager.h"
 #include "rhi/resourcepool.h"
@@ -31,6 +32,8 @@ namespace limbo::Gfx
 		Handle<Texture> Albedo;
 		Handle<Texture> RoughnessMetal;
 		Handle<Texture> Emissive;
+
+		Handle<Buffer> Factors;
 
 		MeshMaterial()
 		{
@@ -81,7 +84,7 @@ namespace limbo::Gfx
 		void ProcessMaterial(const cgltf_material* material);
 		Mesh ProcessMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
 
-		void LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture);
+		void LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture, Format format);
 	};
 
 	inline Scene* LoadScene(const char* path)

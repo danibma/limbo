@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "../src/gfx/shaderinterop.h"
+
 SamplerState LinearWrap;
 SamplerState LinearClamp;
 

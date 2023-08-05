@@ -43,5 +43,10 @@ namespace limbo::Gfx
 		Buffer(const BufferSpec& spec);
 
 		virtual ~Buffer();
+
+	private:
+		void CreateCBV(ID3D12Device* device, const BufferSpec& spec);
+
+		void InitResource(const BufferSpec& spec);
 	};
 }

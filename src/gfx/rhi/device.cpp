@@ -462,6 +462,7 @@ namespace limbo::Gfx
 		if (m_bNeedsShaderReload)
 		{
 			Core::Timer t;
+			WaitGPU();
 			ReloadShaders.Broadcast();
 			m_bNeedsShaderReload = false;
 			LB_LOG("Shaders got reloaded. It took %.2fs", t.ElapsedSeconds());

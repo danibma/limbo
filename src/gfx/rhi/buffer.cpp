@@ -14,7 +14,7 @@ namespace limbo::Gfx
 
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
 
-		const uint64 alignment = spec.Usage == BufferUsage::Upload ? 256 : 4;
+		const uint64 alignment = spec.Usage == BufferUsage::Upload || spec.Usage == BufferUsage::Constant ? 256 : 4;
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
@@ -82,9 +82,36 @@ namespace limbo::Gfx
 			Utils::StringConvert(spec.DebugName, wname);
 			DX_CHECK(Resource->SetName(wname.c_str()));
 		}
+
+		if (spec.Usage == BufferUsage::Constant)
+			InitResource(spec);
 	}
 
 	Buffer::~Buffer()
 	{
+	}
+
+	void Buffer::CreateCBV(ID3D12Device* device, const BufferSpec& spec)
+	{
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {
+			.BufferLocation = Resource->GetGPUVirtualAddress(),
+			.SizeInBytes = Math::Max(Math::Align((uint32)spec.ByteSize, (uint32)256), (uint32)256ul)
+		};
+
+		device->CreateConstantBufferView(&cbvDesc, BasicHandle.CpuHandle);
+	}
+
+	void Buffer::InitResource(const BufferSpec& spec)
+	{
+		if (spec.Usage == BufferUsage::Constant)
+		{
+			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
+			CreateCBV(Device::Ptr->GetDevice(), spec);
+		}
+		else
+		{
+			ensure(false);
+		}
+		
 	}
 }

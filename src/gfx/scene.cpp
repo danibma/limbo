@@ -74,7 +74,9 @@ namespace limbo::Gfx
 			Gfx::DestroyTexture(material.Albedo);
 			Gfx::DestroyTexture(material.RoughnessMetal);
 			Gfx::DestroyTexture(material.Emissive);
+			Gfx::DestroyBuffer(material.Factors);
 		}
+
 	}
 
 	void Scene::DrawMesh(const std::function<void(const Mesh& mesh)>& drawFunction)
@@ -110,17 +112,21 @@ namespace limbo::Gfx
 
 	void Scene::ProcessMaterial(const cgltf_material* material)
 	{
+		MaterialFactors factors = {};
 		MeshMaterial& meshMaterial = m_MeshMaterials[(uintptr_t)material];
 		if (material->has_pbr_metallic_roughness)
 		{
 			const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
 			{
 				std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Albedo");
-				LoadTexture(&workflow.base_color_texture, debugName.c_str(), meshMaterial.Albedo);
+				LoadTexture(&workflow.base_color_texture, debugName.c_str(), meshMaterial.Albedo, Format::RGBA8_UNORM_SRGB);
+				factors.AlbedoFactor = glm::make_vec4(workflow.base_color_factor);
 			}
 			{
 				std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "MetallicRoughness");
-				LoadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), meshMaterial.RoughnessMetal);
+				LoadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), meshMaterial.RoughnessMetal, Format::RGBA8_UNORM);
+				factors.RoughnessFactor = workflow.roughness_factor;
+				factors.MetallicFactor  = workflow.metallic_factor;
 			}
 		}
 		else
@@ -130,7 +136,18 @@ namespace limbo::Gfx
 
 		{
 			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Emissive");
-			LoadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.Emissive);
+			LoadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.Emissive, Format::RGBA8_UNORM);
+		}
+
+		// Create factors buffer
+		{
+			std::string debugName = std::format(" Material({}) Factors CB", m_MeshMaterials.size());
+			meshMaterial.Factors = CreateBuffer({
+				.DebugName = debugName.c_str(),
+				.ByteSize = sizeof(MaterialFactors),
+				.Usage = BufferUsage::Constant,
+				.InitialData = &factors
+			});
 		}
 	}
 
@@ -195,7 +212,7 @@ namespace limbo::Gfx
 		return Mesh(meshName.c_str(), vertices, primitiveData.indicesStream, materialID);
 	}
 
-	void Scene::LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture)
+	void Scene::LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture, Format format)
 	{
 		if (!textureView->texture)
 			return;
@@ -230,7 +247,7 @@ namespace limbo::Gfx
 			.Width = (uint32)width,
 			.Height = (uint32)height,
 			.DebugName = dname.c_str(),
-			.Format = Format::RGBA8_UNORM_SRGB,
+			.Format = format,
 			.Type = TextureType::Texture2D,
 			.InitialData = data
 		});

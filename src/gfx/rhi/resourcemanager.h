@@ -138,6 +138,12 @@ namespace limbo::Gfx
 
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture, uint32 mipLevel = ~0)
 	{
+		if (!texture.IsValid())
+		{
+			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
+			return;
+		}
+
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 		s->SetTexture(parameterName, texture, mipLevel);
@@ -145,6 +151,12 @@ namespace limbo::Gfx
 
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Buffer> buffer)
 	{
+		if (!buffer.IsValid())
+		{
+			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
+			return;
+		}
+
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 		s->SetBuffer(parameterName, buffer);
@@ -152,6 +164,12 @@ namespace limbo::Gfx
 
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Sampler> sampler)
 	{
+		if (!sampler.IsValid())
+		{
+			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
+			return;
+		}
+
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 		s->SetSampler(parameterName, sampler);
@@ -160,6 +178,12 @@ namespace limbo::Gfx
 	// Used to bind render targets, from other shaders, as a texture
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Shader> rtShader, uint8 rtIndex)
 	{
+		if (!rtShader.IsValid())
+		{
+			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
+			return;
+		}
+
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 

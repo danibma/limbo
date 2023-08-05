@@ -55,6 +55,7 @@ VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV
 Texture2D g_albedoTexture;
 Texture2D g_roughnessMetalTexture;
 Texture2D g_emissiveTexture;
+ConstantBuffer<MaterialFactors> g_MaterialFactors : register(b1);
 
 struct DeferredShadingOutput
 {
@@ -78,11 +79,16 @@ DeferredShadingOutput PSMain(VSOut input)
     if (albedo.a < 0.99f)
         discard;
 
-    float roughness     = roughnessMetalMap.g;
-    float metallic      = roughnessMetalMap.b;
+    float roughness     = roughnessMetalMap.g * g_MaterialFactors.RoughnessFactor;
+    float metallic      = roughnessMetalMap.b * g_MaterialFactors.MetallicFactor;
 
+    float4 finalAlbedo  = g_MaterialFactors.AlbedoFactor;
+    
+    if (albedo.a != 0)
+        finalAlbedo *= albedo;
+    
     result.WorldPosition = input.WorldPos;
-    result.Albedo        = albedo;
+    result.Albedo        = finalAlbedo;
     result.Normal        = input.Normal;
     result.Roughness     = float4((float3)roughness, 1.0f);
     result.Metallic      = float4((float3)metallic, 1.0f);

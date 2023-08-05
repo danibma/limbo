@@ -365,6 +365,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				Gfx::SetParameter(deferredShader, "g_roughnessMetalTexture", material.RoughnessMetal);
 				Gfx::SetParameter(deferredShader, "g_emissiveTexture", material.Emissive);
 				Gfx::SetParameter(deferredShader, "model", mesh.Transform);
+				Gfx::SetParameter(deferredShader, "g_MaterialFactors", material.Factors);
 
 				Gfx::BindVertexBuffer(mesh.VertexBuffer);
 				Gfx::BindIndexBuffer(mesh.IndexBuffer);

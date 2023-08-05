@@ -47,6 +47,7 @@ namespace limbo::Gfx
 		{
 			SRV = 0,
 			UAV,
+			CBV,
 			Samplers,
 			Constants,
 			MAX

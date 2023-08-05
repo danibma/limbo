@@ -150,6 +150,8 @@ namespace limbo::Gfx
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		else if (parameter.Type == ParameterType::SRV)
 			newState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		else if (parameter.Type == ParameterType::CBV)
+			newState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 		else
 			ensure(false);
 
@@ -220,7 +222,20 @@ namespace limbo::Gfx
 
 					break;
 				}
-				ensure(false); // why use cbuffers instead of 32bit constants?
+
+				// Normal constant buffers
+				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+					.Type = ParameterType::CBV,
+					.RPIndex = currentRP,
+				};
+
+				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bindDesc.BindPoint, bindDesc.Space);
+
+				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
+
+				currentRP++;
+				rsCost += 1;
+
 				break;
 			}
 			case D3D_SIT_UAV_RWBYTEADDRESS:
@@ -314,6 +329,11 @@ namespace limbo::Gfx
 			LB_ERROR("%s", (char*)errorBlob->GetBufferPointer());
 
 		DX_CHECK(device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
+
+		std::wstring wname;
+		Utils::StringConvert(m_Name, wname);
+		wname.append(L" RS");
+		DX_CHECK(RootSignature->SetName(wname.c_str()));
 	}
 
 	void Shader::CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec)
@@ -669,6 +689,7 @@ namespace limbo::Gfx
 		{
 		case ParameterType::SRV: return "SRV";
 		case ParameterType::UAV: return "UAV";
+		case ParameterType::CBV: return "CBV";
 		case ParameterType::Samplers: return "Samplers";
 		case ParameterType::Constants: return "Constants";
 		case ParameterType::MAX:
