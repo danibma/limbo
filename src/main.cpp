@@ -279,9 +279,9 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 #pragma region UI
 		if (ImGui::BeginMainMenuBar())
 		{
-			if (ImGui::BeginMenu("File"))
+			if (ImGui::BeginMenu("Scene"))
 			{
-				if (ImGui::MenuItem("Load Scene"))
+				if (ImGui::MenuItem("Load"))
 				{
 					std::vector<wchar_t*> results;
 					if (Utils::OpenFileDialog(window, L"Choose scene to load", results, L"", { L"*.gltf; *.glb"}))
@@ -291,6 +291,15 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 						scenes.emplace_back(Gfx::Scene::Load(path));
 					}
 				}
+
+				bool bCanClearScene = scenes.size() > 0;
+				if (ImGui::MenuItem("Clear Scene", "", false, bCanClearScene))
+				{
+					for (Gfx::Scene* scene : scenes)
+						Gfx::DestroyScene(scene);
+					scenes.clear();
+				}
+
 				ImGui::EndMenu();
 			}
 
