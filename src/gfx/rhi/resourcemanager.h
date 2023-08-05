@@ -44,10 +44,10 @@ namespace limbo::Gfx
 		Texture* GetTexture(Handle<Texture> texture);
 		Sampler* GetSampler(Handle<Sampler> sampler);
 
-		void DestroyBuffer(Handle<Buffer> buffer);
-		void DestroyShader(Handle<Shader> shader);
-		void DestroyTexture(Handle<Texture> texture);
-		void DestroySampler(Handle<Sampler> sampler);
+		void DestroyBuffer(Handle<Buffer> buffer, bool bImmediate = false);
+		void DestroyShader(Handle<Shader> shader, bool bImmediate = false);
+		void DestroyTexture(Handle<Texture> texture, bool bImmediate = false);
+		void DestroySampler(Handle<Sampler> sampler, bool bImmediate = false);
 
 		void RunDeletionQueue();
 		void ForceDeletionQueue();
@@ -95,24 +95,24 @@ namespace limbo::Gfx
 		return ResourceManager::Ptr->CreateSampler(spec);
 	}
 
-	inline void DestroyBuffer(Handle<Buffer> handle)
+	inline void DestroyBuffer(Handle<Buffer> handle, bool bImmediate = false)
 	{
-		ResourceManager::Ptr->DestroyBuffer(handle);
+		ResourceManager::Ptr->DestroyBuffer(handle, bImmediate);
 	}
 
-	inline void DestroyShader(Handle<Shader> handle)
+	inline void DestroyShader(Handle<Shader> handle, bool bImmediate = false)
 	{
-		ResourceManager::Ptr->DestroyShader(handle);
+		ResourceManager::Ptr->DestroyShader(handle, bImmediate);
 	}
 
-	inline void DestroyTexture(Handle<Texture> handle)
+	inline void DestroyTexture(Handle<Texture> handle, bool bImmediate = false)
 	{
-		ResourceManager::Ptr->DestroyTexture(handle);
+		ResourceManager::Ptr->DestroyTexture(handle, bImmediate);
 	}
 
-	inline void DestroySampler(Handle<Sampler> sampler)
+	inline void DestroySampler(Handle<Sampler> sampler, bool bImmediate = false)
 	{
-		ResourceManager::Ptr->DestroySampler(sampler);
+		ResourceManager::Ptr->DestroySampler(sampler, bImmediate);
 	}
 
 	inline Handle<Texture> GetShaderRT(Handle<Shader> shader, uint8 rtIndex)

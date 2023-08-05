@@ -3,6 +3,7 @@
 
 #include "device.h"
 #include "core/algo.h"
+#include "core/window.h"
 #include "shadercompiler.h"
 #include "resourcemanager.h"
 
@@ -10,6 +11,7 @@
 #include <format>
 
 #include <d3d12/d3dx12/d3dx12.h>
+
 
 
 namespace limbo::Gfx
@@ -414,6 +416,8 @@ namespace limbo::Gfx
 			});
 		};
 
+		Device::Ptr->OnResizedSwapchain.AddRaw(this, &Shader::ResizeRenderTargets);
+
 		RTCount = 0;
 		for (uint8 i = 0; spec.RTFormats[i].RTFormat != Format::UNKNOWN || spec.RTFormats[i].RTTexture.IsValid(); ++i)
 			RTCount++;
@@ -588,6 +592,26 @@ namespace limbo::Gfx
 				.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
 				.InstanceDataStepRate = 0
 			};
+		}
+	}
+
+	void Shader::ResizeRenderTargets(uint32 width, uint32 height)
+	{
+		if (UseSwapchainRT) return;
+
+		for (uint8 i = 0; i < RTCount; ++i)
+		{
+			if (!RenderTargets[i].Texture.IsValid()) continue;
+			if (RenderTargets[i].bIsExternal) continue;
+
+			Texture* texture = ResourceManager::Ptr->GetTexture(RenderTargets[i].Texture);
+			texture->ReloadSize(width, height);
+		}
+
+		if (DepthTarget.Texture.IsValid() && !DepthTarget.bIsExternal)
+		{
+			Texture* texture = ResourceManager::Ptr->GetTexture(DepthTarget.Texture);
+			texture->ReloadSize(width, height);
 		}
 	}
 

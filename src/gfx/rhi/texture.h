@@ -12,7 +12,7 @@ namespace limbo::Gfx
 		uint32					Width;
 		uint32					Height;
 		uint16					MipLevels = 1;
-		const char*				DebugName;
+		std::string				DebugName;
 		D3D12_RESOURCE_FLAGS	ResourceFlags = D3D12_RESOURCE_FLAG_NONE;
 		D3D12_CLEAR_VALUE		ClearValue;
 		Format					Format = Format::R8_UNORM;
@@ -23,6 +23,9 @@ namespace limbo::Gfx
 
 	class Texture
 	{
+	private:
+		TextureSpec					m_Spec;
+
 	public:
 		ComPtr<ID3D12Resource>		Resource;
 		D3D12_RESOURCE_STATES		CurrentState[D3D12_REQ_MIP_LEVELS];
@@ -37,6 +40,8 @@ namespace limbo::Gfx
 		Texture(ID3D12Resource* inResource, const TextureSpec& spec);
 
 		~Texture();
+
+		void ReloadSize(uint32 width, uint32 height);
 
 		// D3D12 Specific
 		void CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel);

@@ -11,6 +11,8 @@ namespace limbo::Gfx
 {
 	void Texture::CreateResource(const TextureSpec& spec)
 	{
+		m_Spec = spec;
+
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
 
@@ -223,12 +225,14 @@ namespace limbo::Gfx
 		DXGI_FORMAT srvformat = D3DFormat(spec.Format);
 		if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
 		{
-			BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::RTV);
+			if (BasicHandle[0].CpuHandle.ptr == 0)
+				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::RTV);
 			CreateRtv(spec, d3ddevice);
 		}
 		else if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
 		{
-			BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::DSV);
+			if (BasicHandle[0].CpuHandle.ptr == 0)
+				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::DSV);
 			CreateDsv(spec, d3ddevice);
 			switch (spec.Format)
 			{
@@ -250,14 +254,16 @@ namespace limbo::Gfx
 		{
 			for (uint8 i = 0; i < spec.MipLevels; ++i)
 			{
-				BasicHandle[i] = device->AllocateHandle(DescriptorHeapType::SRV);
+				if (BasicHandle[i].CpuHandle.ptr == 0)
+					BasicHandle[i] = device->AllocateHandle(DescriptorHeapType::SRV);
 				CreateUav(spec, d3ddevice, srvformat, i);
 			}
 		}
 
 		if (spec.bCreateSrv)
 		{
-			SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);
+			if (SRVHandle.CpuHandle.ptr == 0)
+				SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);
 			CreateSrv(spec, d3ddevice, srvformat);
 		}
 
@@ -284,7 +290,7 @@ namespace limbo::Gfx
 				CurrentState[i] = D3D12_RESOURCE_STATE_COPY_DEST;
 		}
 
-		if ((spec.DebugName != nullptr) && (spec.DebugName[0] != '\0'))
+		if (!spec.DebugName.empty())
 		{
 			std::wstring wname;
 			Utils::StringConvert(spec.DebugName, wname);
@@ -294,6 +300,17 @@ namespace limbo::Gfx
 
 	Texture::~Texture()
 	{
+	}
+
+	void Texture::ReloadSize(uint32 width, uint32 height)
+	{
+		m_Spec.Width  = width;
+		m_Spec.Height = height;
+
+		Resource.Reset();
+
+		CreateResource(m_Spec);
+		InitResource(m_Spec);
 	}
 
 	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)

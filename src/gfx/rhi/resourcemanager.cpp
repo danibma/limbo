@@ -95,27 +95,55 @@ namespace limbo::Gfx
 		return m_Samplers.Get(sampler);
 	}
 
-	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer)
+	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer, bool bImmediate)
 	{
-		DELETE_RESOURCE(buffer, m_Buffers);
-	}
-
-	void ResourceManager::DestroyShader(Handle<Shader> shader)
-	{
-		DELETE_RESOURCE(shader, m_Shaders);;
-	}
-
-	void ResourceManager::DestroyTexture(Handle<Texture> texture)
-	{
-		if (texture != EmptyTexture || m_bOnShutdown)
+		if (bImmediate)
 		{
-			DELETE_RESOURCE(texture, m_Textures);
+			m_Buffers.DeleteHandle(buffer);
+		}
+		else
+		{
+			DELETE_RESOURCE(buffer, m_Buffers);
 		}
 	}
 
-	void ResourceManager::DestroySampler(Handle<Sampler> sampler)
+	void ResourceManager::DestroyShader(Handle<Shader> shader, bool bImmediate)
 	{
-		DELETE_RESOURCE(sampler, m_Samplers);
+		if (bImmediate)
+		{
+			m_Shaders.DeleteHandle(shader);
+		}
+		else
+		{
+			DELETE_RESOURCE(shader, m_Shaders);
+		}
+	}
+
+	void ResourceManager::DestroyTexture(Handle<Texture> texture, bool bImmediate)
+	{
+		if (bImmediate)
+		{
+			m_Textures.DeleteHandle(texture);
+		}
+		else
+		{
+			if (texture != EmptyTexture || m_bOnShutdown)
+			{
+				DELETE_RESOURCE(texture, m_Textures);
+			}
+		}
+	}
+
+	void ResourceManager::DestroySampler(Handle<Sampler> sampler, bool bImmediate)
+	{
+		if (bImmediate)
+		{
+			m_Samplers.DeleteHandle(sampler);
+		}
+		else
+		{
+			DELETE_RESOURCE(sampler, m_Samplers);
+		}
 	}
 
 	void ResourceManager::RunDeletionQueue()

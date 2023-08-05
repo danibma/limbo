@@ -33,6 +33,16 @@ namespace limbo::Core
 		win->m_Scroll = { xoffset, yoffset };
 	}
 
+	static void SizeCallback(GLFWwindow* window, int width, int height)
+	{
+		Window* win = (Window*)glfwGetWindowUserPointer(window);
+		ensure(win);
+
+		win->Width  = width;
+		win->Height = height;
+		win->OnWindowResize.Broadcast(width, height);
+	}
+
 	Window::Window(const WindowInfo& info)
 		: Width(info.Width), Height(info.Height)
 	{
@@ -43,6 +53,8 @@ namespace limbo::Core
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		if (info.Maximized)
+			glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
 		m_Handle = glfwCreateWindow(Width, Height, "limbo", nullptr, nullptr);
 		if (!m_Handle)
@@ -51,11 +63,20 @@ namespace limbo::Core
 			return;
 		}
 
+		if (info.Maximized)
+		{
+			int w, h;
+			glfwGetWindowSize(m_Handle, &w, &h);
+			Width = w;
+			Height = h;
+		}
+		
 		glfwSetWindowUserPointer(m_Handle, this);
 
 		glfwSetKeyCallback(m_Handle, KeyCallback);
 		glfwSetMouseButtonCallback(m_Handle, MouseButtonCallback);
 		glfwSetScrollCallback(m_Handle, ScrollCallback);
+		glfwSetFramebufferSizeCallback(m_Handle, SizeCallback);
 	}
 
 	void Window::PollEvents()

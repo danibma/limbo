@@ -14,6 +14,7 @@ namespace limbo::Core
 		const char*		Title;
 		uint32			Width;
 		uint32			Height;
+		bool			Maximized = true;
 	};
 
 	class Window
@@ -48,6 +49,9 @@ namespace limbo::Core
 		DECLARE_MULTICAST_DELEGATE(TOnWindowShouldClose);
 		TOnWindowShouldClose OnWindowShouldClose;
 
+		DECLARE_MULTICAST_DELEGATE(TOnWindowResize, uint32, uint32);
+		TOnWindowResize OnWindowResize;
+
 	private:
 		bool IsKeyPressed(Input::KeyCode key);
 		bool IsKeyDown(Input::KeyCode key);
@@ -65,6 +69,7 @@ namespace limbo::Core
 		friend void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		friend void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 		friend void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+		friend void SizeCallback(GLFWwindow* window, int width, int height);
 
 		// Input
 		friend bool Input::IsKeyPressed(Core::Window* window, Input::KeyCode key);

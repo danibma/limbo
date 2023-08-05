@@ -56,6 +56,7 @@ namespace limbo::Gfx
 
 		GfxDeviceFlags						m_Flags;
 		bool								m_bPIXCanCapture = false;
+		bool								m_bNeedsResize = false;
 
 		GPUInfo								m_GPUInfo;
 
@@ -63,6 +64,9 @@ namespace limbo::Gfx
 
 	public:
 		static Device* Ptr;
+
+		DECLARE_MULTICAST_DELEGATE(TOnResizedSwapchain, uint32, uint32);
+		TOnResizedSwapchain OnResizedSwapchain;
 
 	public:
 		Device(Core::Window* window, GfxDeviceFlags flags);
@@ -102,6 +106,8 @@ namespace limbo::Gfx
 		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 
 		void Present();
+
+		void HandleWindowResize(uint32 width, uint32 height);
 
 		uint32 GetCurrentFrameIndex() const
 		{

@@ -105,6 +105,8 @@ namespace limbo::Gfx
 		OnPreResourceManagerShutdown.AddRaw(this, &Device::DestroySwapchainBackBuffers);
 		OnPreResourceManagerShutdown.AddRaw(this, &Device::WaitGPU);
 
+		window->OnWindowResize.AddRaw(this, &Device::HandleWindowResize);
+
 		m_FrameIndex = m_Swapchain->GetCurrentIndex();
 
 		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
@@ -449,6 +451,14 @@ namespace limbo::Gfx
 
 		ResourceManager::Ptr->RunDeletionQueue();
 
+		if (m_bNeedsResize)
+		{
+			WaitGPU();
+			m_Swapchain->CheckForResize();
+			m_bNeedsResize = false;
+			NextFrame(); // Synchronize with new frame index
+		}
+
 		DX_CHECK(m_CommandAllocators[m_FrameIndex]->Reset());
 		DX_CHECK(m_CommandList->Reset(m_CommandAllocators[m_FrameIndex].Get(), nullptr));
 
@@ -476,6 +486,12 @@ namespace limbo::Gfx
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 		}
+	}
+
+	void Device::HandleWindowResize(uint32 width, uint32 height)
+	{
+		m_bNeedsResize = true;
+		m_Swapchain->MarkForResize(width, height);
 	}
 
 	Format Device::GetSwapchainFormat()
@@ -640,14 +656,17 @@ namespace limbo::Gfx
 
 	void Device::WaitGPU()
 	{
-		// Schedule a signal command in the queue
-		m_CommandQueue->Signal(m_Fence.Get(), m_FenceValues[m_FrameIndex]);
-		
-		// Wait until the fence has been processed
-		m_Fence->SetEventOnCompletion(m_FenceValues[m_FrameIndex], m_FenceEvent);
-		WaitForSingleObject(m_FenceEvent, INFINITE);
-		
-		// Increment the fence value for the current frame
-		m_FenceValues[m_FrameIndex]++;
+		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
+		{
+			// Schedule a signal command in the queue
+			m_CommandQueue->Signal(m_Fence.Get(), m_FenceValues[i]);
+
+			// Wait until the fence has been processed
+			m_Fence->SetEventOnCompletion(m_FenceValues[i], m_FenceEvent);
+			WaitForSingleObject(m_FenceEvent, INFINITE);
+
+			// Increment the fence value for the current frame
+			m_FenceValues[i]++;
+		}
 	}
 }

@@ -12,7 +12,18 @@
 namespace limbo::Gfx
 {
 	Swapchain::Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, Core::Window* window)
-		: m_BackbufferWidth(window->Width), m_BackbufferHeight(window->Height)
+		: m_BackbufferWidth(window->Width), m_BackbufferHeight(window->Height), m_CommandQueue(queue)
+		, m_Factory(factory), m_Window(window), m_ResizeWidth(0), m_ResizeHeight(0)
+	{
+		CreateDXGISwapchain();
+	}
+
+	Swapchain::~Swapchain()
+	{
+		DestroyBackbuffers(false);
+	}
+
+	void Swapchain::CreateDXGISwapchain()
 	{
 		DXGI_SWAP_CHAIN_DESC1 desc = {
 			.Width = m_BackbufferWidth,
@@ -31,17 +42,8 @@ namespace limbo::Gfx
 			.Flags = 0
 		};
 		ComPtr<IDXGISwapChain1> tempSwapchain;
-		DX_CHECK(factory->CreateSwapChainForHwnd(queue, window->GetWin32Handle(), &desc, nullptr, nullptr, &tempSwapchain));
+		DX_CHECK(m_Factory->CreateSwapChainForHwnd(m_CommandQueue, m_Window->GetWin32Handle(), &desc, nullptr, nullptr, &tempSwapchain));
 		tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain));
-	}
-
-	Swapchain::~Swapchain()
-	{
-		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
-		{
-			DestroyTexture(m_Backbuffers[i]);
-			DestroyTexture(m_DepthBackbuffers[i]);
-		}
 	}
 
 	void Swapchain::InitBackBuffers()
@@ -80,6 +82,35 @@ namespace limbo::Gfx
 
 			tempBuffer->Release();
 		}
+	}
+
+	void Swapchain::DestroyBackbuffers(bool bImmediate)
+	{
+		for (uint32 i = 0; i < NUM_BACK_BUFFERS; ++i)
+		{
+			DestroyTexture(m_Backbuffers[i], bImmediate);
+			DestroyTexture(m_DepthBackbuffers[i], bImmediate);
+		}
+	}
+
+	void Swapchain::MarkForResize(uint32 width, uint32 height)
+	{
+		m_ResizeWidth  = width;
+		m_ResizeHeight = height;
+	}
+
+	void Swapchain::CheckForResize()
+	{
+		m_BackbufferWidth = m_ResizeWidth;
+		m_BackbufferHeight = m_ResizeHeight;
+
+		m_Swapchain.Reset();
+
+		DestroyBackbuffers(true);
+		CreateDXGISwapchain();
+		InitBackBuffers();
+
+		Device::Ptr->OnResizedSwapchain.Broadcast(m_BackbufferWidth, m_BackbufferHeight);
 	}
 
 	void Swapchain::Present(bool vsync)

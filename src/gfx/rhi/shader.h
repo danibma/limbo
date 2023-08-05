@@ -111,6 +111,8 @@ namespace limbo::Gfx
 		void SetBuffer(const char* parameterName, Handle<class Buffer> buffer);
 		void SetSampler(const char* parameterName, Handle<class Sampler> sampler);
 
+		void ResizeRenderTargets(uint32 width, uint32 height);
+
 	private:
 		void CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);
 		void CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, const SC::Kernel* kernels, uint32 kernelsCount);
