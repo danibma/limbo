@@ -38,6 +38,8 @@ namespace limbo::Core
 		Window* win = (Window*)glfwGetWindowUserPointer(window);
 		ensure(win);
 
+		if (width == 0 && height == 0) return;
+
 		win->Width  = width;
 		win->Height = height;
 		win->OnWindowResize.Broadcast(width, height);
