@@ -263,9 +263,18 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		float deltaTime = deltaTimer.ElapsedMilliseconds();
 		deltaTimer.Record();
 
+
 		window->PollEvents();
 
 		Gfx::UpdateCamera(window, camera, deltaTime);
+
+#pragma region Input
+		{
+			bool ReloadShadersBind = Input::IsKeyDown(window, Input::KeyCode::LeftControl) && Input::IsKeyDown(window, Input::KeyCode::R);
+			if (ReloadShadersBind)
+				Gfx::ReloadShaders();
+		}
+#pragma endregion Input
 
 #pragma region UI
 		if (ImGui::BeginMainMenuBar())
@@ -317,6 +326,9 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 				if (ImGui::MenuItem("Take GPU Capture"))
 					Gfx::TakeGPUCapture();
+
+				if (ImGui::MenuItem("Reload Shaders", "Ctrl-R"))
+					Gfx::ReloadShaders();
 
 				ImGui::EndMenu();
 			}

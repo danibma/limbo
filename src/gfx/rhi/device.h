@@ -57,6 +57,7 @@ namespace limbo::Gfx
 		GfxDeviceFlags						m_Flags;
 		bool								m_bPIXCanCapture = false;
 		bool								m_bNeedsResize = false;
+		bool								m_bNeedsShaderReload = false;
 
 		GPUInfo								m_GPUInfo;
 
@@ -67,6 +68,9 @@ namespace limbo::Gfx
 
 		DECLARE_MULTICAST_DELEGATE(TOnResizedSwapchain, uint32, uint32);
 		TOnResizedSwapchain OnResizedSwapchain;
+
+		DECLARE_MULTICAST_DELEGATE(TReloadShaders);
+		TReloadShaders ReloadShaders;
 
 	public:
 		Device(Core::Window* window, GfxDeviceFlags flags);
@@ -137,6 +141,8 @@ namespace limbo::Gfx
 		uint32 GetBackbufferWidth();
 		uint32 GetBackbufferHeight();
 
+		void MarkReloadShaders();
+
 	private:
 		void InitSwapchainBackBuffers();
 		void DestroySwapchainBackBuffers();
@@ -181,6 +187,11 @@ namespace limbo::Gfx
 	inline void BeginEvent(const char* name, uint64 color = 0)
 	{
 		Device::Ptr->BeginEvent(name, color);
+	}
+
+	inline void ReloadShaders()
+	{
+		Device::Ptr->MarkReloadShaders();
 	}
 
 	inline void EndEvent()

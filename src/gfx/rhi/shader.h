@@ -85,6 +85,8 @@ namespace limbo::Gfx
 		using InputLayout = std::vector<D3D12_INPUT_ELEMENT_DESC>;
 
 		std::string							m_Name;
+		ShaderSpec							m_Spec;
+		DelegateHandle						m_ReloadShaderDelHandle;
 
 	public:
 		ComPtr<ID3D12PipelineState>			PipelineState;
@@ -112,12 +114,14 @@ namespace limbo::Gfx
 		void SetSampler(const char* parameterName, Handle<class Sampler> sampler);
 
 		void ResizeRenderTargets(uint32 width, uint32 height);
+		void ReloadShader();
 
 	private:
 		void CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);
 		void CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, const SC::Kernel* kernels, uint32 kernelsCount);
 		void CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
-		void CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec);
+		void CreateRenderTargets(const ShaderSpec& spec, D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
+		void CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec, bool bIsReloading);
 
 		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultBlendDesc();
 		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultEnabledBlendDesc();

@@ -17,17 +17,19 @@
 namespace limbo::Gfx
 {
 	Shader::Shader(const ShaderSpec& spec)
-		: m_Name(spec.ProgramName)
+		: m_Name(spec.ProgramName), m_Spec(spec)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
 
 		Type = spec.Type;
 
+		m_ReloadShaderDelHandle = device->ReloadShaders.AddRaw(this, &Shader::ReloadShader);
+
 		if (spec.Type == ShaderType::Compute)
 			CreateComputePipeline(d3ddevice, spec);
 		else if (spec.Type == ShaderType::Graphics)
-			CreateGraphicsPipeline(d3ddevice, spec);
+			CreateGraphicsPipeline(d3ddevice, spec, false);
 	}
 
 	Shader::~Shader()
@@ -40,6 +42,8 @@ namespace limbo::Gfx
 
 		if (DepthTarget.Texture.IsValid() && !DepthTarget.bIsExternal)
 			DestroyTexture(DepthTarget.Texture);
+
+		Device::Ptr->ReloadShaders.Remove(m_ReloadShaderDelHandle);
 	}
 
 	void Shader::SetComputeRootParameters(ID3D12GraphicsCommandList* cmd)
@@ -168,6 +172,8 @@ namespace limbo::Gfx
 
 	void Shader::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel const* kernels, uint32 kernelsCount)
 	{
+		ParameterMap.clear();
+
 		CD3DX12_ROOT_PARAMETER1   rootParameters[64] = {}; // root signature limits https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits#memory-limits-and-costs
 		CD3DX12_DESCRIPTOR_RANGE1 ranges[64] = {};
 		uint32 currentRP = 0;
@@ -336,65 +342,9 @@ namespace limbo::Gfx
 		DX_CHECK(device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&PipelineState)));
 	}
 
-	void Shader::CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec)
+	void Shader::CreateRenderTargets(const ShaderSpec& spec, D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc)
 	{
-		FAILIF(!spec.ProgramName);
-
-		SC::Kernel vs;
-		FAILIF(!SC::Compile(vs, spec.ProgramName, spec.VSEntryPoint, SC::KernelType::Vertex));
-		SC::Kernel ps;
-		FAILIF(!SC::Compile(ps, spec.ProgramName, spec.PSEntryPoint, SC::KernelType::Pixel));
-
-		InputLayout inputLayout;
-		CreateInputLayout(vs, inputLayout);
-
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-		SC::Kernel kernels[2] = { vs, ps };
-		CreateRootSignature(device, rootSignatureFlags, kernels, 2);
-
-		D3D12_SHADER_BYTECODE vsBytecode = {
-			.pShaderBytecode = vs.Bytecode->GetBufferPointer(),
-			.BytecodeLength = vs.Bytecode->GetBufferSize()
-		};
-
-		D3D12_SHADER_BYTECODE psBytecode = {
-			.pShaderBytecode = ps.Bytecode->GetBufferPointer(),
-			.BytecodeLength = ps.Bytecode->GetBufferSize()
-		};
-
-		D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-		rasterizerDesc.FrontCounterClockwise = true;
-
-		D3D12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		blendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();
-
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = RootSignature.Get(),
-			.VS = vsBytecode,
-			.PS = psBytecode,
-			.StreamOutput = nullptr,
-			.BlendState = blendState,
-			.SampleMask = 0xFFFFFFFF,
-			.RasterizerState = rasterizerDesc,
-			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
-			.InputLayout = {
-				inputLayout.data(),
-				(uint32)inputLayout.size(),
-			},
-			.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
-			.PrimitiveTopologyType = spec.Topology,
-			.SampleDesc = {
-				.Count = 1,
-				.Quality = 0 
-			},
-			.NodeMask = 0,
-			.CachedPSO = nullptr,
-			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
-		};
-
-		auto createRenderTarget = [this, &desc, &spec](int index)
+		auto createRenderTarget = [this, &spec](int index)
 		{
 			std::string debugName;
 			if (spec.RTFormats[index].DebugName[0] != '\0')
@@ -499,6 +449,93 @@ namespace limbo::Gfx
 						.bIsExternal = false
 					};
 				}
+			}
+		}
+	}
+
+	void Shader::CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec, bool bIsReloading)
+	{
+		FAILIF(!spec.ProgramName);
+
+		SC::Kernel vs;
+		FAILIF(!SC::Compile(vs, spec.ProgramName, spec.VSEntryPoint, SC::KernelType::Vertex));
+		SC::Kernel ps;
+		FAILIF(!SC::Compile(ps, spec.ProgramName, spec.PSEntryPoint, SC::KernelType::Pixel));
+
+		InputLayout inputLayout;
+		CreateInputLayout(vs, inputLayout);
+
+		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+		SC::Kernel kernels[2] = { vs, ps };
+		CreateRootSignature(device, rootSignatureFlags, kernels, 2);
+
+		D3D12_SHADER_BYTECODE vsBytecode = {
+			.pShaderBytecode = vs.Bytecode->GetBufferPointer(),
+			.BytecodeLength = vs.Bytecode->GetBufferSize()
+		};
+
+		D3D12_SHADER_BYTECODE psBytecode = {
+			.pShaderBytecode = ps.Bytecode->GetBufferPointer(),
+			.BytecodeLength = ps.Bytecode->GetBufferSize()
+		};
+
+		D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+		rasterizerDesc.FrontCounterClockwise = true;
+
+		D3D12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		blendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();
+
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
+			.pRootSignature = RootSignature.Get(),
+			.VS = vsBytecode,
+			.PS = psBytecode,
+			.StreamOutput = nullptr,
+			.BlendState = blendState,
+			.SampleMask = 0xFFFFFFFF,
+			.RasterizerState = rasterizerDesc,
+			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
+			.InputLayout = {
+				inputLayout.data(),
+				(uint32)inputLayout.size(),
+			},
+			.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
+			.PrimitiveTopologyType = spec.Topology,
+			.SampleDesc = {
+				.Count = 1,
+				.Quality = 0 
+			},
+			.NodeMask = 0,
+			.CachedPSO = nullptr,
+			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
+		};
+
+		if (!bIsReloading)
+		{
+			CreateRenderTargets(spec, desc);
+		}
+		else
+		{
+			if (RTCount <= 0)
+			{
+				desc.RTVFormats[0] = D3DFormat(Device::Ptr->GetSwapchainFormat());
+				desc.DSVFormat = D3DFormat(Device::Ptr->GetSwapchainDepthFormat());
+				desc.NumRenderTargets = 1;
+				UseSwapchainRT = true;
+			}
+			else
+			{
+				UseSwapchainRT = false;
+
+				for (uint8 i = 0; i < RTCount; ++i)
+					desc.RTVFormats[i] = D3DFormat(spec.RTFormats[i].RTFormat);
+				desc.NumRenderTargets = RTCount;
+
+				if (spec.DepthFormat.RTFormat == Format::UNKNOWN && !spec.DepthFormat.RTTexture.IsValid())
+					desc.DepthStencilState.DepthEnable = false;
+				else
+					desc.DSVFormat = D3DFormat(spec.DepthFormat.RTFormat);
 			}
 		}
 
@@ -613,6 +650,17 @@ namespace limbo::Gfx
 			Texture* texture = ResourceManager::Ptr->GetTexture(DepthTarget.Texture);
 			texture->ReloadSize(width, height);
 		}
+	}
+
+	void Shader::ReloadShader()
+	{
+		PipelineState.Reset();
+		RootSignature.Reset();
+
+		if (Type == ShaderType::Compute)
+			CreateComputePipeline(Device::Ptr->GetDevice(), m_Spec);
+		else if (Type == ShaderType::Graphics)
+			CreateGraphicsPipeline(Device::Ptr->GetDevice(), m_Spec, true);
 	}
 
 	std::string_view Shader::ParameterTypeToStr(ParameterType type)

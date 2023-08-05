@@ -459,6 +459,14 @@ namespace limbo::Gfx
 			NextFrame(); // Synchronize with new frame index
 		}
 
+		if (m_bNeedsShaderReload)
+		{
+			Core::Timer t;
+			ReloadShaders.Broadcast();
+			m_bNeedsShaderReload = false;
+			LB_LOG("Shaders got reloaded. It took %.2fs", t.ElapsedSeconds());
+		}
+
 		DX_CHECK(m_CommandAllocators[m_FrameIndex]->Reset());
 		DX_CHECK(m_CommandList->Reset(m_CommandAllocators[m_FrameIndex].Get(), nullptr));
 
@@ -602,6 +610,11 @@ namespace limbo::Gfx
 	uint32 Device::GetBackbufferHeight()
 	{
 		return m_Swapchain->GetBackbufferHeight();
+	}
+
+	void Device::MarkReloadShaders()
+	{
+		m_bNeedsShaderReload = true;
 	}
 
 	void Device::PickGPU()
