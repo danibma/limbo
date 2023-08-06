@@ -16,6 +16,7 @@
 #include "tests/tests.h"
 
 #include <array>
+#include <filesystem>
 
 
 using namespace limbo;
@@ -63,7 +64,18 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Gfx::Handle<Gfx::Texture> irradianceMap;
 	Gfx::Handle<Gfx::Texture> prefilterMap;
 	Gfx::Handle<Gfx::Texture> brdfLUTMap;
+
+	auto loadSkyboxTexture = [&environmentCubemap, &irradianceMap, &prefilterMap, &brdfLUTMap](const char* hdrTexture) -> void
 	{
+		if (environmentCubemap.IsValid())
+			Gfx::DestroyTexture(environmentCubemap);
+		if (irradianceMap.IsValid())
+			Gfx::DestroyTexture(irradianceMap);
+		if (prefilterMap.IsValid())
+			Gfx::DestroyTexture(prefilterMap);
+		if (brdfLUTMap.IsValid())
+			Gfx::DestroyTexture(brdfLUTMap);
+
 		uint2 equirectangularTextureSize = { 1024, 1024 };
 		environmentCubemap = Gfx::CreateTexture({
 			.Width = equirectangularTextureSize.x,
@@ -76,7 +88,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		// transform an equirectangular map into a cubemap
 		{
-			Gfx::Handle<Gfx::Texture> equirectangularTexture = Gfx::CreateTextureFromFile("assets/environment/a_rotes_rathaus_4k.hdr", "Equirectangular Texture");
+			Gfx::Handle<Gfx::Texture> equirectangularTexture = Gfx::CreateTextureFromFile(hdrTexture, "Equirectangular Texture");
 			Gfx::Handle<Gfx::Shader> equirectToCubemap = Gfx::CreateShader({
 				.ProgramName = "ibl",
 				.CsEntryPoint = "EquirectToCubemap",
@@ -181,7 +193,16 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 			Gfx::DestroyShader(brdfLUTShader);
 		}
-	}
+	};
+
+	// Environment Maps
+	bool bChangeEnvMap = false;
+	int selectedEnvMap = 0;
+	std::vector<std::filesystem::path> envMaps;
+	const char* env_maps_path = "assets/environment";
+	for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
+		envMaps.emplace_back(entry.path());
+	loadSkyboxTexture(envMaps[selectedEnvMap].string().c_str());
 
 	// Skybox
 	Gfx::Handle<Gfx::Shader> skyboxShader;
@@ -221,7 +242,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
-	std::vector<Gfx::Scene*> scenes = { Gfx::Scene::Load("assets/models/Sponza/Sponza.gltf") };
+	std::vector<Gfx::Scene*> scenes;
+	//scenes.emplace_back(Gfx::Scene::Load("assets/models/Sponza/Sponza.gltf"));
 
 	int tonemapMode = 1;
 	const char* tonemapModes[] = {
@@ -280,6 +302,30 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 					scenes.clear();
 				}
 
+				ImGui::SeparatorText("Environment Map");
+				{
+					std::string envPreviewValue = envMaps[selectedEnvMap].stem().string();
+					if (ImGui::BeginCombo("##env_map", envPreviewValue.c_str()))
+					{
+						for (int i = 0; i < envMaps.size(); i++)
+						{
+							const bool bIsSelected = (selectedEnvMap == i);
+							if (ImGui::Selectable(envMaps[i].stem().string().c_str(), bIsSelected))
+							{
+								if (selectedEnvMap != i)
+									bChangeEnvMap = true;
+								selectedEnvMap = i;
+							}
+
+							// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+							if (bIsSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+				}
+				
+
 				ImGui::EndMenu();
 			}
 
@@ -330,6 +376,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			ImGui::EndMainMenuBar();
 		}
 #pragma endregion UI
+
+		if (bChangeEnvMap)
+		{
+			loadSkyboxTexture(envMaps[selectedEnvMap].string().c_str());
+			bChangeEnvMap = false;
+		}
 
 		Gfx::BeginEvent("Geometry Pass");
 		Gfx::BindShader(deferredShader);
