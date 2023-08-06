@@ -17,7 +17,7 @@ void GenerateMip(uint2 threadID : SV_DispatchThreadID)
     float4 color = PreviousMip.SampleLevel(LinearClamp, texcoords, 0);
 
 	if (bIsRGB == 1)
-        color = float4(pow(color.rgb, (float3)(1.0 / 2.2)), 1.0f);
+        color = float4(pow(color.rgb, (float3)(1.0 / 2.2)), color.a);
 
 	//Write the final color into the destination texture.
     OutputMip[threadID] = color;
