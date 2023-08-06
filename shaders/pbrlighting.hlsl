@@ -113,7 +113,7 @@ float4 PSMain(QuadResult quad) : SV_Target
 	{
         float3 L = normalize(lightPos - worldPos); // light direction
         float3 H = normalize(V + L); // half vector
-        float distance = length(lightColor - worldPos);
+        float distance = length(lightPos - worldPos);
         float attenuation = 1.0f / (distance * distance);
         float3 radiance = lightColor * attenuation;
     
