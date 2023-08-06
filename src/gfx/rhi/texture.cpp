@@ -11,7 +11,7 @@ namespace limbo::Gfx
 {
 	void Texture::CreateResource(const TextureSpec& spec)
 	{
-		m_Spec = spec;
+		Spec = spec;
 
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
@@ -120,7 +120,7 @@ namespace limbo::Gfx
 	void Texture::CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel)
 	{
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
-			.Format = format,
+			.Format = format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ? DXGI_FORMAT_R8G8B8A8_UNORM : format,
 		};
 
 		if (spec.Type == TextureType::Texture1D)
@@ -262,9 +262,15 @@ namespace limbo::Gfx
 
 		if (spec.bCreateSrv)
 		{
-			if (SRVHandle.CpuHandle.ptr == 0)
-				SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);
-			CreateSrv(spec, d3ddevice, srvformat);
+			for (uint8 i = 0; i < spec.MipLevels; ++i)
+			{
+				if (i > 0 && (spec.Type == TextureType::Texture3D || spec.Type == TextureType::TextureCube))
+					break;
+
+				if (SRVHandle[i].CpuHandle.ptr == 0)
+					SRVHandle[i] = device->AllocateHandle(DescriptorHeapType::SRV);
+				CreateSrv(spec, d3ddevice, srvformat, i);
+			}
 		}
 
 		if (spec.InitialData)
@@ -280,14 +286,11 @@ namespace limbo::Gfx
 				.Usage = BufferUsage::Upload,
 				.InitialData = spec.InitialData
 			});
-			
+
 			Buffer* allocationBuffer = ResourceManager::Ptr->GetBuffer(uploadBuffer);
 			FAILIF(!allocationBuffer);
 			Device::Ptr->CopyBufferToTexture(allocationBuffer, this);
 			DestroyBuffer(uploadBuffer);
-
-			for (uint16 i = 0; i < spec.MipLevels; ++i)
-				CurrentState[i] = D3D12_RESOURCE_STATE_COPY_DEST;
 		}
 
 		if (!spec.DebugName.empty())
@@ -304,16 +307,16 @@ namespace limbo::Gfx
 
 	void Texture::ReloadSize(uint32 width, uint32 height)
 	{
-		m_Spec.Width  = width;
-		m_Spec.Height = height;
+		Spec.Width  = width;
+		Spec.Height = height;
 
 		Resource.Reset();
 
-		CreateResource(m_Spec);
-		InitResource(m_Spec);
+		CreateResource(Spec);
+		InitResource(Spec);
 	}
 
-	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
+	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
 			.Format = format,
@@ -324,7 +327,7 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
 			srvDesc.Texture1D = {
-				.MostDetailedMip = 0,
+				.MostDetailedMip = mipLevel,
 				.MipLevels = spec.MipLevels,
 				.ResourceMinLODClamp = 0.0f
 			};
@@ -333,8 +336,8 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			srvDesc.Texture2D = {
-				.MostDetailedMip = 0,
-				.MipLevels = spec.MipLevels,
+				.MostDetailedMip = mipLevel,
+				.MipLevels = mipLevel == 0 ? spec.MipLevels : 1u,
 				.PlaneSlice = 0,
 				.ResourceMinLODClamp = 0.0f
 			};
@@ -343,7 +346,7 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 			srvDesc.Texture3D = {
-				.MostDetailedMip = 0,
+				.MostDetailedMip = mipLevel,
 				.MipLevels = spec.MipLevels,
 				.ResourceMinLODClamp = 0.0f
 			};
@@ -352,12 +355,12 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			srvDesc.TextureCube = {
-				.MostDetailedMip = 0,
+				.MostDetailedMip = mipLevel,
 				.MipLevels = spec.MipLevels,
 				.ResourceMinLODClamp = 0.0f
 			};
 		}
 
-		device->CreateShaderResourceView(Resource.Get(), &srvDesc, SRVHandle.CpuHandle);
+		device->CreateShaderResourceView(Resource.Get(), &srvDesc, SRVHandle[mipLevel].CpuHandle);
 	}
 }

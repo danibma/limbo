@@ -27,6 +27,8 @@ namespace limbo::Gfx
 		static ResourceManager*		Ptr;
 
 		Handle<Texture>				EmptyTexture;
+		Handle<Sampler>				DefaultLinearClamp;
+		Handle<Sampler>				DefaultLinearWrap;
 
 	public:
 		ResourceManager();
@@ -196,5 +198,15 @@ namespace limbo::Gfx
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 		s->SetConstant(parameterName, &value);
+	}
+
+	inline Handle<Sampler> GetDefaultLinearWrapSampler()
+	{
+		return ResourceManager::Ptr->DefaultLinearWrap;
+	}
+
+	inline Handle<Sampler> GetDefaultLinearClampSampler()
+	{
+		return ResourceManager::Ptr->DefaultLinearClamp;
 	}
 }

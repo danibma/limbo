@@ -28,6 +28,32 @@ namespace limbo::Gfx
 				.InitialData = &blackTextureData,
 				.bCreateSrv = true
 			});
+
+			DefaultLinearWrap = Gfx::CreateSampler({
+				.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+				.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+				.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+				.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+				.MipLODBias = 0,
+				.MaxAnisotropy = 0,
+				.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
+				.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
+				.MinLOD = 0.0f,
+				.MaxLOD = D3D12_FLOAT32_MAX
+			});
+
+			DefaultLinearClamp = Gfx::CreateSampler({
+				.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+				.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+				.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+				.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+				.MipLODBias = 0,
+				.MaxAnisotropy = 0,
+				.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
+				.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
+				.MinLOD = 0.0f,
+				.MaxLOD = D3D12_FLOAT32_MAX
+			});
 		});
 	}
 

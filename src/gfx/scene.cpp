@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "scene.h"
 #include "core/paths.h"
+#include "gfx/rhi/device.h"
+#include "gfx/shaderinterop.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4996) // disable _CRT_SECURE_NO_WARNINGS
@@ -246,12 +248,16 @@ namespace limbo::Gfx
 		outTexture = CreateTexture({
 			.Width = (uint32)width,
 			.Height = (uint32)height,
+			.MipLevels = CalculateMipCount(width),
 			.DebugName = dname.c_str(),
+			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
 			.Format = format,
 			.Type = TextureType::Texture2D,
 			.InitialData = data
 		});
 		free(data);
+
+		Gfx::GenerateMipLevels(outTexture);
 	}
 
 	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uintptr_t material)

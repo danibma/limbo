@@ -43,26 +43,6 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 	Gfx::FPSCamera camera = Gfx::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
-	Gfx::Handle<Gfx::Sampler> linearWrapSampler = Gfx::CreateSampler({
-		.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-		.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-		.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
-		.MinLOD = 0.0f,
-		.MaxLOD = 1.0f
-	});
-
-	Gfx::Handle<Gfx::Sampler> linearClampSampler = Gfx::CreateSampler({
-		.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-		.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-		.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-		.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-		.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
-		.MinLOD = 0.0f,
-		.MaxLOD = 1.0f
-	});
-
 	// Deferred shader
 	Gfx::Handle<Gfx::Shader> deferredShader = Gfx::CreateShader({
 		.ProgramName = "deferredshading",
@@ -106,7 +86,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			Gfx::BindShader(equirectToCubemap);
 			Gfx::SetParameter(equirectToCubemap, "g_EnvironmentEquirectangular", equirectangularTexture);
 			Gfx::SetParameter(equirectToCubemap, "g_OutEnvironmentCubemap", environmentCubemap);
-			Gfx::SetParameter(equirectToCubemap, "LinearWrap", linearWrapSampler);
+			Gfx::SetParameter(equirectToCubemap, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
 			Gfx::Dispatch(equirectangularTextureSize.x / 32, equirectangularTextureSize.y / 32, 6);
 
 			Gfx::DestroyShader(equirectToCubemap);
@@ -134,7 +114,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			Gfx::BindShader(irradianceShader);
 			Gfx::SetParameter(irradianceShader, "g_EnvironmentCubemap", environmentCubemap);
 			Gfx::SetParameter(irradianceShader, "g_IrradianceMap", irradianceMap);
-			Gfx::SetParameter(irradianceShader, "LinearWrap", linearWrapSampler);
+			Gfx::SetParameter(irradianceShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
 			Gfx::Dispatch(irradianceSize.x / 32, irradianceSize.y / 32, 6);
 
 			Gfx::DestroyShader(irradianceShader);
@@ -163,7 +143,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 			Gfx::BindShader(prefilterShader);
 			Gfx::SetParameter(prefilterShader, "g_EnvironmentCubemap", environmentCubemap);
-			Gfx::SetParameter(prefilterShader, "LinearWrap", linearWrapSampler);
+			Gfx::SetParameter(prefilterShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
 
 			const float deltaRoughness = 1.0f / glm::max(float(prefilterMipLevels - 1), 1.0f);
 			for (uint32_t level = 0, size = prefilterSize.x; level < prefilterMipLevels; ++level, size /= 2)
@@ -241,7 +221,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Graphics
 	});
 
-	std::vector<Gfx::Scene*> scenes;
+	std::vector<Gfx::Scene*> scenes = { Gfx::Scene::Load("assets/models/Sponza/Sponza.gltf") };
 
 	int tonemapMode = 1;
 	const char* tonemapModes[] = {
@@ -354,7 +334,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::BeginEvent("Geometry Pass");
 		Gfx::BindShader(deferredShader);
 		Gfx::SetParameter(deferredShader, "viewProj", camera.ViewProj);
-		Gfx::SetParameter(deferredShader, "LinearWrap", linearWrapSampler);
+		Gfx::SetParameter(deferredShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
 		for (Gfx::Scene* scene : scenes)
 		{
 			scene->DrawMesh([&](const Gfx::Mesh& mesh)
@@ -379,7 +359,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::SetParameter(skyboxShader, "g_EnvironmentCube", environmentCubemap);
 		Gfx::SetParameter(skyboxShader, "view", camera.View);
 		Gfx::SetParameter(skyboxShader, "proj", camera.Proj);
-		Gfx::SetParameter(skyboxShader, "LinearWrap", linearWrapSampler);
+		Gfx::SetParameter(skyboxShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
 		skyboxCube->DrawMesh([&](const Gfx::Mesh& mesh)
 		{
 			Gfx::BindVertexBuffer(mesh.VertexBuffer);
@@ -394,7 +374,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::SetParameter(pbrShader, "camPos", camera.Eye);
 		Gfx::SetParameter(pbrShader, "lightPos", lightPosition);
 		Gfx::SetParameter(pbrShader, "lightColor", lightColor);
-		Gfx::SetParameter(pbrShader, "LinearClamp", linearClampSampler);
+		Gfx::SetParameter(pbrShader, "LinearClamp", Gfx::GetDefaultLinearClampSampler());
 		// Bind deferred shading render targets
 		Gfx::SetParameter(pbrShader, "g_WorldPosition", deferredShader, 0);
 		Gfx::SetParameter(pbrShader, "g_Albedo",		deferredShader, 1);
@@ -429,7 +409,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::BindShader(compositeShader);
 		Gfx::SetParameter(compositeShader, "g_TonemapMode", tonemapMode);
 		Gfx::SetParameter(compositeShader, "g_sceneTexture", sceneTexture);
-		Gfx::SetParameter(compositeShader, "LinearWrap", linearWrapSampler);
+		Gfx::SetParameter(compositeShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
 		Gfx::Draw(6);
 		Gfx::EndEvent();
 

@@ -87,10 +87,10 @@ namespace limbo::Gfx
 		}
 #endif
 
-		m_Srvheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV, true);
-		m_Rtvheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV);
-		m_Dsvheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV);
-		m_Samplerheap = new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SAMPLERS, true);
+		m_Srvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV,    8196, true);
+		m_Rtvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV,     128);
+		m_Dsvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV,      64);
+		m_Samplerheap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SAMPLERS, 16, true);
 
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {
 			.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -101,8 +101,8 @@ namespace limbo::Gfx
 		DX_CHECK(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_CommandQueue)));
 
 		m_Swapchain = new Swapchain(m_CommandQueue.Get(), m_Factory.Get(), window);
-		OnPostResourceManagerInit.AddRaw(this, &Device::InitSwapchainBackBuffers);
-		OnPreResourceManagerShutdown.AddRaw(this, &Device::DestroySwapchainBackBuffers);
+		OnPostResourceManagerInit.AddRaw(this, &Device::InitResources);
+		OnPreResourceManagerShutdown.AddRaw(this, &Device::DestroyResources);
 		OnPreResourceManagerShutdown.AddRaw(this, &Device::WaitGPU);
 
 		window->OnWindowResize.AddRaw(this, &Device::HandleWindowResize);
@@ -177,8 +177,10 @@ namespace limbo::Gfx
 		}
 	}
 
-	void Device::DestroySwapchainBackBuffers()
+	void Device::DestroyResources()
 	{
+		DestroyShader(m_GenerateMipsShader);
+
 		delete m_Swapchain;
 	}
 
@@ -213,6 +215,9 @@ namespace limbo::Gfx
 
 	void Device::CopyBufferToTexture(Buffer* src, Texture* dst)
 	{
+		Device::Ptr->TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST, ~0);
+		SubmitResourceBarriers();
+
 		D3D12_RESOURCE_DESC dstDesc = dst->Resource->GetDesc();
 
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT srcFootprints[D3D12_REQ_MIP_LEVELS] = {};
@@ -513,7 +518,7 @@ namespace limbo::Gfx
 		return m_Swapchain->GetDepthFormat();
 	}
 
-	void Device::InitSwapchainBackBuffers()
+	void Device::InitResources()
 	{
 		m_Swapchain->InitBackBuffers();
 
@@ -528,6 +533,12 @@ namespace limbo::Gfx
 		TransitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 
 		SubmitResourceBarriers();
+
+		m_GenerateMipsShader = CreateShader({
+			.ProgramName = "generatemips",
+			.CsEntryPoint = "GenerateMip",
+			.Type = ShaderType::Compute
+		});
 	}
 
 	DescriptorHandle Device::AllocateHandle(DescriptorHeapType heapType)
@@ -563,10 +574,22 @@ namespace limbo::Gfx
 
 	void Device::TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel)
 	{
-		uint32 level = mipLevel == ~0 ? 0 : mipLevel;
-		if (texture->CurrentState[level] == newState) return;
-		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->Resource.Get(), texture->CurrentState[level], newState, mipLevel));
-		texture->CurrentState[level] = newState;
+		D3D12_RESOURCE_STATES oldState;
+		if (mipLevel == ~0)
+		{
+			if (texture->CurrentState[0] == newState) return;
+			oldState = texture->CurrentState[0];
+			for (uint8 i = 0; i < texture->Spec.MipLevels; ++i)
+				texture->CurrentState[i] = newState;
+		}
+		else
+		{
+			if (texture->CurrentState[mipLevel] == newState) return;
+			oldState = texture->CurrentState[mipLevel];
+			texture->CurrentState[mipLevel] = newState;
+		}
+
+		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->Resource.Get(), oldState, newState, mipLevel));
 	}
 
 	void Device::TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState)
@@ -616,6 +639,33 @@ namespace limbo::Gfx
 	void Device::MarkReloadShaders()
 	{
 		m_bNeedsShaderReload = true;
+	}
+
+	void Device::GenerateMipLevels(Handle<Texture> texture)
+	{
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
+		FAILIF(!t);
+
+		bool bIsRGB = t->Spec.Format == Format::RGBA8_UNORM_SRGB;
+
+		BindShader(m_GenerateMipsShader);
+		SetParameter(m_GenerateMipsShader, "LinearClamp", GetDefaultLinearClampSampler());
+		for (uint16 i = 1; i < t->Spec.MipLevels; ++i)
+		{
+			uint2 outputMipSize = { t->Spec.Width , t->Spec.Height };
+			outputMipSize.x >>= i;
+			outputMipSize.y >>= i;
+			float2 texelSize = { 1.0f / outputMipSize.x, 1.0f / outputMipSize.y };
+
+			SetParameter(m_GenerateMipsShader, "bIsRGB", bIsRGB ? 1 : 0);
+			SetParameter(m_GenerateMipsShader, "TexelSize", texelSize);
+			SetParameter(m_GenerateMipsShader, "PreviousMip", texture, i - 1);
+			SetParameter(m_GenerateMipsShader, "OutputMip", texture, i);
+			Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
+		}
+
+		TransitionResource(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, t->Spec.MipLevels - 1);
+		SubmitResourceBarriers();
 	}
 
 	void Device::PickGPU()

@@ -5,14 +5,14 @@
 
 namespace limbo::Gfx
 {
-	DescriptorHeap::DescriptorHeap(ID3D12Device* device, DescriptorHeapType heapType, bool bShaderVisible)
-		: m_bShaderVisible(bShaderVisible)
+	DescriptorHeap::DescriptorHeap(ID3D12Device* device, DescriptorHeapType heapType, uint32 numDescriptors, bool bShaderVisible)
+		: m_MaxDescriptors(numDescriptors), m_bShaderVisible(bShaderVisible)
 	{
 		m_CurrentDescriptor = 0;
 
 		D3D12_DESCRIPTOR_HEAP_DESC desc = {
 			.Type = D3DDescriptorHeapType(heapType),
-			.NumDescriptors = MAX_DESCRIPTOR_NUM,
+			.NumDescriptors = m_MaxDescriptors,
 			.Flags = bShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 			.NodeMask = 0
 		};
@@ -29,7 +29,7 @@ namespace limbo::Gfx
 	{
 		DescriptorHandle handle = {};
 
-		if (m_CurrentDescriptor >= MAX_DESCRIPTOR_NUM)
+		if (m_CurrentDescriptor >= m_MaxDescriptors)
 		{
 			LB_ERROR("Ran out of descriptor heap handles, need to increase heap size.");
 			return handle;

@@ -124,9 +124,9 @@ namespace limbo::Gfx
 		}
 		else if (parameter.Type == ParameterType::SRV)
 		{
-			FAILIF(t->SRVHandle.GPUHandle.ptr == 0); // texture is not a SRVs
+			FAILIF(t->SRVHandle[level].GPUHandle.ptr == 0); // texture is not a SRVs
 			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-			parameter.Descriptor = t->SRVHandle.GPUHandle;
+			parameter.Descriptor = t->SRVHandle[level].GPUHandle;
 		}
 		else
 		{

@@ -3,7 +3,6 @@
 #include <functional> // for std::function
 
 #include "core/math.h"
-#include "gfx/shaderinterop.h"
 
 #include "rhi/resourcemanager.h"
 #include "rhi/resourcepool.h"

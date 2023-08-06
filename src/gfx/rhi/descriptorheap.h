@@ -23,16 +23,16 @@ namespace limbo::Gfx
 	{
 		ComPtr<ID3D12DescriptorHeap>			m_Heap;
 
-		uint32									m_CurrentDescriptor;
-		uint32									m_DescriptorSize;
+		int64									m_CurrentDescriptor;
+		int64									m_DescriptorSize;
 
-		const uint32							MAX_DESCRIPTOR_NUM = 1000;
+		const uint32							m_MaxDescriptors = 2048;
 
 		bool									m_bShaderVisible;
 
 	public:
 		DescriptorHeap() = default;
-		DescriptorHeap(ID3D12Device* device, DescriptorHeapType heapType, bool bShaderVisible = false);
+		DescriptorHeap(ID3D12Device* device, DescriptorHeapType heapType, uint32 numDescriptors, bool bShaderVisible = false);
 		~DescriptorHeap();
 
 		DescriptorHeap(DescriptorHeap& heap) = delete;
