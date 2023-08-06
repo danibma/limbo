@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #include <windows.h>
+#include <shobjidl_core.h>
 
 #include "window.h"
 
