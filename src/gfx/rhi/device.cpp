@@ -20,16 +20,22 @@ namespace limbo::Gfx
 		: m_Flags(flags), m_GPUInfo()
 	{
 		uint32_t dxgiFactoryFlags = 0;
+		bool bIsProfiling = Core::CommandLine::HasArg("--profile");
 
-		HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
-		if (pixGPUCapturer)
+		if (!IsUnderPIX() && !bIsProfiling)
 		{
-			DX_CHECK(PIXSetTargetWindow(window->GetWin32Handle()));
-			DX_CHECK(PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS));
-			m_bPIXCanCapture = true;
+			HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
+			if (pixGPUCapturer)
+			{
+				DX_CHECK(PIXSetTargetWindow(window->GetWin32Handle()));
+				DX_CHECK(PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS));
+				m_bPIXCanCapture = true;
+				LB_LOG("PIX capture enabled.");
+			}
 		}
 
 #if !NO_LOG
+		if (!bIsProfiling)
 		{
 			ComPtr<ID3D12Debug> debugController;
 			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
@@ -60,30 +66,14 @@ namespace limbo::Gfx
 
 #if !NO_LOG
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
+		if (!bIsProfiling && !IsUnderRenderDoc())
 		{
-			bool bUnderRenderDoc = false;
-
-			IID renderDocID;
-			if (SUCCEEDED(IIDFromString(L"{A7AA6116-9C8D-4BBA-9083-B4D816B71B78}", &renderDocID)))
-			{
-				ComPtr<IUnknown> renderDoc;
-				if (SUCCEEDED(m_Device->QueryInterface(renderDocID, &renderDoc)))
-				{
-					// Running under RenderDoc, so enable capturing mode
-					bUnderRenderDoc = true;
-					LB_LOG("Running under Render Doc, ID3D12InfoQueue features won't be enabled!");
-				}
-			}
-
-			if (!bUnderRenderDoc)
-			{
-				ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
-				DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
-				ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
-				DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
-				DWORD messageCallbackCookie;
-				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
-			}
+			ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
+			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
+			ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
+			DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
+			DWORD messageCallbackCookie;
+			DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
 		}
 #endif
 
@@ -99,6 +89,7 @@ namespace limbo::Gfx
 			.NodeMask = 0
 		};
 		DX_CHECK(m_Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_CommandQueue)));
+		DX_CHECK(m_CommandQueue->SetName(L"m_CommandQueue"));
 
 		m_Swapchain = new Swapchain(m_CommandQueue.Get(), m_Factory.Get(), window);
 		OnPostResourceManagerInit.AddRaw(this, &Device::InitResources);
@@ -518,6 +509,11 @@ namespace limbo::Gfx
 		return m_Swapchain->GetDepthFormat();
 	}
 
+	bool Device::CanTakeGPUCapture()
+	{
+		return m_bPIXCanCapture;
+	}
+
 	void Device::InitResources()
 	{
 		m_Swapchain->InitBackBuffers();
@@ -601,16 +597,23 @@ namespace limbo::Gfx
 
 	void Device::BeginEvent(const char* name, uint64 color)
 	{
-		PIXBeginEvent(m_CommandList.Get(), color, name);
+		PIXBeginEvent(m_CommandQueue.Get(), color, name);
 	}
 
 	void Device::EndEvent()
 	{
-		PIXEndEvent(m_CommandList.Get());
+		PIXEndEvent(m_CommandQueue.Get());
+	}
+
+	void Device::ScopedEvent(const char* name, uint64 color)
+	{
+		PIXScopedEvent(m_CommandList.Get(), color, name);
 	}
 
 	void Device::TakeGPUCapture()
 	{
+		if (!m_bPIXCanCapture) return;
+
 		wchar_t currDir[MAX_PATH];
 		GetCurrentDirectoryW(MAX_PATH, currDir);
 		std::wstring directory = currDir;
@@ -713,9 +716,42 @@ namespace limbo::Gfx
 		{
 			DX_CHECK(m_Fence->SetEventOnCompletion(m_FenceValues[m_FrameIndex], m_FenceEvent));
 			WaitForSingleObject(m_FenceEvent, INFINITE);
+			PIXNotifyWakeFromFenceSignal(m_FenceEvent);
 		}
 
 		m_FenceValues[m_FrameIndex] = currentFenceValue + 1;
+	}
+
+	bool Device::IsUnderPIX()
+	{
+		IID GraphicsAnalysisID;
+		if (SUCCEEDED(IIDFromString(L"{9F251514-9D4D-4902-9D60-18988AB7D4B5}", &GraphicsAnalysisID)))
+		{
+			ComPtr<IUnknown> GraphicsAnalysis;
+			if (SUCCEEDED(DXGIGetDebugInterface1(0, GraphicsAnalysisID, (void**)GraphicsAnalysis.ReleaseAndGetAddressOf())))
+			{
+				// Running under PIX
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool Device::IsUnderRenderDoc()
+	{
+		IID renderDocID;
+		if (SUCCEEDED(IIDFromString(L"{A7AA6116-9C8D-4BBA-9083-B4D816B71B78}", &renderDocID)))
+		{
+			ComPtr<IUnknown> renderDoc;
+			if (SUCCEEDED(m_Device->QueryInterface(renderDocID, &renderDoc)))
+			{
+				// Running under RenderDoc, so enable capturing mode
+				LB_LOG("Running under Render Doc, ID3D12InfoQueue features won't be enabled!");
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	void Device::WaitGPU()
@@ -728,6 +764,7 @@ namespace limbo::Gfx
 			// Wait until the fence has been processed
 			m_Fence->SetEventOnCompletion(m_FenceValues[i], m_FenceEvent);
 			WaitForSingleObject(m_FenceEvent, INFINITE);
+			PIXNotifyWakeFromFenceSignal(m_FenceEvent);
 
 			// Increment the fence value for the current frame
 			m_FenceValues[i]++;

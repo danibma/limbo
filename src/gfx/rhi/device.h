@@ -99,6 +99,7 @@ namespace limbo::Gfx
 
 		void BeginEvent(const char* name, uint64 color = 0);
 		void EndEvent();
+		void ScopedEvent(const char* name, uint64 color = 0);
 		// This will capture the next frame and create a .wpix file, in the root directory, with a random name
 		void TakeGPUCapture();
 
@@ -127,6 +128,8 @@ namespace limbo::Gfx
 		Format GetSwapchainFormat();
 		Format GetSwapchainDepthFormat();
 
+		bool CanTakeGPUCapture();
+
 		// D3D12 specific
 		ID3D12Device* GetDevice() const { return m_Device.Get(); }
 		ID3D12GraphicsCommandList* GetCommandList() const { return m_CommandList.Get(); }
@@ -154,6 +157,9 @@ namespace limbo::Gfx
 		void WaitGPU();
 
 		void NextFrame();
+
+		bool IsUnderPIX();
+		bool IsUnderRenderDoc();
 
 		void SubmitResourceBarriers();
 
@@ -190,6 +196,11 @@ namespace limbo::Gfx
 	inline void BeginEvent(const char* name, uint64 color = 0)
 	{
 		Device::Ptr->BeginEvent(name, color);
+	}
+
+	inline void ScopedEvent(const char* name, uint64 color = 0)
+	{
+		Device::Ptr->ScopedEvent(name, color);
 	}
 
 	inline void ReloadShaders()
@@ -268,5 +279,10 @@ namespace limbo::Gfx
 	inline void GenerateMipLevels(Handle<Texture> texture)
 	{
 		Device::Ptr->GenerateMipLevels(texture);
+	}
+
+	inline bool CanTakeGPUCapture()
+	{
+		return Device::Ptr->CanTakeGPUCapture();
 	}
 }

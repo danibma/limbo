@@ -88,6 +88,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		// transform an equirectangular map into a cubemap
 		{
+			Gfx::BeginEvent("EquirectToCubemap");
 			Gfx::Handle<Gfx::Texture> equirectangularTexture = Gfx::CreateTextureFromFile(hdrTexture, "Equirectangular Texture");
 			Gfx::Handle<Gfx::Shader> equirectToCubemap = Gfx::CreateShader({
 				.ProgramName = "ibl",
@@ -103,10 +104,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 			Gfx::DestroyShader(equirectToCubemap);
 			Gfx::DestroyTexture(equirectangularTexture);
+			Gfx::EndEvent();
 		}
 
 		// irradiance map
 		{
+			Gfx::BeginEvent("DrawIrradianceMap");
 			uint2 irradianceSize = { 1024, 1024 };
 			irradianceMap = Gfx::CreateTexture({
 				.Width = irradianceSize.x,
@@ -130,10 +133,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			Gfx::Dispatch(irradianceSize.x / 32, irradianceSize.y / 32, 6);
 
 			Gfx::DestroyShader(irradianceShader);
+			Gfx::EndEvent();
 		}
 
 		// Pre filter env map
 		{
+			Gfx::BeginEvent("PreFilterEnvMap");
 			uint2 prefilterSize			= { 1024, 1024 };
 			uint16 prefilterMipLevels	= 5;
 
@@ -168,10 +173,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			}
 
 			Gfx::DestroyShader(prefilterShader);
+			Gfx::EndEvent();
 		}
 
 		// Compute BRDF LUT map
 		{
+			Gfx::BeginEvent("ComputeBRDFLUT");
 			uint2 brdfLUTMapSize = { 256, 256 };
 			brdfLUTMap = Gfx::CreateTexture({
 				.Width = brdfLUTMapSize.x,
@@ -192,17 +199,17 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			Gfx::Dispatch(brdfLUTMapSize.x / 32, brdfLUTMapSize.y / 32, 6);
 
 			Gfx::DestroyShader(brdfLUTShader);
+			Gfx::EndEvent();
 		}
 	};
 
 	// Environment Maps
-	bool bChangeEnvMap = false;
 	int selectedEnvMap = 0;
+	bool bChangeEnvMap = true;
 	std::vector<std::filesystem::path> envMaps;
 	const char* env_maps_path = "assets/environment";
 	for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 		envMaps.emplace_back(entry.path());
-	loadSkyboxTexture(envMaps[selectedEnvMap].string().c_str());
 
 	// Skybox
 	Gfx::Handle<Gfx::Shader> skyboxShader;
@@ -256,8 +263,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	std::array<const char*, 7> debug_views = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive" };
 	int selected_debug_view = 0;
 
-	float3 lightPosition(-1.0f, 1.0f, 2.0f);
-	float3 lightColor(1.0f);
+	float3 lightPosition(0.0f, 1.0f, 0.0f);
+	float3 lightColor(0, 1, 0);
 
 	Core::Timer deltaTimer;
 	while (!window->ShouldClose())
@@ -359,7 +366,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				}
 				ImGui::PopItemWidth();
 
-				if (ImGui::MenuItem("Take GPU Capture"))
+				if (Gfx::CanTakeGPUCapture() && ImGui::MenuItem("Take GPU Capture"))
 					Gfx::TakeGPUCapture();
 
 				if (ImGui::MenuItem("Reload Shaders", "Ctrl-R"))
@@ -375,13 +382,32 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 			ImGui::EndMainMenuBar();
 		}
+
+		ImGui::SetNextWindowBgAlpha(0.2f);
+		ImGui::SetNextWindowPos(ImVec2(10.0f, 30.0f));
+		ImGui::SetNextWindowSize(ImVec2(300.0f, 0.0f));
+		if (ImGui::Begin("##debugwindow", nullptr, ImGuiWindowFlags_NoDecoration))
+		{
+			ImGui::SeparatorText("Camera");
+			ImGui::Text("Position: %.1f, %.1f, %.1f", camera.Eye.x, camera.Eye.y, camera.Eye.z);
+			ImGui::SameLine();
+			if (ImGui::Button("Set to light pos"))
+				camera.Eye = lightPosition;
+			ImGui::SeparatorText("Light");
+			ImGui::DragFloat3("Light Position", &lightPosition[0], 0.1f);
+			ImGui::ColorEdit3("Light Color", &lightColor[0]);
+			
+			ImGui::End();
+		}
 #pragma endregion UI
 
+		Gfx::BeginEvent("Loading Environment Map");
 		if (bChangeEnvMap)
 		{
 			loadSkyboxTexture(envMaps[selectedEnvMap].string().c_str());
 			bChangeEnvMap = false;
 		}
+		Gfx::EndEvent();
 
 		Gfx::BeginEvent("Geometry Pass");
 		Gfx::BindShader(deferredShader);
@@ -408,7 +434,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		Gfx::BeginEvent("Render Skybox");
 		Gfx::BindShader(skyboxShader);
-		Gfx::SetParameter(skyboxShader, "g_EnvironmentCube", environmentCubemap);
+		Gfx::SetParameter(skyboxShader, "g_EnvironmentCube", irradianceMap);
 		Gfx::SetParameter(skyboxShader, "view", camera.View);
 		Gfx::SetParameter(skyboxShader, "proj", camera.Proj);
 		Gfx::SetParameter(skyboxShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
