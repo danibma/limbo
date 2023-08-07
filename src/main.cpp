@@ -204,7 +204,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	};
 
 	// Environment Maps
-	int selectedEnvMap = 0;
+	int selectedEnvMap = 2;
 	bool bChangeEnvMap = true;
 	std::vector<std::filesystem::path> envMaps;
 	const char* env_maps_path = "assets/environment";
@@ -264,7 +264,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	int selected_debug_view = 0;
 
 	float3 lightPosition(0.0f, 1.0f, 0.0f);
-	float3 lightColor(0, 1, 0);
+	float3 lightColor(1, 0.45f, 0);
 
 	Core::Timer deltaTimer;
 	while (!window->ShouldClose())

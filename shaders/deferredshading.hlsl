@@ -75,7 +75,7 @@ DeferredShadingOutput PSMain(VSOut input)
     float4 roughnessMetalMap    = g_roughnessMetalTexture.Sample(LinearWrap, input.UV);
     float4 emissiveMap          = g_emissiveTexture.Sample(LinearWrap, input.UV);
 
-    // not sure if this is a good solution, but it works with the normal sponza and with the Intel sponza, so it will stay like this for now
+    // not a good solution, it works almost fine with the intel sponza, but the ivys and the trees do not work
     if (albedo.a < 0.99f)
         discard;
 
