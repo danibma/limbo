@@ -597,12 +597,12 @@ namespace limbo::Gfx
 
 	void Device::BeginEvent(const char* name, uint64 color)
 	{
-		PIXBeginEvent(m_CommandQueue.Get(), color, name);
+		PIXBeginEvent(m_CommandList.Get(), color, name);
 	}
 
 	void Device::EndEvent()
 	{
-		PIXEndEvent(m_CommandQueue.Get());
+		PIXEndEvent(m_CommandList.Get());
 	}
 
 	void Device::ScopedEvent(const char* name, uint64 color)

@@ -434,7 +434,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		Gfx::BeginEvent("Render Skybox");
 		Gfx::BindShader(skyboxShader);
-		Gfx::SetParameter(skyboxShader, "g_EnvironmentCube", irradianceMap);
+		Gfx::SetParameter(skyboxShader, "g_EnvironmentCube", environmentCubemap);
 		Gfx::SetParameter(skyboxShader, "view", camera.View);
 		Gfx::SetParameter(skyboxShader, "proj", camera.Proj);
 		Gfx::SetParameter(skyboxShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
