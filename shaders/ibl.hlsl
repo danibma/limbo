@@ -6,6 +6,40 @@
 
 TextureCube g_EnvironmentCubemap;
 
+// Calculate normalized sampling direction vector based on current fragment coordinates.
+// This is essentially "inverse-sampling": we reconstruct what the sampling vector would be if we wanted it to "hit"
+// this particular fragment in a cubemap.
+float3 GetSamplingVector(uint3 ThreadID, float OutputWidth, float OutputHeight)
+{
+    float2 st = ThreadID.xy / float2(OutputWidth, OutputHeight); // from screen coordinates to texture coordinates([0, 1])
+    float2 uv = 2.0 * float2(st.x, 1.0 - st.y) - 1.0; // from [0, 1] to [-1, 1]
+
+	// Select vector based on cubemap face index.
+    float3 ret;
+    switch (ThreadID.z)
+    {
+        case 0:
+            ret = float3(1.0, uv.y, -uv.x);
+            break;
+        case 1:
+            ret = float3(-1.0, uv.y, uv.x);
+            break;
+        case 2:
+            ret = float3(uv.x, 1.0, -uv.y);
+            break;
+        case 3:
+            ret = float3(uv.x, -1.0, uv.y);
+            break;
+        case 4:
+            ret = float3(uv.x, uv.y, 1.0);
+            break;
+        case 5:
+            ret = float3(-uv.x, uv.y, -1.0);
+            break;
+    }
+    return normalize(ret);
+}
+
 //
 // Equirectangular to cubemap
 //
@@ -23,8 +57,12 @@ void EquirectToCubemap(uint3 ThreadID : SV_DispatchThreadID)
     float phi = atan2(v.z, v.x);
     float theta = acos(v.y);
 
+    // Normalize spherical coordinates
+    phi /= TwoPI;
+    theta /= PI;
+
 	// Sample equirectangular texture.
-    float4 color = g_EnvironmentEquirectangular.SampleLevel(LinearWrap, float2(phi / TwoPI, theta / PI), 0);
+    float4 color = g_EnvironmentEquirectangular.SampleLevel(LinearWrap, float2(phi, theta), 0);
 
 	// Write out color to output cubemap.
     g_OutEnvironmentCubemap[ThreadID] = color;
@@ -51,9 +89,9 @@ void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
 
     float sampleDelta = 0.02;
     float nrSamples = 0.0;
-    for (float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta)
+    for (float phi = 0.0; phi < TwoPI; phi += sampleDelta)
     {
-        for (float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta)
+        for (float theta = 0.0; theta < HalfPI; theta += sampleDelta)
         {
 			// spherical to cartesian (in tangent space)
             float3 tangentSample = float3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));

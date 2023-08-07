@@ -1,4 +1,5 @@
 ﻿#include "common.hlsli"
+#include "quad.hlsli"
 
 //
 // Vertex Shader
