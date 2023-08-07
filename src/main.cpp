@@ -338,14 +338,45 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 			if (ImGui::BeginMenu("Renderer"))
 			{
-				if (ImGui::BeginMenu("Camera"))
-				{
-					ImGui::PushItemWidth(150.0f);
-					ImGui::DragFloat("Speed", &camera.CameraSpeed, 0.1f, 0.1f);
-					ImGui::PopItemWidth();
-					ImGui::EndMenu();
-				}
-				ImGui::Separator();
+				if (Gfx::CanTakeGPUCapture() && ImGui::MenuItem("Take GPU Capture"))
+					Gfx::TakeGPUCapture();
+
+				if (ImGui::MenuItem("Reload Shaders", "Ctrl-R"))
+					Gfx::ReloadShaders();
+
+				ImGui::EndMenu();
+			}
+
+			char menuText[256];
+			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps)", Gfx::GetGPUInfo().Name, deltaTime, 1000.0f / deltaTime);
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(menuText).x) - 10.0f);
+			ImGui::Text(menuText);
+
+			ImGui::EndMainMenuBar();
+		}
+
+		ImGui::SetNextWindowBgAlpha(0.7f);
+		if (ImGui::Begin("Limbo##debugwindow", nullptr))
+		{
+			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Text("Position: %.1f, %.1f, %.1f", camera.Eye.x, camera.Eye.y, camera.Eye.z);
+				ImGui::PushItemWidth(150.0f);
+				ImGui::DragFloat("Speed", &camera.CameraSpeed, 0.1f, 0.1f);
+				ImGui::PopItemWidth();
+				ImGui::SameLine();
+				if (ImGui::Button("Set to light pos"))
+					camera.Eye = lightPosition;
+			}
+
+			if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat3("Light Position", &lightPosition[0], 0.1f);
+				ImGui::ColorEdit3("Light Color", &lightColor[0]);
+			}
+
+			if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
+			{
 				ImGui::PushItemWidth(200.0f);
 				ImGui::Combo("Tonemap", &tonemapMode, tonemapModes, 3);
 
@@ -365,37 +396,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 					ImGui::EndCombo();
 				}
 				ImGui::PopItemWidth();
-
-				if (Gfx::CanTakeGPUCapture() && ImGui::MenuItem("Take GPU Capture"))
-					Gfx::TakeGPUCapture();
-
-				if (ImGui::MenuItem("Reload Shaders", "Ctrl-R"))
-					Gfx::ReloadShaders();
-
-				ImGui::EndMenu();
 			}
-
-			char menuText[256];
-			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps)", Gfx::GetGPUInfo().Name, deltaTime, 1000.0f / deltaTime);
-			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(menuText).x) - 10.0f);
-			ImGui::Text(menuText);
-
-			ImGui::EndMainMenuBar();
-		}
-
-		ImGui::SetNextWindowBgAlpha(0.2f);
-		ImGui::SetNextWindowPos(ImVec2(10.0f, 30.0f));
-		ImGui::SetNextWindowSize(ImVec2(300.0f, 0.0f));
-		if (ImGui::Begin("##debugwindow", nullptr, ImGuiWindowFlags_NoDecoration))
-		{
-			ImGui::SeparatorText("Camera");
-			ImGui::Text("Position: %.1f, %.1f, %.1f", camera.Eye.x, camera.Eye.y, camera.Eye.z);
-			ImGui::SameLine();
-			if (ImGui::Button("Set to light pos"))
-				camera.Eye = lightPosition;
-			ImGui::SeparatorText("Light");
-			ImGui::DragFloat3("Light Position", &lightPosition[0], 0.1f);
-			ImGui::ColorEdit3("Light Color", &lightColor[0]);
 			
 			ImGui::End();
 		}
