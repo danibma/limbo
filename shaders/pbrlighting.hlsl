@@ -1,4 +1,4 @@
-﻿#include "common.hlsli"
+﻿#include "iblcommon.hlsli"
 #include "quad.hlsli"
 
 //
@@ -28,6 +28,7 @@ float DistributionGGX(float3 N, float3 H, float roughness)
 {
     float a = roughness * roughness;
     float a2 = a * a;
+
     float NdotH = max(dot(N, H), 0.0f);
     float NdotH2 = NdotH * NdotH;
 
@@ -38,30 +39,31 @@ float DistributionGGX(float3 N, float3 H, float roughness)
     return num / denom;
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+// Single term for separable Schlick-GGX below.
+float SchlickG1(float cosTheta, float k)
 {
-    float r = roughness + 1.0f;
-    float k = (r * r) / 8.0f;
-    
-    float num = NdotV;
-    float denom = NdotV * (1.0f - k) + k;
-    
-    return num / denom;
+    return cosTheta / (cosTheta * (1.0 - k) + k);
 }
 
-float GeometrySmith(float3 N, float3 V, float3 L, float roughness)
+// Schlick-GGX approximation of geometric attenuation function using Smith's method.
+float SchlickGGX(float cosLi, float cosLo, float roughness)
 {
-    float NdotV = max(dot(N, V), 0.0f);
-    float NdotL = max(dot(N, L), 0.0f);
-    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-    
-    return ggx1 * ggx2;
+    float r = roughness + 1.0;
+    float k = (r * r) / 8.0; // Epic suggests using this roughness remapping for analytic lights.
+    return SchlickG1(cosLi, k) * SchlickG1(cosLo, k);
+}
+
+// Returns number of mipmap levels for specular IBL environment map.
+uint QueryTextureLevels(TextureCube tex)
+{
+    uint width, height, levels;
+    tex.GetDimensions(0, width, height, levels);
+    return levels;
 }
 
 float3 FresnelSchlick(float cosTheta, float3 F0)
 {
-    return F0 + (1.0f - F0) * pow(clamp(1.0 - cosTheta, 0.0f, 1.0f), 5.0f);
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
@@ -94,68 +96,84 @@ float4 PSMain(QuadResult quad) : SV_Target
     float3 albedo       = g_Albedo.Sample(LinearClamp, quad.UV).rgb;
     float3 normal       = g_Normal.Sample(LinearClamp, quad.UV).rgb;
     float3 emissive     = g_Emissive.Sample(LinearClamp, quad.UV).rgb;
+    float alpha         = g_Albedo.Sample(LinearClamp, quad.UV).a;
     float metallic      = g_Metallic.Sample(LinearClamp, quad.UV).r;
     float roughness     = g_Roughness.Sample(LinearClamp, quad.UV).r;
 	
-    if (albedo.x == 0.0f && albedo.y == 0.0f && albedo.z == 0.0f)
+    if (alpha == 0.0f)
         discard;
 
+    // Outgoing light direction (vector from world-space fragment position to the "eye").
+    float3 V = normalize(camPos.xyz - worldPos);
+
 	float3 N = normalize(normal);
-    float3 V = normalize(camPos.rgb - worldPos); // view direction
-    float3 R = reflect(-V, N);
-    
-    float3 F0 = (float3) 0.04f;
-    F0 = lerp(F0, albedo, metallic);
+
+    // Angle between surface normal and outgoing light direction.
+    float cosLo = max(0.0, dot(N, V));
+		
+	// Specular reflection vector.
+    float3 R = 2.0 * cosLo * N - V;
+
+    float3 fDieletric = (float3)0.04f;
+    float3 F0 = lerp(fDieletric, albedo, metallic);
     
     // reflectance equation
-    float3 Lo = (float3) 0.0f;
+    float3 directLighting = 0.0f;
     
     // do this per light, atm we only have one
 	{
         float3 L = normalize(lightPos - worldPos); // light direction
-        float3 H = normalize(V + L); // half vector
+        float3 Lh = normalize(V + L); // half vector
+
         float distance = length(lightPos - worldPos);
         float attenuation = 1.0f / (distance * distance);
         float3 radiance = lightColor * attenuation;
+
+        float cosLi = max(dot(N, L),  0.0f);
+        float cosLh = max(dot(N, Lh), 0.0);
     
 		// cook-torrance brdf
-        float NDF = DistributionGGX(N, H, roughness);
-        float G = GeometrySmith(N, V, L, roughness);
-        float3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
-    
-        float3 kS = F;
-        float3 kD = (float3) 1.0f - kS;
-        kD *= 1.0f - metallic;
+        float  D = NDF_GGX(cosLh, roughness);
+        float  G = SchlickGGX(cosLi, cosLo, roughness);
+        float3 F = FresnelSchlick(max(dot(Lh, V), 0.0f), F0);
 
-		// Lambertian diffuse
-        float3 diffuse = kD * albedo / PI;
+        // Diffuse scattering happens due to light being refracted multiple times by a dielectric medium.
+		// Metals on the other hand either reflect or absorb energy, so diffuse contribution is always zero.
+		// To be energy conserving we must scale diffuse BRDF contribution based on Fresnel factor & metalness.
+        float3 kD = lerp(float3(1, 1, 1) - F, float3(0, 0, 0), metallic);
+
+		// Lambert diffuse BRDF.
+		// We don't scale by 1/PI for lighting & material units to be more convenient.
+		// See: https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
+        float3 diffuse = kD * albedo;
     
-        float3 numerator = NDF * G * F;
-        float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0) + 0.0001;
-        float3 specular = numerator / denominator;
+        // Cook-Torrance specular microfacet BRDF.
+        float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo);
     
 		// add to outgoing radiance Lo
-        float NdotL = max(dot(N, L), 0.0f);
-        Lo += (diffuse + specular) * radiance * NdotL;
+        directLighting += (diffuse + specularBRDF) * radiance * cosLi;
     }
 	
-    float3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    float3 F = FresnelSchlick(cosLo, F0);
 
-    float3 kS = F;
-    float3 kD = 1.0 - kS;
-    kD *= 1.0 - metallic;
+    // Get diffuse contribution factor (as with direct lighting).
+    float3 kD = lerp(1.0 - F, 0.0, metallic);
   
     float3 irradiance = g_IrradianceMap.SampleLevel(LinearClamp, N, 0).rgb;
-    float3 diffuse = irradiance * albedo;
+    float3 diffuse = kD * irradiance * albedo;
   
-    const float MAX_REFLECTION_LOD = 4.0;
-    float3 prefilteredColor = g_PrefilterMap.SampleLevel(LinearClamp, R, roughness * MAX_REFLECTION_LOD).rgb;
-    float2 envBRDF = g_LUT.SampleLevel(LinearClamp, float2(max(dot(N, V), 0.0), roughness), 0).rg;
+    float specularLevels = QueryTextureLevels(g_PrefilterMap);
+    float3 prefilteredColor = g_PrefilterMap.SampleLevel(LinearClamp, R, roughness * specularLevels).rgb;
+
+    // Split-sum approximation factors for Cook-Torrance specular BRDF.
+    float2 envBRDF = g_LUT.Sample(LinearClamp, float2(cosLo, roughness)).rg;
+
+    // Total specular IBL contribution.
     float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
   
-    float3 ambient = (kD * diffuse + specular) + emissive;
+    float3 ambient = diffuse + specular + emissive;
     
-    float3 color = ambient + Lo;
+    float3 color = ambient + directLighting;
     float4 finalColor = float4(color, 1.0f);
     
     return finalColor;
