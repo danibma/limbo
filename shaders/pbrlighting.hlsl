@@ -46,11 +46,11 @@ float SchlickG1(float cosTheta, float k)
 }
 
 // Schlick-GGX approximation of geometric attenuation function using Smith's method.
-float SchlickGGX(float cosLi, float cosLo, float roughness)
+float SchlickGGX(float NdotL, float NdotV, float roughness)
 {
     float r = roughness + 1.0;
     float k = (r * r) / 8.0; // Epic suggests using this roughness remapping for analytic lights.
-    return SchlickG1(cosLi, k) * SchlickG1(cosLo, k);
+    return SchlickG1(NdotL, k) * SchlickG1(NdotV, k);
 }
 
 // Returns number of mipmap levels for specular IBL environment map.
@@ -109,10 +109,10 @@ float4 PSMain(QuadResult quad) : SV_Target
 	float3 N = normalize(normal);
 
     // Angle between surface normal and outgoing light direction.
-    float cosLo = max(0.0, dot(N, V));
+    float NdotV = max(dot(N, V), 0.0);
 		
 	// Specular reflection vector.
-    float3 R = 2.0 * cosLo * N - V;
+    float3 R = 2.0 * NdotV * N - V;
 
     float3 fDieletric = (float3)0.04f;
     float3 F0 = lerp(fDieletric, albedo, metallic);
@@ -123,19 +123,19 @@ float4 PSMain(QuadResult quad) : SV_Target
     // do this per light, atm we only have one
 	{
         float3 L = normalize(lightPos - worldPos); // light direction
-        float3 Lh = normalize(V + L); // half vector
+        float3 H = normalize(V + L); // half vector
 
         float distance = length(lightPos - worldPos);
         float attenuation = 1.0f / (distance * distance);
         float3 radiance = lightColor * attenuation;
 
-        float cosLi = max(dot(N, L),  0.0f);
-        float cosLh = max(dot(N, Lh), 0.0);
+        float NdotL = max(dot(N, L),  0.0f);
+        float NdotH = max(dot(N, H), 0.0);
     
 		// cook-torrance brdf
-        float  D = NDF_GGX(cosLh, roughness);
-        float  G = SchlickGGX(cosLi, cosLo, roughness);
-        float3 F = FresnelSchlick(max(dot(Lh, V), 0.0f), F0);
+        float  D = NDF_GGX(NdotH, roughness);
+        float  G = SchlickGGX(NdotL, NdotV, roughness);
+        float3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
 
         // Diffuse scattering happens due to light being refracted multiple times by a dielectric medium.
 		// Metals on the other hand either reflect or absorb energy, so diffuse contribution is always zero.
@@ -148,13 +148,13 @@ float4 PSMain(QuadResult quad) : SV_Target
         float3 diffuse = kD * albedo;
     
         // Cook-Torrance specular microfacet BRDF.
-        float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * cosLo);
+        float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * NdotL * NdotV);
     
 		// add to outgoing radiance Lo
-        directLighting += (diffuse + specularBRDF) * radiance * cosLi;
+        directLighting += (diffuse + specularBRDF) * radiance * NdotL;
     }
 	
-    float3 F = FresnelSchlick(cosLo, F0);
+    float3 F = FresnelSchlick(NdotV, F0);
 
     // Get diffuse contribution factor (as with direct lighting).
     float3 kD = lerp(1.0 - F, 0.0, metallic);
@@ -166,7 +166,7 @@ float4 PSMain(QuadResult quad) : SV_Target
     float3 prefilteredColor = g_PrefilterMap.SampleLevel(LinearClamp, R, roughness * specularLevels).rgb;
 
     // Split-sum approximation factors for Cook-Torrance specular BRDF.
-    float2 envBRDF = g_LUT.Sample(LinearClamp, float2(cosLo, roughness)).rg;
+    float2 envBRDF = g_LUT.Sample(LinearClamp, float2(NdotV, roughness)).rg;
 
     // Total specular IBL contribution.
     float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
