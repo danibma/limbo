@@ -356,7 +356,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		}
 
 		ImGui::SetNextWindowBgAlpha(0.7f);
-		if (ImGui::Begin("Limbo##debugwindow", nullptr))
+		ImGui::Begin("Limbo##debugwindow", nullptr);
 		{
 			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 			{

@@ -75,16 +75,14 @@ DeferredShadingOutput PSMain(VSOut input)
     float4 roughnessMetalMap    = g_roughnessMetalTexture.Sample(LinearWrap, input.UV);
     float4 emissiveMap          = g_emissiveTexture.Sample(LinearWrap, input.UV);
 
-    if (albedo.a < 0.60f)
-        discard;
-
     float roughness     = roughnessMetalMap.g * g_MaterialFactors.RoughnessFactor;
     float metallic      = roughnessMetalMap.b * g_MaterialFactors.MetallicFactor;
 
     float4 finalAlbedo  = g_MaterialFactors.AlbedoFactor;
-    
-    if (albedo.a != 0)
-        finalAlbedo *= albedo;
+	finalAlbedo *= albedo;
+
+	if (finalAlbedo.a <= ALPHA_THRESHOLD)
+        discard;
     
     result.WorldPosition = input.WorldPos;
     result.Albedo        = finalAlbedo;

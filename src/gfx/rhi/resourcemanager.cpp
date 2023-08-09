@@ -18,14 +18,14 @@ namespace limbo::Gfx
 	{
 		OnPostResourceManagerInit.AddLambda([&]()
 		{
-			uint32_t blackTextureData = 0x00000000;
+			uint32_t textureData = 0x00FFFFFF;
 			EmptyTexture = CreateTexture({
 				.Width = 1,
 				.Height = 1,
 				.DebugName = "Empty Texture",
 				.Format = Format::RGBA8_UNORM,
 				.Type = TextureType::Texture2D,
-				.InitialData = &blackTextureData,
+				.InitialData = &textureData,
 				.bCreateSrv = true
 			});
 

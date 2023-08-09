@@ -16,6 +16,9 @@ void GenerateMip(uint2 threadID : SV_DispatchThreadID)
 	//The samplers linear interpolation will mix the four pixel values to the new pixels color
     float4 color = PreviousMip.SampleLevel(LinearClamp, texcoords, 0);
 
+    float4 alpha = PreviousMip.GatherAlpha(LinearClamp, texcoords, 0);
+    color.a = max(alpha.r, max(alpha.g, max(alpha.b, alpha.a)));
+
 	if (bIsRGB == 1)
         color = float4(pow(color.rgb, (float3)(1.0 / 2.2)), color.a);
 
