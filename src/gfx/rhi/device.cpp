@@ -627,6 +627,8 @@ namespace limbo::Gfx
 
 		DX_CHECK(PIXGpuCaptureNextFrames(filename.c_str(), 1));
 		LB_WLOG("Saved the GPU capture to '%ls'", filename.c_str());
+
+		PIXOpenCaptureInUI(filename.c_str());
 	}
 
 	uint32 Device::GetBackbufferWidth()
