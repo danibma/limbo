@@ -71,9 +71,15 @@ namespace limbo::Gfx
 			ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
 			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
 			ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
-			DX_CHECK(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1)));
-			DWORD messageCallbackCookie;
-			DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
+			if (SUCCEEDED(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1))))
+			{
+				DWORD messageCallbackCookie;
+				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
+			}
+			else
+			{
+				LB_WARN("Failed to get ID3D12InfoQueue1, there will be no message callback.");
+			}
 		}
 #endif
 
