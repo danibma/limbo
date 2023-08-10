@@ -60,13 +60,11 @@ ConstantBuffer<MaterialFactors> g_MaterialFactors : register(b1);
 
 struct DeferredShadingOutput
 {
-    float4 WorldPosition : SV_Target0;
-    float4 Albedo        : SV_Target1;
-    float4 Normal        : SV_Target2;
-    float4 Roughness     : SV_Target3;
-    float4 Metallic      : SV_Target4;
-    float4 Emissive      : SV_Target5;
-    float4 AO            : SV_Target6;
+    float4 WorldPosition            : SV_Target0;
+    float4 Albedo                   : SV_Target1;
+    float4 Normal                   : SV_Target2;
+    float4 RoughnessMetallicAO      : SV_Target3;
+    float4 Emissive                 : SV_Target4;
 };
 
 DeferredShadingOutput PSMain(VSOut input)
@@ -91,13 +89,11 @@ DeferredShadingOutput PSMain(VSOut input)
     if (AOMap.a > 0.0f)
 		ao = AOMap.r;
     
-    result.WorldPosition = input.WorldPos;
-    result.Albedo        = finalAlbedo;
-    result.Normal        = input.Normal;
-    result.Roughness     = float4((float3)roughness, 1.0f);
-    result.Metallic      = float4((float3)metallic, 1.0f);
-    result.Emissive      = emissiveMap;
-    result.AO            = float4((float3)ao, 1.0f);  
+    result.WorldPosition        = input.WorldPos;
+    result.Albedo               = finalAlbedo;
+    result.Normal               = input.Normal;
+    result.RoughnessMetallicAO  = float4(roughness, metallic, ao, 1.0f);
+    result.Emissive             = emissiveMap;
 
     return result;
 }

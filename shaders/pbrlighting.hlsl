@@ -66,29 +66,45 @@ float3 lightColor;
 Texture2D g_WorldPosition;
 Texture2D g_Albedo;
 Texture2D g_Normal;
-Texture2D g_Roughness;
-Texture2D g_Metallic;
+Texture2D g_RoughnessMetallicAO;
 Texture2D g_Emissive;
-Texture2D g_AO;
 
 TextureCube g_IrradianceMap;
 TextureCube g_PrefilterMap;
 Texture2D   g_LUT;
 
+uint sceneToRender;
+
 float4 PSMain(QuadResult quad) : SV_Target
 {
 	// gbuffer values
-    float3 worldPos     = g_WorldPosition.Sample(LinearClamp, quad.UV).rgb;
-    float3 albedo       = g_Albedo.Sample(LinearClamp, quad.UV).rgb;
-    float3 normal       = g_Normal.Sample(LinearClamp, quad.UV).rgb;
-    float3 emissive     = g_Emissive.Sample(LinearClamp, quad.UV).rgb;
-    float alpha         = g_Albedo.Sample(LinearClamp, quad.UV).a;
-    float metallic      = g_Metallic.Sample(LinearClamp, quad.UV).r;
-    float roughness     = g_Roughness.Sample(LinearClamp, quad.UV).r;
-    float ao            = g_AO.Sample(LinearClamp, quad.UV).r;
-	
+    float3 worldPos             = g_WorldPosition.Sample(LinearClamp, quad.UV).rgb;
+    float3 albedo               = g_Albedo.Sample(LinearClamp, quad.UV).rgb;
+    float3 normal               = g_Normal.Sample(LinearClamp, quad.UV).rgb;
+    float3 emissive             = g_Emissive.Sample(LinearClamp, quad.UV).rgb;
+    float alpha                 = g_Albedo.Sample(LinearClamp, quad.UV).a;
+    float3 roughnessMetallicAO  = g_RoughnessMetallicAO.Sample(LinearClamp, quad.UV).rgb;
+    float roughness             = roughnessMetallicAO.x;
+    float metallic              = roughnessMetallicAO.y;
+    float ao                    = roughnessMetallicAO.z;
+
     if (alpha == 0.0f)
         discard;
+
+    if (sceneToRender == 1)
+        return float4(albedo, 1.0f);
+    else if (sceneToRender == 2)
+        return float4(normal, 1.0f);
+    else if (sceneToRender == 3)
+        return float4(worldPos, 1.0f);
+    else if (sceneToRender == 4)
+        return float4((float3)metallic, 1.0f);
+    else if (sceneToRender == 5)
+        return float4((float3)roughness, 1.0f);
+    else if (sceneToRender == 6)
+        return float4(emissive, 1.0f);
+    else if (sceneToRender == 7)
+        return float4((float3)ao, 1.0f);
 
     // Outgoing light direction (vector from world-space fragment position to the "eye").
     float3 V = normalize(camPos.xyz - worldPos);
