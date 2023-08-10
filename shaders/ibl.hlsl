@@ -47,9 +47,6 @@ void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
     
     float3 N = GetSamplingVector(threadID, float(outputWidth), float(outputHeight));
 
-    float3 S, T;
-    ComputeBasisVectors(N, S, T);
-
 	// Monte Carlo integration of hemispherical irradiance.
 	// As a small optimization this also includes Lambertian BRDF assuming perfectly white surface (albedo of 1.0)
 	// so we don't need to normalize in PBR fragment shader (so technically it encodes exitant radiance rather than irradiance).
@@ -57,7 +54,7 @@ void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
     for (uint i = 0; i < NumSamples; ++i)
     {
         float2 u = Hammersley(i);
-        float3 Li = TangentToWorld(SampleHemisphere(u.x, u.y), N, S, T);
+        float3 Li = TangentToWorld(SampleHemisphere(u.x, u.y), N);
         float cosTheta = max(0.0, dot(Li, N));
 
 		// PIs here cancel out because of division by pdf.
@@ -99,9 +96,6 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
     float3 N = GetSamplingVector(ThreadID, float(outputWidth), float(outputHeight));
     float3 V = N;
 	
-    float3 S, T;
-    ComputeBasisVectors(N, S, T);
-
     float3 color = 0;
     float weight = 0;
 
@@ -109,7 +103,7 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
     for (uint i = 0; i < NumSamples; ++i)
     {
         float2 Xi = Hammersley(i);
-        float3 H = TangentToWorld(ImportanceSampleGGX(Xi, roughness), N, S, T);
+        float3 H = TangentToWorld(ImportanceSampleGGX(Xi, roughness), N);
 
 		// Compute incident direction (L) by reflecting viewing direction (V) around half-vector (H).
         float3 L = 2.0 * dot(V, H) * H - V;
@@ -194,13 +188,12 @@ void ComputeBRDFLUT(uint2 ThreadID : SV_DispatchThreadID)
 
         float NdotL = saturate(L.z);
         float NdotH = saturate(H.z);
-        float VdotH = saturate(dot(V, H));
 
         if (NdotL > 0.0)
         {
             float G = SchlickGGX_IBL(NdotL, V, roughness);
-            float Gv = G * VdotH / (NdotH * V);
-            float Fc = pow(1.0 - VdotH, 5);
+            float Gv = G * NdotH / (NdotH * V);
+            float Fc = pow(1.0 - NdotH, 5);
 
             DFG1 += (1 - Fc) * Gv;
             DFG2 += Fc * Gv;

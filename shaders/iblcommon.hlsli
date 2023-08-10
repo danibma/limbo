@@ -35,8 +35,7 @@ float3 SampleHemisphere(float u1, float u2)
 }
 
 // Importance sample GGX normal distribution function for a fixed roughness value.
-// This returns normalized half-vector between Li & Lo.
-// For derivation see: http://blog.tobias-franke.eu/2014/03/30/notes_on_importance_sampling.html
+// For derivation see: http://blog.tobias-franke.eu/2014/03/30/notes_on_importance_sampling.html & Epic's s2013 presentation
 float3 ImportanceSampleGGX(float2 Xi, float roughness)
 {
 	float alpha = roughness * roughness;
@@ -60,21 +59,15 @@ float NDF_GGX(float NdotH, float roughness)
 	return alphaSq / (PI * denom * denom);
 }
 
-// Compute orthonormal basis for converting from tanget/shading space to world space.
-void ComputeBasisVectors(const float3 N, out float3 S, out float3 T)
-{
-	// Branchless select non-degenerate T.
-	T = cross(N, float3(0.0, 1.0, 0.0));
-	T = lerp(cross(N, float3(1.0, 0.0, 0.0)), T, step(Epsilon, dot(T, T)));
-
-	T = normalize(T);
-	S = normalize(cross(N, T));
-}
-
 // Convert point from tangent/shading space to world space.
-float3 TangentToWorld(const float3 v, const float3 N, const float3 S, const float3 T)
+// Removed from the ImportanceSampleGGX, from Epic's s2013 presentation
+float3 TangentToWorld(const float3 V, const float3 N)
 {
-	return S * v.x + T * v.y + N * v.z;
+    float3 UpVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 TangentX = normalize(cross(UpVector, N));
+    float3 TangentY = cross(N, TangentX);
+
+    return TangentX * V.x + TangentY * V.y + N * V.z;
 }
 
 // Calculate normalized sampling direction vector based on current fragment coordinates.
