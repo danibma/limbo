@@ -24,21 +24,6 @@ QuadResult VSMain(uint vertexID : SV_VertexID)
 // Pixel Shader
 //
 
-float DistributionGGX(float3 N, float3 H, float roughness)
-{
-    float a = roughness * roughness;
-    float a2 = a * a;
-
-    float NdotH = max(dot(N, H), 0.0f);
-    float NdotH2 = NdotH * NdotH;
-
-    float num = a2;
-    float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
-    denom = PI * denom * denom;
-    
-    return num / denom;
-}
-
 // Single term for separable Schlick-GGX below.
 float SchlickG1(float cosTheta, float k)
 {
@@ -61,14 +46,14 @@ uint QueryTextureLevels(TextureCube tex)
     return levels;
 }
 
-float3 FresnelSchlick(float cosTheta, float3 F0)
+float3 FresnelSchlick(float HdotV, float3 F0)
 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    return F0 + (1.0 - F0) * pow(1.0 - HdotV, 5.0);
 }
 
-float3 FresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)
+float ComputeSpecOcclusion(float NdotV , float AO , float roughness)
 {
-    return F0 + (max((float3) (1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+	return saturate(pow( NdotV + AO , exp2( -16.0f * roughness - 1.0f )) - 1.0f + AO );
 }
 
 // Camera info
@@ -84,6 +69,7 @@ Texture2D g_Normal;
 Texture2D g_Roughness;
 Texture2D g_Metallic;
 Texture2D g_Emissive;
+Texture2D g_AO;
 
 TextureCube g_IrradianceMap;
 TextureCube g_PrefilterMap;
@@ -99,6 +85,7 @@ float4 PSMain(QuadResult quad) : SV_Target
     float alpha         = g_Albedo.Sample(LinearClamp, quad.UV).a;
     float metallic      = g_Metallic.Sample(LinearClamp, quad.UV).r;
     float roughness     = g_Roughness.Sample(LinearClamp, quad.UV).r;
+    float ao            = g_AO.Sample(LinearClamp, quad.UV).r;
 	
     if (alpha == 0.0f)
         discard;
@@ -131,11 +118,12 @@ float4 PSMain(QuadResult quad) : SV_Target
 
         float NdotL = max(dot(N, L),  0.0f);
         float NdotH = max(dot(N, H), 0.0);
+        float HdotV = max(dot(H, V), 0.0f);
     
-		// cook-torrance brdf
+		// terms for the cook-torrance specular microfacet BRDF
         float  D = NDF_GGX(NdotH, roughness);
         float  G = SchlickGGX(NdotL, NdotV, roughness);
-        float3 F = FresnelSchlick(max(dot(H, V), 0.0f), F0);
+        float3 F = FresnelSchlick(HdotV, F0);
 
         // Diffuse scattering happens due to light being refracted multiple times by a dielectric medium.
 		// Metals on the other hand either reflect or absorb energy, so diffuse contribution is always zero.
@@ -153,14 +141,14 @@ float4 PSMain(QuadResult quad) : SV_Target
 		// add to outgoing radiance Lo
         directLighting += (diffuse + specularBRDF) * radiance * NdotL;
     }
-	
+
     float3 F = FresnelSchlick(NdotV, F0);
 
     // Get diffuse contribution factor (as with direct lighting).
     float3 kD = lerp(1.0 - F, 0.0, metallic);
   
     float3 irradiance = g_IrradianceMap.SampleLevel(LinearClamp, N, 0).rgb;
-    float3 diffuse = kD * irradiance * albedo;
+    float3 diffuse = kD * irradiance * albedo * ao;
   
     float specularLevels = QueryTextureLevels(g_PrefilterMap);
     float3 prefilteredColor = g_PrefilterMap.SampleLevel(LinearClamp, R, roughness * specularLevels).rgb;
@@ -169,7 +157,7 @@ float4 PSMain(QuadResult quad) : SV_Target
     float2 envBRDF = g_LUT.Sample(LinearClamp, float2(NdotV, roughness)).rg;
 
     // Total specular IBL contribution.
-    float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+    float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) * ComputeSpecOcclusion(NdotV, ao, roughness);
   
     float3 ambient = diffuse + specular + emissive;
     

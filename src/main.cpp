@@ -53,7 +53,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			{ Gfx::Format::RGBA16_SFLOAT, "Normal" },
 			{ Gfx::Format::RGBA16_SFLOAT, "Roughness" },
 			{ Gfx::Format::RGBA16_SFLOAT, "Metallic" },
-			{ Gfx::Format::RGBA16_SFLOAT, "Emissive" }
+			{ Gfx::Format::RGBA16_SFLOAT, "Emissive" },
+			{ Gfx::Format::RGBA16_SFLOAT, "AmbientOcclusion" }
 		},
 		.DepthFormat = { Gfx::Format::D32_SFLOAT },
 		.Type = Gfx::ShaderType::Graphics
@@ -218,7 +219,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		skyboxShader = Gfx::CreateShader({
 			.ProgramName = "sky",
 			.RTFormats = {
-				{ Gfx::Format::RGBA8_UNORM, "PBR RT" }
+				{ Gfx::Format::RGBA16_SFLOAT, "PBR RT" }
 			},
 			.DepthFormat = { Gfx::Format::D32_SFLOAT, "PBR Depth" },
 			.Type = Gfx::ShaderType::Graphics
@@ -230,7 +231,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.ProgramName = "pbrlighting",
 		.RTFormats = {
 			{
-				.RTFormat = Gfx::Format::RGBA8_UNORM,
+				.RTFormat = Gfx::Format::RGBA16_SFLOAT,
 				.RTTexture = Gfx::GetShaderRT(skyboxShader, 0),
 				.LoadRenderPassOp = Gfx::RenderPassOp::Load
 			}
@@ -260,7 +261,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	};
 
 	// Debug views
-	std::array<const char*, 7> debug_views = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive" };
+	std::array<const char*, 8> debug_views = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
 	int selected_debug_view = 0;
 
 	float3 lightPosition(0.0f, 1.0f, 0.0f);
@@ -423,6 +424,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				Gfx::SetParameter(deferredShader, "g_albedoTexture", material.Albedo);
 				Gfx::SetParameter(deferredShader, "g_roughnessMetalTexture", material.RoughnessMetal);
 				Gfx::SetParameter(deferredShader, "g_emissiveTexture", material.Emissive);
+				Gfx::SetParameter(deferredShader, "g_AOTexture", material.AmbientOcclusion);
 				Gfx::SetParameter(deferredShader, "model", mesh.Transform);
 				Gfx::SetParameter(deferredShader, "g_MaterialFactors", material.Factors);
 
@@ -461,6 +463,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::SetParameter(pbrShader, "g_Roughness",		deferredShader, 3);
 		Gfx::SetParameter(pbrShader, "g_Metallic",		deferredShader, 4);
 		Gfx::SetParameter(pbrShader, "g_Emissive",		deferredShader, 5);
+		Gfx::SetParameter(pbrShader, "g_AO",			deferredShader, 6);
 		// Bind irradiance map
 		Gfx::SetParameter(pbrShader, "g_IrradianceMap", irradianceMap);
 		Gfx::SetParameter(pbrShader, "g_PrefilterMap", prefilterMap);
@@ -482,6 +485,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			sceneTexture = Gfx::GetShaderRT(deferredShader, 3);
 		else if (selected_debug_view == 6)
 			sceneTexture = Gfx::GetShaderRT(deferredShader, 5);
+		else if (selected_debug_view == 7)
+			sceneTexture = Gfx::GetShaderRT(deferredShader, 6);
 		else
 			sceneTexture = Gfx::GetShaderRT(pbrShader, 0);
 		Gfx::BeginEvent("Scene Composite");

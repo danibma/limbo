@@ -31,14 +31,16 @@ namespace limbo::Gfx
 		Handle<Texture> Albedo;
 		Handle<Texture> RoughnessMetal;
 		Handle<Texture> Emissive;
+		Handle<Texture> AmbientOcclusion;
 
 		Handle<Buffer> Factors;
 
 		MeshMaterial()
 		{
-			Albedo			= ResourceManager::Ptr->EmptyTexture;
-			RoughnessMetal	= ResourceManager::Ptr->EmptyTexture;
-			Emissive		= ResourceManager::Ptr->EmptyTexture;
+			Albedo				= ResourceManager::Ptr->EmptyTexture;
+			RoughnessMetal		= ResourceManager::Ptr->EmptyTexture;
+			Emissive			= ResourceManager::Ptr->EmptyTexture;
+			AmbientOcclusion	= ResourceManager::Ptr->EmptyTexture;
 		}
 	};
 

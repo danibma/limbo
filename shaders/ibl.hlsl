@@ -97,7 +97,7 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
 	
 	// Approximation: Assume zero viewing angle (isotropic reflections).
     float3 N = GetSamplingVector(ThreadID, float(outputWidth), float(outputHeight));
-    float3 Lo = N;
+    float3 V = N;
 	
     float3 S, T;
     ComputeBasisVectors(N, S, T);
@@ -106,26 +106,21 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
     float weight = 0;
 
 	// Convolve environment map using GGX NDF importance sampling.
-	// Weight by cosine term since Epic claims it generally improves quality.
     for (uint i = 0; i < NumSamples; ++i)
     {
-        float2 u = Hammersley(i);
-        float3 Lh = TangentToWorld(SampleGGX(u.x, u.y, roughness), N, S, T);
+        float2 Xi = Hammersley(i);
+        float3 H = TangentToWorld(ImportanceSampleGGX(Xi, roughness), N, S, T);
 
-		// Compute incident direction (Li) by reflecting viewing direction (Lo) around half-vector (Lh).
-        float3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo;
+		// Compute incident direction (L) by reflecting viewing direction (V) around half-vector (H).
+        float3 L = 2.0 * dot(V, H) * H - V;
 
-        float cosLi = saturate(dot(N, Li));
-        if (cosLi > 0.0)
+        float NdotL = saturate(dot(N, L));
+        if (NdotL > 0.0)
         {
-			// Use Mipmap Filtered Importance Sampling to improve convergence.
-			// See: https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch20.html, section 20.4
-
-            float cosLh = saturate(dot(N, Lh));
+			float NdotH = saturate(dot(N, H));
 
 			// GGX normal distribution function (D term) probability density function.
-			// Scaling by 1/4 is due to change of density in terms of Lh to Li (and since N=V, rest of the scaling factor cancels out).
-            float pdf = NDF_GGX(cosLh, roughness) * 0.25;
+            float pdf = NDF_GGX(NdotH, roughness) * 0.25;
 
 			// Solid angle associated with this sample.
             float ws = 1.0 / (NumSamples * pdf);
@@ -133,8 +128,8 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
 			// Mip level to sample from.
             float mipLevel = max(0.5 * log2(ws / wt) + 1.0, 0.0);
 
-            color  += g_EnvironmentCubemap.SampleLevel(LinearWrap, Li, mipLevel).rgb * cosLi;
-            weight += cosLi;
+            color  += g_EnvironmentCubemap.SampleLevel(LinearWrap, L, mipLevel).rgb * NdotL;
+            weight += NdotL;
         }
     }
     color /= weight;
@@ -142,9 +137,9 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
     g_PreFilteredMap[ThreadID] = float4(color, 1.0);
 }
 
-// Pre-integrates Cook-Torrance specular BRDF for varying roughness and viewing directions.
-// Results are saved into 2D LUT texture in the form of DFG1 and DFG2 split-sum approximation terms,
-// which act as a scale and bias to F0 (Fresnel reflectance at normal incidence) during rendering.
+//
+// LUT BRDF
+//
 RWTexture2D<float2> LUT : register(u0);
 
 // Single term for separable Schlick-GGX below.
@@ -154,13 +149,16 @@ float SchlickG1(float cosTheta, float k)
 }
 
 // Schlick-GGX approximation of geometric attenuation function using Smith's method (IBL version).
-float SchlickGGX_IBL(float cosLi, float cosLo, float roughness)
+float SchlickGGX_IBL(float NdotL, float V, float roughness)
 {
     float r = roughness;
     float k = (r * r) / 2.0; // Epic suggests using this roughness remapping for IBL lighting.
-    return SchlickG1(cosLi, k) * SchlickG1(cosLo, k);
+    return SchlickG1(NdotL, k) * SchlickG1(V, k);
 }
 
+// Pre-integrates Cook-Torrance specular BRDF for varying roughness and viewing directions.
+// Results are saved into 2D LUT texture in the form of DFG1 and DFG2 split-sum approximation terms,
+// which act as a scale and bias to F0 (Fresnel reflectance at normal incidence) during rendering.
 [numthreads(32, 32, 1)]
 void ComputeBRDFLUT(uint2 ThreadID : SV_DispatchThreadID)
 {
@@ -169,14 +167,14 @@ void ComputeBRDFLUT(uint2 ThreadID : SV_DispatchThreadID)
     LUT.GetDimensions(outputWidth, outputHeight);
 
 	// Get integration parameters.
-    float cosLo = ThreadID.x / outputWidth;
+    float V = ThreadID.x / outputWidth;
     float roughness = ThreadID.y / outputHeight;
 
 	// Make sure viewing angle is non-zero to avoid divisions by zero (and subsequently NaNs).
-    cosLo = max(cosLo, Epsilon);
+    V = max(V, Epsilon);
 
 	// Derive tangent-space viewing vector from angle to normal (pointing towards +Z in this reference frame).
-    float3 Lo = float3(sqrt(1.0 - cosLo * cosLo), 0.0, cosLo);
+    float3 N = float3(sqrt(1.0 - V * V), 0.0, V);
 
 	// We will now pre-integrate Cook-Torrance BRDF for a solid white environment and save results into a 2D LUT.
 	// DFG1 & DFG2 are terms of split-sum approximation of the reflectance integral.
@@ -186,23 +184,23 @@ void ComputeBRDFLUT(uint2 ThreadID : SV_DispatchThreadID)
 
     for (uint i = 0; i < NumSamples; ++i)
     {
-        float2 u = Hammersley(i);
+        float2 Xi = Hammersley(i);
 
 		// Sample directly in tangent/shading space since we don't care about reference frame as long as it's consistent.
-        float3 Lh = SampleGGX(u.x, u.y, roughness);
+        float3 H = ImportanceSampleGGX(Xi, roughness);
 
-		// Compute incident direction (Li) by reflecting viewing direction (Lo) around half-vector (Lh).
-        float3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo;
+		// Compute incident direction(L) by reflecting viewing direction (N) around half-vector (H).
+        float3 L = 2.0 * dot(N, H) * H - N;
 
-        float cosLi = Li.z;
-        float cosLh = Lh.z;
-        float cosLoLh = max(dot(Lo, Lh), 0.0);
+        float NdotL = saturate(L.z);
+        float NdotH = saturate(H.z);
+        float VdotH = saturate(dot(V, H));
 
-        if (cosLi > 0.0)
+        if (NdotL > 0.0)
         {
-            float G = SchlickGGX_IBL(cosLi, cosLo, roughness);
-            float Gv = G * cosLoLh / (cosLh * cosLo);
-            float Fc = pow(1.0 - cosLoLh, 5);
+            float G = SchlickGGX_IBL(NdotL, V, roughness);
+            float Gv = G * VdotH / (NdotH * V);
+            float Fc = pow(1.0 - VdotH, 5);
 
             DFG1 += (1 - Fc) * Gv;
             DFG2 += Fc * Gv;

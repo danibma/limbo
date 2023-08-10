@@ -55,6 +55,7 @@ VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV
 Texture2D g_albedoTexture;
 Texture2D g_roughnessMetalTexture;
 Texture2D g_emissiveTexture;
+Texture2D g_AOTexture;
 ConstantBuffer<MaterialFactors> g_MaterialFactors : register(b1);
 
 struct DeferredShadingOutput
@@ -65,6 +66,7 @@ struct DeferredShadingOutput
     float4 Roughness     : SV_Target3;
     float4 Metallic      : SV_Target4;
     float4 Emissive      : SV_Target5;
+    float4 AO            : SV_Target6;
 };
 
 DeferredShadingOutput PSMain(VSOut input)
@@ -74,6 +76,7 @@ DeferredShadingOutput PSMain(VSOut input)
     float4 albedo               = g_albedoTexture.Sample(LinearWrap, input.UV);
     float4 roughnessMetalMap    = g_roughnessMetalTexture.Sample(LinearWrap, input.UV);
     float4 emissiveMap          = g_emissiveTexture.Sample(LinearWrap, input.UV);
+    float4 AOMap                = g_AOTexture.Sample(LinearWrap, input.UV);
 
     float roughness     = roughnessMetalMap.g * g_MaterialFactors.RoughnessFactor;
     float metallic      = roughnessMetalMap.b * g_MaterialFactors.MetallicFactor;
@@ -83,6 +86,10 @@ DeferredShadingOutput PSMain(VSOut input)
 
 	if (finalAlbedo.a <= ALPHA_THRESHOLD)
         discard;
+
+    float ao = 1.0f;
+    if (AOMap.a > 0.0f)
+		ao = AOMap.r;
     
     result.WorldPosition = input.WorldPos;
     result.Albedo        = finalAlbedo;
@@ -90,6 +97,7 @@ DeferredShadingOutput PSMain(VSOut input)
     result.Roughness     = float4((float3)roughness, 1.0f);
     result.Metallic      = float4((float3)metallic, 1.0f);
     result.Emissive      = emissiveMap;
+    result.AO            = float4((float3)ao, 1.0f);  
 
     return result;
 }

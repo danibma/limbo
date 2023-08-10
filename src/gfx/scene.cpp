@@ -76,6 +76,7 @@ namespace limbo::Gfx
 			Gfx::DestroyTexture(material.Albedo);
 			Gfx::DestroyTexture(material.RoughnessMetal);
 			Gfx::DestroyTexture(material.Emissive);
+			Gfx::DestroyTexture(material.AmbientOcclusion);
 			Gfx::DestroyBuffer(material.Factors);
 		}
 
@@ -139,6 +140,11 @@ namespace limbo::Gfx
 		{
 			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Emissive");
 			LoadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.Emissive, Format::RGBA8_UNORM);
+		}
+
+		{
+			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "AmbientOcclusion");
+			LoadTexture(&material->occlusion_texture, debugName.c_str(), meshMaterial.AmbientOcclusion, Format::RGBA8_UNORM);
 		}
 
 		// Create factors buffer

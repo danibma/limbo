@@ -37,13 +37,13 @@ float3 SampleHemisphere(float u1, float u2)
 // Importance sample GGX normal distribution function for a fixed roughness value.
 // This returns normalized half-vector between Li & Lo.
 // For derivation see: http://blog.tobias-franke.eu/2014/03/30/notes_on_importance_sampling.html
-float3 SampleGGX(float u1, float u2, float roughness)
+float3 ImportanceSampleGGX(float2 Xi, float roughness)
 {
 	float alpha = roughness * roughness;
 
-	float cosTheta = sqrt((1.0 - u2) / (1.0 + (alpha * alpha - 1.0) * u2));
+	float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha * alpha - 1.0) * Xi.y));
 	float sinTheta = sqrt(1.0 - cosTheta * cosTheta); // Trig. identity
-	float phi = TwoPI * u1;
+	float phi = TwoPI * Xi.x;
 
 	// Convert to Cartesian upon return.
 	return float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
@@ -51,12 +51,12 @@ float3 SampleGGX(float u1, float u2, float roughness)
 
 // GGX/Towbridge-Reitz normal distribution function.
 // Uses Disney's reparametrization of alpha = roughness^2.
-float NDF_GGX(float cosLh, float roughness)
+float NDF_GGX(float NdotH, float roughness)
 {
 	float alpha = roughness * roughness;
 	float alphaSq = alpha * alpha;
 
-	float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
+	float denom = (NdotH * NdotH) * (alphaSq - 1.0) + 1.0;
 	return alphaSq / (PI * denom * denom);
 }
 
