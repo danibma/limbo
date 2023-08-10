@@ -29,6 +29,7 @@ namespace limbo::Gfx
 	struct MeshMaterial
 	{
 		Handle<Texture> Albedo;
+		Handle<Texture> Normal;
 		Handle<Texture> RoughnessMetal;
 		Handle<Texture> Emissive;
 		Handle<Texture> AmbientOcclusion;
@@ -38,6 +39,7 @@ namespace limbo::Gfx
 		MeshMaterial()
 		{
 			Albedo				= ResourceManager::Ptr->EmptyTexture;
+			Normal				= ResourceManager::Ptr->EmptyTexture;
 			RoughnessMetal		= ResourceManager::Ptr->EmptyTexture;
 			Emissive			= ResourceManager::Ptr->EmptyTexture;
 			AmbientOcclusion	= ResourceManager::Ptr->EmptyTexture;

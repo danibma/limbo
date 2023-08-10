@@ -64,7 +64,7 @@ namespace limbo::Gfx
 
 		ForceDeletionQueue();
 
-#if LIMBO_DEBUG
+#if !NO_LOG
 		ensure(m_Buffers.IsEmpty());
 		ensure(m_Textures.IsEmpty());
 		ensure(m_Shaders.IsEmpty());

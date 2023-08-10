@@ -203,7 +203,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	};
 
 	// Environment Maps
-	int selectedEnvMap = 2;
+	int selectedEnvMap = 4;
 	bool bChangeEnvMap = true;
 	std::vector<std::filesystem::path> envMaps;
 	const char* env_maps_path = "assets/environment";
@@ -413,6 +413,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		Gfx::BindShader(deferredShader);
 		Gfx::SetParameter(deferredShader, "viewProj", camera.ViewProj);
 		Gfx::SetParameter(deferredShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
+		Gfx::SetParameter(deferredShader, "camPos", camera.Eye);
 		for (Gfx::Scene* scene : scenes)
 		{
 			scene->DrawMesh([&](const Gfx::Mesh& mesh)
@@ -420,6 +421,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				const Gfx::MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
 
 				Gfx::SetParameter(deferredShader, "g_albedoTexture", material.Albedo);
+				Gfx::SetParameter(deferredShader, "g_normalTexture", material.Normal);
 				Gfx::SetParameter(deferredShader, "g_roughnessMetalTexture", material.RoughnessMetal);
 				Gfx::SetParameter(deferredShader, "g_emissiveTexture", material.Emissive);
 				Gfx::SetParameter(deferredShader, "g_AOTexture", material.AmbientOcclusion);

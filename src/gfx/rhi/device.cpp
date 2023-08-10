@@ -156,6 +156,13 @@ namespace limbo::Gfx
 		delete m_Dsvheap;
 		delete m_Samplerheap;
 
+		if (m_Flags & GfxDeviceFlag::EnableImgui)
+		{
+			ImGui_ImplDX12_Shutdown();
+			ImGui_ImplGlfw_Shutdown();
+			ImGui::DestroyContext();
+		}
+
 #if !NO_LOG
 		if (m_Flags & GfxDeviceFlag::DetailedLogging)
 		{
@@ -165,13 +172,6 @@ namespace limbo::Gfx
 			dxgiDebug->Release();
 		}
 #endif
-
-		if (m_Flags & GfxDeviceFlag::EnableImgui)
-		{
-			ImGui_ImplDX12_Shutdown();
-			ImGui_ImplGlfw_Shutdown();
-			ImGui::DestroyContext();
-		}
 	}
 
 	void Device::DestroyResources()

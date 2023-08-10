@@ -74,6 +74,7 @@ namespace limbo::Gfx
 		for (const auto& [name, material] : m_MeshMaterials)
 		{
 			Gfx::DestroyTexture(material.Albedo);
+			Gfx::DestroyTexture(material.Normal);
 			Gfx::DestroyTexture(material.RoughnessMetal);
 			Gfx::DestroyTexture(material.Emissive);
 			Gfx::DestroyTexture(material.AmbientOcclusion);
@@ -135,6 +136,11 @@ namespace limbo::Gfx
 		else
 		{
 			ensure(false);
+		}
+
+		{
+			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Normal");
+			LoadTexture(&material->normal_texture, debugName.c_str(), meshMaterial.Normal, Format::RGBA8_UNORM);
 		}
 
 		{
