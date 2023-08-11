@@ -340,6 +340,9 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 				if (Gfx::CanTakeGPUCapture() && ImGui::MenuItem("Take GPU Capture"))
 					Gfx::TakeGPUCapture();
 
+				if (Gfx::CanTakeGPUCapture() && ImGui::MenuItem("Open Last GPU Capture"))
+					Gfx::OpenLastGPUCapture();
+
 				if (ImGui::MenuItem("Reload Shaders", "Ctrl-R"))
 					Gfx::ReloadShaders();
 

@@ -6,6 +6,8 @@
 #include "swapchain.h"
 #include "descriptorheap.h"
 
+#include <comdef.h>
+
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 
@@ -633,6 +635,22 @@ namespace limbo::Gfx
 
 		DX_CHECK(PIXGpuCaptureNextFrames(filename.c_str(), 1));
 		LB_WLOG("Saved the GPU capture to '%ls'", filename.c_str());
+
+		m_LastGPUCaptureFilename = std::move(filename);
+	}
+
+	void Device::OpenLastGPUCapture()
+	{
+		if (m_LastGPUCaptureFilename.empty()) return;
+
+		LB_LOG("Launching PIX...");
+		HINSTANCE ret = PIXOpenCaptureInUI(m_LastGPUCaptureFilename.c_str());
+		if ((uintptr_t)ret <= 32)
+		{
+			_com_error err(HRESULT_FROM_WIN32(GetLastError()));
+			const char* errMsg = err.ErrorMessage();
+			LB_LOG("Failed to launch PIX: %s", errMsg);
+		}
 	}
 
 	uint32 Device::GetBackbufferWidth()
