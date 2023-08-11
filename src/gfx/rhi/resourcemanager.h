@@ -46,6 +46,9 @@ namespace limbo::Gfx
 		Texture* GetTexture(Handle<Texture> texture);
 		Sampler* GetSampler(Handle<Sampler> sampler);
 
+		// Used for Imgui images
+		uint64 GetTextureID(Handle<Texture> texture);
+
 		void DestroyBuffer(Handle<Buffer> buffer, bool bImmediate = false);
 		void DestroyShader(Handle<Shader> shader, bool bImmediate = false);
 		void DestroyTexture(Handle<Texture> texture, bool bImmediate = false);
@@ -208,5 +211,21 @@ namespace limbo::Gfx
 	inline Handle<Sampler> GetDefaultLinearClampSampler()
 	{
 		return ResourceManager::Ptr->DefaultLinearClamp;
+	}
+
+	// This can be used as a TextureID for ImGui
+	inline uint64 GetTextureID(Handle<Texture> texture)
+	{
+		return ResourceManager::Ptr->GetTextureID(texture);
+	}
+
+	inline uint64 GetShaderRTTextureID(Handle<Shader> shader, uint8 rtIndex)
+	{
+		return ResourceManager::Ptr->GetTextureID(GetShaderRT(shader, rtIndex));
+	}
+
+	inline uint64 GetShaderDTTextureID(Handle<Shader> shader)
+	{
+		return ResourceManager::Ptr->GetTextureID(GetShaderDepthTarget(shader));
 	}
 }

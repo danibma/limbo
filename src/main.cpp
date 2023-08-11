@@ -339,7 +339,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		});
 	}
 
-	bool bEnableSSAO = true;
+	bool bEnableSSAO = false;
 	float radius = 0.4f;
 
 	Core::Timer deltaTimer;

@@ -121,6 +121,12 @@ namespace limbo::Gfx
 		return m_Samplers.Get(sampler);
 	}
 
+	uint64 ResourceManager::GetTextureID(Handle<Texture> texture)
+	{
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
+		return t->SRVHandle->GPUHandle.ptr;
+	}
+
 	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer, bool bImmediate)
 	{
 		if (bImmediate)

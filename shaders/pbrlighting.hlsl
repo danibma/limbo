@@ -46,9 +46,17 @@ uint QueryTextureLevels(TextureCube tex)
     return levels;
 }
 
+// Normal Schlick but using Epic's modification, using a Spherical Gaussian approximation to replace the power.
+// Epic claims that this is slightly more efficient to calculate
 float3 FresnelSchlick(float HdotV, float3 F0)
 {
-    return F0 + (1.0 - F0) * pow(1.0 - HdotV, 5.0);
+    return F0 + (1.0 - F0) * pow(2, (-5.55473f * HdotV - 6.98316f));
+}
+
+// Fresnel Schlick taking count of roughness, by Sébastien Lagarde - https://seblagarde.wordpress.com/2011/08/17/hello-world/
+float3 FresnelSchlickRoughness(float NdotV, float3 F0, float roughness)
+{
+    return F0 + (max(1 - roughness, F0) - F0) * pow(1 - saturate(NdotV), 5.0);
 }
 
 float ComputeSpecOcclusion(float NdotV , float AO , float roughness)
@@ -116,12 +124,12 @@ float4 PSMain(QuadResult quad) : SV_Target
 	float3 N = normalize(normal);
 
     // Angle between surface normal and outgoing light direction.
-    float NdotV = max(dot(N, V), 0.0);
+    float NdotV = abs(saturate(dot(N, V))) + 1e-5f;
 		
 	// Specular reflection vector.
     float3 R = 2.0 * NdotV * N - V;
 
-    float3 fDieletric = (float3)0.04f;
+    float3 fDieletric = (float3)0.02f;
     float3 F0 = lerp(fDieletric, albedo, metallic);
     
     // reflectance equation
@@ -162,7 +170,7 @@ float4 PSMain(QuadResult quad) : SV_Target
         directLighting += (diffuse + specularBRDF) * radiance * NdotL;
     }
 
-    float3 F = FresnelSchlick(NdotV, F0);
+    float3 F = FresnelSchlickRoughness(NdotV, F0, roughness);
 
     // Get diffuse contribution factor (as with direct lighting).
     float3 kD = lerp(1.0 - F, 0.0, metallic);

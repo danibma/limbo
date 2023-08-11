@@ -36,7 +36,7 @@ float3 SampleHemisphere(float u1, float u2)
 
 // Importance sample GGX normal distribution function for a fixed roughness value.
 // For derivation see: http://blog.tobias-franke.eu/2014/03/30/notes_on_importance_sampling.html & Epic's s2013 presentation
-float3 ImportanceSampleGGX(float2 Xi, float roughness)
+float3 ImportanceSampleGGX(float2 Xi, float roughness, float3 N)
 {
 	float alpha = roughness * roughness;
 
@@ -44,8 +44,16 @@ float3 ImportanceSampleGGX(float2 Xi, float roughness)
 	float sinTheta = sqrt(1.0 - cosTheta * cosTheta); // Trig. identity
 	float phi = TwoPI * Xi.x;
 
-	// Convert to Cartesian upon return.
-	return float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+    float3 H;
+    H.x = sinTheta * cos(phi);
+    H.y = sinTheta * sin(phi);
+    H.z = cosTheta;
+    float3 UpVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
+    float3 TangentX = normalize(cross(UpVector, N));
+    float3 TangentY = cross(N, TangentX);
+
+	// Tangent to world space
+    return TangentX * H.x + TangentY * H.y + N * H.z;
 }
 
 // GGX/Towbridge-Reitz normal distribution function.
