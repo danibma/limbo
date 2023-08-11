@@ -1,6 +1,7 @@
 ﻿#include "common.hlsli"
 
 float4x4 viewProj;
+float4x4 view;
 float4x4 model;
 
 // https://github.com/graphitemaster/normals_revisited
@@ -34,6 +35,7 @@ float3 TransformDirection(in float4x4 transform, in float3 direction)
 struct VSOut
 {
     float4 Position : SV_Position;
+    float4 PixelPos : PixelPosition;
     float4 WorldPos : WorldPosition;
     float3 Normal   : Normal;
     float2 UV       : TEXCOORD;
@@ -45,6 +47,7 @@ VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV
 
     float4x4 mvp = mul(viewProj, model);
     result.Position = mul(mvp, float4(pos, 1.0f));
+    result.PixelPos = mul(view, mul(model, float4(pos, 1.0f)));
     result.WorldPos = mul(model, float4(pos, 1.0f));
     result.Normal = TransformDirection(model, normal);
     result.UV = uv;
@@ -63,11 +66,12 @@ float3 camPos;
 
 struct DeferredShadingOutput
 {
-    float4 WorldPosition            : SV_Target0;
-    float4 Albedo                   : SV_Target1;
-    float4 Normal                   : SV_Target2;
-    float4 RoughnessMetallicAO      : SV_Target3;
-    float4 Emissive                 : SV_Target4;
+    float4 PixelPosition            : SV_Target0;
+    float4 WorldPosition            : SV_Target1;
+    float4 Albedo                   : SV_Target2;
+    float4 Normal                   : SV_Target3;
+    float4 RoughnessMetallicAO      : SV_Target4;
+    float4 Emissive                 : SV_Target5;
 };
 
 DeferredShadingOutput PSMain(VSOut input)
@@ -120,7 +124,8 @@ DeferredShadingOutput PSMain(VSOut input)
 
         normal = mul(tbn, rgbNormal);
     }
-    
+
+    result.PixelPosition        = input.PixelPos;
     result.WorldPosition        = input.WorldPos;
     result.Albedo               = finalAlbedo;
     result.Normal               = float4(normal, 1.0f);

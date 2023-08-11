@@ -68,12 +68,14 @@ Texture2D g_Albedo;
 Texture2D g_Normal;
 Texture2D g_RoughnessMetallicAO;
 Texture2D g_Emissive;
+Texture2D g_SSAO;
 
 TextureCube g_IrradianceMap;
 TextureCube g_PrefilterMap;
 Texture2D   g_LUT;
 
 uint sceneToRender;
+uint bEnableSSAO;
 
 float4 PSMain(QuadResult quad) : SV_Target
 {
@@ -87,6 +89,8 @@ float4 PSMain(QuadResult quad) : SV_Target
     float roughness             = roughnessMetallicAO.x;
     float metallic              = roughnessMetallicAO.y;
     float ao                    = roughnessMetallicAO.z;
+    if (bEnableSSAO == 1)
+        ao *= g_SSAO.Sample(LinearClamp, quad.UV).r;
 
     if (alpha == 0.0f)
         discard;

@@ -34,3 +34,24 @@ namespace limbo::Utils
 		return bytes * (1 << 30);
 	}
 }
+
+namespace limbo::Random
+{
+	inline uint32 PCG_Hash(uint32 seed)
+	{
+		uint32 state = seed * 747796405u + 2891336453u;
+		uint32 word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+		return (word >> 22u) ^ word;
+	}
+
+	inline float Float(uint32 seed)
+	{
+		uint32 value = PCG_Hash(seed);
+		return (float)value / (float)UINT_MAX;
+	}
+
+	inline float Float(uint32 seed, float min, float max)
+	{
+		return Float(seed) * (max - min) + min;
+	}
+}
