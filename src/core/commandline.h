@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#define LIMBO_CMD_PROFILE "--profile"
+
 namespace limbo::Core
 {
 	class CommandLine

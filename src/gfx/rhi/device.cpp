@@ -22,7 +22,7 @@ namespace limbo::Gfx
 		: m_Flags(flags), m_GPUInfo()
 	{
 		uint32_t dxgiFactoryFlags = 0;
-		bool bIsProfiling = Core::CommandLine::HasArg("--profile");
+		bool bIsProfiling = Core::CommandLine::HasArg(LIMBO_CMD_PROFILE);
 
 		if (!IsUnderPIX() && !bIsProfiling)
 		{

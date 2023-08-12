@@ -51,11 +51,16 @@ namespace limbo::Gfx::SC
         arguments.emplace_back(profile.c_str());
         
         // Debug: Disable optimizations and embed HLSL source in the shaders
+        bool bRunningDebug = false;
 #if LIMBO_DEBUG
         arguments.emplace_back(DXC_ARG_SKIP_OPTIMIZATIONS); // Disable optimizations
-        arguments.emplace_back(DXC_ARG_DEBUG);              // Enable debug information
-        arguments.emplace_back(L"-Qembed_debug");           // Embed PDB in shader container (must be used with /Zi)
+        bRunningDebug = true;
 #endif
+        if (bRunningDebug || Core::CommandLine::HasArg(LIMBO_CMD_PROFILE))
+        {
+            arguments.emplace_back(DXC_ARG_DEBUG);              // Enable debug information
+            arguments.emplace_back(L"-Qembed_debug");           // Embed PDB in shader container (must be used with /Zi)
+        }
 
         // Compile shader
         ComPtr<IDxcBlobEncoding> source = nullptr;
