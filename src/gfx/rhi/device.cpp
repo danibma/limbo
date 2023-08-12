@@ -304,6 +304,8 @@ namespace limbo::Gfx
 				// first transition the render targets to the correct resource state
 				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
 					TransitionResource(pBoundShader->RenderTargets[i].Texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+				if (pBoundShader->DepthTarget.Texture.IsValid())
+					TransitionResource(pBoundShader->DepthTarget.Texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 				SubmitResourceBarriers();
 
 				D3D12_CPU_DESCRIPTOR_HANDLE* dsvhandle = nullptr;
