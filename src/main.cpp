@@ -268,9 +268,17 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	float3 lightColor(1, 0.45f, 0);
 
 	// SSAO
+	Gfx::Handle<Gfx::Texture> UnblurredSSAOTexture = Gfx::CreateTexture({
+		.Width = window->Width,
+		.Height = window->Height,
+		.DebugName = "SSAO Texture",
+		.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+		.Format = Gfx::Format::R8_UNORM,
+	});
 	Gfx::Handle<Gfx::Shader> SSAOShader = Gfx::CreateShader({
 		.ProgramName = "ssao",
-		.RTFormats = { { Gfx::Format::R32_SFLOAT, "SSAO RT" } },
+		.CsEntryPoint = "ComputeSSAO",
+		.Type = Gfx::ShaderType::Compute
 	});
 
 	Gfx::Handle<Gfx::Texture> blurredSSAOTexture = Gfx::CreateTexture({
@@ -278,7 +286,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Height = window->Height,
 		.DebugName = "Blurred SSAO Texture",
 		.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-		.Format = Gfx::Format::R32_SFLOAT,
+		.Format = Gfx::Format::R8_UNORM,
 	});
 	Gfx::Handle<Gfx::Shader> BlurSSAOShader = Gfx::CreateShader({
 		.ProgramName = "ssao",
@@ -286,64 +294,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		.Type = Gfx::ShaderType::Compute
 	});
 
-	// Generate the Sample Kernel for SSAO - https://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
-	Gfx::Handle<Gfx::Texture> ssaoNoiseTexture;
-	Gfx::Handle<Gfx::Buffer> ssaoSampleKernel;
-	{
-		constexpr uint32 kernelSize = 64;
-		float4 ssaoSamplekernel[kernelSize];
-		for (int i = 0; i < kernelSize; ++i) 
-		{
-			ssaoSamplekernel[i].w = 0;
-
-			ssaoSamplekernel[i].x = Random::Float(i * kernelSize + 0, -1.0f, 1.0f);
-			ssaoSamplekernel[i].y = Random::Float(i * kernelSize + 1, -1.0f, 1.0f);
-			ssaoSamplekernel[i].z = Random::Float(i * kernelSize + 2,  0.0f, 1.0f);
-			glm::normalize(ssaoSamplekernel[i]);
-			ssaoSamplekernel[i].x *= Random::Float(i * kernelSize + 3, 0.0f, 1.0f);
-			ssaoSamplekernel[i].y *= Random::Float(i * kernelSize + 4, 0.0f, 1.0f);
-			ssaoSamplekernel[i].z *= Random::Float(i * kernelSize + 5, 0.0f, 1.0f);
-
-			float scale = float(i) / float(kernelSize);
-			scale = glm::mix(0.1f, 1.0f, scale * scale);
-			ssaoSamplekernel[i] *= scale;
-		}
-
-		ssaoSampleKernel = Gfx::CreateBuffer({
-			.DebugName = "SSAO Sample Kernel",
-			.ByteSize = sizeof(float4) * 64,
-			.Usage = Gfx::BufferUsage::Constant,
-			.InitialData = ssaoSamplekernel
-		});
-
-		// SSAO Noise texture
-		constexpr uint32 noiseSize = 256;
-		float4 ssaoNoise[noiseSize];
-		for (int i = 0; i < noiseSize; ++i)
-		{
-			ssaoNoise[i].x = Random::Float(i * kernelSize + (noiseSize - i) + 0, -1.0f, 1.0f);
-			ssaoNoise[i].y = Random::Float(i * kernelSize + (noiseSize - i) + 1, -1.0f, 1.0f);
-			ssaoNoise[i].z = 0.0f;
-			ssaoNoise[i].w = 0.0f;
-			glm::normalize(ssaoNoise[i]);
-		}
-
-		ssaoNoiseTexture = Gfx::CreateTexture({
-			.Width = 4,
-			.Height = 4,
-			.MipLevels = 1,
-			.DebugName = "SSAO Noise Texture",
-			.Format = Gfx::Format::RGB32_SFLOAT,
-			.Type = Gfx::TextureType::Texture2D,
-			.InitialData = ssaoNoise,
-		});
-	}
-
-	bool bEnableSSAO = false;
-	float radius = 0.4f;
+	bool bEnableSSAO = true;
+	float radius = 0.3f;
+	float ssaoPower = 1.2f;
 
 	Core::Timer deltaTimer;
-	while (!window->ShouldClose())
+	for (uint32 frameIndex = 0; !window->ShouldClose(); ++frameIndex)
 	{
 		float deltaTime = deltaTimer.ElapsedMilliseconds();
 		deltaTimer.Record();
@@ -478,6 +434,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 				ImGui::Checkbox("Enable SSAO", &bEnableSSAO);
 				ImGui::DragFloat("SSAO Radius", &radius, 0.1f);
+				ImGui::DragFloat("SSAO Power", &ssaoPower, 0.1f);
 			}
 			
 			ImGui::End();
@@ -524,22 +481,24 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 			Gfx::BeginEvent("SSAO");
 			Gfx::BindShader(SSAOShader);
 			Gfx::SetParameter(SSAOShader, "g_Positions", deferredShader, 0);
-			Gfx::SetParameter(SSAOShader, "g_Normals", deferredShader, 3);
-			Gfx::SetParameter(SSAOShader, "g_SSAONoise", ssaoNoiseTexture);
+			Gfx::SetParameter(SSAOShader, "g_UnblurredSSAOTexture", UnblurredSSAOTexture);
+			Gfx::SetParameter(SSAOShader, "g_SceneDepth", Gfx::GetShaderDepthTarget(deferredShader));
 			Gfx::SetParameter(SSAOShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
-			Gfx::SetParameter(SSAOShader, "noiseScale", float2(Gfx::GetBackbufferWidth() / 4.0f, Gfx::GetBackbufferHeight() / 4.0f));
+			Gfx::SetParameter(SSAOShader, "PointClamp", Gfx::GetDefaultPointClampSampler());
 			Gfx::SetParameter(SSAOShader, "radius", radius);
+			Gfx::SetParameter(SSAOShader, "power", ssaoPower);
 			Gfx::SetParameter(SSAOShader, "projection", camera.Proj);
-			Gfx::SetParameter(SSAOShader, "_SampleKernel", ssaoSampleKernel);
-			Gfx::Draw(6);
+			Gfx::SetParameter(SSAOShader, "invProjection", glm::inverse(camera.Proj));
+			Gfx::SetParameter(SSAOShader, "frameIndex", frameIndex);
+			Gfx::Dispatch(window->Width / 16, window->Height / 16, 1);
 			Gfx::EndEvent();
 
 			Gfx::BeginEvent("SSAO Blur Texture");
 			Gfx::BindShader(BlurSSAOShader);
 			Gfx::SetParameter(BlurSSAOShader, "LinearWrap", Gfx::GetDefaultLinearWrapSampler());
-			Gfx::SetParameter(BlurSSAOShader, "g_SSAOTexture", SSAOShader, 0);
+			Gfx::SetParameter(BlurSSAOShader, "g_SSAOTexture", UnblurredSSAOTexture);
 			Gfx::SetParameter(BlurSSAOShader, "g_BlurredSSAOTexture", blurredSSAOTexture);
-			Gfx::Dispatch(window->Width / 8, window->Height / 8, 1);
+			Gfx::Dispatch(window->Width / 16, window->Height / 16, 1);
 			Gfx::EndEvent();
 		}
 
@@ -597,9 +556,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Gfx::DestroyTexture(prefilterMap);
 	Gfx::DestroyTexture(brdfLUTMap);
 
-	Gfx::DestroyTexture(ssaoNoiseTexture);
+	Gfx::DestroyTexture(UnblurredSSAOTexture);
 	Gfx::DestroyTexture(blurredSSAOTexture);
-	Gfx::DestroyBuffer(ssaoSampleKernel);
 
 	Gfx::DestroyShader(pbrShader);
 	Gfx::DestroyShader(skyboxShader);

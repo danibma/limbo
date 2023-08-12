@@ -1,32 +1,34 @@
-﻿#include "quad.hlsli"
-#include "common.hlsli"
+﻿#include "random.hlsli"
 
-QuadResult VSMain(uint vertexID : SV_VertexID)
-{
-	VS_DRAW_QUAD(vertexID);
-}
+// SSAO technique based on https://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
 
 Texture2D g_Positions;
 Texture2D g_Normals;
-Texture2D g_SSAONoise;
+Texture2D<float> g_SceneDepth;
 
-// tile noise texture over screen, based on screen dimensions divided by noise size
-float2 noiseScale;
 float radius;
-
+float frameIndex;
+float power;
 float4x4 projection;
+float4x4 invProjection;
 
-#define KERNEL_SIZE 64
-cbuffer _SampleKernel
-{
-    float4 sampleKernel[KERNEL_SIZE];
-};
+#define KERNEL_SIZE 16
 
-float4 PSMain(QuadResult quad) : SV_Target
+RWTexture2D<float4> g_UnblurredSSAOTexture;
+
+[numthreads(16, 16, 1)]
+void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
 {
-    float3 pixelPos  = g_Positions.Sample(LinearWrap, quad.UV).rgb;
-    float3 normal    = g_Normals.Sample(LinearWrap, quad.UV).rgb;
-    float3 randomVec = g_SSAONoise.Sample(LinearWrap, quad.UV * noiseScale).rgb;
+    float width, height;
+    g_UnblurredSSAOTexture.GetDimensions(width, height);
+    float2 targetDimensions = float2(width, height);
+    float2 uv = (threadID + 0.5f) / targetDimensions;
+
+    float3 pixelPos = g_Positions.SampleLevel(LinearWrap, uv, 0).rgb;
+    float3 normal = NormalFromDepth(threadID, g_SceneDepth, invProjection);
+
+    uint seed = RandomSeed(threadID, targetDimensions, frameIndex);
+    float3 randomVec = float3(Random01(seed), Random01(seed), Random01(seed)) * 2.0f - 1.0f;
 
     // Gramm-Schmidt process to create an orthogonal basis
     float3   tangent   = normalize(randomVec - normal * dot(randomVec, normal));
@@ -37,32 +39,42 @@ float4 PSMain(QuadResult quad) : SV_Target
     float occlusion = 0.0;
     for (int i = 0; i < KERNEL_SIZE; ++i)
     {
+#if 0
+        float3 kernelSample = float3(Random01(seed), Random01(seed), Random01(seed));
+#else
+        float pdf;
+        float3 kernelSample = HemisphereSampleCosineWeight(Hammersley(i, KERNEL_SIZE), pdf);
+#endif
+
 		// get sample position
-        float3 samplePos = mul(TBN, sampleKernel[i].xyz); // from tangent to view-space
+        float3 samplePos = mul(kernelSample, TBN); // from tangent to view-space
         samplePos = pixelPos + samplePos * radius;
     
         float4 offset = float4(samplePos, 1.0);
         offset        = mul(projection, offset); // from view to clip-space
         offset.xyz   /= offset.w; // perspective divide
-        offset.xyz    = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0
-        offset.y      = -offset.y;
+        offset.xy     = offset.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f); // transform to range 0.0 - 1.0 and inverse the y
 
-        float sampleDepth = g_Positions.Sample(LinearWrap, offset.xy).z;
+        if (all(offset.xy >= 0) && all(offset.xy <= 1))
+        {
+            float sampleDepth = g_Positions.SampleLevel(LinearWrap, offset.xy, 0).z;
 
-        float rangeCheck = smoothstep(0.0, 1.0, radius / abs(pixelPos.z - sampleDepth));
-        occlusion += (sampleDepth >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
+            float rangeCheck = smoothstep(0.0, 1.0, radius / abs(pixelPos.z - sampleDepth));
+            occlusion += (sampleDepth >= samplePos.z + bias) * rangeCheck;
+        }
     }
     occlusion = 1.0 - (occlusion / KERNEL_SIZE);
-
-    return float4(occlusion, 1.0f, 1.0f, 1.0f);
+    g_UnblurredSSAOTexture[threadID] = pow(occlusion, power);
 }
 
 Texture2D<float4>   g_SSAOTexture;
 RWTexture2D<float4> g_BlurredSSAOTexture;
 
-[numthreads(8, 8, 1)]
+[numthreads(16, 16, 1)]
 void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
 {
+    int blurSize = 2;
+
     float width, height, depth;
     g_SSAOTexture.GetDimensions(0, width, height, depth);
 
@@ -70,9 +82,9 @@ void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
 
     float2 texelSize = 1.0 / float2(width, height);
     float result = 0.0;
-    for (int x = -2; x < 2; ++x)
+    for (int x = -blurSize; x < blurSize; ++x)
     {
-        for (int y = -2; y < 2; ++y)
+        for (int y = -blurSize; y < blurSize; ++y)
         {
             float2 offset = float2(float(x), float(y)) * texelSize;
             result += g_SSAOTexture.SampleLevel(LinearWrap, UVs + offset, 0).r;
