@@ -29,6 +29,7 @@ namespace limbo::Gfx
 		Handle<Texture>				EmptyTexture;
 		Handle<Sampler>				DefaultLinearClamp;
 		Handle<Sampler>				DefaultLinearWrap;
+		Handle<Sampler>				DefaultPointClamp;
 
 	public:
 		ResourceManager();
@@ -211,6 +212,11 @@ namespace limbo::Gfx
 	inline Handle<Sampler> GetDefaultLinearClampSampler()
 	{
 		return ResourceManager::Ptr->DefaultLinearClamp;
+	}
+
+	inline Handle<Sampler> GetDefaultPointClampSampler()
+	{
+		return ResourceManager::Ptr->DefaultPointClamp;
 	}
 
 	// This can be used as a TextureID for ImGui
