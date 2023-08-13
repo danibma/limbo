@@ -32,7 +32,7 @@ namespace limbo::Tests
 	int ExecuteComputeTriangle()
 	{
 #if ENABLE_LIMBO_TESTS
-		return gfx::runComputeTriangle();
+		return Gfx::RunComputeTriangle();
 #else
 		LIMBO_TESTS_WARNING
 #endif
@@ -41,7 +41,7 @@ namespace limbo::Tests
 	int ExecuteGraphicsTriangle()
 	{
 #if ENABLE_LIMBO_TESTS
-		return gfx::runGfxTriangle();
+		return Gfx::RunGfxTriangle();
 #else
 		LIMBO_TESTS_WARNING
 #endif

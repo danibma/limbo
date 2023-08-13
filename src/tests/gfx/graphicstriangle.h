@@ -12,7 +12,7 @@
 
 #include "core/timer.h"
 
-namespace limbo::Tests::gfx
+namespace limbo::Tests::Gfx
 {
 	int RunGfxTriangle()
 	{
