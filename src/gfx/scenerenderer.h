@@ -54,6 +54,7 @@ namespace limbo::Gfx
 	class Buffer;
 	class Shader;
 	class Scene;
+	class SSAO;
 	class SceneRenderer
 	{
 		using EnvironmentMapList = std::vector<std::filesystem::path>;
@@ -80,11 +81,8 @@ namespace limbo::Gfx
 		// Scene Composite
 		Handle<Shader>				m_CompositeShader;
 
-		// SSAO
-		Handle<Shader>				m_SSAOShader;
-		Handle<Texture>				m_UnblurredSSAOTexture;
-		Handle<Shader>				m_BlurSSAOShader;
-		Handle<Texture>				m_BlurredSSAOTexture;
+		// Techniques
+		std::unique_ptr<SSAO>		m_SSAO;
 
 	public:
 		Core::Window*				Window;

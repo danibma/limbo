@@ -5,6 +5,7 @@
 
 #include "scene.h"
 #include "rhi/device.h"
+#include "techniques/SSAO.h"
 
 namespace limbo::Gfx
 {
@@ -71,32 +72,7 @@ namespace limbo::Gfx
 			.Type = Gfx::ShaderType::Graphics
 		});
 
-		// SSAO
-		m_UnblurredSSAOTexture = Gfx::CreateTexture({
-			.Width = window->Width,
-			.Height = window->Height,
-			.DebugName = "SSAO Texture",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-			.Format = Gfx::Format::R8_UNORM,
-		});
-		m_SSAOShader = Gfx::CreateShader({
-			.ProgramName = "ssao",
-			.CsEntryPoint = "ComputeSSAO",
-			.Type = Gfx::ShaderType::Compute
-		});
-
-		m_BlurredSSAOTexture = Gfx::CreateTexture({
-			.Width = window->Width,
-			.Height = window->Height,
-			.DebugName = "Blurred SSAO Texture",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
-			.Format = Gfx::Format::R8_UNORM,
-		});
-		m_BlurSSAOShader = Gfx::CreateShader({
-			.ProgramName = "ssao",
-			.CsEntryPoint = "BlurSSAO",
-			.Type = Gfx::ShaderType::Compute
-		});
+		m_SSAO = std::make_unique<SSAO>();
 	}
 
 	SceneRenderer::~SceneRenderer()
@@ -106,15 +82,10 @@ namespace limbo::Gfx
 		DestroyTexture(m_PrefilterMap);
 		DestroyTexture(m_BRDFLUTMap);
 
-		DestroyTexture(m_UnblurredSSAOTexture);
-		DestroyTexture(m_BlurredSSAOTexture);
-
 		DestroyShader(m_PBRShader);
 		DestroyShader(m_SkyboxShader);
 		DestroyShader(m_DeferredShadingShader);
 		DestroyShader(m_CompositeShader);
-		DestroyShader(m_SSAOShader);
-		DestroyShader(m_BlurSSAOShader);
 
 		DestroyScene(m_SkyboxCube);
 		for (Scene* scene : m_Scenes)
@@ -140,48 +111,27 @@ namespace limbo::Gfx
 		for (Scene* scene : m_Scenes)
 		{
 			scene->DrawMesh([&](const Mesh& mesh)
-				{
-					const MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
+			{
+				const MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
 
-					SetParameter(m_DeferredShadingShader, "g_albedoTexture", material.Albedo);
-					SetParameter(m_DeferredShadingShader, "g_normalTexture", material.Normal);
-					SetParameter(m_DeferredShadingShader, "g_roughnessMetalTexture", material.RoughnessMetal);
-					SetParameter(m_DeferredShadingShader, "g_emissiveTexture", material.Emissive);
-					SetParameter(m_DeferredShadingShader, "g_AOTexture", material.AmbientOcclusion);
-					SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
-					SetParameter(m_DeferredShadingShader, "g_MaterialFactors", material.Factors);
+				SetParameter(m_DeferredShadingShader, "g_albedoTexture", material.Albedo);
+				SetParameter(m_DeferredShadingShader, "g_normalTexture", material.Normal);
+				SetParameter(m_DeferredShadingShader, "g_roughnessMetalTexture", material.RoughnessMetal);
+				SetParameter(m_DeferredShadingShader, "g_emissiveTexture", material.Emissive);
+				SetParameter(m_DeferredShadingShader, "g_AOTexture", material.AmbientOcclusion);
+				SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
+				SetParameter(m_DeferredShadingShader, "g_MaterialFactors", material.Factors);
 
-					BindVertexBuffer(mesh.VertexBuffer);
-					BindIndexBuffer(mesh.IndexBuffer);
-					DrawIndexed((uint32)mesh.IndexCount);
-				});
+				BindVertexBuffer(mesh.VertexBuffer);
+				BindIndexBuffer(mesh.IndexBuffer);
+				DrawIndexed((uint32)mesh.IndexCount);
+			});
 		}
 		EndEvent();
 
 		if (Tweaks.bEnableSSAO)
 		{
-			BeginEvent("SSAO");
-			BindShader(m_SSAOShader);
-			SetParameter(m_SSAOShader, "g_Positions", m_DeferredShadingShader, 0);
-			SetParameter(m_SSAOShader, "g_UnblurredSSAOTexture", m_UnblurredSSAOTexture);
-			SetParameter(m_SSAOShader, "g_SceneDepth", GetShaderDepthTarget(m_DeferredShadingShader));
-			SetParameter(m_SSAOShader, "LinearWrap", GetDefaultLinearWrapSampler());
-			SetParameter(m_SSAOShader, "PointClamp", GetDefaultPointClampSampler());
-			SetParameter(m_SSAOShader, "radius", Tweaks.SSAORadius);
-			SetParameter(m_SSAOShader, "power", Tweaks.SSAOPower);
-			SetParameter(m_SSAOShader, "projection", Camera.Proj);
-			SetParameter(m_SSAOShader, "invProjection", glm::inverse(Camera.Proj));
-			SetParameter(m_SSAOShader, "frameIndex", FrameIndex);
-			Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
-			EndEvent();
-
-			BeginEvent("SSAO Blur Texture");
-			BindShader(m_BlurSSAOShader);
-			SetParameter(m_BlurSSAOShader, "LinearWrap", GetDefaultLinearWrapSampler());
-			SetParameter(m_BlurSSAOShader, "g_SSAOTexture", m_UnblurredSSAOTexture);
-			SetParameter(m_BlurSSAOShader, "g_BlurredSSAOTexture", m_BlurredSSAOTexture);
-			Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
-			EndEvent();
+			m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
 		}
 
 		BeginEvent("Render Skybox");
@@ -213,7 +163,7 @@ namespace limbo::Gfx
 		SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
 		SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
 		SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
-		SetParameter(m_PBRShader, "g_SSAO", m_BlurredSSAOTexture);
+		SetParameter(m_PBRShader, "g_SSAO", m_SSAO->GetBlurredTexture());
 		// Bind irradiance map
 		SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
 		SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
