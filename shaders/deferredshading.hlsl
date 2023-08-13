@@ -55,12 +55,7 @@ VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV
 	return result;
 }
 
-Texture2D g_albedoTexture;
-Texture2D g_normalTexture;
-Texture2D g_roughnessMetalTexture;
-Texture2D g_emissiveTexture;
-Texture2D g_AOTexture;
-ConstantBuffer<MaterialFactors> g_MaterialFactors : register(b1);
+ConstantBuffer<Material> g_Material : register(b1);
 
 float3 camPos;
 
@@ -78,28 +73,46 @@ DeferredShadingOutput PSMain(VSOut input)
 {
     DeferredShadingOutput result;
 
-    float4 albedo               = g_albedoTexture.Sample(LinearWrap, input.UV);
-    float4 normalMap            = g_normalTexture.Sample(LinearWrap, input.UV);
-    float4 roughnessMetalMap    = g_roughnessMetalTexture.Sample(LinearWrap, input.UV);
-    float4 emissiveMap          = g_emissiveTexture.Sample(LinearWrap, input.UV);
-    float4 AOMap                = g_AOTexture.Sample(LinearWrap, input.UV);
+    Texture2D<float4> albedoTexture = ResourceDescriptorHeap[g_Material.AlbedoIndex];
+    float4 albedo = albedoTexture.Sample(LinearWrap, input.UV);
 
-    float roughness     = roughnessMetalMap.g * g_MaterialFactors.RoughnessFactor;
-    float metallic      = roughnessMetalMap.b * g_MaterialFactors.MetallicFactor;
+    float4 finalAlbedo = g_Material.AlbedoFactor;
+    finalAlbedo *= albedo;
 
-    float4 finalAlbedo  = g_MaterialFactors.AlbedoFactor;
-	finalAlbedo *= albedo;
-
-	if (finalAlbedo.a <= ALPHA_THRESHOLD)
+    if (finalAlbedo.a <= ALPHA_THRESHOLD)
         discard;
 
+	float roughness = g_Material.RoughnessFactor;
+    float metallic = g_Material.MetallicFactor;
+    if (g_Material.RoughnessMetalIndex != -1)
+    {
+        Texture2D<float4> roughnessMetalTexture = ResourceDescriptorHeap[g_Material.RoughnessMetalIndex];
+	    float4 roughnessMetalMap  = roughnessMetalTexture.Sample(LinearWrap, input.UV);
+        roughness *= roughnessMetalMap.g;
+        metallic *= roughnessMetalMap.b;
+    }
+
+    float4 emissive = 0.0f;
+    if (g_Material.EmissiveIndex != -1)
+    {
+        Texture2D<float4> emissiveTexture = ResourceDescriptorHeap[g_Material.EmissiveIndex];
+		emissive = emissiveTexture.Sample(LinearWrap, input.UV);
+    }
+
     float ao = 1.0f;
-    if (AOMap.a > 0.0f)
+    if (g_Material.AmbientOcclusionIndex != -1)
+    {
+        Texture2D<float4> AOTexture = ResourceDescriptorHeap[g_Material.AmbientOcclusionIndex];
+        float4 AOMap = AOTexture.Sample(LinearWrap, input.UV);
 		ao = AOMap.r;
+    }
 
     float3 normal = normalize(input.Normal);
-    if (normalMap.a > 0.0f)
+    if (g_Material.NormalIndex != -1)
     {
+        Texture2D<float4> normalTexture = ResourceDescriptorHeap[g_Material.NormalIndex];
+        float4 normalMap = normalTexture.Sample(LinearWrap, input.UV);
+
         float3 viewDirection = normalize(camPos - input.WorldPos.xyz);
 
         // Use ddx/ddy to get the exact data for this pixel, since the GPU computes 2x2 pixels at a time
@@ -130,7 +143,7 @@ DeferredShadingOutput PSMain(VSOut input)
     result.Albedo               = finalAlbedo;
     result.Normal               = float4(normal, 1.0f);
     result.RoughnessMetallicAO  = float4(roughness, metallic, ao, 1.0f);
-    result.Emissive             = emissiveMap;
+    result.Emissive             = emissive;
 
     return result;
 }

@@ -39,7 +39,7 @@ namespace limbo::Gfx
 
 		fpsCamera.Proj = glm::perspective(45.0f, aspectRatio, 1e-3f, 1e4f);
 
-		fpsCamera.CameraSpeed += Input::GetScrollY(window) / 2.0f;
+		fpsCamera.CameraSpeed += Input::GetScrollY(window) / 10.0f;
 		if (fpsCamera.CameraSpeed <= 0.0f) fpsCamera.CameraSpeed = 0.1f;
 
 		// Update view

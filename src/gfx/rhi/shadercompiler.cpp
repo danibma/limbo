@@ -38,7 +38,7 @@ namespace limbo::Gfx::SC
             profile.append(L"ps");
             break;
         }
-        profile.append(L"_6_0");
+        profile.append(L"_6_6");
 
         std::wstring wentrypoint;
         Utils::StringConvert(entryPoint, wentrypoint);

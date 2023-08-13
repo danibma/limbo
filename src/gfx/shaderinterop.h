@@ -4,8 +4,16 @@
 	#include "core/math.h"
 #endif
 
-struct MaterialFactors
+struct Material
 {
+	int    AlbedoIndex;
+	int    NormalIndex;
+	int    RoughnessMetalIndex;
+	int    EmissiveIndex;
+	int    AmbientOcclusionIndex;
+
+	uint3  SPACING;
+
 	float4 AlbedoFactor;
 	float  MetallicFactor;
 	float  RoughnessFactor;

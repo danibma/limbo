@@ -156,6 +156,16 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 	#define ensure(expr) (expr)
 #endif
 
+#define check(expr) \
+	{ \
+		bool r = (expr); \
+		if (!(r)) \
+		{ \
+			LB_ERROR("Check failed! '%s'", #expr); \
+			abort(); \
+		} \
+	}
+
 #define FAILIF(expr, ...) if (!ensure(!(expr))) return __VA_ARGS__;
 
 /* An empty function as breakpoint target

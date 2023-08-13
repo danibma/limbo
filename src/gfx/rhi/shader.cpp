@@ -272,6 +272,7 @@ namespace limbo::Gfx
 			case D3D_SIT_BYTEADDRESS: ensure(false); break;
 			case D3D_SIT_RTACCELERATIONSTRUCTURE: ensure(false); break;
 			case D3D_SIT_TBUFFER: ensure(false); break;
+#if 1
 			case D3D_SIT_TEXTURE:
 			{
 				ParameterMap[Algo::Hash(bindDesc.Name)] = {
@@ -288,6 +289,7 @@ namespace limbo::Gfx
 
 				break;
 			}
+#endif
 			case D3D_SIT_SAMPLER:
 			{
 				ParameterMap[Algo::Hash(bindDesc.Name)] = {
@@ -326,6 +328,8 @@ namespace limbo::Gfx
 		}
 
 		ensure(rsCost <= 64);
+
+		flags |= D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc;
 		desc.Init_1_1(currentRP, rootParameters, 0, nullptr, flags);

@@ -115,21 +115,14 @@ namespace limbo::Gfx
 			for (Scene* scene : m_Scenes)
 			{
 				scene->DrawMesh([&](const Mesh& mesh)
-					{
-						const MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
+				{
+					SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
+					SetParameter(m_DeferredShadingShader, "g_Material", mesh.Material);
 
-						SetParameter(m_DeferredShadingShader, "g_albedoTexture", material.Albedo);
-						SetParameter(m_DeferredShadingShader, "g_normalTexture", material.Normal);
-						SetParameter(m_DeferredShadingShader, "g_roughnessMetalTexture", material.RoughnessMetal);
-						SetParameter(m_DeferredShadingShader, "g_emissiveTexture", material.Emissive);
-						SetParameter(m_DeferredShadingShader, "g_AOTexture", material.AmbientOcclusion);
-						SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
-						SetParameter(m_DeferredShadingShader, "g_MaterialFactors", material.Factors);
-
-						BindVertexBuffer(mesh.VertexBuffer);
-						BindIndexBuffer(mesh.IndexBuffer);
-						DrawIndexed((uint32)mesh.IndexCount);
-					});
+					BindVertexBuffer(mesh.VertexBuffer);
+					BindIndexBuffer(mesh.IndexBuffer);
+					DrawIndexed((uint32)mesh.IndexCount);
+				});
 			}
 			EndEvent();
 

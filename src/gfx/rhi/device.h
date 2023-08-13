@@ -40,6 +40,8 @@ namespace limbo::Gfx
 		ComPtr<ID3D12GraphicsCommandList>	m_CommandList;
 		ComPtr<ID3D12CommandQueue>			m_CommandQueue;
 
+		CD3DX12FeatureSupport				m_FeatureSupport;
+
 		ComPtr<ID3D12Fence>					m_Fence;
 		HANDLE								m_FenceEvent;
 		uint64								m_FenceValues[3] = { 0, 0, 0 };

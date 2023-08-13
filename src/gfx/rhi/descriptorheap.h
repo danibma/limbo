@@ -17,14 +17,15 @@ namespace limbo::Gfx
 	{
 		D3D12_CPU_DESCRIPTOR_HANDLE CpuHandle;
 		D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle;
+		uint32						Index;
 	};
 
 	class DescriptorHeap
 	{
 		ComPtr<ID3D12DescriptorHeap>			m_Heap;
 
-		int64									m_CurrentDescriptor;
-		int64									m_DescriptorSize;
+		uint32									m_CurrentDescriptor;
+		uint32									m_DescriptorSize;
 
 		const uint32							m_MaxDescriptors = 2048;
 

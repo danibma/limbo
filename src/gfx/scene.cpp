@@ -67,33 +67,21 @@ namespace limbo::Gfx
 	{
 		for (const Mesh& mesh : m_Meshes)
 		{
-			Gfx::DestroyBuffer(mesh.VertexBuffer);
-			Gfx::DestroyBuffer(mesh.IndexBuffer);
+			DestroyBuffer(mesh.VertexBuffer);
+			DestroyBuffer(mesh.IndexBuffer);
 		}
 
-		for (const auto& [name, material] : m_MeshMaterials)
-		{
-			Gfx::DestroyTexture(material.Albedo);
-			Gfx::DestroyTexture(material.Normal);
-			Gfx::DestroyTexture(material.RoughnessMetal);
-			Gfx::DestroyTexture(material.Emissive);
-			Gfx::DestroyTexture(material.AmbientOcclusion);
-			Gfx::DestroyBuffer(material.Factors);
-		}
+		for (Handle<Texture> texture : m_Textures)
+			DestroyTexture(texture);
 
+		for (auto [id, material] : m_MeshMaterials)
+			DestroyBuffer(material);
 	}
 
 	void Scene::DrawMesh(const std::function<void(const Mesh& mesh)>& drawFunction)
 	{
 		for (const Mesh& m : m_Meshes)
 			drawFunction(m);
-	}
-
-	MeshMaterial Scene::GetMaterial(uintptr_t pMaterial)
-	{
-		if (m_MeshMaterials.contains(pMaterial))
-			return m_MeshMaterials[pMaterial];
-		return MeshMaterial();
 	}
 
 	void Scene::ProcessNode(const cgltf_node* node)
@@ -114,23 +102,22 @@ namespace limbo::Gfx
 			ProcessNode(node->children[i]);
 	}
 
-	void Scene::ProcessMaterial(const cgltf_material* material)
+	void Scene::ProcessMaterial(const cgltf_material* cgltfMaterial)
 	{
-		MaterialFactors factors = {};
-		MeshMaterial& meshMaterial = m_MeshMaterials[(uintptr_t)material];
-		if (material->has_pbr_metallic_roughness)
+		Material material = {};
+		if (cgltfMaterial->has_pbr_metallic_roughness)
 		{
-			const cgltf_pbr_metallic_roughness& workflow = material->pbr_metallic_roughness;
+			const cgltf_pbr_metallic_roughness& workflow = cgltfMaterial->pbr_metallic_roughness;
 			{
 				std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Albedo");
-				LoadTexture(&workflow.base_color_texture, debugName.c_str(), meshMaterial.Albedo, Format::RGBA8_UNORM_SRGB);
-				factors.AlbedoFactor = glm::make_vec4(workflow.base_color_factor);
+				material.AlbedoIndex  = LoadTexture(&workflow.base_color_texture, debugName.c_str(), Format::RGBA8_UNORM_SRGB);
+				material.AlbedoFactor = glm::make_vec4(workflow.base_color_factor);
 			}
 			{
-				std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "MetallicRoughness");
-				LoadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), meshMaterial.RoughnessMetal, Format::RGBA8_UNORM);
-				factors.RoughnessFactor = workflow.roughness_factor;
-				factors.MetallicFactor  = workflow.metallic_factor;
+				std::string debugName		 = std::format(" Material({}) {}", m_MeshMaterials.size(), "MetallicRoughness");
+				material.RoughnessMetalIndex = LoadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), Format::RGBA8_UNORM);
+				material.RoughnessFactor	 = workflow.roughness_factor;
+				material.MetallicFactor		 = workflow.metallic_factor;
 			}
 		}
 		else
@@ -140,27 +127,27 @@ namespace limbo::Gfx
 
 		{
 			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Normal");
-			LoadTexture(&material->normal_texture, debugName.c_str(), meshMaterial.Normal, Format::RGBA8_UNORM);
+			material.NormalIndex  = LoadTexture(&cgltfMaterial->normal_texture, debugName.c_str(), Format::RGBA8_UNORM);
 		}
 
 		{
-			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "Emissive");
-			LoadTexture(&material->emissive_texture, debugName.c_str(), meshMaterial.Emissive, Format::RGBA8_UNORM);
+			std::string debugName  = std::format(" Material({}) {}", m_MeshMaterials.size(), "Emissive");
+			material.EmissiveIndex = LoadTexture(&cgltfMaterial->emissive_texture, debugName.c_str(), Format::RGBA8_UNORM);
 		}
 
 		{
-			std::string debugName = std::format(" Material({}) {}", m_MeshMaterials.size(), "AmbientOcclusion");
-			LoadTexture(&material->occlusion_texture, debugName.c_str(), meshMaterial.AmbientOcclusion, Format::RGBA8_UNORM);
+			std::string debugName			= std::format(" Material({}) {}", m_MeshMaterials.size(), "AmbientOcclusion");
+			material.AmbientOcclusionIndex  = LoadTexture(&cgltfMaterial->occlusion_texture, debugName.c_str(), Format::RGBA8_UNORM);
 		}
 
-		// Create factors buffer
+		// Create materials buffer
 		{
-			std::string debugName = std::format(" Material({}) Factors CB", m_MeshMaterials.size());
-			meshMaterial.Factors = CreateBuffer({
+			std::string debugName = std::format(" Material({}) CB", m_MeshMaterials.size());
+			m_MeshMaterials[(uintptr_t)cgltfMaterial] = CreateBuffer({
 				.DebugName = debugName.c_str(),
-				.ByteSize = sizeof(MaterialFactors),
+				.ByteSize = sizeof(Material),
 				.Usage = BufferUsage::Constant,
-				.InitialData = &factors
+				.InitialData = &material
 			});
 		}
 	}
@@ -221,15 +208,13 @@ namespace limbo::Gfx
 			primitiveData.indicesStream[idx] = (uint32)cgltf_accessor_read_index(primitive->indices, idx);
 
 		cgltf_material* material = primitive->material;
-		uintptr_t materialID = (uintptr_t)material;
-
-		return Mesh(meshName.c_str(), vertices, primitiveData.indicesStream, materialID);
+		return Mesh(meshName.c_str(), vertices, primitiveData.indicesStream, m_MeshMaterials[(uintptr_t)material]);
 	}
 
-	void Scene::LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture, Format format)
+	int Scene::LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Format format)
 	{
 		if (!textureView->texture)
-			return;
+			return -1;
 
 		int width	 = 0;
 		int height	 = 0;
@@ -257,7 +242,7 @@ namespace limbo::Gfx
 
 		dname += debugName;
 
-		outTexture = CreateTexture({
+		Handle<Texture> texture = CreateTexture({
 			.Width = (uint32)width,
 			.Height = (uint32)height,
 			.MipLevels = CalculateMipCount(width),
@@ -269,15 +254,20 @@ namespace limbo::Gfx
 		});
 		free(data);
 
-		Gfx::GenerateMipLevels(outTexture);
+		Gfx::GenerateMipLevels(texture);
+		m_Textures.push_back(texture);
+
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
+		FAILIF(!t, -1);
+		return t->SRVHandle[0].Index;
 	}
 
-	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uintptr_t material)
+	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, Handle<Buffer> material)
 		: Transform(float4x4(1.0f))
 	{
 		IndexCount = indices.size();
 		VertexCount = vertices.size();
-		MaterialID = material;
+		Material = material;
 		Name = meshName;
 
 		// create vertex buffer

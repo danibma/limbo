@@ -26,32 +26,12 @@ namespace limbo::Gfx
 		float2 UV;
 	};
 
-	struct MeshMaterial
-	{
-		Handle<Texture> Albedo;
-		Handle<Texture> Normal;
-		Handle<Texture> RoughnessMetal;
-		Handle<Texture> Emissive;
-		Handle<Texture> AmbientOcclusion;
-
-		Handle<Buffer> Factors;
-
-		MeshMaterial()
-		{
-			Albedo				= ResourceManager::Ptr->EmptyTexture;
-			Normal				= ResourceManager::Ptr->EmptyTexture;
-			RoughnessMetal		= ResourceManager::Ptr->EmptyTexture;
-			Emissive			= ResourceManager::Ptr->EmptyTexture;
-			AmbientOcclusion	= ResourceManager::Ptr->EmptyTexture;
-		}
-	};
-
 	struct Mesh
 	{
 		Handle<Buffer>			VertexBuffer;
 		Handle<Buffer>			IndexBuffer;
 
-		uintptr_t				MaterialID;
+		Handle<Buffer>			Material;
 
 		float4x4				Transform;
 
@@ -60,16 +40,17 @@ namespace limbo::Gfx
 
 		const char*				Name;
 
-		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uintptr_t material);
+		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, Handle<Buffer> material);
 	};
 
 	class Scene
 	{
 		std::vector<Mesh>								m_Meshes;
+		std::vector<Handle<Texture>>					m_Textures;
 		char											m_FolderPath[256];
 		char											m_SceneName[128];
 
-		std::unordered_map<uintptr_t, MeshMaterial>		m_MeshMaterials;
+		std::unordered_map<uintptr_t, Handle<Buffer>>	m_MeshMaterials;
 
 	protected:
 		Scene() = default;
@@ -80,14 +61,13 @@ namespace limbo::Gfx
 		void Destroy();
 
 		void DrawMesh(const std::function<void(const Mesh& mesh)>& drawFunction);
-		MeshMaterial GetMaterial(uintptr_t pMaterial);
 
 	private:
 		void ProcessNode(const cgltf_node* node);
-		void ProcessMaterial(const cgltf_material* material);
+		void ProcessMaterial(const cgltf_material* cgltfMaterial);
 		Mesh ProcessMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
 
-		void LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Handle<Texture>& outTexture, Format format);
+		int LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Format format);
 	};
 
 	inline Scene* LoadScene(const char* path)

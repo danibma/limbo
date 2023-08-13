@@ -66,6 +66,10 @@ namespace limbo::Gfx
 
 		DX_CHECK(D3D12CreateDevice(m_Adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_Device)));
 
+		DX_CHECK(m_FeatureSupport.Init(m_Device.Get()));
+		check(m_FeatureSupport.ResourceBindingTier() >= D3D12_RESOURCE_BINDING_TIER_3);
+		check(m_FeatureSupport.HighestShaderModel() >= D3D_SHADER_MODEL_6_6);
+
 #if !NO_LOG
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		if (!bIsProfiling && !IsUnderRenderDoc())

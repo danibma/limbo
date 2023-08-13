@@ -36,6 +36,7 @@ namespace limbo::Gfx
 		}
 		++m_CurrentDescriptor;
 
+		handle.Index = m_CurrentDescriptor;
 		handle.CpuHandle.ptr = m_Heap->GetCPUDescriptorHandleForHeapStart().ptr + (m_CurrentDescriptor * m_DescriptorSize);
 		if (m_bShaderVisible)
 			handle.GPUHandle.ptr = m_Heap->GetGPUDescriptorHandleForHeapStart().ptr + (m_CurrentDescriptor * m_DescriptorSize);
