@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "SSAO.h"
+#include "ssao.h"
 
 #include "gfx/scenerenderer.h"
 #include "gfx/rhi/device.h"

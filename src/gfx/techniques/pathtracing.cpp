@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "PathTracing.h"
+#include "pathtracing.h"
 
 #include "gfx/rhi/resourcemanager.h"
 

@@ -6,7 +6,7 @@
 #include "scene.h"
 #include "rhi/device.h"
 #include "techniques/pathtracing.h"
-#include "techniques/SSAO.h"
+#include "techniques/ssao.h"
 
 namespace limbo::Gfx
 {
