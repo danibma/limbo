@@ -107,7 +107,7 @@ namespace limbo::Gfx
 		uint32 hash = Algo::Hash(parameterName);
 		if (!ParameterMap.contains(hash))
 		{
-			LB_WARN("Tried to setTexture to parameter '%s' but the parameter was not found in the shader", parameterName);
+			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
 			return;
 		}
 		ParameterInfo& parameter = ParameterMap[hash];
@@ -139,7 +139,11 @@ namespace limbo::Gfx
 	void Shader::SetBuffer(const char* parameterName, Handle<Buffer> buffer)
 	{
 		uint32 hash = Algo::Hash(parameterName);
-		FAILIF(!ParameterMap.contains(hash));
+		if (!ParameterMap.contains(hash))
+		{
+			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
+			return;
+		}
 		ParameterInfo& parameter = ParameterMap[hash];
 
 		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
@@ -163,7 +167,11 @@ namespace limbo::Gfx
 	void Shader::SetSampler(const char* parameterName, Handle<Sampler> sampler)
 	{
 		uint32 hash = Algo::Hash(parameterName);
-		FAILIF(!ParameterMap.contains(hash));
+		if (!ParameterMap.contains(hash))
+		{
+			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
+			return;
+		}
 		ParameterInfo& parameter = ParameterMap[hash];
 
 		Sampler* s = ResourceManager::Ptr->GetSampler(sampler);

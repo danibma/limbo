@@ -199,6 +199,8 @@ namespace limbo::Gfx
 	template<typename T>
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, const T& value)
 	{
+		ensure(sizeof(T) % sizeof(uint32) == 0); // the constant has to be 4 bytes
+
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 		s->SetConstant(parameterName, &value);
