@@ -79,6 +79,21 @@ namespace limbo::UI
 		ImGui::SetNextWindowBgAlpha(0.7f);
 		ImGui::Begin("Limbo##debugwindow", nullptr);
 		{
+			if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::PushItemWidth(200.0f);
+				ImGui::Combo("Render Path", &sceneRenderer->Tweaks.CurrentRenderPath, sceneRenderer->RenderPathList, (int)Gfx::RenderPath::MAX);
+				ImGui::Combo("Tonemap", &sceneRenderer->Tweaks.CurrentTonemap, sceneRenderer->TonemapList, (int)Gfx::Tonemap::MAX);
+				ImGui::Combo("Scene Views", &sceneRenderer->Tweaks.CurrentSceneView, sceneRenderer->SceneViewList, (int)Gfx::SceneView::MAX);
+				ImGui::Checkbox("VSync", &sceneRenderer->Tweaks.bEnableVSync);
+				ImGui::PopItemWidth();
+
+				ImGui::SeparatorText("SSAO");
+				ImGui::Checkbox("Enable SSAO", &sceneRenderer->Tweaks.bEnableSSAO);
+				ImGui::DragFloat("SSAO Radius", &sceneRenderer->Tweaks.SSAORadius, 0.1f);
+				ImGui::DragFloat("SSAO Power", &sceneRenderer->Tweaks.SSAOPower, 0.1f);
+			}
+
 			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				ImGui::Text("Position: %.1f, %.1f, %.1f", sceneRenderer->Camera.Eye.x, sceneRenderer->Camera.Eye.y, sceneRenderer->Camera.Eye.z);
@@ -94,18 +109,6 @@ namespace limbo::UI
 			{
 				ImGui::DragFloat3("Light Position", &sceneRenderer->Light.Position[0], 0.1f);
 				ImGui::ColorEdit3("Light Color", &sceneRenderer->Light.Color[0]);
-			}
-
-			if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				ImGui::PushItemWidth(200.0f);
-				ImGui::Combo("Tonemap", &sceneRenderer->Tweaks.CurrentTonemap, sceneRenderer->TonemapList, (int)Gfx::Tonemap::MAX);
-				ImGui::Combo("Scene Views", &sceneRenderer->Tweaks.CurrentSceneView, sceneRenderer->SceneViewList, (int)Gfx::SceneView::MAX);
-				ImGui::PopItemWidth();
-
-				ImGui::Checkbox("Enable SSAO", &sceneRenderer->Tweaks.bEnableSSAO);
-				ImGui::DragFloat("SSAO Radius", &sceneRenderer->Tweaks.SSAORadius, 0.1f);
-				ImGui::DragFloat("SSAO Power", &sceneRenderer->Tweaks.SSAOPower, 0.1f);
 			}
 
 			ImGui::End();

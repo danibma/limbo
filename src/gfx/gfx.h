@@ -15,7 +15,6 @@ namespace limbo::Gfx
 	{
 		DetailedLogging = 1 << 0,
 		EnableImgui		= 1 << 1,
-		DisableVSync	= 1 << 2,
 	};
 	typedef uint8 GfxDeviceFlags;
 

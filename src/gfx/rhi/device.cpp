@@ -422,7 +422,7 @@ namespace limbo::Gfx
 		m_ResourceBarriers.clear();
 	}
 
-	void Device::Present()
+	void Device::Present(bool bEnableVSync)
 	{
 		if (m_Flags & GfxDeviceFlag::EnableImgui)
 		{
@@ -451,7 +451,7 @@ namespace limbo::Gfx
 
 		ID3D12CommandList* cmd[1] = { m_CommandList.Get() };
 		m_CommandQueue->ExecuteCommandLists(1, cmd);
-		m_Swapchain->Present(!(m_Flags & GfxDeviceFlag::DisableVSync));
+		m_Swapchain->Present(bEnableVSync);
 
 		NextFrame();
 

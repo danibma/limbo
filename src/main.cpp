@@ -57,8 +57,6 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		UI::Render(sceneRenderer, deltaTime);
 
 		sceneRenderer->Render(deltaTime);
-
-		Gfx::Present();
 	}
 
 	Gfx::DestroySceneRenderer(sceneRenderer);

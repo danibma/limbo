@@ -31,16 +31,27 @@ namespace limbo::Gfx
 		MAX
 	};
 
+	enum class RenderPath : uint8
+	{
+		Deferred = 0,
+		PathTracing,
+
+		MAX
+	};
+
 	struct RendererTweaks
 	{
+		bool		bEnableVSync			= true;
+
 		// SSAO
 		bool		bEnableSSAO			= true;
 		float		SSAORadius			= 0.3f;
 		float		SSAOPower			= 1.2f;
 
 		// Scene
-		int			CurrentTonemap		= 1;
-		int			CurrentSceneView	= 0;
+		int			CurrentTonemap		= 1; // Tonemap enum
+		int			CurrentSceneView	= 0; // SceneView enum
+		int			CurrentRenderPath	= 0; // RenderPath enum
 		int			SelectedEnvMapIdx	= 4;
 	};
 
@@ -50,6 +61,7 @@ namespace limbo::Gfx
 		float3 Color;
 	};
 
+	class PathTracing;
 	class Texture;
 	class Buffer;
 	class Shader;
@@ -60,29 +72,32 @@ namespace limbo::Gfx
 		using EnvironmentMapList = std::vector<std::filesystem::path>;
 
 	private:
-		std::vector<Scene*>			m_Scenes;
+		std::vector<Scene*>				m_Scenes;
+
+		Handle<Texture>					m_SceneTexture;
 
 		// Skybox
-		Handle<Shader>				m_SkyboxShader;
-		Scene*						m_SkyboxCube;
+		Handle<Shader>					m_SkyboxShader;
+		Scene*							m_SkyboxCube;
 
 		// Deferred shading
-		Handle<Shader>				m_DeferredShadingShader;
+		Handle<Shader>					m_DeferredShadingShader;
 
 		// IBL stuff
-		Handle<Texture>				m_EnvironmentCubemap;
-		Handle<Texture>				m_IrradianceMap;
-		Handle<Texture>				m_PrefilterMap;
-		Handle<Texture>				m_BRDFLUTMap;
+		Handle<Texture>					m_EnvironmentCubemap;
+		Handle<Texture>					m_IrradianceMap;
+		Handle<Texture>					m_PrefilterMap;
+		Handle<Texture>					m_BRDFLUTMap;
 
 		// PBR
-		Handle<Shader>				m_PBRShader;
+		Handle<Shader>					m_PBRShader;
 
 		// Scene Composite
-		Handle<Shader>				m_CompositeShader;
+		Handle<Shader>					m_CompositeShader;
 
 		// Techniques
-		std::unique_ptr<SSAO>		m_SSAO;
+		std::unique_ptr<SSAO>			m_SSAO;
+		std::unique_ptr<PathTracing>	m_PathTracing;
 
 	public:
 		Core::Window*				Window;
@@ -97,8 +112,9 @@ namespace limbo::Gfx
 		EnvironmentMapList			EnvironmentMaps;
 
 		// This string lists are used for the UI
-		const char*					TonemapList[(uint8)Tonemap::MAX]	 = { "None", "AcesFilm", "Reinhard" };
-		const char*					SceneViewList[(uint8)SceneView::MAX] = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
+		const char*					TonemapList[(uint8)Tonemap::MAX]	   = { "None", "AcesFilm", "Reinhard" };
+		const char*					SceneViewList[(uint8)SceneView::MAX]   = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
+		const char*					RenderPathList[(uint8)RenderPath::MAX] = { "Deferred", "Path Tracing" };
 
 	public:
 		SceneRenderer(Core::Window* window);

@@ -5,6 +5,7 @@
 
 #include "scene.h"
 #include "rhi/device.h"
+#include "techniques/pathtracing.h"
 #include "techniques/SSAO.h"
 
 namespace limbo::Gfx
@@ -72,7 +73,8 @@ namespace limbo::Gfx
 			.Type = Gfx::ShaderType::Graphics
 		});
 
-		m_SSAO = std::make_unique<SSAO>();
+		m_SSAO			= std::make_unique<SSAO>();
+		m_PathTracing	= std::make_unique<PathTracing>();
 	}
 
 	SceneRenderer::~SceneRenderer()
@@ -94,91 +96,103 @@ namespace limbo::Gfx
 
 	void SceneRenderer::Render(float dt)
 	{
-		BeginEvent("Loading Environment Map");
-		if (bNeedsEnvMapChange)
+		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
 		{
-			LoadEnvironmentMap(EnvironmentMaps[Tweaks.SelectedEnvMapIdx].string().c_str());
-			bNeedsEnvMapChange = false;
-		}
-		EndEvent();
-
-		BeginEvent("Geometry Pass");
-		BindShader(m_DeferredShadingShader);
-		SetParameter(m_DeferredShadingShader, "view", Camera.View);
-		SetParameter(m_DeferredShadingShader, "viewProj", Camera.ViewProj);
-		SetParameter(m_DeferredShadingShader, "LinearWrap", GetDefaultLinearWrapSampler());
-		SetParameter(m_DeferredShadingShader, "camPos", Camera.Eye);
-		for (Scene* scene : m_Scenes)
-		{
-			scene->DrawMesh([&](const Mesh& mesh)
+			BeginEvent("Loading Environment Map");
+			if (bNeedsEnvMapChange)
 			{
-				const MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
+				LoadEnvironmentMap(EnvironmentMaps[Tweaks.SelectedEnvMapIdx].string().c_str());
+				bNeedsEnvMapChange = false;
+			}
+			EndEvent();
 
-				SetParameter(m_DeferredShadingShader, "g_albedoTexture", material.Albedo);
-				SetParameter(m_DeferredShadingShader, "g_normalTexture", material.Normal);
-				SetParameter(m_DeferredShadingShader, "g_roughnessMetalTexture", material.RoughnessMetal);
-				SetParameter(m_DeferredShadingShader, "g_emissiveTexture", material.Emissive);
-				SetParameter(m_DeferredShadingShader, "g_AOTexture", material.AmbientOcclusion);
-				SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
-				SetParameter(m_DeferredShadingShader, "g_MaterialFactors", material.Factors);
+			BeginEvent("Geometry Pass");
+			BindShader(m_DeferredShadingShader);
+			SetParameter(m_DeferredShadingShader, "view", Camera.View);
+			SetParameter(m_DeferredShadingShader, "viewProj", Camera.ViewProj);
+			SetParameter(m_DeferredShadingShader, "LinearWrap", GetDefaultLinearWrapSampler());
+			SetParameter(m_DeferredShadingShader, "camPos", Camera.Eye);
+			for (Scene* scene : m_Scenes)
+			{
+				scene->DrawMesh([&](const Mesh& mesh)
+					{
+						const MeshMaterial& material = scene->GetMaterial(mesh.MaterialID);
 
-				BindVertexBuffer(mesh.VertexBuffer);
-				BindIndexBuffer(mesh.IndexBuffer);
-				DrawIndexed((uint32)mesh.IndexCount);
-			});
+						SetParameter(m_DeferredShadingShader, "g_albedoTexture", material.Albedo);
+						SetParameter(m_DeferredShadingShader, "g_normalTexture", material.Normal);
+						SetParameter(m_DeferredShadingShader, "g_roughnessMetalTexture", material.RoughnessMetal);
+						SetParameter(m_DeferredShadingShader, "g_emissiveTexture", material.Emissive);
+						SetParameter(m_DeferredShadingShader, "g_AOTexture", material.AmbientOcclusion);
+						SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
+						SetParameter(m_DeferredShadingShader, "g_MaterialFactors", material.Factors);
+
+						BindVertexBuffer(mesh.VertexBuffer);
+						BindIndexBuffer(mesh.IndexBuffer);
+						DrawIndexed((uint32)mesh.IndexCount);
+					});
+			}
+			EndEvent();
+
+			if (Tweaks.bEnableSSAO)
+			{
+				m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
+			}
+
+			BeginEvent("Render Skybox");
+			BindShader(m_SkyboxShader);
+			SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
+			SetParameter(m_SkyboxShader, "view", Camera.View);
+			SetParameter(m_SkyboxShader, "proj", Camera.Proj);
+			SetParameter(m_SkyboxShader, "LinearWrap", GetDefaultLinearWrapSampler());
+			m_SkyboxCube->DrawMesh([&](const Mesh& mesh)
+				{
+					BindVertexBuffer(mesh.VertexBuffer);
+					BindIndexBuffer(mesh.IndexBuffer);
+					DrawIndexed((uint32)mesh.IndexCount);
+				});
+			EndEvent();
+
+			BeginEvent("PBR Lighting");
+			BindShader(m_PBRShader);
+			SetParameter(m_PBRShader, "sceneToRender", Tweaks.CurrentSceneView);
+			SetParameter(m_PBRShader, "bEnableSSAO", Tweaks.bEnableSSAO ? 1 : 0);
+			// PBR scene info
+			SetParameter(m_PBRShader, "camPos", Camera.Eye);
+			SetParameter(m_PBRShader, "lightPos", Light.Position);
+			SetParameter(m_PBRShader, "lightColor", Light.Color);
+			SetParameter(m_PBRShader, "LinearClamp", GetDefaultLinearClampSampler());
+			// Bind deferred shading render targets
+			SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
+			SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
+			SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
+			SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
+			SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
+			SetParameter(m_PBRShader, "g_SSAO", m_SSAO->GetBlurredTexture());
+			// Bind irradiance map
+			SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
+			SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
+			SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
+			Draw(6);
+			EndEvent();
+
+			m_SceneTexture = GetShaderRT(m_PBRShader, 0);
 		}
-		EndEvent();
-
-		if (Tweaks.bEnableSSAO)
+		else if (Tweaks.CurrentRenderPath == (int)RenderPath::PathTracing)
 		{
-			m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
+			m_PathTracing->Render();
+			m_SceneTexture = m_PathTracing->GetFinalTexture();
 		}
-
-		BeginEvent("Render Skybox");
-		BindShader(m_SkyboxShader);
-		SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
-		SetParameter(m_SkyboxShader, "view", Camera.View);
-		SetParameter(m_SkyboxShader, "proj", Camera.Proj);
-		SetParameter(m_SkyboxShader, "LinearWrap", GetDefaultLinearWrapSampler());
-		m_SkyboxCube->DrawMesh([&](const Mesh& mesh)
-		{
-			BindVertexBuffer(mesh.VertexBuffer);
-			BindIndexBuffer(mesh.IndexBuffer);
-			DrawIndexed((uint32)mesh.IndexCount);
-		});
-		EndEvent();
-
-		BeginEvent("PBR Lighting");
-		BindShader(m_PBRShader);
-		SetParameter(m_PBRShader, "sceneToRender", Tweaks.CurrentSceneView);
-		SetParameter(m_PBRShader, "bEnableSSAO", Tweaks.bEnableSSAO ? 1 : 0);
-		// PBR scene info
-		SetParameter(m_PBRShader, "camPos", Camera.Eye);
-		SetParameter(m_PBRShader, "lightPos", Light.Position);
-		SetParameter(m_PBRShader, "lightColor", Light.Color);
-		SetParameter(m_PBRShader, "LinearClamp", GetDefaultLinearClampSampler());
-		// Bind deferred shading render targets
-		SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
-		SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
-		SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
-		SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
-		SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
-		SetParameter(m_PBRShader, "g_SSAO", m_SSAO->GetBlurredTexture());
-		// Bind irradiance map
-		SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
-		SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
-		SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
-		Draw(6);
-		EndEvent();
 
 		// render scene composite
 		BeginEvent("Scene Composite");
 		BindShader(m_CompositeShader);
 		SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
-		SetParameter(m_CompositeShader, "g_sceneTexture", m_PBRShader, 0);
+		SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
 		SetParameter(m_CompositeShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		Draw(6);
 		EndEvent();
+
+		Gfx::Present(Tweaks.bEnableVSync);
 	}
 
 	void SceneRenderer::LoadNewScene(const char* path)

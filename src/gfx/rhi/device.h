@@ -114,7 +114,7 @@ namespace limbo::Gfx
 
 		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 
-		void Present();
+		void Present(bool bEnableVSync);
 
 		void HandleWindowResize(uint32 width, uint32 height);
 
@@ -256,9 +256,9 @@ namespace limbo::Gfx
 		Device::Ptr->Dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 
-	inline void Present()
+	inline void Present(bool bEnableVSync)
 	{
-		Device::Ptr->Present();
+		Device::Ptr->Present(bEnableVSync);
 	}
 
 	inline Format GetSwapchainFormat()
