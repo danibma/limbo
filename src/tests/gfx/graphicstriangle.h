@@ -70,7 +70,7 @@ namespace limbo::Tests::Gfx
 			limbo::Gfx::BindVertexBuffer(vertexBuffer);
 
 			limbo::Gfx::Draw(3);
-			limbo::Gfx::Present();
+			limbo::Gfx::Present(true);
 		}
 
 		limbo::Gfx::DestroyBuffer(vertexBuffer);

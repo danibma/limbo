@@ -47,7 +47,7 @@ namespace limbo::Tests::Gfx
 
 			limbo::Gfx::CopyTextureToBackBuffer(outputTexture);
 
-			limbo::Gfx::Present();
+			limbo::Gfx::Present(true);
 		}
 
 		limbo::Gfx::DestroyTexture(outputTexture);
