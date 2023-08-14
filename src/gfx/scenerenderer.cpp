@@ -75,6 +75,7 @@ namespace limbo::Gfx
 
 		m_SSAO			= std::make_unique<SSAO>();
 		m_PathTracing	= std::make_unique<PathTracing>();
+		m_PathTracing->RebuildAccelerationStructure(m_Scenes);
 	}
 
 	SceneRenderer::~SceneRenderer()
@@ -114,7 +115,7 @@ namespace limbo::Gfx
 			SetParameter(m_DeferredShadingShader, "camPos", Camera.Eye);
 			for (Scene* scene : m_Scenes)
 			{
-				scene->DrawMesh([&](const Mesh& mesh)
+				scene->IterateMeshes([&](const Mesh& mesh)
 				{
 					SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
 					SetParameter(m_DeferredShadingShader, "g_Material", mesh.Material);
@@ -137,12 +138,12 @@ namespace limbo::Gfx
 			SetParameter(m_SkyboxShader, "view", Camera.View);
 			SetParameter(m_SkyboxShader, "proj", Camera.Proj);
 			SetParameter(m_SkyboxShader, "LinearWrap", GetDefaultLinearWrapSampler());
-			m_SkyboxCube->DrawMesh([&](const Mesh& mesh)
-				{
-					BindVertexBuffer(mesh.VertexBuffer);
-					BindIndexBuffer(mesh.IndexBuffer);
-					DrawIndexed((uint32)mesh.IndexCount);
-				});
+			m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
+			{
+				BindVertexBuffer(mesh.VertexBuffer);
+				BindIndexBuffer(mesh.IndexBuffer);
+				DrawIndexed((uint32)mesh.IndexCount);
+			});
 			EndEvent();
 
 			BeginEvent("PBR Lighting");
@@ -191,6 +192,8 @@ namespace limbo::Gfx
 	void SceneRenderer::LoadNewScene(const char* path)
 	{
 		m_Scenes.emplace_back(Scene::Load(path));
+		//if (Tweaks.CurrentRenderPath == (int)RenderPath::PathTracing)
+			m_PathTracing->RebuildAccelerationStructure(m_Scenes);
 	}
 
 	void SceneRenderer::ClearScenes()

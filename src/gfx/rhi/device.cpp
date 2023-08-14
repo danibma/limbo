@@ -24,21 +24,27 @@ namespace limbo::Gfx
 		uint32_t dxgiFactoryFlags = 0;
 		bool bIsProfiling = Core::CommandLine::HasArg(LIMBO_CMD_PROFILE);
 
-		if (!IsUnderPIX() && !bIsProfiling)
-		{
-			HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
-			if (pixGPUCapturer)
-			{
-				DX_CHECK(PIXSetTargetWindow(window->GetWin32Handle()));
-				DX_CHECK(PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS));
-				m_bPIXCanCapture = true;
-				LB_LOG("PIX capture enabled.");
-			}
-		}
+#if !NO_LOG
+		if (!bIsProfiling)
+			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
+#endif
+		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_Factory)));
 
 #if !NO_LOG
 		if (!bIsProfiling)
 		{
+			if (!IsUnderPIX())
+			{
+				HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
+				if (pixGPUCapturer)
+				{
+					DX_CHECK(PIXSetTargetWindow(window->GetWin32Handle()));
+					DX_CHECK(PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS));
+					m_bPIXCanCapture = true;
+					LB_LOG("PIX capture enabled.");
+				}
+			}
+
 			ComPtr<ID3D12Debug> debugController;
 			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 			debugController->EnableDebugLayer();
@@ -48,23 +54,26 @@ namespace limbo::Gfx
 			DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(&debugController1)));
 			debugController1->SetEnableGPUBasedValidation(true);
 #endif
-
-			ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
-			if (!FAILED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiInfoQueue))))
-			{
-				dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-
-				dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
-				dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
-			}
 		}
 #endif
 
-		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_Factory)));
-
 		PickGPU();
 
-		DX_CHECK(D3D12CreateDevice(m_Adapter.Get(), D3D_FEATURE_LEVEL_12_2, IID_PPV_ARGS(&m_Device)));
+		constexpr D3D_FEATURE_LEVEL featureLevels[] =
+		{
+			D3D_FEATURE_LEVEL_12_2,
+			D3D_FEATURE_LEVEL_12_1,
+			D3D_FEATURE_LEVEL_12_0,
+			D3D_FEATURE_LEVEL_11_1,
+			D3D_FEATURE_LEVEL_11_0
+		};
+
+		DX_CHECK(D3D12CreateDevice(m_Adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(m_Device.GetAddressOf())));
+		D3D12_FEATURE_DATA_FEATURE_LEVELS caps{};
+		caps.pFeatureLevelsRequested = featureLevels;
+		caps.NumFeatureLevels = ARRAYSIZE(featureLevels);
+		DX_CHECK(m_Device->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &caps, sizeof(D3D12_FEATURE_DATA_FEATURE_LEVELS)));
+		DX_CHECK(D3D12CreateDevice(m_Adapter.Get(), caps.MaxSupportedFeatureLevel, IID_PPV_ARGS(m_Device.ReleaseAndGetAddressOf())));
 
 		DX_CHECK(m_FeatureSupport.Init(m_Device.Get()));
 		check(m_FeatureSupport.ResourceBindingTier() >= D3D12_RESOURCE_BINDING_TIER_3);
@@ -79,8 +88,36 @@ namespace limbo::Gfx
 			ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
 			if (SUCCEEDED(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1))))
 			{
+				// Suppress messages based on their severity level
+				D3D12_MESSAGE_SEVERITY Severities[] =
+				{
+					D3D12_MESSAGE_SEVERITY_INFO
+				};
+
+				// Suppress individual messages by their ID
+				D3D12_MESSAGE_ID DenyIds[] =
+				{
+					// This occurs when there are uninitialized descriptors in a descriptor table, even when a
+					// shader does not access the missing descriptors.
+					D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,
+				};
+
+				D3D12_INFO_QUEUE_FILTER NewFilter = {};
+				//NewFilter.DenyList.NumCategories = _countof(Categories);
+				//NewFilter.DenyList.pCategoryList = Categories;
+				NewFilter.DenyList.NumSeverities = _countof(Severities);
+				NewFilter.DenyList.pSeverityList = Severities;
+				NewFilter.DenyList.NumIDs = _countof(DenyIds);
+				NewFilter.DenyList.pIDList = DenyIds;
+
+				d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
+				d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
+				d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, true);
+
+				d3d12InfoQueue->PushStorageFilter(&NewFilter);
+
 				DWORD messageCallbackCookie;
-				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, nullptr, &messageCallbackCookie));
+				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, this, &messageCallbackCookie));
 			}
 			else
 			{
@@ -116,6 +153,19 @@ namespace limbo::Gfx
 			DX_CHECK(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocators[i])));
 
 		DX_CHECK(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocators[m_FrameIndex].Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
+
+		// Get raytracing interfaces
+		if (m_FeatureSupport.RaytracingTier() > D3D12_RAYTRACING_TIER_NOT_SUPPORTED)
+		{
+			check(m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1);
+			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(&m_DXRDevice)));
+			DX_CHECK(m_CommandList->QueryInterface(IID_PPV_ARGS(&m_DXRCommandList)));
+		}
+		else
+		{
+			LB_WARN("Raytracing not supported on this device");
+		}
+
 
 		// Create synchronization objects
 		{
@@ -367,7 +417,7 @@ namespace limbo::Gfx
 		ResourceManager* rm = ResourceManager::Ptr;
 		Shader* shader = rm->GetShader(m_BoundShader);
 
-		if (shader->Type == ShaderType::Compute)
+		if (shader->Type == ShaderType::Compute || shader->Type == ShaderType::RayTracing)
 		{
 			m_CommandList->SetComputeRootSignature(shader->RootSignature.Get());
 			shader->SetComputeRootParameters(m_CommandList.Get());
@@ -379,7 +429,14 @@ namespace limbo::Gfx
 			shader->SetGraphicsRootParameters(m_CommandList.Get());
 		}
 
-		m_CommandList->SetPipelineState(shader->PipelineState.Get());
+		if (shader->Type != ShaderType::RayTracing)
+		{
+			m_CommandList->SetPipelineState(shader->PipelineState.Get());
+		}
+		else
+		{
+			m_DXRCommandList->SetPipelineState1(shader->StateObject.Get());
+		}
 	}
 
 	void Device::BindSwapchainRenderTargets()
@@ -411,6 +468,15 @@ namespace limbo::Gfx
 	{
 		InstallDrawState();
 		m_CommandList->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+	}
+
+	void Device::DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth)
+	{
+		InstallDrawState();
+
+		D3D12_DISPATCH_RAYS_DESC desc;
+		sbt.Commit(desc, width, height, depth);
+		m_DXRCommandList->DispatchRays(&desc);
 	}
 
 	void Device::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
@@ -505,6 +571,19 @@ namespace limbo::Gfx
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 		}
+	}
+
+	void Device::BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, Handle<Buffer> scratch, Handle<Buffer> result)
+	{
+		TransitionResource(scratch, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+
+		SubmitResourceBarriers();
+
+		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc = {};
+		desc.Inputs = inputs;
+		desc.ScratchAccelerationStructureData = GetBuffer(scratch)->Resource->GetGPUVirtualAddress();
+		desc.DestAccelerationStructureData = GetBuffer(result)->Resource->GetGPUVirtualAddress();
+		m_DXRCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
 	}
 
 	void Device::HandleWindowResize(uint32 width, uint32 height)
@@ -607,6 +686,13 @@ namespace limbo::Gfx
 		if (buffer->CurrentState == newState) return;
 		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(buffer->Resource.Get(), buffer->CurrentState, newState));
 		buffer->CurrentState = newState;
+	}
+
+	void Device::UAVBarrier(Handle<Buffer> buffer)
+	{
+		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
+		FAILIF(!b);
+		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(b->Resource.Get()));
 	}
 
 	void Device::BeginEvent(const char* name, uint64 color)

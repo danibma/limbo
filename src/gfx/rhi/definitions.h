@@ -40,7 +40,8 @@ namespace limbo::Gfx
 	enum class ShaderType : uint8
 	{
 		Graphics,
-		Compute
+		Compute,
+		RayTracing,
 	};
 
 	enum class RenderPassOp : uint8

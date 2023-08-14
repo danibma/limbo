@@ -16,6 +16,8 @@ namespace limbo::Gfx
 {
 	struct ShaderSpec
 	{
+		using HitGroupDescList = std::vector<D3D12_HIT_GROUP_DESC>;
+
 	public:
 		struct RenderTargetDesc
 		{
@@ -37,6 +39,10 @@ namespace limbo::Gfx
 		RenderTargetDesc				DepthFormat = { Format::UNKNOWN };
 
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+		// Raytracing stuff
+		HitGroupDescList				HitGroupsDescriptions;
+		std::vector<D3D12_EXPORT_DESC>	Exports;
 
 		ShaderType						Type = ShaderType::Graphics;
 	};
@@ -91,6 +97,7 @@ namespace limbo::Gfx
 
 	public:
 		ComPtr<ID3D12PipelineState>			PipelineState;
+		ComPtr<ID3D12StateObject>			StateObject; // for RayTracing
 		ComPtr<ID3D12RootSignature>			RootSignature;
 		TParameterMap						ParameterMap;
 		ShaderType							Type;
@@ -113,16 +120,18 @@ namespace limbo::Gfx
 		void SetTexture(const char* parameterName, Handle<class Texture> texture, uint32 mipLevel = ~0);
 		void SetBuffer(const char* parameterName, Handle<class Buffer> buffer);
 		void SetSampler(const char* parameterName, Handle<class Sampler> sampler);
+		void SetAccelerationStructure(const char* parameterName, class AccelerationStructure* accelerationStructure);
 
 		void ResizeRenderTargets(uint32 width, uint32 height);
 		void ReloadShader();
 
 	private:
 		void CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);
-		void CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, const SC::Kernel* kernels, uint32 kernelsCount);
+		void CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel* kernels, uint32 kernelsCount);
 		void CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
 		void CreateRenderTargets(const ShaderSpec& spec, D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
 		void CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec, bool bIsReloading);
+		void CreateRayTracingState(ID3D12Device5* device, const ShaderSpec& spec);
 
 		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultBlendDesc();
 		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultEnabledBlendDesc();

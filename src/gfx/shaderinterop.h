@@ -18,3 +18,18 @@ struct Material
 	float  MetallicFactor;
 	float  RoughnessFactor;
 };
+
+// note: For Raytracing at the moment, probably going to get removed in the future
+struct Viewport
+{
+	float left;
+	float top;
+	float right;
+	float bottom;
+};
+
+struct RayGenConstantBuffer
+{
+	Viewport viewport;
+	Viewport stencil;
+};

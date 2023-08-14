@@ -12,6 +12,7 @@
 
 #include <d3d12/d3dx12/d3dx12.h>
 
+#include "accelerationstructure.h"
 
 
 namespace limbo::Gfx
@@ -30,6 +31,8 @@ namespace limbo::Gfx
 			CreateComputePipeline(d3ddevice, spec);
 		else if (spec.Type == ShaderType::Graphics)
 			CreateGraphicsPipeline(d3ddevice, spec, false);
+		else if (spec.Type == ShaderType::RayTracing)
+			CreateRayTracingState(device->GetDXRDevice(), spec);
 	}
 
 	Shader::~Shader()
@@ -184,7 +187,19 @@ namespace limbo::Gfx
 		parameter.Descriptor = s->Handle.GPUHandle;
 	}
 
-	void Shader::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel const* kernels, uint32 kernelsCount)
+	void Shader::SetAccelerationStructure(const char* parameterName, AccelerationStructure* accelerationStructure)
+	{
+		uint32 hash = Algo::Hash(parameterName);
+		if (!ParameterMap.contains(hash))
+		{
+			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
+			return;
+		}
+		ParameterInfo& parameter = ParameterMap[hash];
+		parameter.Descriptor = accelerationStructure->GetDescriptor();
+	}
+
+	void Shader::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel* kernels, uint32 kernelsCount)
 	{
 		ParameterMap.clear();
 
@@ -193,7 +208,7 @@ namespace limbo::Gfx
 		uint32 currentRP = 0;
 		uint32 rsCost    = 0;
 
-		auto processResourceBinding = [&rootParameters, &ranges, &currentRP, &rsCost, this](const D3D12_SHADER_INPUT_BIND_DESC& bindDesc, ID3D12ShaderReflection* reflection)
+		auto processResourceBinding = [&rootParameters, &ranges, &currentRP, &rsCost, this](const D3D12_SHADER_INPUT_BIND_DESC& bindDesc, auto* reflection)
 		{
 			switch (bindDesc.Type) {
 			case D3D_SIT_CBUFFER:
@@ -236,7 +251,10 @@ namespace limbo::Gfx
 				}
 
 				// Normal constant buffers
-				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+				uint32 hashedName = Algo::Hash(bindDesc.Name);
+				if (ParameterMap.contains(hashedName)) break;
+
+				ParameterMap[hashedName] = {
 					.Type = ParameterType::CBV,
 					.RPIndex = currentRP,
 				};
@@ -258,7 +276,10 @@ namespace limbo::Gfx
 			case D3D_SIT_UAV_FEEDBACKTEXTURE:
 			case D3D_SIT_UAV_RWTYPED: 
 			{
-				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+				uint32 hashedName = Algo::Hash(bindDesc.Name);
+				if (ParameterMap.contains(hashedName)) break;
+
+				ParameterMap[hashedName] = {
 					.Type = ParameterType::UAV,
 					.RPIndex = currentRP,
 				};
@@ -274,11 +295,14 @@ namespace limbo::Gfx
 			}
 			case D3D_SIT_STRUCTURED: ensure(false); break;
 			case D3D_SIT_BYTEADDRESS: ensure(false); break;
-			case D3D_SIT_RTACCELERATIONSTRUCTURE: ensure(false); break;
 			case D3D_SIT_TBUFFER: ensure(false); break;
+			case D3D_SIT_RTACCELERATIONSTRUCTURE:
 			case D3D_SIT_TEXTURE:
 			{
-				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+				uint32 hashedName = Algo::Hash(bindDesc.Name);
+				if (ParameterMap.contains(hashedName)) break;
+
+				ParameterMap[hashedName] = {
 					.Type = ParameterType::SRV,
 					.RPIndex = currentRP,
 				};
@@ -294,7 +318,10 @@ namespace limbo::Gfx
 			}
 			case D3D_SIT_SAMPLER:
 			{
-				ParameterMap[Algo::Hash(bindDesc.Name)] = {
+				uint32 hashedName = Algo::Hash(bindDesc.Name);
+				if (ParameterMap.contains(hashedName)) break;
+
+				ParameterMap[hashedName] = {
 					.Type = ParameterType::Samplers,
 					.RPIndex = currentRP,
 				};
@@ -314,18 +341,40 @@ namespace limbo::Gfx
 
 		for (uint32 i = 0; i < kernelsCount; ++i)
 		{
-			ID3D12ShaderReflection* reflection = kernels[i].Reflection.Get();
-
-			D3D12_SHADER_DESC shaderDesc;
-			reflection->GetDesc(&shaderDesc);
-
-			// Bindings
-			for (uint32 r = 0; r < shaderDesc.BoundResources; ++r)
+			if (ID3D12LibraryReflection* libReflection = kernels[i].LibReflection.Get())
 			{
-				D3D12_SHADER_INPUT_BIND_DESC bindDesc;
-				reflection->GetResourceBindingDesc(r, &bindDesc);
+				D3D12_LIBRARY_DESC libDesc;
+				libReflection->GetDesc(&libDesc);
 
-				processResourceBinding(bindDesc, reflection);
+				for (uint32 f = 0; f < libDesc.FunctionCount; f++)
+				{
+					ID3D12FunctionReflection* func = libReflection->GetFunctionByIndex(f);
+					D3D12_FUNCTION_DESC funcDesc;
+					func->GetDesc(&funcDesc);
+
+					// Bindings
+					for (uint32 r = 0; r < funcDesc.BoundResources; ++r)
+					{
+						D3D12_SHADER_INPUT_BIND_DESC bindDesc;
+						func->GetResourceBindingDesc(r, &bindDesc);
+
+						processResourceBinding(bindDesc, func);
+					}
+				}
+			}
+			else if (ID3D12ShaderReflection* reflection = kernels[i].Reflection.Get())
+			{
+				D3D12_SHADER_DESC shaderDesc;
+				reflection->GetDesc(&shaderDesc);
+
+				// Bindings
+				for (uint32 r = 0; r < shaderDesc.BoundResources; ++r)
+				{
+					D3D12_SHADER_INPUT_BIND_DESC bindDesc;
+					reflection->GetResourceBindingDesc(r, &bindDesc);
+
+					processResourceBinding(bindDesc, reflection);
+				}
 			}
 		}
 
@@ -374,6 +423,52 @@ namespace limbo::Gfx
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
 		DX_CHECK(device->CreateComputePipelineState(&desc, IID_PPV_ARGS(&PipelineState)));
+	}
+
+	void Shader::CreateRayTracingState(ID3D12Device5* device, const ShaderSpec& spec)
+	{
+		FAILIF(!spec.ProgramName);
+
+		SC::Kernel libKernel;
+		FAILIF(!SC::Compile(libKernel, spec.ProgramName, "", SC::KernelType::Lib));
+
+		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+
+		CreateRootSignature(device, rootSignatureFlags, &libKernel, 1);
+
+		D3D12_DXIL_LIBRARY_DESC lib_desc = {
+			.DXILLibrary = { libKernel.Bytecode->GetBufferPointer(), libKernel.Bytecode->GetBufferSize() },
+			.NumExports = (uint32)spec.Exports.size(),
+			.pExports = const_cast<D3D12_EXPORT_DESC*>(spec.Exports.data())
+		};
+
+		std::vector<D3D12_STATE_SUBOBJECT> subobjects;
+		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY, &lib_desc);
+
+		for (const D3D12_HIT_GROUP_DESC& desc : spec.HitGroupsDescriptions)
+			subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP, &desc);
+
+		D3D12_RAYTRACING_SHADER_CONFIG shaderConfig = {
+			.MaxPayloadSizeInBytes = 4 * sizeof(float), // float4 color
+			.MaxAttributeSizeInBytes = 2 * sizeof(float) // float2 barycentrics
+		};
+		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &shaderConfig);
+
+		// According to Microsoft: Set max recursion depth as low as needed as drivers may apply optimization strategies for low recursion depths. 
+		D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {
+			.MaxTraceRecursionDepth = 1
+		};
+		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &shaderConfig);
+
+		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RootSignature.Get() };
+		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
+
+		D3D12_STATE_OBJECT_DESC desc = {
+			.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+			.NumSubobjects = (uint32)subobjects.size(),
+			.pSubobjects = subobjects.data()
+		};
+		DX_CHECK(device->CreateStateObject(&desc, IID_PPV_ARGS(&StateObject)));
 	}
 
 	void Shader::CreateRenderTargets(const ShaderSpec& spec, D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc)

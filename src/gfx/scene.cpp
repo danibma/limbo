@@ -78,7 +78,7 @@ namespace limbo::Gfx
 			DestroyBuffer(material);
 	}
 
-	void Scene::DrawMesh(const std::function<void(const Mesh& mesh)>& drawFunction)
+	void Scene::IterateMeshes(const std::function<void(const Mesh& mesh)>& drawFunction) const
 	{
 		for (const Mesh& m : m_Meshes)
 			drawFunction(m);

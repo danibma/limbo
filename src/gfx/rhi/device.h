@@ -6,6 +6,8 @@
 
 #include <vector>
 
+#include "shaderbindingtable.h"
+
 namespace limbo::Core
 {
 	class Window;
@@ -35,9 +37,11 @@ namespace limbo::Gfx
 		ComPtr<IDXGIFactory2>				m_Factory;
 		ComPtr<IDXGIAdapter1>				m_Adapter;
 		ComPtr<ID3D12Device>				m_Device;
+		ComPtr<ID3D12Device5>				m_DXRDevice;
 
 		ComPtr<ID3D12CommandAllocator>		m_CommandAllocators[NUM_BACK_BUFFERS];
 		ComPtr<ID3D12GraphicsCommandList>	m_CommandList;
+		ComPtr<ID3D12GraphicsCommandList4>	m_DXRCommandList;
 		ComPtr<ID3D12CommandQueue>			m_CommandQueue;
 
 		CD3DX12FeatureSupport				m_FeatureSupport;
@@ -114,9 +118,12 @@ namespace limbo::Gfx
 		void Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
 		void DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
 
+		void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth);
 		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 
 		void Present(bool bEnableVSync);
+
+		void BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, Handle<Buffer> scratch, Handle<Buffer> result);
 
 		void HandleWindowResize(uint32 width, uint32 height);
 
@@ -137,6 +144,7 @@ namespace limbo::Gfx
 
 		// D3D12 specific
 		ID3D12Device* GetDevice() const { return m_Device.Get(); }
+		ID3D12Device5* GetDXRDevice() const { return m_DXRDevice.Get(); }
 		ID3D12GraphicsCommandList* GetCommandList() const { return m_CommandList.Get(); }
 
 		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
@@ -146,6 +154,8 @@ namespace limbo::Gfx
 
 		void TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
 		void TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
+
+		void UAVBarrier(Handle<Buffer> buffer);
 
 		uint32 GetBackbufferWidth();
 		uint32 GetBackbufferHeight();
@@ -256,6 +266,11 @@ namespace limbo::Gfx
 	inline void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
 		Device::Ptr->Dispatch(groupCountX, groupCountY, groupCountZ);
+	}
+
+	inline void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1)
+	{
+		Device::Ptr->DispatchRays(sbt, width, height, depth);
 	}
 
 	inline void Present(bool bEnableVSync)

@@ -20,14 +20,14 @@ namespace limbo::Gfx
 			{
 			case D3D12_MESSAGE_SEVERITY_CORRUPTION:
 			case D3D12_MESSAGE_SEVERITY_ERROR:
-				LB_ERROR("%s", pDescription);
+				LB_ERROR("D3D12 GPU Validation: %s", pDescription);
 				break;
 			case D3D12_MESSAGE_SEVERITY_WARNING:
-				LB_WARN("%s", pDescription);
+				LB_WARN("D3D12 GPU Validation: %s", pDescription);
 				break;
 			case D3D12_MESSAGE_SEVERITY_INFO:
 			case D3D12_MESSAGE_SEVERITY_MESSAGE:
-				LB_LOG("%s", pDescription);
+				LB_LOG("D3D12 GPU Validation: %s", pDescription);
 				break;
 			}
 		}

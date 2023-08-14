@@ -4,6 +4,7 @@
 
 #include "fpscamera.h"
 #include "core/window.h"
+#include "rhi/accelerationstructure.h"
 #include "rhi/resourcepool.h"
 
 namespace limbo::Gfx

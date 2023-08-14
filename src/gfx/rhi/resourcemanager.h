@@ -47,6 +47,9 @@ namespace limbo::Gfx
 		Texture* GetTexture(Handle<Texture> texture);
 		Sampler* GetSampler(Handle<Sampler> sampler);
 
+		void Map(Handle<Buffer> buffer, void** data, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
+		void Unmap(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
+
 		// Used for Imgui images
 		uint64 GetTextureID(Handle<Texture> texture);
 
@@ -140,6 +143,30 @@ namespace limbo::Gfx
 		Shader* renderTargetShader = ResourceManager::Ptr->GetShader(shader);
 		ensure(renderTargetShader);
 		return renderTargetShader->DepthTarget.Texture;
+	}
+
+	inline Buffer* GetBuffer(Handle<Buffer> buffer)
+	{
+		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
+		FAILIF(!b, nullptr);
+		return b;
+	}
+
+	inline void Map(Handle<Buffer> buffer, void** data, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
+	{
+		ResourceManager::Ptr->Map(buffer, data, subresource, range);
+	}
+
+	inline void Unmap(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
+	{
+		ResourceManager::Ptr->Unmap(buffer, subresource, range);
+	}
+
+	inline void SetParameter(Handle<Shader> shader, const char* parameterName, class AccelerationStructure* accelerationStructure)
+	{
+		Shader* s = ResourceManager::Ptr->GetShader(shader);
+		FAILIF(!s);
+		s->SetAccelerationStructure(parameterName, accelerationStructure);
 	}
 
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture, uint32 mipLevel = ~0)

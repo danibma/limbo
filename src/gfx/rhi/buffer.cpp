@@ -13,6 +13,8 @@ namespace limbo::Gfx
 		ID3D12Device* d3ddevice = device->GetDevice();
 
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
+		if (spec.Usage == BufferUsage::AS_Scratch || spec.Usage == BufferUsage::AS_Result)
+			flags |= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
 		const uint64 alignment = spec.Usage == BufferUsage::Upload || spec.Usage == BufferUsage::Constant ? 256 : 4;
 		D3D12_RESOURCE_DESC desc = {
@@ -47,6 +49,8 @@ namespace limbo::Gfx
 		CurrentState = D3D12_RESOURCE_STATE_COMMON;
 		if (spec.Usage == BufferUsage::Upload)
 			CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
+		else if (spec.Usage == BufferUsage::AS_Result)
+			CurrentState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 		InitialState = CurrentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
 													InitialState,
@@ -83,8 +87,7 @@ namespace limbo::Gfx
 			DX_CHECK(Resource->SetName(wname.c_str()));
 		}
 
-		if (spec.Usage == BufferUsage::Constant)
-			InitResource(spec);
+		InitResource(spec);
 	}
 
 	Buffer::~Buffer()
@@ -101,6 +104,11 @@ namespace limbo::Gfx
 		device->CreateConstantBufferView(&cbvDesc, BasicHandle.CpuHandle);
 	}
 
+	void Buffer::CreateSRV(ID3D12Device* device, const BufferSpec& spec)
+	{
+
+	}
+
 	void Buffer::InitResource(const BufferSpec& spec)
 	{
 		if (spec.Usage == BufferUsage::Constant)
@@ -108,10 +116,10 @@ namespace limbo::Gfx
 			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
 			CreateCBV(Device::Ptr->GetDevice(), spec);
 		}
-		else
+		else if (spec.Usage == BufferUsage::AS_Result)
 		{
-			ensure(false);
+			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
+			CreateSRV(Device::Ptr->GetDevice(), spec);
 		}
-		
 	}
 }

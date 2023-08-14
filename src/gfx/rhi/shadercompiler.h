@@ -191,13 +191,15 @@ namespace limbo::Gfx::SC
 	{
 		ComPtr<IDxcBlob>				Bytecode;
 		ComPtr<ID3D12ShaderReflection>  Reflection;
+		ComPtr<ID3D12LibraryReflection> LibReflection;
 	};
 
 	enum class KernelType : uint8
 	{
 		Compute,
 		Vertex,
-		Pixel
+		Pixel,
+		Lib
 	};
 
 	bool Compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel);

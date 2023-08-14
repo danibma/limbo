@@ -37,17 +37,24 @@ namespace limbo::Gfx::SC
         case KernelType::Pixel:
             profile.append(L"ps");
             break;
+        case KernelType::Lib:
+            profile.append(L"lib");
         }
         profile.append(L"_6_6");
 
-        std::wstring wentrypoint;
-        Utils::StringConvert(entryPoint, wentrypoint);
-        wentrypoint.insert(0, L"-E ");
 
         std::vector<const wchar_t*> arguments;
         arguments.reserve(20);
         arguments.emplace_back(path.c_str());
-        arguments.emplace_back(wentrypoint.c_str());
+
+		std::wstring wentrypoint;
+        if (kernel != KernelType::Lib)
+        {
+	        Utils::StringConvert(entryPoint, wentrypoint);
+	        wentrypoint.insert(0, L"-E ");
+	        arguments.emplace_back(wentrypoint.c_str());
+        }
+
         arguments.emplace_back(profile.c_str());
         
         // Debug: Disable optimizations and embed HLSL source in the shaders
@@ -100,7 +107,14 @@ namespace limbo::Gfx::SC
             .Encoding = 0,
         };
 
-        DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.Reflection)));
+        if (kernel == KernelType::Lib)
+        {
+            DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.LibReflection)));
+        }
+        else
+        {
+            DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.Reflection)));
+        }
 
         // Get shader blob
         DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&result.Bytecode), nullptr));

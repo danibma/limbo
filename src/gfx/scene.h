@@ -60,7 +60,7 @@ namespace limbo::Gfx
 		static Scene* Load(const char* path);
 		void Destroy();
 
-		void DrawMesh(const std::function<void(const Mesh& mesh)>& drawFunction);
+		void IterateMeshes(const std::function<void(const Mesh& mesh)>& drawFunction) const;
 
 	private:
 		void ProcessNode(const cgltf_node* node);
