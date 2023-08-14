@@ -73,8 +73,7 @@ DeferredShadingOutput PSMain(VSOut input)
 {
     DeferredShadingOutput result;
 
-    Texture2D<float4> albedoTexture = ResourceDescriptorHeap[g_Material.AlbedoIndex];
-    float4 albedo = albedoTexture.Sample(LinearWrap, input.UV);
+    float4 albedo = Sample2D(g_Material.AlbedoIndex, LinearWrap, input.UV);
 
     float4 finalAlbedo = g_Material.AlbedoFactor;
     finalAlbedo *= albedo;
@@ -86,8 +85,7 @@ DeferredShadingOutput PSMain(VSOut input)
     float metallic = g_Material.MetallicFactor;
     if (g_Material.RoughnessMetalIndex != -1)
     {
-        Texture2D<float4> roughnessMetalTexture = ResourceDescriptorHeap[g_Material.RoughnessMetalIndex];
-	    float4 roughnessMetalMap  = roughnessMetalTexture.Sample(LinearWrap, input.UV);
+        float4 roughnessMetalMap = Sample2D(g_Material.RoughnessMetalIndex, LinearWrap, input.UV);
         roughness *= roughnessMetalMap.g;
         metallic *= roughnessMetalMap.b;
     }
@@ -95,23 +93,20 @@ DeferredShadingOutput PSMain(VSOut input)
     float4 emissive = 0.0f;
     if (g_Material.EmissiveIndex != -1)
     {
-        Texture2D<float4> emissiveTexture = ResourceDescriptorHeap[g_Material.EmissiveIndex];
-		emissive = emissiveTexture.Sample(LinearWrap, input.UV);
+        emissive = Sample2D(g_Material.EmissiveIndex, LinearWrap, input.UV);
     }
 
     float ao = 1.0f;
     if (g_Material.AmbientOcclusionIndex != -1)
     {
-        Texture2D<float4> AOTexture = ResourceDescriptorHeap[g_Material.AmbientOcclusionIndex];
-        float4 AOMap = AOTexture.Sample(LinearWrap, input.UV);
+        float4 AOMap = Sample2D(g_Material.AmbientOcclusionIndex, LinearWrap, input.UV);
 		ao = AOMap.r;
     }
 
     float3 normal = normalize(input.Normal);
     if (g_Material.NormalIndex != -1)
     {
-        Texture2D<float4> normalTexture = ResourceDescriptorHeap[g_Material.NormalIndex];
-        float4 normalMap = normalTexture.Sample(LinearWrap, input.UV);
+        float4 normalMap = Sample2D(g_Material.NormalIndex, LinearWrap, input.UV);
 
         float3 viewDirection = normalize(camPos - input.WorldPos.xyz);
 

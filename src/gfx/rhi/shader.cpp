@@ -52,8 +52,8 @@ namespace limbo::Gfx
 		{
 			if (parameter.Type == ParameterType::Constants)
 			{
-				FAILIF(!parameter.Data);
-				cmd->SetComputeRoot32BitConstants(parameter.RPIndex, parameter.NumValues, parameter.Data, parameter.Offset);
+				if (parameter.Data)
+					cmd->SetComputeRoot32BitConstants(parameter.RPIndex, parameter.NumValues, parameter.Data, parameter.Offset);
 			}
 			else
 			{
@@ -127,6 +127,10 @@ namespace limbo::Gfx
 			FAILIF(t->SRVHandle[level].GPUHandle.ptr == 0); // texture is not a SRVs
 			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			parameter.Descriptor = t->SRVHandle[level].GPUHandle;
+		}
+		else if (parameter.Type == ParameterType::Constants) // bindless
+		{
+			parameter.Data = &t->SRVHandle[level].Index;
 		}
 		else
 		{
@@ -272,7 +276,6 @@ namespace limbo::Gfx
 			case D3D_SIT_BYTEADDRESS: ensure(false); break;
 			case D3D_SIT_RTACCELERATIONSTRUCTURE: ensure(false); break;
 			case D3D_SIT_TBUFFER: ensure(false); break;
-#if 1
 			case D3D_SIT_TEXTURE:
 			{
 				ParameterMap[Algo::Hash(bindDesc.Name)] = {
@@ -289,7 +292,6 @@ namespace limbo::Gfx
 
 				break;
 			}
-#endif
 			case D3D_SIT_SAMPLER:
 			{
 				ParameterMap[Algo::Hash(bindDesc.Name)] = {

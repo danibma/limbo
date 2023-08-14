@@ -2,9 +2,7 @@
 
 #include "../src/gfx/shaderinterop.h"
 
-SamplerState LinearWrap;
-SamplerState LinearClamp;
-SamplerState PointClamp;
+#include "bindings.hlsli"
 
 static const float PI       = 3.141592;
 static const float TwoPI    = 2 * PI;
