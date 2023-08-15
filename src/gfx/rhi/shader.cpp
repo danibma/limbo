@@ -790,6 +790,8 @@ namespace limbo::Gfx
 			CreateComputePipeline(Device::Ptr->GetDevice(), m_Spec);
 		else if (Type == ShaderType::Graphics)
 			CreateGraphicsPipeline(Device::Ptr->GetDevice(), m_Spec, true);
+		else if (Type == ShaderType::RayTracing)
+			CreateRayTracingState(Device::Ptr->GetDXRDevice(), m_Spec);
 	}
 
 	std::string_view Shader::ParameterTypeToStr(ParameterType type)

@@ -33,7 +33,7 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
 }
 
 [shader("raygeneration")]
-void MyRaygenShader()
+void RayGen()
 {
     // Initialize the ray payload
     HitInfo payload;
@@ -61,14 +61,14 @@ void MyRaygenShader()
 }
 
 [shader("closesthit")]
-void MyClosestHitShader(inout HitInfo payload, in MyAttributes attr)
+void PrimaryClosestHit(inout HitInfo payload, in MyAttributes attr)
 {
     float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    payload.colorAndDistance = float4(barycentrics, 1);
+    payload.colorAndDistance = SampleLevel2D(3, LinearWrap, attr.barycentrics.xy, 0);
 }
 
 [shader("miss")]
-void MyMissShader(inout HitInfo payload)
+void PrimaryMiss(inout HitInfo payload)
 {
     payload.colorAndDistance = float4(0, 0, 0, 1);
 }

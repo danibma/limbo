@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-SamplerState LinearWrap;
-SamplerState LinearClamp;
-SamplerState PointClamp;
+SamplerState LinearWrap     : register(s0, space1);
+SamplerState LinearClamp    : register(s1, space1);
+SamplerState PointClamp     : register(s2, space1);
 
 float4 Sample2D(int index, SamplerState s, float2 uv)
 {

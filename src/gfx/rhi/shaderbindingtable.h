@@ -21,13 +21,13 @@ namespace limbo::Gfx
 	public:
 		ShaderBindingTable() = default;
 		ShaderBindingTable(Handle<Shader> shader);
-		void BindRayGen(const char* name);
-		void BindMissShader(const char* name);
-		void BindHitGroup(const char* name);
+		void BindRayGen(const wchar_t* name);
+		void BindMissShader(const wchar_t* name);
+		void BindHitGroup(const wchar_t* name);
 		void Commit(D3D12_DISPATCH_RAYS_DESC& dispatchDesc, uint32 width, uint32 height, uint32 depth) const;
 
 	private:
-		ShaderRecord CreateShaderRecord(const char* shaderIdentifier);
+		ShaderRecord CreateShaderRecord(const wchar_t* shaderIdentifier);
 	};
 }
 

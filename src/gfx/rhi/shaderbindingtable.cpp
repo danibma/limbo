@@ -13,17 +13,17 @@ namespace limbo::Gfx
 		m_StateObject = s->StateObject.Get();
 	}
 
-	void ShaderBindingTable::BindRayGen(const char* name)
+	void ShaderBindingTable::BindRayGen(const wchar_t* name)
 	{
 		m_RayGenerationRecord = CreateShaderRecord(name);
 	}
 
-	void ShaderBindingTable::BindMissShader(const char* name)
+	void ShaderBindingTable::BindMissShader(const wchar_t* name)
 	{
 		m_MissShaderRecord = CreateShaderRecord(name);
 	}
 
-	void ShaderBindingTable::BindHitGroup(const char* name)
+	void ShaderBindingTable::BindHitGroup(const wchar_t* name)
 	{
 		m_HitGroupRecord = CreateShaderRecord(name);
 	}
@@ -74,16 +74,14 @@ namespace limbo::Gfx
 		DestroyBuffer(sbtBuffer);
 	}
 
-	ShaderBindingTable::ShaderRecord ShaderBindingTable::CreateShaderRecord(const char* shaderIdentifier)
+	ShaderBindingTable::ShaderRecord ShaderBindingTable::CreateShaderRecord(const wchar_t* shaderIdentifier)
 	{
 		ShaderRecord result;
 
 		ID3D12StateObjectProperties* properties;
 		m_StateObject->QueryInterface(IID_PPV_ARGS(&properties));
 
-		std::wstring widentifier;
-		Utils::StringConvert(shaderIdentifier, widentifier);
-		result.Identifier = properties->GetShaderIdentifier(widentifier.c_str());
+		result.Identifier = properties->GetShaderIdentifier(shaderIdentifier);
 
 		properties->Release();
 		return result;

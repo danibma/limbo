@@ -7,6 +7,11 @@
 
 namespace limbo::Gfx
 {
+	constexpr const wchar_t* GRayGenShaderName		= L"RayGen";
+	constexpr const wchar_t* GPMissShaderName		= L"PrimaryMiss";
+	constexpr const wchar_t* GPClosestHitShaderName	= L"PrimaryClosestHit";
+	constexpr const wchar_t* GPHitGroupName			= L"PrimaryHitGroup";
+
 	PathTracing::PathTracing()
 	{
 		m_FinalTexture = CreateTexture({
@@ -19,18 +24,18 @@ namespace limbo::Gfx
 		});
 
 		m_RTShader = CreateShader({
-			.ProgramName = "rttriangle",
+			.ProgramName = "pathtracer",
 			.HitGroupsDescriptions = {
 				{
-					.HitGroupExport = L"HitGroupName",
+					.HitGroupExport = GPHitGroupName,
 					.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES,
-					.ClosestHitShaderImport = L"MyClosestHitShader",
+					.ClosestHitShaderImport = GPClosestHitShaderName,
 				}
 			},
 			.Exports = {
-				{.Name = L"MyRaygenShader", .ExportToRename = L"MyRaygenShader"},
-				{.Name = L"MyMissShader", .ExportToRename = L"MyMissShader" },
-				{.Name = L"MyClosestHitShader", .ExportToRename = L"MyClosestHitShader" }
+				{ .Name = GRayGenShaderName,	  .ExportToRename = GRayGenShaderName },
+				{ .Name = GPMissShaderName,		  .ExportToRename = GPMissShaderName },
+				{ .Name = GPClosestHitShaderName, .ExportToRename = GPClosestHitShaderName }
 			},
 			.Type = ShaderType::RayTracing,
 		});
@@ -48,17 +53,15 @@ namespace limbo::Gfx
 		BindShader(m_RTShader);
 
 		ShaderBindingTable SBT(m_RTShader);
-		SBT.BindRayGen("MyRaygenShader");
-		SBT.BindMissShader("MyMissShader");
-		SBT.BindHitGroup("HitGroupName");
+		SBT.BindRayGen(GRayGenShaderName);
+		SBT.BindMissShader(GPMissShaderName);
+		SBT.BindHitGroup(GPHitGroupName);
 
 		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
 		SetParameter(m_RTShader, "camPos", camera.Eye);
 		SetParameter(m_RTShader, "invViewProj", glm::inverse(camera.ViewProj));
-		//SetParameter(m_RTShader, "dispatchWidth", GetBackbufferWidth());
-		//SetParameter(m_RTShader, "dispatchHeight", GetBackbufferHeight());
-		//SetParameter(m_RTShader, "holeSize", 1.0f);
+		SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
 	}
