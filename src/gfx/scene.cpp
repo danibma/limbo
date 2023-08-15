@@ -69,6 +69,8 @@ namespace limbo::Gfx
 		{
 			DestroyBuffer(mesh.VertexBuffer);
 			DestroyBuffer(mesh.IndexBuffer);
+			if (mesh.BLAS.IsValid()) // Some meshes don't have a BLAS set
+				DestroyBuffer(mesh.BLAS);
 		}
 
 		for (Handle<Texture> texture : m_Textures)
@@ -81,6 +83,12 @@ namespace limbo::Gfx
 	void Scene::IterateMeshes(const std::function<void(const Mesh& mesh)>& drawFunction) const
 	{
 		for (const Mesh& m : m_Meshes)
+			drawFunction(m);
+	}
+
+	void Scene::IterateMeshesNoConst(const std::function<void(Mesh& mesh)>& drawFunction)
+	{
+		for (Mesh& m : m_Meshes)
 			drawFunction(m);
 	}
 

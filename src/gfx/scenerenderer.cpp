@@ -75,7 +75,6 @@ namespace limbo::Gfx
 
 		m_SSAO			= std::make_unique<SSAO>();
 		m_PathTracing	= std::make_unique<PathTracing>();
-		m_PathTracing->RebuildAccelerationStructure(m_Scenes);
 	}
 
 	SceneRenderer::~SceneRenderer()
@@ -193,8 +192,6 @@ namespace limbo::Gfx
 	void SceneRenderer::LoadNewScene(const char* path)
 	{
 		m_Scenes.emplace_back(Scene::Load(path));
-		//if (Tweaks.CurrentRenderPath == (int)RenderPath::PathTracing)
-			m_PathTracing->RebuildAccelerationStructure(m_Scenes);
 	}
 
 	void SceneRenderer::ClearScenes()

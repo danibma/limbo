@@ -30,6 +30,7 @@ namespace limbo::Gfx
 	{
 		Handle<Buffer>			VertexBuffer;
 		Handle<Buffer>			IndexBuffer;
+		Handle<Buffer>			BLAS;
 
 		Handle<Buffer>			Material;
 
@@ -61,6 +62,9 @@ namespace limbo::Gfx
 		void Destroy();
 
 		void IterateMeshes(const std::function<void(const Mesh& mesh)>& drawFunction) const;
+		void IterateMeshesNoConst(const std::function<void(Mesh& mesh)>& drawFunction);
+
+		uint32 NumMeshes() const { return (uint32)m_Meshes.size(); }
 
 	private:
 		void ProcessNode(const cgltf_node* node);

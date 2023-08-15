@@ -106,21 +106,25 @@ namespace limbo::Gfx
 
 	inline void DestroyBuffer(Handle<Buffer> handle, bool bImmediate = false)
 	{
+		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyBuffer(handle, bImmediate);
 	}
 
 	inline void DestroyShader(Handle<Shader> handle, bool bImmediate = false)
 	{
+		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyShader(handle, bImmediate);
 	}
 
 	inline void DestroyTexture(Handle<Texture> handle, bool bImmediate = false)
 	{
+		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyTexture(handle, bImmediate);
 	}
 
 	inline void DestroySampler(Handle<Sampler> sampler, bool bImmediate = false)
 	{
+		ensure(sampler.IsValid());
 		ResourceManager::Ptr->DestroySampler(sampler, bImmediate);
 	}
 

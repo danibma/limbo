@@ -42,7 +42,7 @@ namespace limbo::Gfx
 
 	struct RendererTweaks
 	{
-		bool		bEnableVSync			= true;
+		bool		bEnableVSync		= true;
 
 		// SSAO
 		bool		bEnableSSAO			= true;
