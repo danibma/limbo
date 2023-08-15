@@ -71,10 +71,10 @@ namespace limbo::Gfx
 				device->UAVBarrier(blasResult);
 
 				Buffer* pResult = GetBuffer(blasResult);
+
 				// Describe the top-level acceleration structure instance(s).
 				D3D12_RAYTRACING_INSTANCE_DESC& instance = instances.emplace_back();
-				//memcpy(instance.Transform, glm::value_ptr(glm::mat3x4(mesh.Transform)), sizeof(glm::mat3x4));
-				instance.Transform[0][0] = instance.Transform[1][1] = instance.Transform[2][2] = 1;
+				memcpy(instance.Transform, glm::value_ptr(glm::transpose(mesh.Transform)), sizeof(float3x4));
 				instance.InstanceID = 0;
 				instance.InstanceMask = 1;
 				instance.InstanceContributionToHitGroupIndex = 0;

@@ -105,22 +105,19 @@ namespace limbo::Gfx
 		device->CreateConstantBufferView(&cbvDesc, BasicHandle.CpuHandle);
 	}
 
-	void Buffer::CreateSRV(ID3D12Device* device, const BufferSpec& spec)
+	void Buffer::CreateSRV_AS(ID3D12Device* device, const BufferSpec& spec)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
 			.Format = DXGI_FORMAT_UNKNOWN,
-			.ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
+			.ViewDimension = D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE,
 			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
 		};
 
-		srvDesc.Buffer = {
-			.FirstElement = 0,
-			.NumElements = 1,
-			.StructureByteStride = (uint32)spec.ByteSize,
-			.Flags = D3D12_BUFFER_SRV_FLAG_NONE
+		srvDesc.RaytracingAccelerationStructure = {
+			.Location = Resource->GetGPUVirtualAddress()
 		};
 
-		device->CreateShaderResourceView(Resource.Get(), &srvDesc, BasicHandle.CpuHandle);
+		device->CreateShaderResourceView(nullptr, &srvDesc, BasicHandle.CpuHandle);
 	}
 
 	void Buffer::InitResource(const BufferSpec& spec)
@@ -133,7 +130,7 @@ namespace limbo::Gfx
 		else if (spec.Usage == BufferUsage::AS_Result)
 		{
 			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
-			CreateSRV(Device::Ptr->GetDevice(), spec);
+			CreateSRV_AS(Device::Ptr->GetDevice(), spec);
 		}
 	}
 }

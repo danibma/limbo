@@ -107,8 +107,6 @@ namespace limbo::Gfx
 		RenderTarget						RenderTargets[8];
 		RenderTarget						DepthTarget;
 
-		class AccelerationStructure*				AS;
-
 	public:
 		Shader() = default;
 		Shader(const ShaderSpec& spec);

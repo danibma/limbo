@@ -53,12 +53,6 @@ namespace limbo::Gfx
 	{
 		for (const auto& [name, parameter] : ParameterMap)
 		{
-			if (name == Algo::Hash("Scene"))
-			{
-				cmd->SetComputeRootShaderResourceView(parameter.RPIndex, GetBuffer(AS->m_TLAS)->Resource->GetGPUVirtualAddress());
-				continue;
-			}
-
 			if (parameter.Type == ParameterType::Constants)
 			{
 				if (parameter.Data)
@@ -203,7 +197,6 @@ namespace limbo::Gfx
 		}
 		ParameterInfo& parameter = ParameterMap[hash];
 		parameter.Descriptor = accelerationStructure->GetDescriptor();
-		AS = accelerationStructure;
 	}
 
 	void Shader::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel* kernels, uint32 kernelsCount)
@@ -304,22 +297,6 @@ namespace limbo::Gfx
 			case D3D_SIT_BYTEADDRESS: ensure(false); break;
 			case D3D_SIT_TBUFFER: ensure(false); break;
 			case D3D_SIT_RTACCELERATIONSTRUCTURE:
-			{
-				uint32 hashedName = Algo::Hash(bindDesc.Name);
-				if (ParameterMap.contains(hashedName)) break;
-
-				ParameterMap[hashedName] = {
-					.Type = ParameterType::SRV,
-					.RPIndex = currentRP,
-				};
-
-				rootParameters[currentRP].InitAsShaderResourceView(bindDesc.BindPoint, bindDesc.Space);
-
-				currentRP++;
-				rsCost += 1;
-
-				break;
-			}
 			case D3D_SIT_TEXTURE:
 			{
 				uint32 hashedName = Algo::Hash(bindDesc.Name);

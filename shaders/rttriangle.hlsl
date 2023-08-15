@@ -6,7 +6,7 @@ RWTexture2D<float4> RenderTarget : register(u0);
 cbuffer $Globals : register(b0)
 {
     float4 camPos;
-    float4x4 viewProj;
+    float4x4 invViewProj;
 };
 
 typedef BuiltInTriangleIntersectionAttributes MyAttributes;
@@ -25,7 +25,7 @@ inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 directi
     screenPos.y = -screenPos.y;
 
     // Unproject the pixel coordinate into a ray.
-    float4 world = mul(viewProj, float4(screenPos, 0, 1));
+    float4 world = mul(invViewProj, float4(screenPos, 0, 1));
 
     world.xyz /= world.w;
     origin = camPos.xyz;

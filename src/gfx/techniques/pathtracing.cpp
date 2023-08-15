@@ -55,7 +55,7 @@ namespace limbo::Gfx
 		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
 		SetParameter(m_RTShader, "camPos", camera.Eye);
-		SetParameter(m_RTShader, "viewProj", glm::inverse(camera.ViewProj));
+		SetParameter(m_RTShader, "invViewProj", glm::inverse(camera.ViewProj));
 		//SetParameter(m_RTShader, "dispatchWidth", GetBackbufferWidth());
 		//SetParameter(m_RTShader, "dispatchHeight", GetBackbufferHeight());
 		//SetParameter(m_RTShader, "holeSize", 1.0f);
