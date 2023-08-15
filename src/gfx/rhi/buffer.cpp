@@ -87,7 +87,8 @@ namespace limbo::Gfx
 			DX_CHECK(Resource->SetName(wname.c_str()));
 		}
 
-		InitResource(spec);
+		if (spec.bCreateView || spec.Usage == BufferUsage::Constant)
+			InitResource(spec);
 	}
 
 	Buffer::~Buffer()
@@ -106,7 +107,20 @@ namespace limbo::Gfx
 
 	void Buffer::CreateSRV(ID3D12Device* device, const BufferSpec& spec)
 	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = DXGI_FORMAT_UNKNOWN,
+			.ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
+			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
+		};
 
+		srvDesc.Buffer = {
+			.FirstElement = 0,
+			.NumElements = 1,
+			.StructureByteStride = (uint32)spec.ByteSize,
+			.Flags = D3D12_BUFFER_SRV_FLAG_NONE
+		};
+
+		device->CreateShaderResourceView(Resource.Get(), &srvDesc, BasicHandle.CpuHandle);
 	}
 
 	void Buffer::InitResource(const BufferSpec& spec)

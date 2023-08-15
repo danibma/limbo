@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "gfx/fpscamera.h"
 #include "gfx/rhi/accelerationstructure.h"
 #include "gfx/rhi/resourcepool.h"
 
@@ -18,7 +19,7 @@ namespace limbo::Gfx
 		explicit PathTracing();
 		~PathTracing();
 
-		void Render();
+		void Render(const FPSCamera& camera);
 		void RebuildAccelerationStructure(const std::vector<Scene*>& scenes);
 
 		Handle<Texture> GetFinalTexture() const;

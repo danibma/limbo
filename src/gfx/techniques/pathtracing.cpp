@@ -24,15 +24,13 @@ namespace limbo::Gfx
 				{
 					.HitGroupExport = L"HitGroupName",
 					.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES,
-					.AnyHitShaderImport = L"AnyHitShader",
-					.ClosestHitShaderImport = L"ClosestHitShader",
+					.ClosestHitShaderImport = L"MyClosestHitShader",
 				}
 			},
 			.Exports = {
-				{.Name = L"RayGenerationShader" },
-				{.Name = L"AnyHitShader" },
-				{.Name = L"ClosestHitShader" },
-				{.Name = L"MissShader" }
+				{.Name = L"MyRaygenShader", .ExportToRename = L"MyRaygenShader"},
+				{.Name = L"MyMissShader", .ExportToRename = L"MyMissShader" },
+				{.Name = L"MyClosestHitShader", .ExportToRename = L"MyClosestHitShader" }
 			},
 			.Type = ShaderType::RayTracing,
 		});
@@ -44,21 +42,23 @@ namespace limbo::Gfx
 		DestroyShader(m_RTShader);
 	}
 
-	void PathTracing::Render()
+	void PathTracing::Render(const FPSCamera& camera)
 	{
 		BeginEvent("Path Tracing");
 		BindShader(m_RTShader);
 
 		ShaderBindingTable SBT(m_RTShader);
-		SBT.BindRayGen("RayGenerationShader");
-		SBT.BindMissShader("MissShader");
+		SBT.BindRayGen("MyRaygenShader");
+		SBT.BindMissShader("MyMissShader");
 		SBT.BindHitGroup("HitGroupName");
 
 		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);
-		SetParameter(m_RTShader, "renderOutput", m_FinalTexture);
-		SetParameter(m_RTShader, "dispatchWidth", GetBackbufferWidth());
-		SetParameter(m_RTShader, "dispatchHeight", GetBackbufferHeight());
-		SetParameter(m_RTShader, "holeSize", 3.0f);
+		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
+		SetParameter(m_RTShader, "camPos", camera.Eye);
+		SetParameter(m_RTShader, "viewProj", glm::inverse(camera.ViewProj));
+		//SetParameter(m_RTShader, "dispatchWidth", GetBackbufferWidth());
+		//SetParameter(m_RTShader, "dispatchHeight", GetBackbufferHeight());
+		//SetParameter(m_RTShader, "holeSize", 1.0f);
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
 	}

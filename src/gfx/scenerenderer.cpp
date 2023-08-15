@@ -20,7 +20,7 @@ namespace limbo::Gfx
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 			EnvironmentMaps.emplace_back(entry.path());
 
-		m_Scenes.emplace_back(Gfx::Scene::Load("assets/models/Sponza/Sponza.gltf"));
+		m_Scenes.emplace_back(Gfx::Scene::Load("assets/models/DamagedHelmet/DamagedHelmet.gltf"));
 
 		// Deferred shader
 		m_DeferredShadingShader = Gfx::CreateShader({
@@ -97,16 +97,16 @@ namespace limbo::Gfx
 
 	void SceneRenderer::Render(float dt)
 	{
+		BeginEvent("Loading Environment Map");
+		if (bNeedsEnvMapChange)
+		{
+			LoadEnvironmentMap(EnvironmentMaps[Tweaks.SelectedEnvMapIdx].string().c_str());
+			bNeedsEnvMapChange = false;
+		}
+		EndEvent();
+
 		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
 		{
-			BeginEvent("Loading Environment Map");
-			if (bNeedsEnvMapChange)
-			{
-				LoadEnvironmentMap(EnvironmentMaps[Tweaks.SelectedEnvMapIdx].string().c_str());
-				bNeedsEnvMapChange = false;
-			}
-			EndEvent();
-
 			BeginEvent("Geometry Pass");
 			BindShader(m_DeferredShadingShader);
 			SetParameter(m_DeferredShadingShader, "view", Camera.View);
@@ -173,7 +173,8 @@ namespace limbo::Gfx
 		}
 		else if (Tweaks.CurrentRenderPath == (int)RenderPath::PathTracing)
 		{
-			m_PathTracing->Render();
+			m_PathTracing->RebuildAccelerationStructure(m_Scenes);
+			m_PathTracing->Render(Camera);
 			m_SceneTexture = m_PathTracing->GetFinalTexture();
 		}
 

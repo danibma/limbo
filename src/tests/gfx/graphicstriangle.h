@@ -43,7 +43,7 @@ namespace limbo::Tests::Gfx
 			.ByteSize = sizeof(Vertex) * 3,
 			.Usage = limbo::Gfx::BufferUsage::Vertex,
 			.InitialData = vertices
-			});
+		});
 
 		limbo::Gfx::Handle<limbo::Gfx::Shader> triangleShader = limbo::Gfx::CreateShader({
 			.ProgramName = "../src/tests/gfx/shaders/triangle",

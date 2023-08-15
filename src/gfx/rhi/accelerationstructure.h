@@ -9,9 +9,9 @@ namespace limbo::Gfx
 	{
 	private:
 		Handle<Buffer>		m_ScratchBuffer;
-		Handle<Buffer>		m_TLAS;
 
 	public:
+		Handle<Buffer>		m_TLAS;
 		AccelerationStructure() = default;
 		~AccelerationStructure();
 

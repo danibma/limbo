@@ -32,7 +32,7 @@ namespace limbo::Gfx
 	{
 		Handle<Buffer> sbtBuffer = CreateBuffer({
 			.DebugName = "ShaderBindingTable Buffer",
-			.ByteSize = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT * 3, // we only support 1 of each shader
+			.ByteSize = 256, // we only support 1 of each shader
 			.Usage = BufferUsage::Upload,
 		});
 
@@ -41,18 +41,30 @@ namespace limbo::Gfx
 		uint8* data;
 		Map(sbtBuffer, (void**)&data);
 
-		memcpy(data, m_RayGenerationRecord.Identifier, 32);
+		memcpy(data, m_RayGenerationRecord.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 		data += D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
 
-		memcpy(data, m_MissShaderRecord.Identifier, 32);
+		memcpy(data, m_MissShaderRecord.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 		data += D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
 
-		memcpy(data, m_HitGroupRecord.Identifier, 32);
+		memcpy(data, m_HitGroupRecord.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+		data += D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
 
 		dispatchDesc = {
-			.RayGenerationShaderRecord = sbtResource->GetGPUVirtualAddress(),
-			.MissShaderTable = sbtResource->GetGPUVirtualAddress() + D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT,
-			.HitGroupTable = sbtResource->GetGPUVirtualAddress() + D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT,
+			.RayGenerationShaderRecord = {
+				.StartAddress = sbtResource->GetGPUVirtualAddress(),
+				.SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES
+			},
+			.MissShaderTable = {
+				.StartAddress = sbtResource->GetGPUVirtualAddress() + D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT,
+				.SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES,
+				.StrideInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES
+			},
+			.HitGroupTable = {
+				.StartAddress = sbtResource->GetGPUVirtualAddress() + (D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT * 2),
+				.SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES,
+				.StrideInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES
+			},
 			.Width = width,
 			.Height = height,
 			.Depth = depth

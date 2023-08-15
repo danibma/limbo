@@ -19,12 +19,14 @@ namespace limbo::Gfx
 
 	struct BufferSpec
 	{
-		const char*		DebugName = nullptr;
+		const char*		DebugName = "";
 
 		uint32			ByteStride	= 0;
 		uint64			ByteSize	= 0;
 		BufferUsage		Usage		= BufferUsage::Constant;
 		const void*		InitialData = nullptr;
+
+		bool			bCreateView = false;
 	};
 
 

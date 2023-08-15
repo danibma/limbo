@@ -25,8 +25,8 @@ namespace limbo::Gfx
 		{
 			scene->IterateMeshes([&](const Mesh& mesh)
 			{
-				device->TransitionResource(mesh.IndexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 				device->TransitionResource(mesh.VertexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+				device->TransitionResource(mesh.IndexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
 				ID3D12Resource* vb = ResourceManager::Ptr->GetBuffer(mesh.VertexBuffer)->Resource.Get();
 				ID3D12Resource* ib = ResourceManager::Ptr->GetBuffer(mesh.IndexBuffer)->Resource.Get();
@@ -73,11 +73,12 @@ namespace limbo::Gfx
 				Buffer* pResult = GetBuffer(blasResult);
 				// Describe the top-level acceleration structure instance(s).
 				D3D12_RAYTRACING_INSTANCE_DESC& instance = instances.emplace_back();
-				memcpy(instance.Transform, glm::value_ptr(glm::mat3x4(mesh.Transform)), sizeof(glm::mat3x4));
+				//memcpy(instance.Transform, glm::value_ptr(glm::mat3x4(mesh.Transform)), sizeof(glm::mat3x4));
+				instance.Transform[0][0] = instance.Transform[1][1] = instance.Transform[2][2] = 1;
 				instance.InstanceID = 0;
 				instance.InstanceMask = 1;
 				instance.InstanceContributionToHitGroupIndex = 0;
-				instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE;
+				instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 				instance.AccelerationStructure = pResult->Resource->GetGPUVirtualAddress();
 
 				DestroyBuffer(blasScratch);
@@ -99,7 +100,7 @@ namespace limbo::Gfx
 		TLASInput.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 		TLASInput.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
 		TLASInput.InstanceDescs = GetBuffer(blasInstancesBuffer)->Resource->GetGPUVirtualAddress();
-		TLASInput.NumDescs = 1;
+		TLASInput.NumDescs = (uint32)instances.size();
 		TLASInput.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
 		if (!m_TLAS.IsValid())
@@ -118,6 +119,7 @@ namespace limbo::Gfx
 				.DebugName = "TLAS Result Buffer",
 				.ByteSize = ASBuildInfo.ResultDataMaxSizeInBytes,
 				.Usage = BufferUsage::AS_Result,
+				.bCreateView = true
 			});
 		}
 

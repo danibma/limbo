@@ -1,60 +1,74 @@
 ﻿#include "common.hlsli"
 
-RaytracingAccelerationStructure Scene : register(t0);
-RWTexture2D<float4> renderOutput : register(u0);
+RaytracingAccelerationStructure Scene : register(t0, space0);
+RWTexture2D<float4> RenderTarget : register(u0);
 
-// Params
 cbuffer $Globals : register(b0)
 {
-    uint dispatchWidth;
-    uint dispatchHeight;
-    float holeSize;
+    float4 camPos;
+    float4x4 viewProj;
 };
 
-struct RayPayload
+typedef BuiltInTriangleIntersectionAttributes MyAttributes;
+struct HitInfo
 {
-    float dummy; // Minimum of 4 bytes required for payloads.
+    float4 colorAndDistance;
 };
 
-[shader("raygeneration")]
-void RayGenerationShader()
+// Generate a ray in world space for a camera pixel corresponding to an index from the dispatched 2D grid.
+inline void GenerateCameraRay(uint2 index, out float3 origin, out float3 direction)
 {
-	// Orthographic projection, just as if we were already in NDC.
-    float2 vpos = DispatchRaysIndex().xy;
-    float3 rayOrigin = float3(-1, 1, -5);
+    float2 xy = index + 0.5f; // center in the middle of the pixel.
+    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
-    rayOrigin.xy += float2(2, -2) * (vpos / float2(dispatchWidth, dispatchHeight));
-    
-    float3 rayDir = float3(0, 0, 1);
+    // Invert Y for DirectX-style coordinates.
+    screenPos.y = -screenPos.y;
 
-    RayDesc myRay = { rayOrigin, 0.0f, rayDir, 100.0f };
-    RayPayload payload = { 0.0f };
+    // Unproject the pixel coordinate into a ray.
+    float4 world = mul(viewProj, float4(screenPos, 0, 1));
 
-    uint missShaderIndex = 1;
-    TraceRay(Scene, RAY_FLAG_NONE, 0xFF, 0, 0, missShaderIndex, myRay, payload);
+    world.xyz /= world.w;
+    origin = camPos.xyz;
+    direction = normalize(world.xyz - origin);
 }
 
-[shader("anyhit")]
-void AnyHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+[shader("raygeneration")]
+void MyRaygenShader()
 {
-    float3 barycentrics = float3(attr.barycentrics.xy, 1 - attr.barycentrics.x - attr.barycentrics.y);
-    float3 triangleCentre = 1.0f / 3.0f;
+    // Initialize the ray payload
+    HitInfo payload;
+    payload.colorAndDistance = float4(0, 0, 0, 0);
 
-    float distanceToCentre = length(triangleCentre - barycentrics);
+    float3 rayDir;
+    float3 origin;
 
-    if (distanceToCentre < holeSize)
-        IgnoreHit();
+    // Generate a ray for a camera pixel corresponding to an index from the dispatched 2D grid.
+    GenerateCameraRay(DispatchRaysIndex().xy, origin, rayDir);
+
+    // Trace the ray.
+    // Set the ray's extents.
+    RayDesc ray;
+    ray.Origin = origin;
+    ray.Direction = rayDir;
+    // Set TMin to a non-zero small value to avoid aliasing issues due to floating - point errors.
+    // TMin should be kept small to prevent missing geometry at close contact areas.
+    ray.TMin = 0.001;
+    ray.TMax = 100000.0;
+    TraceRay(Scene, RAY_FLAG_NONE, 0xFF, 0, 1, 0, ray, payload);
+
+    // Write the raytraced color to the output texture.
+    RenderTarget[DispatchRaysIndex().xy] = payload.colorAndDistance;
 }
 
 [shader("closesthit")]
-void ClosestHitShader(inout RayPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+void MyClosestHitShader(inout HitInfo payload, in MyAttributes attr)
 {
-    float3 barycentrics = float3(attr.barycentrics.xy, 1 - attr.barycentrics.x - attr.barycentrics.y);
-    renderOutput[DispatchRaysIndex().xy] = float4(barycentrics, 1);
+    float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
+    payload.colorAndDistance = float4(barycentrics, 1);
 }
 
 [shader("miss")]
-void MissShader(inout RayPayload payload)
+void MyMissShader(inout HitInfo payload)
 {
-    renderOutput[DispatchRaysIndex().xy] = float4(0, 1, 0, 1);
+    payload.colorAndDistance = float4(0, 0, 0, 1);
 }

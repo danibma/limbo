@@ -52,7 +52,7 @@ namespace limbo::Gfx
 		// Scene
 		int			CurrentTonemap		= 1; // Tonemap enum
 		int			CurrentSceneView	= 0; // SceneView enum
-		int			CurrentRenderPath	= 0; // RenderPath enum
+		int			CurrentRenderPath	= 1; // RenderPath enum
 		int			SelectedEnvMapIdx	= 4;
 	};
 
