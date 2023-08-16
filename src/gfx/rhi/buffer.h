@@ -12,6 +12,7 @@ namespace limbo::Gfx
 		Vertex,
 		Index,
 		Constant,
+		Structured,
 		Upload,
 		AS_Scratch, // Acceleration Structure
 		AS_Result
@@ -20,7 +21,7 @@ namespace limbo::Gfx
 	struct BufferSpec
 	{
 		const char*		DebugName = "";
-
+		uint32			NumElements = 0;
 		uint32			ByteStride	= 0;
 		uint64			ByteSize	= 0;
 		BufferUsage		Usage		= BufferUsage::Constant;
@@ -50,6 +51,7 @@ namespace limbo::Gfx
 
 	private:
 		void CreateCBV(ID3D12Device* device, const BufferSpec& spec);
+		void CreateSRV(ID3D12Device* device, const BufferSpec& spec);
 		void CreateSRV_AS(ID3D12Device* device, const BufferSpec& spec);
 
 		void InitResource(const BufferSpec& spec);

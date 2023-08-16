@@ -160,15 +160,16 @@ namespace limbo::Gfx
 		if (parameter.Type == ParameterType::UAV)
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		else if (parameter.Type == ParameterType::SRV)
-			newState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+			newState = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 		else if (parameter.Type == ParameterType::CBV)
 			newState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-		else
-			ensure(false);
 
 		Device::Ptr->TransitionResource(b, newState);
 
-		parameter.Descriptor = b->BasicHandle.GPUHandle;
+		if (parameter.Type == ParameterType::Constants) // bindless
+			parameter.Data = &b->BasicHandle.Index;
+		else
+			parameter.Descriptor = b->BasicHandle.GPUHandle;
 	}
 
 	void Shader::SetSampler(const char* parameterName, Handle<Sampler> sampler)
@@ -293,9 +294,9 @@ namespace limbo::Gfx
 
 				break;
 			}
-			case D3D_SIT_STRUCTURED: ensure(false); break;
 			case D3D_SIT_BYTEADDRESS: ensure(false); break;
 			case D3D_SIT_TBUFFER: ensure(false); break;
+			case D3D_SIT_STRUCTURED:
 			case D3D_SIT_RTACCELERATIONSTRUCTURE:
 			case D3D_SIT_TEXTURE:
 			{

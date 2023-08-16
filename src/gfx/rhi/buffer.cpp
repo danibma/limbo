@@ -20,7 +20,7 @@ namespace limbo::Gfx
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
-			.Width = Math::Max(Math::Align(spec.ByteSize, alignment), 256ull),
+			.Width = Math::Max(Math::Align(spec.ByteSize, alignment), alignment),
 			.Height = 1,
 			.DepthOrArraySize = 1,
 			.MipLevels = 1,
@@ -105,6 +105,24 @@ namespace limbo::Gfx
 		device->CreateConstantBufferView(&cbvDesc, BasicHandle.CpuHandle);
 	}
 
+	void Buffer::CreateSRV(ID3D12Device* device, const BufferSpec& spec)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = DXGI_FORMAT_UNKNOWN,
+			.ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
+			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
+		};
+
+		srvDesc.Buffer = {
+			.FirstElement = 0,
+			.NumElements = spec.NumElements,
+			.StructureByteStride = spec.ByteStride,
+			.Flags = D3D12_BUFFER_SRV_FLAG_NONE
+		};
+
+		device->CreateShaderResourceView(Resource.Get(), &srvDesc, BasicHandle.CpuHandle);
+	}
+
 	void Buffer::CreateSRV_AS(ID3D12Device* device, const BufferSpec& spec)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
@@ -131,6 +149,11 @@ namespace limbo::Gfx
 		{
 			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
 			CreateSRV_AS(Device::Ptr->GetDevice(), spec);
+		}
+		else
+		{
+			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
+			CreateSRV(Device::Ptr->GetDevice(), spec);
 		}
 	}
 }
