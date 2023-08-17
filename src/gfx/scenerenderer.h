@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "fpscamera.h"
+#include "shaderinterop.h"
 #include "core/window.h"
 #include "rhi/accelerationstructure.h"
 #include "rhi/resourcepool.h"
@@ -75,6 +76,11 @@ namespace limbo::Gfx
 	private:
 		std::vector<Scene*>				m_Scenes;
 
+		Handle<Buffer>					m_SceneInfo;
+
+		Handle<Buffer>					m_ScenesMaterials;
+		Handle<Buffer>					m_SceneInstances;
+
 		Handle<Texture>					m_SceneTexture;
 
 		// Skybox
@@ -128,8 +134,11 @@ namespace limbo::Gfx
 		void ClearScenes();
 		bool HasScenes() const;
 
+		void BindSceneInfo(Handle<Shader> shaderToBind);
+
 	private:
 		void LoadEnvironmentMap(const char* path);
+		void UploadScenesToGPU();
 	};
 
 	inline SceneRenderer* CreateSceneRenderer(Core::Window* window) { return new SceneRenderer(window); }

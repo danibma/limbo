@@ -64,7 +64,7 @@ void RayGen()
 void PrimaryClosestHit(inout HitInfo payload, in MyAttributes attr)
 {
     float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
-    payload.colorAndDistance = SampleLevel2D(3, LinearWrap, attr.barycentrics.xy, 0);
+    payload.colorAndDistance = float4(1, 1, 1, 1.0f);
 }
 
 [shader("miss")]

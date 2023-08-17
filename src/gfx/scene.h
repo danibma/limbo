@@ -3,6 +3,7 @@
 #include <functional> // for std::function
 
 #include "core/math.h"
+#include "gfx/shaderinterop.h"
 
 #include "rhi/resourcemanager.h"
 #include "rhi/resourcepool.h"
@@ -19,20 +20,14 @@ namespace limbo::Gfx
 	class Texture;
 	class Buffer;
 
-	struct MeshVertex
-	{
-		float3 Position;
-		float3 Normal;
-		float2 UV;
-	};
-
 	struct Mesh
 	{
 		Handle<Buffer>			VertexBuffer;
 		Handle<Buffer>			IndexBuffer;
 		Handle<Buffer>			BLAS;
 
-		Handle<Buffer>			Material;
+		uint32					LocalMaterialIndex;
+		uint32					InstanceID;
 
 		float4x4				Transform;
 
@@ -41,7 +36,7 @@ namespace limbo::Gfx
 
 		const char*				Name;
 
-		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, Handle<Buffer> material);
+		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uint32 material);
 	};
 
 	class Scene
@@ -51,7 +46,10 @@ namespace limbo::Gfx
 		char											m_FolderPath[256];
 		char											m_SceneName[128];
 
-		std::unordered_map<uintptr_t, Handle<Buffer>>	m_MeshMaterials;
+		std::unordered_map<cgltf_material*, uint32>		m_MaterialPtrToIndex;
+
+	public:
+		std::vector<Material>							Materials;
 
 	protected:
 		Scene() = default;
@@ -68,7 +66,7 @@ namespace limbo::Gfx
 
 	private:
 		void ProcessNode(const cgltf_node* node);
-		void ProcessMaterial(const cgltf_material* cgltfMaterial);
+		void ProcessMaterial(cgltf_material* cgltfMaterial);
 		Mesh ProcessMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
 
 		int LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Format format);

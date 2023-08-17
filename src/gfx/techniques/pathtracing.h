@@ -5,6 +5,7 @@
 
 namespace limbo::Gfx
 {
+	class SceneRenderer;
 	class Texture;
 	class Shader;
 	class PathTracing
@@ -19,7 +20,7 @@ namespace limbo::Gfx
 		explicit PathTracing();
 		~PathTracing();
 
-		void Render(const FPSCamera& camera);
+		void Render(SceneRenderer* sceneRenderer, const FPSCamera& camera);
 		void RebuildAccelerationStructure(const std::vector<Scene*>& scenes);
 
 		Handle<Texture> GetFinalTexture() const;

@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "pathtracing.h"
 
+#include "gfx/scenerenderer.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/shaderbindingtable.h"
@@ -47,7 +48,7 @@ namespace limbo::Gfx
 		DestroyShader(m_RTShader);
 	}
 
-	void PathTracing::Render(const FPSCamera& camera)
+	void PathTracing::Render(SceneRenderer* sceneRenderer, const FPSCamera& camera)
 	{
 		BeginEvent("Path Tracing");
 		BindShader(m_RTShader);
@@ -57,11 +58,12 @@ namespace limbo::Gfx
 		SBT.BindMissShader(GPMissShaderName);
 		SBT.BindHitGroup(GPHitGroupName);
 
+		sceneRenderer->BindSceneInfo(m_RTShader);
 		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
 		SetParameter(m_RTShader, "camPos", camera.Eye);
 		SetParameter(m_RTShader, "invViewProj", glm::inverse(camera.ViewProj));
-		SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
+		//SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
 	}

@@ -1,9 +1,5 @@
 ﻿#include "common.hlsli"
 
-float4x4 viewProj;
-float4x4 view;
-float4x4 model;
-
 // https://github.com/graphitemaster/normals_revisited
 float3 TransformDirection(in float4x4 transform, in float3 direction)
 {
@@ -41,6 +37,11 @@ struct VSOut
     float2 UV       : TEXCOORD;
 };
 
+float4x4 viewProj;
+float4x4 view;
+float4x4 model;
+uint instanceID;
+
 VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV)
 {
     VSOut result;
@@ -54,8 +55,6 @@ VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV
 
 	return result;
 }
-
-ConstantBuffer<Material> g_Material : register(b1);
 
 float3 camPos;
 
@@ -73,40 +72,43 @@ DeferredShadingOutput PSMain(VSOut input)
 {
     DeferredShadingOutput result;
 
-    float4 albedo = Sample2D(g_Material.AlbedoIndex, LinearWrap, input.UV);
+    Instance instance = GetInstance(instanceID);
+    Material material = GetMaterial(instance.Material);
 
-    float4 finalAlbedo = g_Material.AlbedoFactor;
+    float4 albedo = Sample2D(material.AlbedoIndex, LinearWrap, input.UV);
+
+    float4 finalAlbedo = material.AlbedoFactor;
     finalAlbedo *= albedo;
 
     if (finalAlbedo.a <= ALPHA_THRESHOLD)
         discard;
 
-	float roughness = g_Material.RoughnessFactor;
-    float metallic = g_Material.MetallicFactor;
-    if (g_Material.RoughnessMetalIndex != -1)
+	float roughness = material.RoughnessFactor;
+    float metallic = material.MetallicFactor;
+    if (material.RoughnessMetalIndex != -1)
     {
-        float4 roughnessMetalMap = Sample2D(g_Material.RoughnessMetalIndex, LinearWrap, input.UV);
+        float4 roughnessMetalMap = Sample2D(material.RoughnessMetalIndex, LinearWrap, input.UV);
         roughness *= roughnessMetalMap.g;
         metallic *= roughnessMetalMap.b;
     }
 
     float4 emissive = 0.0f;
-    if (g_Material.EmissiveIndex != -1)
+    if (material.EmissiveIndex != -1)
     {
-        emissive = Sample2D(g_Material.EmissiveIndex, LinearWrap, input.UV);
+        emissive = Sample2D(material.EmissiveIndex, LinearWrap, input.UV);
     }
 
     float ao = 1.0f;
-    if (g_Material.AmbientOcclusionIndex != -1)
+    if (material.AmbientOcclusionIndex != -1)
     {
-        float4 AOMap = Sample2D(g_Material.AmbientOcclusionIndex, LinearWrap, input.UV);
+        float4 AOMap = Sample2D(material.AmbientOcclusionIndex, LinearWrap, input.UV);
 		ao = AOMap.r;
     }
 
     float3 normal = normalize(input.Normal);
-    if (g_Material.NormalIndex != -1)
+    if (material.NormalIndex != -1)
     {
-        float4 normalMap = Sample2D(g_Material.NormalIndex, LinearWrap, input.UV);
+        float4 normalMap = Sample2D(material.NormalIndex, LinearWrap, input.UV);
 
         float3 viewDirection = normalize(camPos - input.WorldPos.xyz);
 

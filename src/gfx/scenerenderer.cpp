@@ -20,7 +20,7 @@ namespace limbo::Gfx
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 			EnvironmentMaps.emplace_back(entry.path());
 
-		m_Scenes.emplace_back(Gfx::Scene::Load("assets/models/DamagedHelmet/DamagedHelmet.gltf"));
+		LoadNewScene("assets/models/Sponza/Sponza.gltf");
 
 		// Deferred shader
 		m_DeferredShadingShader = Gfx::CreateShader({
@@ -89,6 +89,10 @@ namespace limbo::Gfx
 		DestroyShader(m_DeferredShadingShader);
 		DestroyShader(m_CompositeShader);
 
+		DestroyBuffer(m_SceneInfo);
+		DestroyBuffer(m_ScenesMaterials);
+		DestroyBuffer(m_SceneInstances);
+
 		DestroyScene(m_SkyboxCube);
 		for (Scene* scene : m_Scenes)
 			DestroyScene(scene);
@@ -112,12 +116,13 @@ namespace limbo::Gfx
 			SetParameter(m_DeferredShadingShader, "viewProj", Camera.ViewProj);
 			SetParameter(m_DeferredShadingShader, "LinearWrap", GetDefaultLinearWrapSampler());
 			SetParameter(m_DeferredShadingShader, "camPos", Camera.Eye);
+			BindSceneInfo(m_DeferredShadingShader);
 			for (Scene* scene : m_Scenes)
 			{
 				scene->IterateMeshes([&](const Mesh& mesh)
 				{
 					SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
-					SetParameter(m_DeferredShadingShader, "g_Material", mesh.Material);
+					SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
 
 					BindVertexBuffer(mesh.VertexBuffer);
 					BindIndexBuffer(mesh.IndexBuffer);
@@ -173,7 +178,7 @@ namespace limbo::Gfx
 		else if (Tweaks.CurrentRenderPath == (int)RenderPath::PathTracing)
 		{
 			m_PathTracing->RebuildAccelerationStructure(m_Scenes);
-			m_PathTracing->Render(Camera);
+			m_PathTracing->Render(this, Camera);
 			m_SceneTexture = m_PathTracing->GetFinalTexture();
 		}
 
@@ -192,6 +197,64 @@ namespace limbo::Gfx
 	void SceneRenderer::LoadNewScene(const char* path)
 	{
 		m_Scenes.emplace_back(Scene::Load(path));
+		UploadScenesToGPU();
+	}
+
+	void SceneRenderer::UploadScenesToGPU()
+	{
+		auto appendArrays = [](auto& outArray, const auto& fromArray)
+		{
+			outArray.reserve(outArray.capacity() + fromArray.size());
+			outArray.insert(outArray.end(), fromArray.begin(), fromArray.end());
+		};
+
+		auto uploadArrayToGPU = [](Handle<Buffer>& buffer, const auto& arr, const char* debugName)
+		{
+			if (buffer.IsValid())
+				DestroyBuffer(buffer);
+
+			buffer = CreateBuffer({
+				.DebugName = debugName,
+				.NumElements = (uint32)arr.size(),
+				.ByteStride = sizeof(arr[0]),
+				.ByteSize = arr.size() * sizeof(arr[0]),
+				.Usage = BufferUsage::Structured,
+				.InitialData = arr.data(),
+				.bCreateView = true
+			});
+		};
+
+		std::vector<Material> materials;
+		std::vector<Instance> instances;
+		uint32 instanceID = 0;
+		for (Scene* scene : m_Scenes)
+		{
+			scene->IterateMeshesNoConst([&](Mesh& mesh)
+			{
+				mesh.InstanceID = instanceID;
+				instances.emplace_back((uint32)materials.size() + mesh.LocalMaterialIndex);
+				instanceID++;
+			});
+
+			appendArrays(materials, scene->Materials);
+		}
+
+		uploadArrayToGPU(m_ScenesMaterials, materials, "ScenesMaterials");
+		uploadArrayToGPU(m_SceneInstances,  instances, "SceneInstances");
+
+		SceneInfo sceneInfo = {
+			.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->BasicHandle.Index,
+			.InstancesBufferIndex = GetBuffer(m_SceneInstances)->BasicHandle.Index
+		};
+
+		if (m_SceneInfo.IsValid())
+			DestroyBuffer(m_SceneInfo);
+		m_SceneInfo = CreateBuffer({
+			.DebugName = "GSceneInfo",
+			.ByteSize = sizeof(SceneInfo),
+			.Usage = BufferUsage::Constant,
+			.InitialData = &sceneInfo,
+		});
 	}
 
 	void SceneRenderer::ClearScenes()
@@ -204,6 +267,11 @@ namespace limbo::Gfx
 	bool SceneRenderer::HasScenes() const
 	{
 		return m_Scenes.size() > 0;
+	}
+
+	void SceneRenderer::BindSceneInfo(Handle<Shader> shaderToBind)
+	{
+		SetParameter(shaderToBind, "GSceneInfo", m_SceneInfo);
 	}
 
 	void SceneRenderer::LoadEnvironmentMap(const char* path)

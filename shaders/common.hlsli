@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include "../src/gfx/shaderinterop.h"
-
 #include "bindings.hlsli"
 
 static const float PI       = 3.141592;
