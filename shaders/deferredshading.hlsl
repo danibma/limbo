@@ -37,8 +37,6 @@ struct VSOut
     float2 UV       : TEXCOORD;
 };
 
-float4x4 viewProj;
-float4x4 view;
 float4x4 model;
 uint instanceID;
 
@@ -46,17 +44,15 @@ VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV
 {
     VSOut result;
 
-    float4x4 mvp = mul(viewProj, model);
+    float4x4 mvp = mul(GSceneInfo.ViewProjection, model);
     result.Position = mul(mvp, float4(pos, 1.0f));
-    result.PixelPos = mul(view, mul(model, float4(pos, 1.0f)));
+    result.PixelPos = mul(GSceneInfo.View, mul(model, float4(pos, 1.0f)));
     result.WorldPos = mul(model, float4(pos, 1.0f));
     result.Normal = TransformDirection(model, normal);
     result.UV = uv;
 
 	return result;
 }
-
-float3 camPos;
 
 struct DeferredShadingOutput
 {
@@ -110,7 +106,7 @@ DeferredShadingOutput PSMain(VSOut input)
     {
         float4 normalMap = Sample2D(material.NormalIndex, LinearWrap, input.UV);
 
-        float3 viewDirection = normalize(camPos - input.WorldPos.xyz);
+        float3 viewDirection = normalize(GSceneInfo.CameraPos - input.WorldPos.xyz);
 
         // Use ddx/ddy to get the exact data for this pixel, since the GPU computes 2x2 pixels at a time
         float3 dp1  = ddx(-viewDirection);

@@ -44,8 +44,10 @@ namespace limbo::Gfx
 
 	PathTracing::~PathTracing()
 	{
-		DestroyTexture(m_FinalTexture);
-		DestroyShader(m_RTShader);
+		if (m_FinalTexture.IsValid())
+			DestroyTexture(m_FinalTexture);
+		if (m_RTShader.IsValid())
+			DestroyShader(m_RTShader);
 	}
 
 	void PathTracing::Render(SceneRenderer* sceneRenderer, const FPSCamera& camera)

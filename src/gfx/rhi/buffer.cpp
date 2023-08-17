@@ -87,7 +87,7 @@ namespace limbo::Gfx
 			DX_CHECK(Resource->SetName(wname.c_str()));
 		}
 
-		if (spec.bCreateView || spec.Usage == BufferUsage::Constant)
+		if (spec.bCreateView)
 			InitResource(spec);
 	}
 
@@ -140,7 +140,7 @@ namespace limbo::Gfx
 
 	void Buffer::InitResource(const BufferSpec& spec)
 	{
-		if (spec.Usage == BufferUsage::Constant)
+		if (spec.Usage == BufferUsage::Constant || spec.Usage == BufferUsage::Upload)
 		{
 			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
 			CreateCBV(Device::Ptr->GetDevice(), spec);

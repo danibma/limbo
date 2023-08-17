@@ -10,9 +10,12 @@ namespace limbo::Gfx
 {
 	AccelerationStructure::~AccelerationStructure()
 	{
-		DestroyBuffer(m_ScratchBuffer);
-		DestroyBuffer(m_TLAS);
-		DestroyBuffer(m_InstancesBuffer);
+		if (m_ScratchBuffer.IsValid())
+			DestroyBuffer(m_ScratchBuffer);
+		if (m_TLAS.IsValid())
+			DestroyBuffer(m_TLAS);
+		if (m_InstancesBuffer.IsValid())
+			DestroyBuffer(m_InstancesBuffer);
 	}
 
 	void AccelerationStructure::Build(const std::vector<Scene*>& scenes)

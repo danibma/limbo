@@ -47,7 +47,7 @@ namespace limbo::Gfx
 		Texture* GetTexture(Handle<Texture> texture);
 		Sampler* GetSampler(Handle<Sampler> sampler);
 
-		void Map(Handle<Buffer> buffer, void** data, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
+		void Map(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
 		void Unmap(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
 
 		// Used for Imgui images
@@ -156,9 +156,16 @@ namespace limbo::Gfx
 		return b;
 	}
 
-	inline void Map(Handle<Buffer> buffer, void** data, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
+	inline void Map(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
 	{
-		ResourceManager::Ptr->Map(buffer, data, subresource, range);
+		ResourceManager::Ptr->Map(buffer, subresource, range);
+	}
+
+	inline void* GetMappedData(Handle<Buffer> buffer)
+	{
+		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
+		FAILIF(!b, nullptr);
+		return b->MappedData;
 	}
 
 	inline void Unmap(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr)

@@ -64,9 +64,6 @@ float ComputeSpecOcclusion(float NdotV , float AO , float roughness)
 	return saturate(pow( NdotV + AO , exp2( -16.0f * roughness - 1.0f )) - 1.0f + AO );
 }
 
-// Camera info
-float4 camPos;
-
 // Light info
 float3 lightPos;
 float3 lightColor;
@@ -119,7 +116,7 @@ float4 PSMain(QuadResult quad) : SV_Target
         return float4((float3)ao, 1.0f);
 
     // Outgoing light direction (vector from world-space fragment position to the "eye").
-    float3 V = normalize(camPos.xyz - worldPos);
+    float3 V = normalize(GSceneInfo.CameraPos - worldPos);
 
 	float3 N = normalize(normal);
 

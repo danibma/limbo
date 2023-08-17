@@ -53,7 +53,7 @@ namespace limbo::Gfx
 		// Scene
 		int			CurrentTonemap		= 1; // Tonemap enum
 		int			CurrentSceneView	= 0; // SceneView enum
-		int			CurrentRenderPath	= 1; // RenderPath enum
+		int			CurrentRenderPath	= 0; // RenderPath enum
 		int			SelectedEnvMapIdx	= 4;
 	};
 
@@ -76,7 +76,8 @@ namespace limbo::Gfx
 	private:
 		std::vector<Scene*>				m_Scenes;
 
-		Handle<Buffer>					m_SceneInfo;
+		SceneInfo						m_SceneInfo;
+		Handle<Buffer>					m_SceneInfoBuffers[NUM_BACK_BUFFERS];
 
 		Handle<Buffer>					m_ScenesMaterials;
 		Handle<Buffer>					m_SceneInstances;
@@ -139,6 +140,7 @@ namespace limbo::Gfx
 	private:
 		void LoadEnvironmentMap(const char* path);
 		void UploadScenesToGPU();
+		void UpdateSceneInfo();
 	};
 
 	inline SceneRenderer* CreateSceneRenderer(Core::Window* window) { return new SceneRenderer(window); }

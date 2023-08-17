@@ -3,9 +3,6 @@
 //
 // Vertex Shader
 //
-float4x4 view;
-float4x4 proj;
-
 struct SkyboxVertexOutput
 {
     float4 pixel_position : SV_Position;
@@ -14,12 +11,12 @@ struct SkyboxVertexOutput
 
 SkyboxVertexOutput VSMain(float3 pos : Position, float3 normal : Normal, float2 uv : UV)
 {
-    float4x4 rot_view = view;
+    float4x4 rot_view = GSceneInfo.View;
     rot_view._m03_m13_m23 = 0.0; // remove translation
     
     SkyboxVertexOutput output;
     output.local_position = float4(pos, 1.0f);
-    output.pixel_position = mul(mul(proj, rot_view), float4(pos, 1.0f));
+    output.pixel_position = mul(mul(GSceneInfo.Projection, rot_view), float4(pos, 1.0f));
     output.pixel_position.z = 1.0f;
 	
     return output;

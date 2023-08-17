@@ -20,6 +20,18 @@ namespace limbo::Gfx
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 			EnvironmentMaps.emplace_back(entry.path());
 
+		for(uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
+		{
+			std::string debugName = std::format("SceneInfoBuffer[{}]", i);
+			m_SceneInfoBuffers[i] = CreateBuffer({
+				.DebugName = debugName.c_str(),
+				.ByteSize = sizeof(SceneInfo),
+				.Usage = BufferUsage::Upload,
+				.bCreateView = true
+			});
+			Gfx::Map(m_SceneInfoBuffers[i]);
+		}
+
 		LoadNewScene("assets/models/Sponza/Sponza.gltf");
 
 		// Deferred shader
@@ -89,7 +101,9 @@ namespace limbo::Gfx
 		DestroyShader(m_DeferredShadingShader);
 		DestroyShader(m_CompositeShader);
 
-		DestroyBuffer(m_SceneInfo);
+		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
+			DestroyBuffer(m_SceneInfoBuffers[i]);
+
 		DestroyBuffer(m_ScenesMaterials);
 		DestroyBuffer(m_SceneInstances);
 
@@ -100,6 +114,8 @@ namespace limbo::Gfx
 
 	void SceneRenderer::Render(float dt)
 	{
+		UpdateSceneInfo();
+
 		BeginEvent("Loading Environment Map");
 		if (bNeedsEnvMapChange)
 		{
@@ -112,10 +128,7 @@ namespace limbo::Gfx
 		{
 			BeginEvent("Geometry Pass");
 			BindShader(m_DeferredShadingShader);
-			SetParameter(m_DeferredShadingShader, "view", Camera.View);
-			SetParameter(m_DeferredShadingShader, "viewProj", Camera.ViewProj);
 			SetParameter(m_DeferredShadingShader, "LinearWrap", GetDefaultLinearWrapSampler());
-			SetParameter(m_DeferredShadingShader, "camPos", Camera.Eye);
 			BindSceneInfo(m_DeferredShadingShader);
 			for (Scene* scene : m_Scenes)
 			{
@@ -138,9 +151,8 @@ namespace limbo::Gfx
 
 			BeginEvent("Render Skybox");
 			BindShader(m_SkyboxShader);
+			BindSceneInfo(m_SkyboxShader);
 			SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
-			SetParameter(m_SkyboxShader, "view", Camera.View);
-			SetParameter(m_SkyboxShader, "proj", Camera.Proj);
 			SetParameter(m_SkyboxShader, "LinearWrap", GetDefaultLinearWrapSampler());
 			m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
 			{
@@ -152,10 +164,10 @@ namespace limbo::Gfx
 
 			BeginEvent("PBR Lighting");
 			BindShader(m_PBRShader);
+			BindSceneInfo(m_PBRShader);
 			SetParameter(m_PBRShader, "sceneToRender", Tweaks.CurrentSceneView);
 			SetParameter(m_PBRShader, "bEnableSSAO", Tweaks.bEnableSSAO ? 1 : 0);
 			// PBR scene info
-			SetParameter(m_PBRShader, "camPos", Camera.Eye);
 			SetParameter(m_PBRShader, "lightPos", Light.Position);
 			SetParameter(m_PBRShader, "lightColor", Light.Color);
 			SetParameter(m_PBRShader, "LinearClamp", GetDefaultLinearClampSampler());
@@ -242,19 +254,19 @@ namespace limbo::Gfx
 		uploadArrayToGPU(m_ScenesMaterials, materials, "ScenesMaterials");
 		uploadArrayToGPU(m_SceneInstances,  instances, "SceneInstances");
 
-		SceneInfo sceneInfo = {
-			.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->BasicHandle.Index,
-			.InstancesBufferIndex = GetBuffer(m_SceneInstances)->BasicHandle.Index
-		};
+		m_SceneInfo.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->BasicHandle.Index;
+		m_SceneInfo.InstancesBufferIndex = GetBuffer(m_SceneInstances)->BasicHandle.Index;
+	}
 
-		if (m_SceneInfo.IsValid())
-			DestroyBuffer(m_SceneInfo);
-		m_SceneInfo = CreateBuffer({
-			.DebugName = "GSceneInfo",
-			.ByteSize = sizeof(SceneInfo),
-			.Usage = BufferUsage::Constant,
-			.InitialData = &sceneInfo,
-		});
+	void SceneRenderer::UpdateSceneInfo()
+	{
+		m_SceneInfo.View			= Camera.View;
+		m_SceneInfo.Projection		= Camera.Proj;
+		m_SceneInfo.ViewProjection	= Camera.ViewProj;
+		m_SceneInfo.CameraPos		= Camera.Eye;
+
+		Handle<Buffer> currentBuffer = m_SceneInfoBuffers[Device::Ptr->GetCurrentFrameIndex()];
+		memcpy(GetMappedData(currentBuffer), &m_SceneInfo, sizeof(SceneInfo));
 	}
 
 	void SceneRenderer::ClearScenes()
@@ -271,7 +283,8 @@ namespace limbo::Gfx
 
 	void SceneRenderer::BindSceneInfo(Handle<Shader> shaderToBind)
 	{
-		SetParameter(shaderToBind, "GSceneInfo", m_SceneInfo);
+		Handle<Buffer> currentBuffer = m_SceneInfoBuffers[Device::Ptr->GetCurrentFrameIndex()];
+		SetParameter(shaderToBind, "GSceneInfo", currentBuffer);
 	}
 
 	void SceneRenderer::LoadEnvironmentMap(const char* path)

@@ -134,11 +134,11 @@ namespace limbo::Gfx
 		return m_Samplers.Get(sampler);
 	}
 
-	void ResourceManager::Map(Handle<Buffer> buffer, void** data, uint32 subresource, D3D12_RANGE* range)
+	void ResourceManager::Map(Handle<Buffer> buffer, uint32 subresource, D3D12_RANGE* range)
 	{
 		Buffer* b = GetBuffer(buffer);
 		FAILIF(!b);
-		DX_CHECK(b->Resource->Map(subresource, range, data));
+		DX_CHECK(b->Resource->Map(subresource, range, &b->MappedData));
 	}
 
 	void ResourceManager::Unmap(Handle<Buffer> buffer, uint32 subresource, D3D12_RANGE* range)
