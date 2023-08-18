@@ -14,7 +14,6 @@ namespace limbo::Gfx
 		: Window(window)
 		, Camera(CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f)))
 		, Light({.Position = float3(0.0f, 1.0f, 0.0f), .Color = float3(1, 0.45f, 0) })
-		, FrameIndex(0)
 	{
 		const char* env_maps_path = "assets/environment";
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
@@ -264,6 +263,8 @@ namespace limbo::Gfx
 		m_SceneInfo.Projection		= Camera.Proj;
 		m_SceneInfo.ViewProjection	= Camera.ViewProj;
 		m_SceneInfo.CameraPos		= Camera.Eye;
+		m_SceneInfo.InvProjection	= glm::inverse(Camera.Proj);
+		m_SceneInfo.FrameIndex++;
 
 		Handle<Buffer> currentBuffer = m_SceneInfoBuffers[Device::Ptr->GetCurrentFrameIndex()];
 		memcpy(GetMappedData(currentBuffer), &m_SceneInfo, sizeof(SceneInfo));

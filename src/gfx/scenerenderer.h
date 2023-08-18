@@ -114,8 +114,6 @@ namespace limbo::Gfx
 		FPSCamera					Camera;
 		PointLight					Light;
 
-		uint32						FrameIndex;
-
 		bool						bNeedsEnvMapChange = true;
 		EnvironmentMapList			EnvironmentMaps;
 

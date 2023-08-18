@@ -48,6 +48,7 @@ namespace limbo::Gfx
 	{
 		BeginEvent("SSAO");
 		BindShader(m_SSAOShader);
+		sceneRenderer->BindSceneInfo(m_SSAOShader);
 		SetParameter(m_SSAOShader, "g_Positions", positionsMap);
 		SetParameter(m_SSAOShader, "g_UnblurredSSAOTexture", m_UnblurredSSAOTexture);
 		SetParameter(m_SSAOShader, "g_SceneDepth", sceneDepthMap);
@@ -55,9 +56,6 @@ namespace limbo::Gfx
 		SetParameter(m_SSAOShader, "PointClamp", GetDefaultPointClampSampler());
 		SetParameter(m_SSAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
 		SetParameter(m_SSAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
-		SetParameter(m_SSAOShader, "projection", sceneRenderer->Camera.Proj);
-		SetParameter(m_SSAOShader, "invProjection", glm::inverse(sceneRenderer->Camera.Proj));
-		SetParameter(m_SSAOShader, "frameIndex", sceneRenderer->FrameIndex);
 		Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
 		EndEvent();
 

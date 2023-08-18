@@ -9,8 +9,6 @@ Texture2D<float> g_SceneDepth;
 float radius;
 float frameIndex;
 float power;
-float4x4 projection;
-float4x4 invProjection;
 
 #define KERNEL_SIZE 16
 
@@ -25,7 +23,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
     float2 uv = (threadID + 0.5f) / targetDimensions;
 
     float3 pixelPos = g_Positions.SampleLevel(LinearWrap, uv, 0).rgb;
-    float3 normal = NormalFromDepth(threadID, g_SceneDepth, invProjection);
+    float3 normal = NormalFromDepth(threadID, g_SceneDepth, GSceneInfo.InvProjection);
 
     uint seed = RandomSeed(threadID, targetDimensions, frameIndex);
     float3 randomVec = float3(Random01(seed), Random01(seed), Random01(seed)) * 2.0f - 1.0f;
@@ -51,7 +49,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
         samplePos = pixelPos + samplePos * radius;
     
         float4 offset = float4(samplePos, 1.0);
-        offset        = mul(projection, offset); // from view to clip-space
+        offset        = mul(GSceneInfo.Projection, offset); // from view to clip-space
         offset.xyz   /= offset.w; // perspective divide
         offset.xy     = offset.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f); // transform to range 0.0 - 1.0 and inverse the y
 

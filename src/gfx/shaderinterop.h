@@ -10,14 +10,16 @@
 
 struct SceneInfo
 {
-	float4x4 View;
-	float4x4 Projection;
-	float4x4 ViewProjection;
-	float3	 CameraPos;
-	PAD;
+	float4x4	View;
+	float4x4	Projection;
+	float4x4	InvProjection;
+	float4x4	ViewProjection;
+	float3		CameraPos;
 
-	uint MaterialsBufferIndex;
-	uint InstancesBufferIndex;
+	uint		FrameIndex;
+
+	uint		MaterialsBufferIndex;
+	uint		InstancesBufferIndex;
 	PAD;
 	PAD;
 };

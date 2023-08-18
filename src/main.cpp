@@ -41,7 +41,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Gfx::SceneRenderer* sceneRenderer = Gfx::CreateSceneRenderer(window);
 
 	Core::Timer deltaTimer;
-	for (sceneRenderer->FrameIndex = 0; !window->ShouldClose(); ++sceneRenderer->FrameIndex)
+	while (!window->ShouldClose())
 	{
 		float deltaTime = deltaTimer.ElapsedMilliseconds();
 		deltaTimer.Record();
