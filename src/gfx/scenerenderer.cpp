@@ -133,7 +133,6 @@ namespace limbo::Gfx
 			{
 				scene->IterateMeshes([&](const Mesh& mesh)
 				{
-					SetParameter(m_DeferredShadingShader, "model", mesh.Transform);
 					SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
 
 					BindVertexBuffer(mesh.VertexBuffer);
@@ -243,7 +242,9 @@ namespace limbo::Gfx
 			scene->IterateMeshesNoConst([&](Mesh& mesh)
 			{
 				mesh.InstanceID = instanceID;
-				instances.emplace_back((uint32)materials.size() + mesh.LocalMaterialIndex);
+				Instance& instance = instances.emplace_back();
+				instance.LocalTransform = mesh.Transform;
+				instance.Material		= (uint32)materials.size() + mesh.LocalMaterialIndex;
 				instanceID++;
 			});
 

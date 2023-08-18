@@ -37,18 +37,19 @@ struct VSOut
     float2 UV       : TEXCOORD;
 };
 
-float4x4 model;
 uint instanceID;
 
 VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV)
 {
     VSOut result;
 
-    float4x4 mvp = mul(GSceneInfo.ViewProjection, model);
+    Instance instance = GetInstance(instanceID);
+
+    float4x4 mvp = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
     result.Position = mul(mvp, float4(pos, 1.0f));
-    result.PixelPos = mul(GSceneInfo.View, mul(model, float4(pos, 1.0f)));
-    result.WorldPos = mul(model, float4(pos, 1.0f));
-    result.Normal = TransformDirection(model, normal);
+    result.PixelPos = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(pos, 1.0f)));
+    result.WorldPos = mul(instance.LocalTransform, float4(pos, 1.0f));
+    result.Normal = TransformDirection(instance.LocalTransform, normal);
     result.UV = uv;
 
 	return result;

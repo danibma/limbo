@@ -51,5 +51,7 @@ struct MeshVertex
 
 struct Instance
 {
-	uint Material;
+	float4x4	LocalTransform;
+
+	uint		Material;
 };
