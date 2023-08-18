@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional> // for std::function
+#include <cgltf/cgltf.h>
 
 #include "core/math.h"
 #include "gfx/shaderinterop.h"
@@ -22,8 +23,11 @@ namespace limbo::Gfx
 
 	struct Mesh
 	{
-		Handle<Buffer>			VertexBuffer;
-		Handle<Buffer>			IndexBuffer;
+		VertexBufferView		PositionsLocation;
+		VertexBufferView		NormalsLocation;
+		VertexBufferView		TexCoordsLocation;
+		IndexBufferView			IndicesLocation;
+
 		Handle<Buffer>			BLAS;
 
 		uint32					LocalMaterialIndex;
@@ -35,8 +39,6 @@ namespace limbo::Gfx
 		size_t					VertexCount = 0;
 
 		const char*				Name;
-
-		Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uint32 material);
 	};
 
 	class Scene
@@ -47,6 +49,9 @@ namespace limbo::Gfx
 		char											m_SceneName[128];
 
 		std::unordered_map<cgltf_material*, uint32>		m_MaterialPtrToIndex;
+
+		// this will contains all the geometry information about all the meshes
+		Handle<Buffer>									m_GeometryBuffer;
 
 	public:
 		std::vector<Material>							Materials;
@@ -64,10 +69,13 @@ namespace limbo::Gfx
 
 		uint32 NumMeshes() const { return (uint32)m_Meshes.size(); }
 
+		Buffer* GetGeometryBuffer() const { return GetBuffer(m_GeometryBuffer); }
+
 	private:
 		void ProcessNode(const cgltf_node* node);
 		void ProcessMaterial(cgltf_material* cgltfMaterial);
-		Mesh ProcessMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive);
+		void ProcessMesh(const cgltf_node* node, const cgltf_mesh* mesh, const cgltf_primitive* primitive);
+		void ProcessPrimitivesData();
 
 		int LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Format format);
 	};

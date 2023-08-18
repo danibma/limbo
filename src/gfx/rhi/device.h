@@ -114,6 +114,8 @@ namespace limbo::Gfx
 
 		void BindVertexBuffer(Handle<Buffer> buffer);
 		void BindIndexBuffer(Handle<Buffer> buffer);
+		void BindVertexBufferView(VertexBufferView view);
+		void BindIndexBufferView(IndexBufferView view);
 		void BindShader(Handle<Shader> shader);
 		void Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
 		void DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
@@ -246,6 +248,16 @@ namespace limbo::Gfx
 	inline void BindIndexBuffer(Handle<Buffer> buffer)
 	{
 		Device::Ptr->BindIndexBuffer(buffer);
+	}
+
+	inline void BindVertexBufferView(VertexBufferView view)
+	{
+		Device::Ptr->BindVertexBufferView(view);
+	}
+
+	inline void BindIndexBufferView(IndexBufferView view)
+	{
+		Device::Ptr->BindIndexBufferView(view);
 	}
 
 	inline void BindShader(Handle<Shader> shader)

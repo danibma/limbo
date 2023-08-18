@@ -7,16 +7,19 @@
 namespace limbo::Gfx
 {
 	Buffer::Buffer(const BufferSpec& spec)
-		: ByteStride(spec.ByteStride), ByteSize(spec.ByteSize)
+		: CurrentState(D3D12_RESOURCE_STATE_COMMON), ByteStride(spec.ByteStride), ByteSize(spec.ByteSize)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
 
 		D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE;
-		if (spec.Usage == BufferUsage::AS_Scratch || spec.Usage == BufferUsage::AS_Result)
+		if (EnumHasAllFlags(spec.Flags, BufferUsage::AccelerationStructure))
 			flags |= D3D12_RESOURCE_FLAG_RAYTRACING_ACCELERATION_STRUCTURE | D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-		const uint64 alignment = spec.Usage == BufferUsage::Upload || spec.Usage == BufferUsage::Constant ? 256 : 4;
+		uint64 alignment = 4;
+		if (EnumHasAnyFlags(spec.Flags, BufferUsage::Upload | BufferUsage::Constant))
+			alignment = 256;
+
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER,
 			.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT,
@@ -34,8 +37,14 @@ namespace limbo::Gfx
 		};
 
 		D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_DEFAULT;
-		if (spec.Usage == BufferUsage::Upload)
+		if (EnumHasAllFlags(spec.Flags, BufferUsage::Upload))
+		{
 			heapType = D3D12_HEAP_TYPE_UPLOAD;
+			CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
+		}
+
+		if (EnumHasAllFlags(spec.Flags, BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView))
+			CurrentState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
 		// #todo: use CreatePlacedResource instead of CreateCommittedResource
 		D3D12_HEAP_PROPERTIES heapProps = {
@@ -46,11 +55,6 @@ namespace limbo::Gfx
 			.VisibleNodeMask = 0
 		};
 
-		CurrentState = D3D12_RESOURCE_STATE_COMMON;
-		if (spec.Usage == BufferUsage::Upload)
-			CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
-		else if (spec.Usage == BufferUsage::AS_Result)
-			CurrentState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 		InitialState = CurrentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
 													InitialState,
@@ -59,7 +63,7 @@ namespace limbo::Gfx
 
 		if (spec.InitialData)
 		{
-			if (spec.Usage == BufferUsage::Upload)
+			if (EnumHasAllFlags(spec.Flags, BufferUsage::Upload))
 			{
 				DX_CHECK(Resource->Map(0, nullptr, &MappedData));
 				memcpy(MappedData, spec.InitialData, spec.ByteSize);
@@ -70,7 +74,7 @@ namespace limbo::Gfx
 				Handle<Buffer> uploadBuffer = CreateBuffer({
 					.DebugName = uploadName.c_str(),
 					.ByteSize = spec.ByteSize,
-					.Usage = BufferUsage::Upload,
+					.Flags = BufferUsage::Upload,
 					.InitialData = spec.InitialData
 				});
 				Buffer* allocationBuffer = ResourceManager::Ptr->GetBuffer(uploadBuffer);
@@ -87,8 +91,7 @@ namespace limbo::Gfx
 			DX_CHECK(Resource->SetName(wname.c_str()));
 		}
 
-		if (spec.bCreateView)
-			InitResource(spec);
+		InitResource(spec);
 	}
 
 	Buffer::~Buffer()
@@ -107,18 +110,28 @@ namespace limbo::Gfx
 
 	void Buffer::CreateSRV(ID3D12Device* device, const BufferSpec& spec)
 	{
+		bool bIsRaw = EnumHasAllFlags(spec.Flags, BufferUsage::Byte);
+
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
-			.Format = DXGI_FORMAT_UNKNOWN,
 			.ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
 			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
 		};
+		srvDesc.Buffer.FirstElement = 0;
 
-		srvDesc.Buffer = {
-			.FirstElement = 0,
-			.NumElements = spec.NumElements,
-			.StructureByteStride = spec.ByteStride,
-			.Flags = D3D12_BUFFER_SRV_FLAG_NONE
-		};
+		if (bIsRaw)
+		{
+			srvDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			srvDesc.Buffer.NumElements = spec.NumElements;
+			srvDesc.Buffer.StructureByteStride = 0;
+			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
+		}
+		else
+		{
+			srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+			srvDesc.Buffer.NumElements = spec.NumElements;
+			srvDesc.Buffer.StructureByteStride = spec.ByteStride;
+			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+		}
 
 		device->CreateShaderResourceView(Resource.Get(), &srvDesc, BasicHandle.CpuHandle);
 	}
@@ -140,20 +153,18 @@ namespace limbo::Gfx
 
 	void Buffer::InitResource(const BufferSpec& spec)
 	{
-		if (spec.Usage == BufferUsage::Constant || spec.Usage == BufferUsage::Upload)
+		if (EnumHasAllFlags(spec.Flags, BufferUsage::Constant))
 		{
 			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
 			CreateCBV(Device::Ptr->GetDevice(), spec);
 		}
-		else if (spec.Usage == BufferUsage::AS_Result)
+		else if (EnumHasAllFlags(spec.Flags, BufferUsage::ShaderResourceView))
 		{
 			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
-			CreateSRV_AS(Device::Ptr->GetDevice(), spec);
-		}
-		else
-		{
-			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
-			CreateSRV(Device::Ptr->GetDevice(), spec);
+			if (EnumHasAllFlags(spec.Flags, BufferUsage::AccelerationStructure))
+				CreateSRV_AS(Device::Ptr->GetDevice(), spec);
+			else
+				CreateSRV(Device::Ptr->GetDevice(), spec);
 		}
 	}
 }

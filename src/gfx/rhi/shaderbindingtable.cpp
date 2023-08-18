@@ -33,7 +33,7 @@ namespace limbo::Gfx
 		Handle<Buffer> sbtBuffer = CreateBuffer({
 			.DebugName = "ShaderBindingTable Buffer",
 			.ByteSize = 256, // we only support 1 of each shader
-			.Usage = BufferUsage::Upload,
+			.Flags = BufferUsage::Upload,
 		});
 
 		ID3D12Resource* sbtResource = ResourceManager::Ptr->GetBuffer(sbtBuffer)->Resource.Get();

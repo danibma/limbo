@@ -34,20 +34,14 @@ namespace limbo::Gfx
 			{
 				if (!mesh.BLAS.IsValid())
 				{
-					device->TransitionResource(mesh.VertexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-					device->TransitionResource(mesh.IndexBuffer, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-
-					ID3D12Resource* vb = ResourceManager::Ptr->GetBuffer(mesh.VertexBuffer)->Resource.Get();
-					ID3D12Resource* ib = ResourceManager::Ptr->GetBuffer(mesh.IndexBuffer)->Resource.Get();
-
 					// Describe the geometry.
 					D3D12_RAYTRACING_GEOMETRY_DESC geometry;
 					geometry.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-					geometry.Triangles.VertexBuffer.StartAddress = vb->GetGPUVirtualAddress();
-					geometry.Triangles.VertexBuffer.StrideInBytes = sizeof(MeshVertex);
+					geometry.Triangles.VertexBuffer.StartAddress = mesh.PositionsLocation.BufferLocation;
+					geometry.Triangles.VertexBuffer.StrideInBytes = mesh.PositionsLocation.StrideInBytes;
 					geometry.Triangles.VertexCount = (uint32)mesh.VertexCount;
 					geometry.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
-					geometry.Triangles.IndexBuffer = ib->GetGPUVirtualAddress();
+					geometry.Triangles.IndexBuffer = mesh.IndicesLocation.BufferLocation;
 					geometry.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
 					geometry.Triangles.IndexCount = (uint32)mesh.IndexCount;
 					geometry.Triangles.Transform3x4 = 0;
@@ -68,12 +62,12 @@ namespace limbo::Gfx
 					Handle<Buffer> blasScratch = CreateBuffer({
 						.DebugName = "BLAS Scratch Buffer",
 						.ByteSize = ASBuildInfo.ScratchDataSizeInBytes,
-						.Usage = BufferUsage::AS_Scratch,
+						.Flags = BufferUsage::AccelerationStructure,
 					});
 					Handle<Buffer> blasResult = CreateBuffer({
 						.DebugName = "BLAS Result Buffer",
 						.ByteSize = ASBuildInfo.ResultDataMaxSizeInBytes,
-						.Usage = BufferUsage::AS_Result,
+						.Flags = BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView,
 					});
 
 					device->BuildRaytracingAccelerationStructure(ASInputs, blasScratch, blasResult);
@@ -110,7 +104,7 @@ namespace limbo::Gfx
 			m_InstancesBuffer = CreateBuffer({
 				.DebugName = "BLAS Instances Buffer",
 				.ByteSize = instances.size() * sizeof(D3D12_RAYTRACING_INSTANCE_DESC),
-				.Usage = BufferUsage::Upload,
+				.Flags = BufferUsage::Upload,
 				.InitialData = instances.data()
 			});
 		}
@@ -133,14 +127,13 @@ namespace limbo::Gfx
 			m_ScratchBuffer = CreateBuffer({
 				.DebugName = "TLAS Scratch Buffer",
 				.ByteSize = ASBuildInfo.ScratchDataSizeInBytes,
-				.Usage = BufferUsage::AS_Scratch,
+				.Flags = BufferUsage::AccelerationStructure,
 			});
 
 			m_TLAS = CreateBuffer({
 				.DebugName = "TLAS Result Buffer",
 				.ByteSize = ASBuildInfo.ResultDataMaxSizeInBytes,
-				.Usage = BufferUsage::AS_Result,
-				.bCreateView = true
+				.Flags = BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView,
 			});
 		}
 

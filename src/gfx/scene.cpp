@@ -28,10 +28,14 @@ namespace limbo::Gfx
 			std::vector<float2> texcoordsStream;
 			std::vector<uint32> indicesStream;
 		};
+
+		std::vector<PrimitiveData> PrimitivesStreams;
 	}
 
 	Scene::Scene(const char* path)
 	{
+		PrimitivesStreams.clear();
+
 		LB_LOG("Starting loading %s", path);
 		Core::Timer timer;
 
@@ -55,6 +59,9 @@ namespace limbo::Gfx
 
 		cgltf_free(data);
 
+		// Create the geometry buffer and create the Vertex/Index buffer views for the respective meshes
+		ProcessPrimitivesData();
+
 		LB_LOG("Finished loading %s (took %.2fs)", path, timer.ElapsedSeconds());
 	}
 
@@ -67,14 +74,14 @@ namespace limbo::Gfx
 	{
 		for (const Mesh& mesh : m_Meshes)
 		{
-			DestroyBuffer(mesh.VertexBuffer);
-			DestroyBuffer(mesh.IndexBuffer);
 			if (mesh.BLAS.IsValid()) // Some meshes don't have a BLAS set
 				DestroyBuffer(mesh.BLAS);
 		}
 
 		for (Handle<Texture> texture : m_Textures)
 			DestroyTexture(texture);
+
+		DestroyBuffer(m_GeometryBuffer);
 	}
 
 	void Scene::IterateMeshes(const std::function<void(const Mesh& mesh)>& drawFunction) const
@@ -97,8 +104,7 @@ namespace limbo::Gfx
 			for (size_t i = 0; i < mesh->primitives_count; i++)
 			{
 				const cgltf_primitive& primitive = mesh->primitives[i];
-				Mesh& m = m_Meshes.emplace_back(ProcessMesh(mesh, &primitive));
-				cgltf_node_transform_world(node, &m.Transform[0][0]);
+				ProcessMesh(node, mesh, &primitive);
 			}
 		}
 
@@ -148,7 +154,7 @@ namespace limbo::Gfx
 		}
 	}
 
-	Mesh Scene::ProcessMesh(const cgltf_mesh* mesh, const cgltf_primitive* primitive)
+	void Scene::ProcessMesh(const cgltf_node* node, const cgltf_mesh* mesh, const cgltf_primitive* primitive)
 	{
 		std::string meshName;
 		if (mesh->name)
@@ -156,7 +162,7 @@ namespace limbo::Gfx
 		else
 			meshName = m_SceneName;
 
-		PrimitiveData primitiveData;
+		PrimitiveData& primitiveData = PrimitivesStreams.emplace_back();
 
 		// process vertices
 		for (size_t attributeIndex = 0; attributeIndex < primitive->attributes_count; ++attributeIndex)
@@ -180,23 +186,6 @@ namespace limbo::Gfx
 			readAttributeData("TEXCOORD_0", primitiveData.texcoordsStream, 2);
 		}
 
-		// turn the attribute streams into vertex data
-		size_t vertexCount = primitiveData.positionStream.size();
-
-		std::vector<MeshVertex> localVertices;
-		localVertices.resize(vertexCount);
-		for (size_t attrIdx = 0; attrIdx < vertexCount; ++attrIdx)
-		{
-			MeshVertex& vertex = localVertices[attrIdx];
-
-			if (attrIdx < primitiveData.positionStream.size())
-				vertex.Position = primitiveData.positionStream[attrIdx];
-			if (attrIdx < primitiveData.normalsStream.size())
-				vertex.Normal	= primitiveData.normalsStream[attrIdx];
-			if (attrIdx < primitiveData.texcoordsStream.size())
-				vertex.UV = primitiveData.texcoordsStream[attrIdx];
-		}
-
 		// process indices
 		cgltf_accessor* indices = primitive->indices;
 		primitiveData.indicesStream.resize(indices->count);
@@ -204,7 +193,83 @@ namespace limbo::Gfx
 			primitiveData.indicesStream[idx] = (uint32)cgltf_accessor_read_index(primitive->indices, idx);
 
 		cgltf_material* material = primitive->material;
-		return Mesh(meshName.c_str(), localVertices, primitiveData.indicesStream, m_MaterialPtrToIndex[material]);
+		Mesh& result = m_Meshes.emplace_back();
+		cgltf_node_transform_world(node, &result.Transform[0][0]);
+		result.LocalMaterialIndex = m_MaterialPtrToIndex[material];
+		result.Name = meshName.c_str();
+	}
+
+	void Scene::ProcessPrimitivesData()
+	{
+		uint64 bufferSize = 0;
+		uint32 elementCount = 0;
+
+		// Calculate the geometry buffer size
+		for (size_t i = 0; i < PrimitivesStreams.size(); ++i)
+		{
+			bufferSize += PrimitivesStreams[i].positionStream.size()  * sizeof(float3);
+			bufferSize += PrimitivesStreams[i].normalsStream.size()   * sizeof(float3);
+			bufferSize += PrimitivesStreams[i].texcoordsStream.size() * sizeof(float2);
+			bufferSize += PrimitivesStreams[i].indicesStream.size()   * sizeof(uint32);
+		}
+
+		elementCount = (uint32)bufferSize / sizeof(uint32);
+
+		std::string debugName = std::format("{}_GeometryBuffer", m_SceneName);
+		m_GeometryBuffer = CreateBuffer({
+			.DebugName = debugName.c_str(),
+			.NumElements = elementCount,
+			.ByteSize = bufferSize,
+			.Flags = BufferUsage::Byte | BufferUsage::ShaderResourceView
+		});
+		D3D12_GPU_VIRTUAL_ADDRESS geoBufferAddress = GetBuffer(m_GeometryBuffer)->Resource->GetGPUVirtualAddress();
+
+		Handle<Buffer> upload = CreateBuffer({
+			.DebugName = debugName.c_str(),
+			.ByteSize = bufferSize,
+			.Flags = BufferUsage::Upload
+		});
+
+		auto CopyData = [](VertexBufferView& view, uint8* data, uint64 gpuAddress, uint64& offset, const auto& stream)
+		{
+			auto streamSize = stream.size() * sizeof(stream[0]);
+			view = {
+				.BufferLocation = gpuAddress + offset,
+				.SizeInBytes = (uint32)streamSize,
+				.StrideInBytes = sizeof(stream[0]),
+				.Offset = (uint32)offset
+			};
+			memcpy(data + offset, stream.data(), streamSize);
+			offset += streamSize;
+		};
+
+		Map(upload);
+		uint8* data = (uint8*)GetMappedData(upload);
+		uint64 dataOffset = 0;
+		for (size_t i = 0; i < PrimitivesStreams.size(); ++i)
+		{
+			check(dataOffset % sizeof(uint32) == 0); // the offset is a 32bit value, do not let it overflow
+
+			CopyData(m_Meshes[i].PositionsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].positionStream);
+			CopyData(m_Meshes[i].NormalsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].normalsStream);
+			CopyData(m_Meshes[i].TexCoordsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].texcoordsStream);
+
+			size_t streamSize = PrimitivesStreams[i].indicesStream.size() * sizeof(uint32);
+			m_Meshes[i].IndicesLocation = {
+				.BufferLocation = geoBufferAddress + dataOffset,
+				.SizeInBytes = (uint32)streamSize,
+				.Offset = (uint32)dataOffset
+			};
+			memcpy(data + dataOffset, PrimitivesStreams[i].indicesStream.data(), streamSize);
+			dataOffset += streamSize;
+
+			m_Meshes[i].IndexCount  = PrimitivesStreams[i].indicesStream.size();
+			m_Meshes[i].VertexCount = PrimitivesStreams[i].positionStream.size();
+		}
+
+		CopyBufferToBuffer(upload, m_GeometryBuffer, bufferSize);
+		Device::Ptr->TransitionResource(m_GeometryBuffer, D3D12_RESOURCE_STATE_GENERIC_READ);
+		DestroyBuffer(upload);
 	}
 
 	int Scene::LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Format format)
@@ -257,28 +322,4 @@ namespace limbo::Gfx
 		FAILIF(!t, -1);
 		return t->SRVHandle[0].Index;
 	}
-
-	Mesh::Mesh(const char* meshName, const std::vector<MeshVertex>& vertices, const std::vector<uint32_t>& indices, uint32 material)
-		: LocalMaterialIndex(material), IndexCount(indices.size()), VertexCount(vertices.size()), Name(meshName)
-	{
-		// create vertex buffer
-		std::string debugName = std::string(Name) + " VB";
-		VertexBuffer = CreateBuffer({
-			.DebugName = debugName.c_str(),
-			.ByteStride = sizeof(MeshVertex),
-			.ByteSize = sizeof(MeshVertex) * (uint32)vertices.size(),
-			.Usage = BufferUsage::Vertex,
-			.InitialData = vertices.data()
-		});
-
-		// create index buffer
-		debugName = std::string(Name) + " IB";
-		IndexBuffer = CreateBuffer({
-			.DebugName = debugName.c_str(),
-			.ByteSize = sizeof(uint32) * (uint32)indices.size(),
-			.Usage = BufferUsage::Index,
-			.InitialData = indices.data()
-		});
-	}
-
 }

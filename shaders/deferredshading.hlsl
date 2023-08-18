@@ -39,18 +39,21 @@ struct VSOut
 
 uint instanceID;
 
-VSOut VSMain(float3 pos : InPosition, float3 normal : InNormal, float2 uv : InUV)
+VSOut VSMain(uint vertexID : SV_VertexID)
 {
     VSOut result;
 
     Instance instance = GetInstance(instanceID);
+    float3 pos    = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
+    float3 normal = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.NormalsOffset);
+    float2 uv     = BufferLoad<float2>(instance.BufferIndex, vertexID, instance.TexCoordsOffset);
 
-    float4x4 mvp = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
+    float4x4 mvp    = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
     result.Position = mul(mvp, float4(pos, 1.0f));
     result.PixelPos = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(pos, 1.0f)));
     result.WorldPos = mul(instance.LocalTransform, float4(pos, 1.0f));
-    result.Normal = TransformDirection(instance.LocalTransform, normal);
-    result.UV = uv;
+    result.Normal   = TransformDirection(instance.LocalTransform, normal);
+    result.UV       = uv;
 
 	return result;
 }

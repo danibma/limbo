@@ -51,7 +51,12 @@ struct MeshVertex
 
 struct Instance
 {
-	float4x4	LocalTransform;
-
 	uint		Material;
+	uint		BufferIndex;
+	uint		PositionsOffset;
+	uint		NormalsOffset;
+	uint		TexCoordsOffset;
+	uint		IndicesOffset;
+
+	float4x4	LocalTransform;
 };

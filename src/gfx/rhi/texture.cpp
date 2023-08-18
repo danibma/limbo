@@ -283,7 +283,7 @@ namespace limbo::Gfx
 			Handle<Buffer> uploadBuffer = CreateBuffer({
 				.DebugName = uploadName.c_str(),
 				.ByteSize = rowPitch * spec.Height * bytesPerChannel,
-				.Usage = BufferUsage::Upload,
+				.Flags = BufferUsage::Upload,
 				.InitialData = spec.InitialData
 			});
 

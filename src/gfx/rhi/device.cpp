@@ -338,6 +338,27 @@ namespace limbo::Gfx
 		m_CommandList->IASetIndexBuffer(&ibView);
 	}
 
+	void Device::BindVertexBufferView(VertexBufferView view)
+	{
+		D3D12_VERTEX_BUFFER_VIEW vbView = {
+			.BufferLocation = view.BufferLocation,
+			.SizeInBytes = view.SizeInBytes,
+			.StrideInBytes = view.StrideInBytes
+		};
+		m_CommandList->IASetVertexBuffers(0, 1, &vbView);
+	}
+
+	void Device::BindIndexBufferView(IndexBufferView view)
+	{
+		D3D12_INDEX_BUFFER_VIEW ibView = {
+			.BufferLocation = view.BufferLocation,
+			.SizeInBytes = view.SizeInBytes,
+			.Format = DXGI_FORMAT_R32_UINT
+		};
+
+		m_CommandList->IASetIndexBuffer(&ibView);
+	}
+
 	void Device::BindShader(Handle<Shader> shader)
 	{
 		m_BoundShader = shader;

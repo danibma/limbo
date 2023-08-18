@@ -16,7 +16,7 @@
 - Open `build/limbo.sln` and Compile/Run
 
 ## Some notable features
-- Bindless resources
+- Bindless resources, including Vertex Pulling
 - Deferred shading
 - Shader hot-reloading
 - Screen space ambient occlusion

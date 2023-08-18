@@ -34,6 +34,13 @@ float2 GetDimensions2D(int index)
     return float2(width, height);
 }
 
+template<typename T>
+T BufferLoad(uint bufferIndex, uint elementIndex, uint byteOffset = 0)
+{
+    ByteAddressBuffer buffer = ResourceDescriptorHeap[NonUniformResourceIndex(bufferIndex)];
+    return buffer.Load<T>(elementIndex * sizeof(T) + byteOffset);
+}
+
 Material GetMaterial(int index)
 {
     StructuredBuffer<Material> materials = ResourceDescriptorHeap[GSceneInfo.MaterialsBufferIndex];

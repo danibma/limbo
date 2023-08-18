@@ -9,7 +9,7 @@ struct SkyboxVertexOutput
     float4 local_position : Position;
 };
 
-SkyboxVertexOutput VSMain(float3 pos : Position, float3 normal : Normal, float2 uv : UV)
+SkyboxVertexOutput VSMain(float3 pos : Position)
 {
     float4x4 rot_view = GSceneInfo.View;
     rot_view._m03_m13_m23 = 0.0; // remove translation

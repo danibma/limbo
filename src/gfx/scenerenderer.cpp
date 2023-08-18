@@ -25,8 +25,7 @@ namespace limbo::Gfx
 			m_SceneInfoBuffers[i] = CreateBuffer({
 				.DebugName = debugName.c_str(),
 				.ByteSize = sizeof(SceneInfo),
-				.Usage = BufferUsage::Upload,
-				.bCreateView = true
+				.Flags = BufferUsage::Upload | BufferUsage::Constant,
 			});
 			Gfx::Map(m_SceneInfoBuffers[i]);
 		}
@@ -135,8 +134,7 @@ namespace limbo::Gfx
 				{
 					SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
 
-					BindVertexBuffer(mesh.VertexBuffer);
-					BindIndexBuffer(mesh.IndexBuffer);
+					BindIndexBufferView(mesh.IndicesLocation);
 					DrawIndexed((uint32)mesh.IndexCount);
 				});
 			}
@@ -154,8 +152,8 @@ namespace limbo::Gfx
 			SetParameter(m_SkyboxShader, "LinearWrap", GetDefaultLinearWrapSampler());
 			m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
 			{
-				BindVertexBuffer(mesh.VertexBuffer);
-				BindIndexBuffer(mesh.IndexBuffer);
+				BindVertexBufferView(mesh.PositionsLocation);
+				BindIndexBufferView(mesh.IndicesLocation);
 				DrawIndexed((uint32)mesh.IndexCount);
 			});
 			EndEvent();
@@ -228,9 +226,8 @@ namespace limbo::Gfx
 				.NumElements = (uint32)arr.size(),
 				.ByteStride = sizeof(arr[0]),
 				.ByteSize = arr.size() * sizeof(arr[0]),
-				.Usage = BufferUsage::Structured,
+				.Flags = BufferUsage::Structured | BufferUsage::ShaderResourceView,
 				.InitialData = arr.data(),
-				.bCreateView = true
 			});
 		};
 
@@ -243,8 +240,13 @@ namespace limbo::Gfx
 			{
 				mesh.InstanceID = instanceID;
 				Instance& instance = instances.emplace_back();
-				instance.LocalTransform = mesh.Transform;
-				instance.Material		= (uint32)materials.size() + mesh.LocalMaterialIndex;
+				instance.LocalTransform  = mesh.Transform;
+				instance.Material		 = (uint32)materials.size() + mesh.LocalMaterialIndex;
+				instance.PositionsOffset = mesh.PositionsLocation.Offset;
+				instance.NormalsOffset   = mesh.NormalsLocation.Offset;
+				instance.TexCoordsOffset = mesh.TexCoordsLocation.Offset;
+				instance.IndicesOffset	 = mesh.IndicesLocation.Offset;
+				instance.BufferIndex	 = scene->GetGeometryBuffer()->BasicHandle.Index;
 				instanceID++;
 			});
 
