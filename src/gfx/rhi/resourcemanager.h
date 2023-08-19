@@ -156,6 +156,13 @@ namespace limbo::Gfx
 		return b;
 	}
 
+	inline Texture* GetTexture(Handle<Texture> texture)
+	{
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
+		FAILIF(!t, nullptr);
+		return t;
+	}
+
 	inline void Map(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
 	{
 		ResourceManager::Ptr->Map(buffer, subresource, range);

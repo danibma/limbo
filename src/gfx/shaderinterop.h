@@ -18,10 +18,9 @@ struct SceneInfo
 	float3		CameraPos;
 
 	uint		FrameIndex;
-
+	uint		SkyIndex;
 	uint		MaterialsBufferIndex;
 	uint		InstancesBufferIndex;
-	PAD;
 	PAD;
 };
 #ifdef __cplusplus

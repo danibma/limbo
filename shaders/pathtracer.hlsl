@@ -12,7 +12,9 @@ cbuffer $Globals : register(b0)
 
 struct HitInfo
 {
-    float4 colorAndDistance;
+    float4 ColorAndDistance;
+
+    bool IsHit() { return ColorAndDistance.a > 0; }
 };
 
 // From Ray Tracing Gems II - Chapter 14
@@ -50,15 +52,16 @@ void RayGen()
 
     // Initialize the ray payload
     HitInfo payload;
-    payload.colorAndDistance = float4(0, 0, 0, 0);
-
+    payload.ColorAndDistance = float4(0, 0, 0, 0);
 
     pixel = (((pixel + 0.5f) / resolution) * 2.f - 1.f);
     RayDesc ray = GeneratePinholeCameraRay(pixel);
     TraceRay(Scene, RAY_FLAG_NONE, 0xFF, 0, 1, 0, ray, payload);
 
-    // Write the raytraced color to the output texture.
-    RenderTarget[DispatchRaysIndex().xy] = payload.colorAndDistance;
+    if (payload.IsHit() <= 0)
+        RenderTarget[DispatchRaysIndex().xy] = float4(GetSky(ray.Direction), 1.0f);
+    else
+	    RenderTarget[DispatchRaysIndex().xy] = payload.ColorAndDistance;
 }
 
 [shader("closesthit")]
@@ -72,7 +75,7 @@ void PrimaryClosestHit(inout HitInfo payload, in BuiltInTriangleIntersectionAttr
     float4 albedo = material.AlbedoFactor;
     albedo *= SampleLevel2D(material.AlbedoIndex, LinearWrap, vertex.UV, 0);
 
-    payload.colorAndDistance = albedo;
+    payload.ColorAndDistance = float4(albedo.xyz, RayTCurrent());
 }
 
 [shader("anyhit")]
@@ -84,5 +87,5 @@ void PrimaryAnyHit(inout HitInfo payload, in BuiltInTriangleIntersectionAttribut
 [shader("miss")]
 void PrimaryMiss(inout HitInfo payload)
 {
-    payload.colorAndDistance = float4(0, 0, 0, 1);
+    payload.ColorAndDistance = (float4)0;
 }

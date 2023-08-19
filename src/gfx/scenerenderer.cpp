@@ -112,8 +112,6 @@ namespace limbo::Gfx
 
 	void SceneRenderer::Render(float dt)
 	{
-		UpdateSceneInfo();
-
 		BeginEvent("Loading Environment Map");
 		if (bNeedsEnvMapChange)
 		{
@@ -121,6 +119,8 @@ namespace limbo::Gfx
 			bNeedsEnvMapChange = false;
 		}
 		EndEvent();
+
+		UpdateSceneInfo();
 
 		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
 		{
@@ -268,6 +268,7 @@ namespace limbo::Gfx
 		m_SceneInfo.InvProjection	= glm::inverse(Camera.Proj);
 		m_SceneInfo.ViewProjection	= Camera.ViewProj;
 		m_SceneInfo.CameraPos		= Camera.Eye;
+		m_SceneInfo.SkyIndex		= GetTexture(m_EnvironmentCubemap)->SRVHandle[0].Index;
 		m_SceneInfo.FrameIndex++;
 
 		Handle<Buffer> currentBuffer = m_SceneInfoBuffers[Device::Ptr->GetCurrentFrameIndex()];

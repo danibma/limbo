@@ -30,6 +30,13 @@ MeshVertex GetVertex(Instance instance, float2 attribBarycentrics, uint primitiv
     return vertex;
 }
 
+float3 GetSky(float3 rayDir)
+{
+    float3 uv = normalize(rayDir);
+    TextureCube<float4> skyTexture = ResourceDescriptorHeap[GSceneInfo.SkyIndex];
+    return skyTexture.SampleLevel(LinearWrap, uv, 0).rgb;
+}
+
 // Returns true if it passed the alpha test
 bool AnyHitAlphaTest(float2 attribBarycentrics)
 {
