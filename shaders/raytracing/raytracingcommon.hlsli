@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "../common.hlsli"
+
 template<typename T>
 T InterpolateVertex(T a0, T a1, T a2, float3 b)
 {
@@ -49,4 +51,32 @@ bool AnyHitAlphaTest(float2 attribBarycentrics)
     finalAlbedo *= SampleLevel2D(material.AlbedoIndex, LinearWrap, vertex.UV, 0);
 
     return finalAlbedo.a > ALPHA_THRESHOLD;
+}
+
+struct MaterialPayload
+{
+    float4 ColorAndDistance;
+
+    bool IsHit()
+    {
+        return ColorAndDistance.a > 0;
+    }
+};
+
+MaterialPayload TraceMaterialRay(in RaytracingAccelerationStructure tlas, in RayDesc ray, in RAY_FLAG flag = RAY_FLAG_NONE, in uint instanceMask = 0xFF)
+{
+    MaterialPayload payload = (MaterialPayload)0;
+
+    TraceRay(
+	    tlas,           //AccelerationStructure
+	    RAY_FLAG_NONE,  //RayFlags
+	    0xFF,           //InstanceInclusionMask
+	    0,              //RayContributionToHitGroupIndex
+	    1,              //MultiplierForGeometryContributionToHitGroupIndex
+	    0,              //MissShaderIndex
+	    ray,            //Ray
+	    payload         //Payload
+    );
+
+    return payload;
 }

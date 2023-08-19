@@ -48,12 +48,10 @@ project(limbo)
 
 # Files
 file(GLOB SHADER_FILES CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.comp
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.geom
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.frag
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.vert
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.hlsli)
+    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*.*)
+
+file(GLOB RT_SHADER_FILES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/shaders/raytracing/*.*)
 
 file(GLOB TEST_SHADER_FILES CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tests/gfx/shaders/*.*)
@@ -73,10 +71,11 @@ file(GLOB_RECURSE CPP_FILES
 add_executable(limbo WIN32 ${CPP_FILES})
 GroupSourcesByFolder(limbo)
 
-target_sources(limbo PRIVATE ${SHADER_FILES} ${TEST_SHADER_FILES})
+target_sources(limbo PRIVATE ${SHADER_FILES} ${RT_SHADER_FILES} ${TEST_SHADER_FILES})
 source_group("shaders" FILES ${SHADER_FILES})
+source_group("shaders/raytracing" FILES ${RT_SHADER_FILES})
 source_group("src/tests/gfx/shaders" FILES ${TEST_SHADER_FILES})
-set_source_files_properties(${SHADER_FILES} ${TEST_SHADER_FILES} PROPERTIES VS_TOOL_OVERRIDE "None")
+set_source_files_properties(${SHADER_FILES} ${RT_SHADER_FILES} ${TEST_SHADER_FILES} PROPERTIES VS_TOOL_OVERRIDE "None")
 
 target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 

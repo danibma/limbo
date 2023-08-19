@@ -438,17 +438,10 @@ namespace limbo::Gfx
 		ResourceManager* rm = ResourceManager::Ptr;
 		Shader* shader = rm->GetShader(m_BoundShader);
 
-		if (shader->Type == ShaderType::Compute || shader->Type == ShaderType::RayTracing)
-		{
-			m_CommandList->SetComputeRootSignature(shader->RootSignature.Get());
-			shader->SetComputeRootParameters(m_CommandList.Get());
-		}
-		else if (shader->Type == ShaderType::Graphics)
-		{
+		shader->SetRootParameters(m_CommandList.Get());
+
+		if (shader->Type == ShaderType::Graphics)
 			m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			m_CommandList->SetGraphicsRootSignature(shader->RootSignature.Get());
-			shader->SetGraphicsRootParameters(m_CommandList.Get());
-		}
 
 		if (shader->Type != ShaderType::RayTracing)
 		{

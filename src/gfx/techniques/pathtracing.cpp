@@ -8,12 +8,6 @@
 
 namespace limbo::Gfx
 {
-	constexpr const wchar_t* GRayGenShaderName		= L"RayGen";
-	constexpr const wchar_t* GPMissShaderName		= L"PrimaryMiss";
-	constexpr const wchar_t* GPClosestHitShaderName	= L"PrimaryClosestHit";
-	constexpr const wchar_t* GPAnyHitShaderName		= L"PrimaryAnyHit";
-	constexpr const wchar_t* GPHitGroupName			= L"PrimaryHitGroup";
-
 	PathTracing::PathTracing()
 	{
 		m_FinalTexture = CreateTexture({
@@ -26,20 +20,31 @@ namespace limbo::Gfx
 		});
 
 		m_RTShader = CreateShader({
-			.ProgramName = "pathtracer",
-			.HitGroupsDescriptions = {
+			.ProgramName = "Path Tracer",
+			.Libs = {
 				{
-					.HitGroupExport = GPHitGroupName,
-					.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES,
-					.AnyHitShaderImport = GPAnyHitShaderName,
-					.ClosestHitShaderImport = GPClosestHitShaderName,
-				}
-			},
-			.Exports = {
-				{ .Name = GRayGenShaderName,	  .ExportToRename = GRayGenShaderName },
-				{ .Name = GPMissShaderName,		  .ExportToRename = GPMissShaderName },
-				{ .Name = GPAnyHitShaderName,	  .ExportToRename = GPAnyHitShaderName },
-				{ .Name = GPClosestHitShaderName, .ExportToRename = GPClosestHitShaderName }
+					.LibName = "raytracing/pathtracer",
+					.Exports = {
+						{ .Name = L"RayGen" },
+					}
+				},
+				// Material Lib
+				{
+					.LibName = "raytracing/materiallib",
+					.HitGroupsDescriptions = {
+						{
+							.HitGroupExport = L"MaterialHitGroup",
+							.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES,
+							.AnyHitShaderImport = L"MaterialAnyHit",
+							.ClosestHitShaderImport = L"MaterialClosestHit",
+						}
+					},
+					.Exports = {
+						{ .Name = L"MaterialAnyHit" },
+						{ .Name = L"MaterialClosestHit" },
+						{ .Name = L"MaterialMiss" }
+					},
+				},
 			},
 			.ShaderConfig = {
 				.MaxPayloadSizeInBytes = sizeof(float4), // float4 ColorAndDistance
@@ -63,9 +68,9 @@ namespace limbo::Gfx
 		BindShader(m_RTShader);
 
 		ShaderBindingTable SBT(m_RTShader);
-		SBT.BindRayGen(GRayGenShaderName);
-		SBT.BindMissShader(GPMissShaderName);
-		SBT.BindHitGroup(GPHitGroupName);
+		SBT.BindRayGen(L"RayGen");
+		SBT.BindMissShader(L"MaterialMiss");
+		SBT.BindHitGroup(L"MaterialHitGroup");
 
 		sceneRenderer->BindSceneInfo(m_RTShader);
 		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);

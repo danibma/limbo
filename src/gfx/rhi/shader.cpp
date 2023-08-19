@@ -2,26 +2,54 @@
 #include "shader.h"
 
 #include "device.h"
-#include "core/algo.h"
 #include "core/window.h"
 #include "shadercompiler.h"
 #include "resourcemanager.h"
+#include "accelerationstructure.h"
+#include "rootsignature.h"
 
 #include <dxcapi.h>
 #include <format>
 
+#include <array>
+
 #include <d3d12/d3dx12/d3dx12.h>
-
-#include "accelerationstructure.h"
-
 
 namespace limbo::Gfx
 {
+	class StateObjectStream
+	{
+		template<size_t SIZE>
+		struct DataAllocator
+		{
+			template<typename T>
+			T* Allocate(uint32 count = 1)
+			{
+				check(m_Offset + count * sizeof(T) <= SIZE);
+				T* pData = reinterpret_cast<T*>(&m_Data[m_Offset]);
+				m_Offset += count * sizeof(T);
+				return pData;
+			}
+			void Reset() { m_Offset = 0; }
+			const void* GetData() const { return m_Data.data(); }
+			size_t Size() const { return m_Offset; }
+		private:
+			size_t m_Offset = 0;
+			std::array<uint8, SIZE> m_Data = {};
+		};
+
+	public:
+		DataAllocator<1 << 8>  StateObjectData = {};
+		DataAllocator<1 << 10> ContentData = {};
+	};
+
 	Shader::Shader(const ShaderSpec& spec)
 		: m_Name(spec.ProgramName), m_Spec(spec)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
+
+		m_RootSignature = new RootSignature(m_Name + " RS");
 
 		Type = spec.Type;
 
@@ -47,91 +75,50 @@ namespace limbo::Gfx
 			DestroyTexture(DepthTarget.Texture);
 
 		Device::Ptr->ReloadShaders.Remove(m_ReloadShaderDelHandle);
+
+		delete m_RootSignature;
 	}
 
-	void Shader::SetComputeRootParameters(ID3D12GraphicsCommandList* cmd)
+	void Shader::SetRootParameters(ID3D12GraphicsCommandList* cmd)
 	{
-		for (const auto& [name, parameter] : ParameterMap)
-		{
-			if (parameter.Type == ParameterType::Constants)
-			{
-				if (parameter.Data)
-					cmd->SetComputeRoot32BitConstants(parameter.RPIndex, parameter.NumValues, parameter.Data, parameter.Offset);
-			}
-			else
-			{
-				FAILIF(!parameter.Descriptor.ptr);
-				cmd->SetComputeRootDescriptorTable(parameter.RPIndex, parameter.Descriptor);
-			}
-		}
-	}
+		if (Type == ShaderType::Graphics)
+			cmd->SetGraphicsRootSignature(m_RootSignature->Get());
+		else // Compute and Ray Tracing
+			cmd->SetComputeRootSignature(m_RootSignature->Get());
 
-	void Shader::SetGraphicsRootParameters(ID3D12GraphicsCommandList* cmd)
-	{
-		for (const auto& [hash, parameter] : ParameterMap)
-		{
-			if (parameter.Type == ParameterType::Constants)
-			{
-				if (!parameter.Data)
-				{
-					LB_WARN("'%s': Shader root parameter at index %d of ParameterType::%s has no value!", m_Name.data(), parameter.RPIndex, ParameterTypeToStr(parameter.Type).data());
-					continue;
-				}
-
-				cmd->SetGraphicsRoot32BitConstants(parameter.RPIndex, parameter.NumValues, parameter.Data, parameter.Offset);
-			}
-			else
-			{
-				if (!parameter.Descriptor.ptr)
-				{
-					LB_WARN("'%s': Shader root parameter at index %d of ParameterType::%s has no value!", m_Name.data(), parameter.RPIndex, ParameterTypeToStr(parameter.Type).data());
-					continue;
-				}
-
-				cmd->SetGraphicsRootDescriptorTable(parameter.RPIndex, parameter.Descriptor);
-			}
-		}
+		m_RootSignature->SetRootParameters(Type, cmd);
 	}
 
 	void Shader::SetConstant(const char* parameterName, const void* data)
 	{
-		uint32 hash = Algo::Hash(parameterName);
-		if (!ParameterMap.contains(hash))
-		{
-			LB_WARN("'%s': Tried to set constant '%s' but couldn't it be found", m_Name.c_str(), parameterName);
-			return;
-		}
-		ParameterMap[hash].Data = data;
+		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
+		if (!parameter.IsValid()) return;
+		parameter.Data = data;
 	}
 
 	void Shader::SetTexture(const char* parameterName, Handle<Texture> texture, uint32 mipLevel)
 	{
 		uint32 level = mipLevel == ~0 ? 0 : mipLevel;
-		uint32 hash = Algo::Hash(parameterName);
-		if (!ParameterMap.contains(hash))
-		{
-			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
-			return;
-		}
-		ParameterInfo& parameter = ParameterMap[hash];
+		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
+		if (!parameter.IsValid()) return;
 
 		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t);
 
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
-		if (parameter.Type == ParameterType::UAV)
+		if (parameter.Type == ShaderParameterType::UAV)
 		{
 			FAILIF(t->BasicHandle[level].GPUHandle.ptr == 0); // texture is not a SRV
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 			parameter.Descriptor = t->BasicHandle[level].GPUHandle;
 		}
-		else if (parameter.Type == ParameterType::SRV)
+		else if (parameter.Type == ShaderParameterType::SRV)
 		{
 			FAILIF(t->SRVHandle[level].GPUHandle.ptr == 0); // texture is not a SRVs
 			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			parameter.Descriptor = t->SRVHandle[level].GPUHandle;
 		}
-		else if (parameter.Type == ParameterType::Constants) // bindless
+		else if (parameter.Type == ShaderParameterType::Constants) // bindless
 		{
 			parameter.Data = &t->SRVHandle[level].Index;
 		}
@@ -145,28 +132,23 @@ namespace limbo::Gfx
 
 	void Shader::SetBuffer(const char* parameterName, Handle<Buffer> buffer)
 	{
-		uint32 hash = Algo::Hash(parameterName);
-		if (!ParameterMap.contains(hash))
-		{
-			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
-			return;
-		}
-		ParameterInfo& parameter = ParameterMap[hash];
+		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
+		if (!parameter.IsValid()) return;
 
 		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
 		FAILIF(!b);
 
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
-		if (parameter.Type == ParameterType::UAV)
+		if (parameter.Type == ShaderParameterType::UAV)
 			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		else if (parameter.Type == ParameterType::SRV)
+		else if (parameter.Type == ShaderParameterType::SRV)
 			newState = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-		else if (parameter.Type == ParameterType::CBV)
+		else if (parameter.Type == ShaderParameterType::CBV)
 			newState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 
 		Device::Ptr->TransitionResource(b, newState);
 
-		if (parameter.Type == ParameterType::Constants) // bindless
+		if (parameter.Type == ShaderParameterType::Constants) // bindless
 			parameter.Data = &b->BasicHandle.Index;
 		else
 			parameter.Descriptor = b->BasicHandle.GPUHandle;
@@ -174,13 +156,8 @@ namespace limbo::Gfx
 
 	void Shader::SetSampler(const char* parameterName, Handle<Sampler> sampler)
 	{
-		uint32 hash = Algo::Hash(parameterName);
-		if (!ParameterMap.contains(hash))
-		{
-			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
-			return;
-		}
-		ParameterInfo& parameter = ParameterMap[hash];
+		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
+		if (!parameter.IsValid()) return;
 
 		Sampler* s = ResourceManager::Ptr->GetSampler(sampler);
 		FAILIF(!s);
@@ -190,214 +167,9 @@ namespace limbo::Gfx
 
 	void Shader::SetAccelerationStructure(const char* parameterName, AccelerationStructure* accelerationStructure)
 	{
-		uint32 hash = Algo::Hash(parameterName);
-		if (!ParameterMap.contains(hash))
-		{
-			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
-			return;
-		}
-		ParameterInfo& parameter = ParameterMap[hash];
+		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
+		if (!parameter.IsValid()) return;
 		parameter.Descriptor = accelerationStructure->GetDescriptor();
-	}
-
-	void Shader::CreateRootSignature(ID3D12Device* device, D3D12_ROOT_SIGNATURE_FLAGS flags, SC::Kernel* kernels, uint32 kernelsCount)
-	{
-		ParameterMap.clear();
-
-		CD3DX12_ROOT_PARAMETER1   rootParameters[64] = {}; // root signature limits https://learn.microsoft.com/en-us/windows/win32/direct3d12/root-signature-limits#memory-limits-and-costs
-		CD3DX12_DESCRIPTOR_RANGE1 ranges[64] = {};
-		uint32 currentRP = 0;
-		uint32 rsCost    = 0;
-
-		auto processResourceBinding = [&rootParameters, &ranges, &currentRP, &rsCost, this](const D3D12_SHADER_INPUT_BIND_DESC& bindDesc, auto* reflection)
-		{
-			switch (bindDesc.Type) {
-			case D3D_SIT_CBUFFER:
-			{
-				auto* cb = reflection->GetConstantBufferByName(bindDesc.Name);
-				if (strcmp(bindDesc.Name, "$Globals") == 0)
-				{
-					D3D12_SHADER_BUFFER_DESC desc;
-					cb->GetDesc(&desc);
-					uint32 num32BitValues = desc.Size / sizeof(uint32);
-					bool   bAddedVar = false;
-					for (uint32 v = 0; v < desc.Variables; ++v)
-					{
-						auto* var = cb->GetVariableByIndex(v);
-						D3D12_SHADER_VARIABLE_DESC varDesc;
-						var->GetDesc(&varDesc);
-
-						uint32 hashedName = Algo::Hash(varDesc.Name);
-						if (ParameterMap.contains(hashedName)) continue;
-
-						bAddedVar = true;
-
-						uint32 numValues = varDesc.Size / sizeof(uint32);
-						ParameterMap[hashedName] = {
-							.Type = ParameterType::Constants,
-							.RPIndex = currentRP,
-							.NumValues = numValues,
-							.Offset = varDesc.StartOffset / sizeof(uint32)
-						};
-					}
-
-					if (bAddedVar)
-					{
-						rootParameters[currentRP].InitAsConstants(num32BitValues, bindDesc.BindPoint, bindDesc.Space);
-						currentRP++;
-						rsCost += desc.Variables;
-					}
-
-					break;
-				}
-
-				// Normal constant buffers
-				uint32 hashedName = Algo::Hash(bindDesc.Name);
-				if (ParameterMap.contains(hashedName)) break;
-
-				ParameterMap[hashedName] = {
-					.Type = ParameterType::CBV,
-					.RPIndex = currentRP,
-				};
-
-				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, bindDesc.BindPoint, bindDesc.Space);
-
-				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
-
-				currentRP++;
-				rsCost += 1;
-
-				break;
-			}
-			case D3D_SIT_UAV_RWBYTEADDRESS:
-			case D3D_SIT_UAV_APPEND_STRUCTURED:
-			case D3D_SIT_UAV_CONSUME_STRUCTURED:
-			case D3D_SIT_UAV_RWSTRUCTURED_WITH_COUNTER:
-			case D3D_SIT_UAV_RWSTRUCTURED:
-			case D3D_SIT_UAV_FEEDBACKTEXTURE:
-			case D3D_SIT_UAV_RWTYPED: 
-			{
-				uint32 hashedName = Algo::Hash(bindDesc.Name);
-				if (ParameterMap.contains(hashedName)) break;
-
-				ParameterMap[hashedName] = {
-					.Type = ParameterType::UAV,
-					.RPIndex = currentRP,
-				};
-
-				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1, bindDesc.BindPoint, bindDesc.Space);
-
-				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
-
-				currentRP++;
-				rsCost += 1;
-
-				break;
-			}
-			case D3D_SIT_BYTEADDRESS: ensure(false); break;
-			case D3D_SIT_TBUFFER: ensure(false); break;
-			case D3D_SIT_STRUCTURED:
-			case D3D_SIT_RTACCELERATIONSTRUCTURE:
-			case D3D_SIT_TEXTURE:
-			{
-				uint32 hashedName = Algo::Hash(bindDesc.Name);
-				if (ParameterMap.contains(hashedName)) break;
-
-				ParameterMap[hashedName] = {
-					.Type = ParameterType::SRV,
-					.RPIndex = currentRP,
-				};
-
-				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, bindDesc.BindPoint, bindDesc.Space);
-
-				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
-
-				currentRP++;
-				rsCost += 1;
-
-				break;
-			}
-			case D3D_SIT_SAMPLER:
-			{
-				uint32 hashedName = Algo::Hash(bindDesc.Name);
-				if (ParameterMap.contains(hashedName)) break;
-
-				ParameterMap[hashedName] = {
-					.Type = ParameterType::Samplers,
-					.RPIndex = currentRP,
-				};
-
-				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, bindDesc.BindPoint, bindDesc.Space);
-
-				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
-
-				currentRP++;
-				rsCost += 1;
-				
-				break;
-			}
-			default: LB_ERROR("Invalid Resource Type");
-			}
-		};
-
-		for (uint32 i = 0; i < kernelsCount; ++i)
-		{
-			if (ID3D12LibraryReflection* libReflection = kernels[i].LibReflection.Get())
-			{
-				D3D12_LIBRARY_DESC libDesc;
-				libReflection->GetDesc(&libDesc);
-
-				for (uint32 f = 0; f < libDesc.FunctionCount; f++)
-				{
-					ID3D12FunctionReflection* func = libReflection->GetFunctionByIndex(f);
-					D3D12_FUNCTION_DESC funcDesc;
-					func->GetDesc(&funcDesc);
-
-					// Bindings
-					for (uint32 r = 0; r < funcDesc.BoundResources; ++r)
-					{
-						D3D12_SHADER_INPUT_BIND_DESC bindDesc;
-						func->GetResourceBindingDesc(r, &bindDesc);
-
-						processResourceBinding(bindDesc, func);
-					}
-				}
-			}
-			else if (ID3D12ShaderReflection* reflection = kernels[i].Reflection.Get())
-			{
-				D3D12_SHADER_DESC shaderDesc;
-				reflection->GetDesc(&shaderDesc);
-
-				// Bindings
-				for (uint32 r = 0; r < shaderDesc.BoundResources; ++r)
-				{
-					D3D12_SHADER_INPUT_BIND_DESC bindDesc;
-					reflection->GetResourceBindingDesc(r, &bindDesc);
-
-					processResourceBinding(bindDesc, reflection);
-				}
-			}
-		}
-
-		ensure(rsCost <= 64);
-
-		flags |= D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
-
-		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc;
-		desc.Init_1_1(currentRP, rootParameters, 0, nullptr, flags);
-
-		ID3DBlob* rootSigBlob;
-		ID3DBlob* errorBlob;
-		D3D12SerializeVersionedRootSignature(&desc, &rootSigBlob, &errorBlob);
-		if (errorBlob)
-			LB_ERROR("%s", (char*)errorBlob->GetBufferPointer());
-
-		DX_CHECK(device->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&RootSignature)));
-
-		std::wstring wname;
-		Utils::StringConvert(m_Name, wname);
-		wname.append(L" RS");
-		DX_CHECK(RootSignature->SetName(wname.c_str()));
 	}
 
 	void Shader::CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec)
@@ -409,7 +181,7 @@ namespace limbo::Gfx
 
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
 
-		CreateRootSignature(device, rootSignatureFlags, &cs, 1);
+		m_RootSignature->CreateRootSignature(device, rootSignatureFlags, &cs, 1);
 
 		D3D12_SHADER_BYTECODE shaderByteCode = {
 			.pShaderBytecode = cs.Bytecode->GetBufferPointer(),
@@ -417,7 +189,7 @@ namespace limbo::Gfx
 		};
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = RootSignature.Get(),
+			.pRootSignature = m_RootSignature->Get(),
 			.CS = shaderByteCode,
 			.NodeMask = 0,
 			.CachedPSO = nullptr,
@@ -430,40 +202,68 @@ namespace limbo::Gfx
 	{
 		FAILIF(!spec.ProgramName);
 
-		SC::Kernel libKernel;
-		FAILIF(!SC::Compile(libKernel, spec.ProgramName, "", SC::KernelType::Lib));
+		StateObjectStream stream;
+		uint32 numObjects = 0;
 
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
-
-		CreateRootSignature(device, rootSignatureFlags, &libKernel, 1);
-
-		D3D12_DXIL_LIBRARY_DESC lib_desc = {
-			.DXILLibrary = { libKernel.Bytecode->GetBufferPointer(), libKernel.Bytecode->GetBufferSize() },
-			.NumExports = (uint32)spec.Exports.size(),
-			.pExports = const_cast<D3D12_EXPORT_DESC*>(spec.Exports.data())
+		auto AddSubobject = [&stream, &numObjects](D3D12_STATE_SUBOBJECT_TYPE type, auto* data)
+		{
+			D3D12_STATE_SUBOBJECT* subobject = stream.StateObjectData.Allocate<D3D12_STATE_SUBOBJECT>();
+			subobject->Type = type;
+			subobject->pDesc = data;
+			numObjects++;
 		};
 
-		std::vector<D3D12_STATE_SUBOBJECT> subobjects;
-		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY, &lib_desc);
+		// Get all the libs, to later create the global root signature
+		uint32 numLibs = (uint32)spec.Libs.size();
+		SC::Kernel* libsKernels = stream.ContentData.Allocate<SC::Kernel>(numLibs);
+		for (uint32 i = 0; i < numLibs; ++i)
+			FAILIF(!SC::Compile(libsKernels[i], spec.Libs[i].LibName, "", SC::KernelType::Lib));
 
-		for (const D3D12_HIT_GROUP_DESC& desc : spec.HitGroupsDescriptions)
-			subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP, &desc);
+		// Create the global root signature
+		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
+		m_RootSignature->CreateRootSignature(device, rootSignatureFlags, libsKernels, numLibs);
 
-		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &spec.ShaderConfig);
+		for (uint32 i = 0; i < numLibs; ++i)
+		{
+			const ShaderSpec::RaytracingLib& lib = spec.Libs[i];
+
+			D3D12_DXIL_LIBRARY_DESC* dxilLib = stream.ContentData.Allocate<D3D12_DXIL_LIBRARY_DESC>();
+			dxilLib->DXILLibrary = { libsKernels[i].Bytecode->GetBufferPointer(), libsKernels[i].Bytecode->GetBufferSize()};
+			dxilLib->NumExports  = (uint32)lib.Exports.size();
+			dxilLib->pExports	 = const_cast<D3D12_EXPORT_DESC*>(lib.Exports.data());
+
+			AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY, dxilLib);
+
+			for (const D3D12_HIT_GROUP_DESC& desc : lib.HitGroupsDescriptions)
+			{
+				D3D12_HIT_GROUP_DESC* hitGroup	= stream.ContentData.Allocate<D3D12_HIT_GROUP_DESC>();
+				hitGroup->HitGroupExport			= desc.HitGroupExport;
+				hitGroup->Type						= desc.Type;
+				hitGroup->AnyHitShaderImport		= desc.AnyHitShaderImport;
+				hitGroup->ClosestHitShaderImport	= desc.ClosestHitShaderImport;
+				hitGroup->IntersectionShaderImport	= desc.IntersectionShaderImport;
+				AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP, hitGroup);
+			}
+		}
+
+		D3D12_RAYTRACING_SHADER_CONFIG* shaderConfig = stream.ContentData.Allocate<D3D12_RAYTRACING_SHADER_CONFIG>();
+		shaderConfig->MaxPayloadSizeInBytes = spec.ShaderConfig.MaxPayloadSizeInBytes;
+		shaderConfig->MaxAttributeSizeInBytes = spec.ShaderConfig.MaxAttributeSizeInBytes;
+		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, shaderConfig);
 
 		// According to Microsoft: Set max recursion depth as low as needed as drivers may apply optimization strategies for low recursion depths. 
 		D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {
 			.MaxTraceRecursionDepth = 1
 		};
-		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &pipelineConfig);
+		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &pipelineConfig);
 
-		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RootSignature.Get() };
-		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
+		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = m_RootSignature->Get() };
+		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
 
 		D3D12_STATE_OBJECT_DESC desc = {
 			.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
-			.NumSubobjects = (uint32)subobjects.size(),
-			.pSubobjects = subobjects.data()
+			.NumSubobjects = numObjects,
+			.pSubobjects = (D3D12_STATE_SUBOBJECT*)stream.StateObjectData.GetData()
 		};
 		DX_CHECK(device->CreateStateObject(&desc, IID_PPV_ARGS(&StateObject)));
 	}
@@ -594,7 +394,7 @@ namespace limbo::Gfx
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 
 		SC::Kernel kernels[2] = { vs, ps };
-		CreateRootSignature(device, rootSignatureFlags, kernels, 2);
+		m_RootSignature->CreateRootSignature(device, rootSignatureFlags, kernels, 2);
 
 		D3D12_SHADER_BYTECODE vsBytecode = {
 			.pShaderBytecode = vs.Bytecode->GetBufferPointer(),
@@ -614,7 +414,7 @@ namespace limbo::Gfx
 		blendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = RootSignature.Get(),
+			.pRootSignature = m_RootSignature->Get(),
 			.VS = vsBytecode,
 			.PS = psBytecode,
 			.StreamOutput = nullptr,
@@ -781,7 +581,7 @@ namespace limbo::Gfx
 	void Shader::ReloadShader()
 	{
 		PipelineState.Reset();
-		RootSignature.Reset();
+		m_RootSignature->Reset();
 
 		if (Type == ShaderType::Compute)
 			CreateComputePipeline(Device::Ptr->GetDevice(), m_Spec);
@@ -789,19 +589,5 @@ namespace limbo::Gfx
 			CreateGraphicsPipeline(Device::Ptr->GetDevice(), m_Spec, true);
 		else if (Type == ShaderType::RayTracing)
 			CreateRayTracingState(Device::Ptr->GetDXRDevice(), m_Spec);
-	}
-
-	std::string_view Shader::ParameterTypeToStr(ParameterType type)
-	{
-		switch (type)
-		{
-		case ParameterType::SRV: return "SRV";
-		case ParameterType::UAV: return "UAV";
-		case ParameterType::CBV: return "CBV";
-		case ParameterType::Samplers: return "Samplers";
-		case ParameterType::Constants: return "Constants";
-		case ParameterType::MAX:
-		default: return "";
-		}
 	}
 }

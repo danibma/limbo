@@ -19,29 +19,21 @@ namespace limbo::Gfx
 		TextureCube
 	};
 
-	enum class TextureUsage : uint8
-	{
-		Sampled = 0x00000001,
-		Storage = 0x00000002,
-		Transfer_Dst = 0x00000004,
-		Transfer_Src = 0x00000008,
-		Color_Attachment = 0x00000016,
-		Depth_Attachment = 0x00000032
-	};
-	inline TextureUsage operator|(TextureUsage lhs, TextureUsage rhs)
-	{
-		return static_cast<TextureUsage>(static_cast<uint8>(lhs) | static_cast<uint8>(rhs));
-	}
-	inline TextureUsage operator&(TextureUsage lhs, TextureUsage rhs)
-	{
-		return static_cast<TextureUsage>(static_cast<uint8>(lhs) & static_cast<uint8>(rhs));
-	}
-
 	enum class ShaderType : uint8
 	{
 		Graphics,
 		Compute,
 		RayTracing,
+	};
+
+	enum class ShaderParameterType : uint8
+	{
+		SRV = 0,
+		UAV,
+		CBV,
+		Samplers,
+		Constants,
+		MAX
 	};
 
 	enum class RenderPassOp : uint8
@@ -86,6 +78,20 @@ namespace limbo::Gfx
 		//Surface
 		BGRA8_UNORM
 	};
+
+	inline std::string_view ShaderParameterTypeToStr(ShaderParameterType type)
+	{
+		switch (type)
+		{
+		case ShaderParameterType::SRV: return "SRV";
+		case ShaderParameterType::UAV: return "UAV";
+		case ShaderParameterType::CBV: return "CBV";
+		case ShaderParameterType::Samplers: return "Samplers";
+		case ShaderParameterType::Constants: return "Constants";
+		case ShaderParameterType::MAX:
+		default: return "";
+		}
+	}
 
 	inline D3D12_RESOURCE_DIMENSION D3DTextureType(TextureType type)
 	{
