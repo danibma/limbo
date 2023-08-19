@@ -15,6 +15,7 @@ struct HitInfo
     float4 colorAndDistance;
 };
 
+// From Ray Tracing Gems II - Chapter 14
 RayDesc GeneratePinholeCameraRay(float2 pixel)
 {
     float4x4 view  = GSceneInfo.InvView;
@@ -63,22 +64,21 @@ void RayGen()
 [shader("closesthit")]
 void PrimaryClosestHit(inout HitInfo payload, in BuiltInTriangleIntersectionAttributes attr)
 {
-    float3 barycentrics = float3(1 - attr.barycentrics.x - attr.barycentrics.y, attr.barycentrics.x, attr.barycentrics.y);
+    Instance   instance = GetInstance(InstanceIndex());
+    MeshVertex vertex = GetVertex(instance, attr.barycentrics, PrimitiveIndex());
 
-    Instance instance = GetInstance(InstanceIndex());
-    uint3 primitive = BufferLoad<uint3>(instance.BufferIndex, PrimitiveIndex(), instance.IndicesOffset);
+    Material material = GetMaterial(instance.Material);
 
-    float3 normals[3];
-    for (int i = 0; i < 3; ++i)
-    {
-        uint vertexID = primitive[i];
-        normals[i] = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.NormalsOffset);
-    }
+    float4 albedo = material.AlbedoFactor;
+    albedo *= SampleLevel2D(material.AlbedoIndex, LinearWrap, vertex.UV, 0);
 
-    float3 vertexNormal = InterpolateVertex(normals[0], normals[1], normals[2], barycentrics);
-    //vertexNormal = TransformDirection(instance.LocalTransform, vertexNormal);
+    payload.colorAndDistance = albedo;
+}
 
-    payload.colorAndDistance = float4(vertexNormal, 1.0f);
+[shader("anyhit")]
+void PrimaryAnyHit(inout HitInfo payload, in BuiltInTriangleIntersectionAttributes attr)
+{
+	if (!AnyHitAlphaTest(attr.barycentrics)) IgnoreHit();
 }
 
 [shader("miss")]

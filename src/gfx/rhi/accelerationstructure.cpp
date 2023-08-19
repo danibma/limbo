@@ -45,7 +45,7 @@ namespace limbo::Gfx
 					geometry.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
 					geometry.Triangles.IndexCount = (uint32)mesh.IndexCount;
 					geometry.Triangles.Transform3x4 = 0;
-					geometry.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE;
+					geometry.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE; // todo: check if a mesh has need for alpha testing, if not, use the opaque flag
 
 					// Describe the bottom-level acceleration structure inputs.
 					D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};

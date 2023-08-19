@@ -11,6 +11,7 @@ namespace limbo::Gfx
 	constexpr const wchar_t* GRayGenShaderName		= L"RayGen";
 	constexpr const wchar_t* GPMissShaderName		= L"PrimaryMiss";
 	constexpr const wchar_t* GPClosestHitShaderName	= L"PrimaryClosestHit";
+	constexpr const wchar_t* GPAnyHitShaderName		= L"PrimaryAnyHit";
 	constexpr const wchar_t* GPHitGroupName			= L"PrimaryHitGroup";
 
 	PathTracing::PathTracing()
@@ -30,12 +31,14 @@ namespace limbo::Gfx
 				{
 					.HitGroupExport = GPHitGroupName,
 					.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES,
+					.AnyHitShaderImport = GPAnyHitShaderName,
 					.ClosestHitShaderImport = GPClosestHitShaderName,
 				}
 			},
 			.Exports = {
 				{ .Name = GRayGenShaderName,	  .ExportToRename = GRayGenShaderName },
 				{ .Name = GPMissShaderName,		  .ExportToRename = GPMissShaderName },
+				{ .Name = GPAnyHitShaderName,	  .ExportToRename = GPAnyHitShaderName },
 				{ .Name = GPClosestHitShaderName, .ExportToRename = GPClosestHitShaderName }
 			},
 			.Type = ShaderType::RayTracing,
@@ -63,7 +66,7 @@ namespace limbo::Gfx
 		sceneRenderer->BindSceneInfo(m_RTShader);
 		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
-		//SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
+		SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
 	}
