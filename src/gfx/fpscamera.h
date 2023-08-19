@@ -17,6 +17,7 @@ namespace limbo::Gfx
 		float3		Center;
 		float3		Up;
 
+		float		FOV = 60.0f; // in degrees
 		float		CameraSpeed = 0.5f;
 
 		float4x4	View;

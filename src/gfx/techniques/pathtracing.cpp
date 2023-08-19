@@ -63,8 +63,6 @@ namespace limbo::Gfx
 		sceneRenderer->BindSceneInfo(m_RTShader);
 		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
-		SetParameter(m_RTShader, "camPos", camera.Eye);
-		SetParameter(m_RTShader, "invViewProj", glm::inverse(camera.ViewProj));
 		//SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();

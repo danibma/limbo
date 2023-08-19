@@ -18,7 +18,7 @@ namespace limbo::Gfx
 		fpsCamera.Up = float3(0.0f, 1.0f, 0.0f);
 
 		fpsCamera.View = glm::lookAt(eye, center, fpsCamera.Up);
-		fpsCamera.Proj = glm::perspective(0.6f, aspectRatio, 1e-1f, 1e4f);
+		fpsCamera.Proj = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 1e-1f, 1e4f);
 		fpsCamera.ViewProj = fpsCamera.Proj * fpsCamera.View;
 
 		fpsCamera.PrevView		= fpsCamera.View;
@@ -37,7 +37,7 @@ namespace limbo::Gfx
 		// Update projection aspect ratio
 		const float aspectRatio = (float)Gfx::GetBackbufferWidth() / (float)Gfx::GetBackbufferHeight();
 
-		fpsCamera.Proj = glm::perspective(45.0f, aspectRatio, 1e-3f, 1e4f);
+		fpsCamera.Proj = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 1e-3f, 1e4f);
 
 		fpsCamera.CameraSpeed += Input::GetScrollY(window) / 10.0f;
 		if (fpsCamera.CameraSpeed <= 0.0f) fpsCamera.CameraSpeed = 0.1f;

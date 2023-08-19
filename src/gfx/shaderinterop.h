@@ -11,6 +11,7 @@
 struct SceneInfo
 {
 	float4x4	View;
+	float4x4	InvView;
 	float4x4	Projection;
 	float4x4	InvProjection;
 	float4x4	ViewProjection;

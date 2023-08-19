@@ -9,7 +9,37 @@ static const float INV_PI   = 0.31830988618379067154;
 static const float INV_2PI  = 0.15915494309189533577;
 static const float INV_4PI  = 0.07957747154594766788;
 
+static const float FLT_MAX  = 3.402823466e+38f;
+
 static const float ALPHA_THRESHOLD = 0.5f;
+
+// https://github.com/graphitemaster/normals_revisited
+float3 TransformDirection(in float4x4 transform, in float3 direction)
+{
+    float4x4 result;
+#define minor(m, r0, r1, r2, c0, c1, c2)                                \
+        (m[c0][r0] * (m[c1][r1] * m[c2][r2] - m[c1][r2] * m[c2][r1]) -  \
+         m[c1][r0] * (m[c0][r1] * m[c2][r2] - m[c0][r2] * m[c2][r1]) +  \
+         m[c2][r0] * (m[c0][r1] * m[c1][r2] - m[c0][r2] * m[c1][r1]))
+    result[0][0] = minor(transform, 1, 2, 3, 1, 2, 3);
+    result[1][0] = -minor(transform, 1, 2, 3, 0, 2, 3);
+    result[2][0] = minor(transform, 1, 2, 3, 0, 1, 3);
+    result[3][0] = -minor(transform, 1, 2, 3, 0, 1, 2);
+    result[0][1] = -minor(transform, 0, 2, 3, 1, 2, 3);
+    result[1][1] = minor(transform, 0, 2, 3, 0, 2, 3);
+    result[2][1] = -minor(transform, 0, 2, 3, 0, 1, 3);
+    result[3][1] = minor(transform, 0, 2, 3, 0, 1, 2);
+    result[0][2] = minor(transform, 0, 1, 3, 1, 2, 3);
+    result[1][2] = -minor(transform, 0, 1, 3, 0, 2, 3);
+    result[2][2] = minor(transform, 0, 1, 3, 0, 1, 3);
+    result[3][2] = -minor(transform, 0, 1, 3, 0, 1, 2);
+    result[0][3] = -minor(transform, 0, 1, 2, 1, 2, 3);
+    result[1][3] = minor(transform, 0, 1, 2, 0, 2, 3);
+    result[2][3] = -minor(transform, 0, 1, 2, 0, 1, 3);
+    result[3][3] = minor(transform, 0, 1, 2, 0, 1, 2);
+    return mul(result, float4(direction, 0.0f)).xyz;
+#undef minor    // cleanup
+}
 
 uint Flatten2D(uint2 index, uint2 dimensions)
 {
