@@ -41,6 +41,10 @@ namespace limbo::Gfx
 				{ .Name = GPAnyHitShaderName,	  .ExportToRename = GPAnyHitShaderName },
 				{ .Name = GPClosestHitShaderName, .ExportToRename = GPClosestHitShaderName }
 			},
+			.ShaderConfig = {
+				.MaxPayloadSizeInBytes = sizeof(float4), // float4 ColorAndDistance
+				.MaxAttributeSizeInBytes = 2 * sizeof(float) // float2 barycentrics
+			},
 			.Type = ShaderType::RayTracing,
 		});
 	}

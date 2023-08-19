@@ -23,7 +23,7 @@ MeshVertex GetVertex(Instance instance, float2 attribBarycentrics, uint primitiv
     }
 
     MeshVertex vertex;
-    vertex.Position = InterpolateVertex(normals[0], normals[1], normals[2], barycentrics);
+    vertex.Position = InterpolateVertex(positions[0], positions[1], positions[2], barycentrics);
     vertex.Normal   = InterpolateVertex(normals[0], normals[1], normals[2], barycentrics);
     vertex.UV       = InterpolateVertex(uv[0], uv[1], uv[2], barycentrics);
 

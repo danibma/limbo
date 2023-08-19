@@ -449,11 +449,7 @@ namespace limbo::Gfx
 		for (const D3D12_HIT_GROUP_DESC& desc : spec.HitGroupsDescriptions)
 			subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP, &desc);
 
-		D3D12_RAYTRACING_SHADER_CONFIG shaderConfig = {
-			.MaxPayloadSizeInBytes = 4 * sizeof(float), // float4 color
-			.MaxAttributeSizeInBytes = 2 * sizeof(float) // float2 barycentrics
-		};
-		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &shaderConfig);
+		subobjects.emplace_back(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &spec.ShaderConfig);
 
 		// According to Microsoft: Set max recursion depth as low as needed as drivers may apply optimization strategies for low recursion depths. 
 		D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {

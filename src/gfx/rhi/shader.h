@@ -43,6 +43,7 @@ namespace limbo::Gfx
 		// Raytracing stuff
 		HitGroupDescList				HitGroupsDescriptions;
 		std::vector<D3D12_EXPORT_DESC>	Exports;
+		D3D12_RAYTRACING_SHADER_CONFIG	ShaderConfig;
 
 		ShaderType						Type = ShaderType::Graphics;
 	};
