@@ -28,7 +28,7 @@ float ShootAmbientOcclusionRay(float3 orig, float3 dir, float minT, float maxT)
 
 	// We're going to tell our ray to never run the closest-hit shader and to
 	//     stop as soon as we find *any* intersection
-    uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
+    uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
 
 	// Trace our ray. 
     TraceRay(
