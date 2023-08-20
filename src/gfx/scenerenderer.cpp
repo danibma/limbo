@@ -161,7 +161,6 @@ namespace limbo::Gfx
 			BeginEvent("PBR Lighting");
 			BindShader(m_PBRShader);
 			BindSceneInfo(m_PBRShader);
-			SetParameter(m_PBRShader, "sceneToRender", Tweaks.CurrentSceneView);
 			SetParameter(m_PBRShader, "bEnableSSAO", Tweaks.bEnableSSAO ? 1 : 0);
 			// PBR scene info
 			SetParameter(m_PBRShader, "lightPos", Light.Position);
@@ -262,13 +261,14 @@ namespace limbo::Gfx
 
 	void SceneRenderer::UpdateSceneInfo()
 	{
-		m_SceneInfo.View			= Camera.View;
-		m_SceneInfo.InvView			= glm::inverse(Camera.View);
-		m_SceneInfo.Projection		= Camera.Proj;
-		m_SceneInfo.InvProjection	= glm::inverse(Camera.Proj);
-		m_SceneInfo.ViewProjection	= Camera.ViewProj;
-		m_SceneInfo.CameraPos		= Camera.Eye;
-		m_SceneInfo.SkyIndex		= GetTexture(m_EnvironmentCubemap)->SRVHandle[0].Index;
+		m_SceneInfo.View					= Camera.View;
+		m_SceneInfo.InvView					= glm::inverse(Camera.View);
+		m_SceneInfo.Projection				= Camera.Proj;
+		m_SceneInfo.InvProjection			= glm::inverse(Camera.Proj);
+		m_SceneInfo.ViewProjection			= Camera.ViewProj;
+		m_SceneInfo.CameraPos				= Camera.Eye;
+		m_SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRVHandle[0].Index;
+		m_SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
 		m_SceneInfo.FrameIndex++;
 
 		Handle<Buffer> currentBuffer = m_SceneInfoBuffers[Device::Ptr->GetCurrentFrameIndex()];

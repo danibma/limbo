@@ -21,7 +21,7 @@ struct SceneInfo
 	uint		SkyIndex;
 	uint		MaterialsBufferIndex;
 	uint		InstancesBufferIndex;
-	PAD;
+	uint		SceneViewToRender;
 };
 #ifdef __cplusplus
 static_assert(sizeof(SceneInfo) % 16 == 0);

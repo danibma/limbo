@@ -79,7 +79,6 @@ TextureCube g_IrradianceMap;
 TextureCube g_PrefilterMap;
 Texture2D   g_LUT;
 
-uint sceneToRender;
 uint bEnableSSAO;
 
 float4 PSMain(QuadResult quad) : SV_Target
@@ -100,19 +99,19 @@ float4 PSMain(QuadResult quad) : SV_Target
     if (alpha == 0.0f)
         discard;
 
-    if (sceneToRender == 1)
+    if (GSceneInfo.SceneViewToRender == 1)
         return float4(albedo, 1.0f);
-    else if (sceneToRender == 2)
+    else if (GSceneInfo.SceneViewToRender == 2)
         return float4(normal, 1.0f);
-    else if (sceneToRender == 3)
+    else if (GSceneInfo.SceneViewToRender == 3)
         return float4(worldPos, 1.0f);
-    else if (sceneToRender == 4)
+    else if (GSceneInfo.SceneViewToRender == 4)
         return float4((float3)metallic, 1.0f);
-    else if (sceneToRender == 5)
+    else if (GSceneInfo.SceneViewToRender == 5)
         return float4((float3)roughness, 1.0f);
-    else if (sceneToRender == 6)
+    else if (GSceneInfo.SceneViewToRender == 6)
         return float4(emissive, 1.0f);
-    else if (sceneToRender == 7)
+    else if (GSceneInfo.SceneViewToRender == 7)
         return float4((float3)ao, 1.0f);
 
     // Outgoing light direction (vector from world-space fragment position to the "eye").

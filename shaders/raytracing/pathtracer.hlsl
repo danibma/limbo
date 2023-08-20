@@ -39,13 +39,28 @@ void RayGen()
     pixel = (((pixel + 0.5f) / resolution) * 2.f - 1.f);
     RayDesc ray = GeneratePinholeCameraRay(pixel);
 
-    MaterialPayload payload = TraceMaterialRay(Scene, ray);
-
-    if (payload.IsHit() <= 0)
+    int bounces = 2;
+    for (int i = 0; i < bounces; ++i)
     {
-        RenderTarget[DispatchRaysIndex().xy] = float4(GetSky(ray.Direction), 1.0f);
-        return;
-    }
+        MaterialPayload payload = TraceMaterialRay(Scene, ray);
 
-    RenderTarget[DispatchRaysIndex().xy] = payload.ColorAndDistance;
+        if (payload.IsHit() <= 0)
+        {
+            RenderTarget[DispatchRaysIndex().xy] = float4(GetSky(ray.Direction), 1.0f);
+            return;
+        }
+
+        Instance instance = GetInstance(payload.InstanceID);
+        VertexAttributes vertex = GetVertexAttributes(instance, payload.Barycentrics, payload.PrimitiveID);
+        Material material = GetMaterial(instance.Material);
+        ShadingData shadingData = GetShadingData(material, vertex);
+
+        if (GSceneInfo.SceneViewToRender > 0)
+        {
+            RenderTarget[DispatchRaysIndex().xy] = GetSceneDebugView(shadingData);
+            return;
+        }
+
+        RenderTarget[DispatchRaysIndex().xy] = float4(vertex.GeometryNormal, 1.0f);
+    }
 }

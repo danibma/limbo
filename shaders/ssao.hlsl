@@ -7,7 +7,6 @@ Texture2D g_Normals;
 Texture2D<float> g_SceneDepth;
 
 float radius;
-float frameIndex;
 float power;
 
 #define KERNEL_SIZE 16
@@ -25,7 +24,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
     float3 pixelPos = g_Positions.SampleLevel(LinearWrap, uv, 0).rgb;
     float3 normal = NormalFromDepth(threadID, g_SceneDepth, GSceneInfo.InvProjection);
 
-    uint seed = RandomSeed(threadID, targetDimensions, frameIndex);
+    uint seed = RandomSeed(threadID, targetDimensions, GSceneInfo.FrameIndex);
     float3 randomVec = float3(Random01(seed), Random01(seed), Random01(seed)) * 2.0f - 1.0f;
 
     // Gramm-Schmidt process to create an orthogonal basis
