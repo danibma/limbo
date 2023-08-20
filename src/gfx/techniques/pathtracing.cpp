@@ -47,7 +47,7 @@ namespace limbo::Gfx
 				},
 			},
 			.ShaderConfig = {
-				.MaxPayloadSizeInBytes = sizeof(float) + sizeof(uint) + sizeof(uint) + sizeof(float2), // MaterialPayload
+				.MaxPayloadSizeInBytes = sizeof(float) + sizeof(uint) + sizeof(uint) + sizeof(float2) + sizeof(uint), // MaterialPayload
 				.MaxAttributeSizeInBytes = sizeof(float2) // float2 barycentrics
 			},
 			.Type = ShaderType::RayTracing,

@@ -10,7 +10,6 @@ T InterpolateVertex(T a0, T a1, T a2, float3 b)
 
 struct VertexAttributes
 {
-    float3 Position;
     float3 Normal;
     float3 GeometryNormal;
     float2 UV;
@@ -33,11 +32,10 @@ VertexAttributes GetVertexAttributes(Instance instance, float2 attribBarycentric
     }
 
     VertexAttributes vertex;
-    vertex.Position = InterpolateVertex(positions[0], positions[1], positions[2], barycentrics);
     vertex.UV       = InterpolateVertex(uv[0], uv[1], uv[2], barycentrics);
     vertex.Normal   = InterpolateVertex(normals[0], normals[1], normals[2], barycentrics);
     vertex.Normal   = normalize(mul(vertex.Normal, (float3x3)instance.LocalTransform));
-    
+
 	// Calculate geometry normal from triangle vertices positions
     float3 edge20 = positions[2] - positions[0];
     float3 edge21 = positions[2] - positions[1];
@@ -70,10 +68,12 @@ bool AnyHitAlphaTest(float2 attribBarycentrics)
 
 struct ShadingData
 {
-    float4 Albedo;
-    float4 Normal;
-    float4 RoughnessMetallicAO;
-    float4 Emissive;
+    float3 Albedo;
+    float3 Normal;
+    float  Roughness;
+    float  Metallic;
+    float  AO;
+    float3 Emissive;
 };
 
 ShadingData GetShadingData(Material material, VertexAttributes vertex)
@@ -115,10 +115,12 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
         float4 normalMap = SampleLevel2D(material.NormalIndex, LinearWrap, vertex.UV, mipLevel);
     }
 
-    data.Albedo                 = finalAlbedo;
-    data.Normal                 = float4(normal, 1.0f);
-    data.RoughnessMetallicAO    = float4(roughness, metallic, ao, 1.0f);
-    data.Emissive               = emissive;
+    data.Albedo     = finalAlbedo.rgb;
+    data.Normal     = normal;
+    data.Roughness  = roughness;
+    data.Metallic   = metallic;
+    data.AO         = ao;
+    data.Emissive   = emissive.rgb;
 
     return data;
 }
@@ -126,19 +128,19 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
 float4 GetSceneDebugView(in ShadingData shadingData)
 {
     if (GSceneInfo.SceneViewToRender == 1)
-        return shadingData.Albedo;
+        return float4(shadingData.Albedo, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 2)
-        return shadingData.Normal;
+        return float4(shadingData.Normal, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 3)
         return 0.0f;
     else if (GSceneInfo.SceneViewToRender == 4)
-        return float4((float3)shadingData.RoughnessMetallicAO.y, 1.0f);
+        return float4((float3)shadingData.Metallic, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 5)
-        return float4((float3)shadingData.RoughnessMetallicAO.x, 1.0f);
+        return float4((float3)shadingData.Roughness, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 6)
-        return shadingData.Emissive;
+        return float4(shadingData.Emissive, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 7)
-        return float4((float3)shadingData.RoughnessMetallicAO.z, 1.0f);
+        return float4((float3)shadingData.AO, 1.0f);
 
     return 0.0f;
 }
@@ -149,8 +151,10 @@ struct MaterialPayload
     uint    PrimitiveID;
     uint    InstanceID;
     float2  Barycentrics;
+    uint    FrontFace;
 
     bool IsHit() { return Distance > 0; }
+    bool IsFrontFace() { return FrontFace > 0; }
 };
 
 MaterialPayload TraceMaterialRay(in RaytracingAccelerationStructure tlas, in RayDesc ray, in RAY_FLAG flag = RAY_FLAG_NONE, in uint instanceMask = 0xFF)
@@ -158,14 +162,14 @@ MaterialPayload TraceMaterialRay(in RaytracingAccelerationStructure tlas, in Ray
     MaterialPayload payload = (MaterialPayload)0;
 
     TraceRay(
-	    tlas,           //AccelerationStructure
-	    RAY_FLAG_NONE,  //RayFlags
-	    0xFF,           //InstanceInclusionMask
-	    0,              //RayContributionToHitGroupIndex
-	    1,              //MultiplierForGeometryContributionToHitGroupIndex
-	    0,              //MissShaderIndex
-	    ray,            //Ray
-	    payload         //Payload
+	    tlas,           // AccelerationStructure
+	    flag,           // RayFlags
+	    instanceMask,   // InstanceInclusionMask
+	    0,              // RayContributionToHitGroupIndex
+	    0,              // MultiplierForGeometryContributionToHitGroupIndex
+	    0,              // MissShaderIndex
+	    ray,            // Ray
+	    payload         // Payload
     );
 
     return payload;
