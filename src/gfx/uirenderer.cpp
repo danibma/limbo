@@ -88,8 +88,8 @@ namespace limbo::UI
 				ImGui::Checkbox("VSync", &sceneRenderer->Tweaks.bEnableVSync);
 				ImGui::PopItemWidth();
 
-				ImGui::SeparatorText("SSAO");
-				ImGui::Checkbox("Enable SSAO", &sceneRenderer->Tweaks.bEnableSSAO);
+				ImGui::SeparatorText("Ambient Occlusion");
+				ImGui::Combo("Technique", &sceneRenderer->Tweaks.CurrentAOTechnique, sceneRenderer->AOList, (int)Gfx::AmbientOcclusion::MAX);
 				ImGui::DragFloat("SSAO Radius", &sceneRenderer->Tweaks.SSAORadius, 0.1f);
 				ImGui::DragFloat("SSAO Power", &sceneRenderer->Tweaks.SSAOPower, 0.1f);
 			}

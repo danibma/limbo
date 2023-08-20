@@ -6,6 +6,7 @@
 #include "scene.h"
 #include "rhi/device.h"
 #include "techniques/pathtracing.h"
+#include "techniques/rtao.h"
 #include "techniques/ssao.h"
 
 namespace limbo::Gfx
@@ -84,6 +85,7 @@ namespace limbo::Gfx
 		});
 
 		m_SSAO			= std::make_unique<SSAO>();
+		m_RTAO			= std::make_unique<RTAO>();
 		m_PathTracing	= std::make_unique<PathTracing>();
 	}
 
@@ -140,10 +142,10 @@ namespace limbo::Gfx
 			}
 			EndEvent();
 
-			if (Tweaks.bEnableSSAO)
-			{
+			if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
 				m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
-			}
+			else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
+				m_RTAO->Render(this);
 
 			BeginEvent("Render Skybox");
 			BindShader(m_SkyboxShader);
@@ -161,7 +163,7 @@ namespace limbo::Gfx
 			BeginEvent("PBR Lighting");
 			BindShader(m_PBRShader);
 			BindSceneInfo(m_PBRShader);
-			SetParameter(m_PBRShader, "bEnableSSAO", Tweaks.bEnableSSAO ? 1 : 0);
+			SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
 			// PBR scene info
 			SetParameter(m_PBRShader, "lightPos", Light.Position);
 			SetParameter(m_PBRShader, "lightColor", Light.Color);
@@ -172,7 +174,12 @@ namespace limbo::Gfx
 			SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
 			SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
 			SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
-			SetParameter(m_PBRShader, "g_SSAO", m_SSAO->GetBlurredTexture());
+
+			if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
+				SetParameter(m_PBRShader, "g_AmbientOcclusion", m_RTAO->GetFinalTexture());
+			else
+				SetParameter(m_PBRShader, "g_AmbientOcclusion", m_SSAO->GetBlurredTexture());
+
 			// Bind irradiance map
 			SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
 			SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);

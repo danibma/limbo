@@ -41,19 +41,28 @@ namespace limbo::Gfx
 		MAX
 	};
 
+	enum class AmbientOcclusion : uint8
+	{
+		None = 0,
+		SSAO,
+		RTAO,
+
+		MAX
+	};
+
 	struct RendererTweaks
 	{
 		bool		bEnableVSync		= true;
 
 		// SSAO
-		bool		bEnableSSAO			= true;
 		float		SSAORadius			= 0.3f;
 		float		SSAOPower			= 1.2f;
 
 		// Scene
 		int			CurrentTonemap		= 1; // Tonemap enum
 		int			CurrentSceneView	= 0; // SceneView enum
-		int			CurrentRenderPath	= 1; // RenderPath enum
+		int			CurrentRenderPath	= 0; // RenderPath enum
+		int			CurrentAOTechnique  = 0; // AmbientOcclusion enum
 		int			SelectedEnvMapIdx	= 4;
 	};
 
@@ -69,6 +78,7 @@ namespace limbo::Gfx
 	class Shader;
 	class Scene;
 	class SSAO;
+	class RTAO;
 	class SceneRenderer
 	{
 		using EnvironmentMapList = std::vector<std::filesystem::path>;
@@ -105,6 +115,7 @@ namespace limbo::Gfx
 
 		// Techniques
 		std::unique_ptr<SSAO>			m_SSAO;
+		std::unique_ptr<RTAO>			m_RTAO;
 		std::unique_ptr<PathTracing>	m_PathTracing;
 
 	public:
@@ -118,9 +129,10 @@ namespace limbo::Gfx
 		EnvironmentMapList			EnvironmentMaps;
 
 		// This string lists are used for the UI
-		const char*					TonemapList[(uint8)Tonemap::MAX]	   = { "None", "AcesFilm", "Reinhard" };
-		const char*					SceneViewList[(uint8)SceneView::MAX]   = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
-		const char*					RenderPathList[(uint8)RenderPath::MAX] = { "Deferred", "Path Tracing" };
+		const char*					TonemapList[(uint8)Tonemap::MAX]		= { "None", "AcesFilm", "Reinhard" };
+		const char*					SceneViewList[(uint8)SceneView::MAX]	= { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
+		const char*					RenderPathList[(uint8)RenderPath::MAX]	= { "Deferred", "Path Tracing" };
+		const char*					AOList[(uint8)AmbientOcclusion::MAX]	= { "None", "SSAO", "RTAO" };
 
 	public:
 		SceneRenderer(Core::Window* window);
