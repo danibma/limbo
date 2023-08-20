@@ -14,14 +14,11 @@ namespace limbo::Gfx
 		Handle<Texture>			m_FinalTexture;
 		Handle<Shader>			m_RTShader;
 
-		AccelerationStructure	m_AccelerationStructure;
-
 	public:
 		explicit PathTracing();
 		~PathTracing();
 
-		void Render(SceneRenderer* sceneRenderer, const FPSCamera& camera);
-		void RebuildAccelerationStructure(const std::vector<Scene*>& scenes);
+		void Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, const FPSCamera& camera);
 
 		Handle<Texture> GetFinalTexture() const;
 	};

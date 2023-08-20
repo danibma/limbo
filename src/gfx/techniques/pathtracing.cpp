@@ -62,7 +62,7 @@ namespace limbo::Gfx
 			DestroyShader(m_RTShader);
 	}
 
-	void PathTracing::Render(SceneRenderer* sceneRenderer, const FPSCamera& camera)
+	void PathTracing::Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, const FPSCamera& camera)
 	{
 		BeginEvent("Path Tracing");
 		BindShader(m_RTShader);
@@ -73,16 +73,11 @@ namespace limbo::Gfx
 		SBT.BindHitGroup(L"MaterialHitGroup");
 
 		sceneRenderer->BindSceneInfo(m_RTShader);
-		SetParameter(m_RTShader, "Scene", &m_AccelerationStructure);
+		SetParameter(m_RTShader, "Scene", sceneAS);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
 		SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
-	}
-
-	void PathTracing::RebuildAccelerationStructure(const std::vector<Scene*>& scenes)
-	{
-		m_AccelerationStructure.Build(scenes);
 	}
 
 	Handle<Texture> PathTracing::GetFinalTexture() const

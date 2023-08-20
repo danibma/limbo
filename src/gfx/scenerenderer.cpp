@@ -122,6 +122,8 @@ namespace limbo::Gfx
 		}
 		EndEvent();
 
+		m_SceneAS.Build(m_Scenes);
+
 		UpdateSceneInfo();
 
 		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
@@ -145,7 +147,7 @@ namespace limbo::Gfx
 			if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
 				m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
 			else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
-				m_RTAO->Render(this);
+				m_RTAO->Render(this, &m_SceneAS, GetShaderRT(m_DeferredShadingShader, 1), GetShaderRT(m_DeferredShadingShader, 3));
 
 			BeginEvent("Render Skybox");
 			BindShader(m_SkyboxShader);
@@ -191,8 +193,7 @@ namespace limbo::Gfx
 		}
 		else if (Tweaks.CurrentRenderPath == (int)RenderPath::PathTracing)
 		{
-			m_PathTracing->RebuildAccelerationStructure(m_Scenes);
-			m_PathTracing->Render(this, Camera);
+			m_PathTracing->Render(this, &m_SceneAS, Camera);
 			m_SceneTexture = m_PathTracing->GetFinalTexture();
 		}
 

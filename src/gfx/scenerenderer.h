@@ -62,7 +62,7 @@ namespace limbo::Gfx
 		int			CurrentTonemap		= 1; // Tonemap enum
 		int			CurrentSceneView	= 0; // SceneView enum
 		int			CurrentRenderPath	= 0; // RenderPath enum
-		int			CurrentAOTechnique  = 0; // AmbientOcclusion enum
+		int			CurrentAOTechnique  = 1; // AmbientOcclusion enum
 		int			SelectedEnvMapIdx	= 4;
 	};
 
@@ -85,7 +85,7 @@ namespace limbo::Gfx
 
 	private:
 		std::vector<Scene*>				m_Scenes;
-
+		AccelerationStructure			m_SceneAS;
 		SceneInfo						m_SceneInfo;
 		Handle<Buffer>					m_SceneInfoBuffers[NUM_BACK_BUFFERS];
 

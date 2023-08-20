@@ -4,6 +4,7 @@
 
 namespace limbo::Gfx
 {
+	class AccelerationStructure;
 	class SceneRenderer;
 	class Texture;
 	class Shader;
@@ -16,7 +17,7 @@ namespace limbo::Gfx
 		explicit RTAO();
 		~RTAO();
 
-		void Render(SceneRenderer* sceneRenderer);
+		void Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, Handle<Texture> positionsMap, Handle<Texture> normalsMap);
 
 		Handle<Texture> GetFinalTexture() const;
 	};

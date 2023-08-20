@@ -250,7 +250,7 @@ namespace limbo::Gfx
 		uint32 hash = Algo::Hash(parameterName);
 		if (!m_ParameterMap.contains(hash))
 		{
-			LB_WARN("Tried to set parameter '%s' but the parameter was not found in the shader", parameterName);
+			LB_WARN("'%s': Tried to set parameter '%s' but the parameter was not found in the shader", m_Name.c_str(), parameterName);
 			return InvalidShaderParameter;
 		}
 		return m_ParameterMap[hash];
