@@ -9,6 +9,17 @@ namespace limbo::Gfx
 {
 	RTAO::RTAO()
 	{
+		m_NoisedTexture = CreateTexture({
+			.Width = GetBackbufferWidth(),
+			.Height = GetBackbufferHeight(),
+			.DebugName = "RTAO Texture W/ Noise",
+			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Format = Format::RGBA8_UNORM,
+			.Type = TextureType::Texture2D,
+		});
+
+		PreparePreviousFrameTexture();
+
 		m_FinalTexture = CreateTexture({
 			.Width = GetBackbufferWidth(),
 			.Height = GetBackbufferHeight(),
@@ -46,6 +57,12 @@ namespace limbo::Gfx
 			},
 			.Type = ShaderType::RayTracing,
 		});
+
+		m_DenoiseRTAOShader = Gfx::CreateShader({
+			.ProgramName = "raytracing/rtaoaccumulate",
+			.CsEntryPoint = "RTAOAccumulate",
+			.Type = Gfx::ShaderType::Compute
+		});
 	}
 
 	RTAO::~RTAO()
@@ -54,10 +71,22 @@ namespace limbo::Gfx
 			DestroyTexture(m_FinalTexture);
 		if (m_RTAOShader.IsValid())
 			DestroyShader(m_RTAOShader);
+		if (m_DenoiseRTAOShader.IsValid())
+			DestroyShader(m_DenoiseRTAOShader);
+		if (m_NoisedTexture.IsValid())
+			DestroyTexture(m_NoisedTexture);
+		if (m_PreviousFrame.IsValid())
+			DestroyTexture(m_PreviousFrame);
 	}
 
 	void RTAO::Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, Handle<Texture> positionsMap, Handle<Texture> normalsMap)
 	{
+		if (sceneRenderer->SceneInfo.PrevView != sceneRenderer->SceneInfo.View)
+		{
+			DestroyTexture(m_PreviousFrame);
+			PreparePreviousFrameTexture();
+		}
+
 		BeginEvent("RTAO");
 		BindShader(m_RTAOShader);
 
@@ -69,16 +98,45 @@ namespace limbo::Gfx
 		sceneRenderer->BindSceneInfo(m_RTAOShader);
 		SetParameter(m_RTAOShader, "SceneAS", sceneAS);
 		SetParameter(m_RTAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
+		SetParameter(m_RTAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
+		SetParameter(m_RTAOShader, "samples", sceneRenderer->Tweaks.RTAOSamples);
 		SetParameter(m_RTAOShader, "g_Positions", positionsMap);
 		SetParameter(m_RTAOShader, "g_Normals", normalsMap);
-		SetParameter(m_RTAOShader, "g_Output", m_FinalTexture);
+		SetParameter(m_RTAOShader, "g_Output", m_NoisedTexture);
 		SetParameter(m_RTAOShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
+
+		BeginEvent("RTAO Denoise");
+		BindShader(m_DenoiseRTAOShader);
+		SetParameter(m_DenoiseRTAOShader, "accumCount", m_AccumCount);
+		SetParameter(m_DenoiseRTAOShader, "g_PreviousRTAOImage", m_PreviousFrame);
+		SetParameter(m_DenoiseRTAOShader, "g_CurrentRTAOImage", m_NoisedTexture);
+		SetParameter(m_DenoiseRTAOShader, "g_DenoisedRTAOImage", m_FinalTexture);
+		Dispatch(GetBackbufferWidth() / 8, GetBackbufferHeight() / 8, 1);
+		EndEvent();
+
+		++m_AccumCount;
+
+		Device::Ptr->UAVBarrier(m_FinalTexture);
+		CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
 	}
 
 	Handle<Texture> RTAO::GetFinalTexture() const
 	{
 		return m_FinalTexture;
+	}
+
+	void RTAO::PreparePreviousFrameTexture()
+	{
+		m_AccumCount = 0;
+		m_PreviousFrame = CreateTexture({
+			.Width = GetBackbufferWidth(),
+			.Height = GetBackbufferHeight(),
+			.DebugName = "RTAO Previous Frame",
+			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Format = Format::RGBA8_UNORM,
+			.Type = TextureType::Texture2D,
+		});
 	}
 }

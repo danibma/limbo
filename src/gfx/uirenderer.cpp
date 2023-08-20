@@ -90,8 +90,11 @@ namespace limbo::UI
 
 				ImGui::SeparatorText("Ambient Occlusion");
 				ImGui::Combo("Technique", &sceneRenderer->Tweaks.CurrentAOTechnique, sceneRenderer->AOList, (int)Gfx::AmbientOcclusion::MAX);
-				ImGui::DragFloat("SSAO Radius", &sceneRenderer->Tweaks.SSAORadius, 0.1f);
-				ImGui::DragFloat("SSAO Power", &sceneRenderer->Tweaks.SSAOPower, 0.1f);
+				ImGui::DragFloat("SSAO Radius", &sceneRenderer->Tweaks.SSAORadius, 0.1f, 0.0f, 1.0f);
+				ImGui::DragFloat("SSAO Power", &sceneRenderer->Tweaks.SSAOPower, 0.1f, 0.0f, 2.0f);
+
+				if (sceneRenderer->Tweaks.CurrentAOTechnique == (int)Gfx::AmbientOcclusion::RTAO)
+					ImGui::DragInt("RTAO Samples", &sceneRenderer->Tweaks.RTAOSamples, 1, 0, 16);
 			}
 
 			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))

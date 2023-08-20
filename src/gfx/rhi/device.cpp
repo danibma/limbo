@@ -237,22 +237,27 @@ namespace limbo::Gfx
 		delete m_Swapchain;
 	}
 
+	void Device::CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
+	{
+		Texture* srcTexture = GetTexture(src);
+		Texture* dstTexture = GetTexture(dst);
+
+		TransitionResource(srcTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		TransitionResource(dstTexture, D3D12_RESOURCE_STATE_COPY_DEST);
+
+		SubmitResourceBarriers();
+		m_CommandList->CopyResource(dstTexture->Resource.Get(), srcTexture->Resource.Get());
+	}
+
 	void Device::CopyTextureToBackBuffer(Handle<Texture> texture)
 	{
 		ResourceManager* rm = ResourceManager::Ptr;
 
-		Texture* d3dTexture = rm->GetTexture(texture);
-
 		Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
-		Texture* backbuffer = rm->GetTexture(backBufferHandle);
 
-		TransitionResource(d3dTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		TransitionResource(backbuffer, D3D12_RESOURCE_STATE_COPY_DEST);
+		CopyTextureToTexture(texture, backBufferHandle);
 
-		SubmitResourceBarriers();
-		m_CommandList->CopyResource(backbuffer->Resource.Get(), d3dTexture->Resource.Get());
-
-		TransitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		TransitionResource(backBufferHandle, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		SubmitResourceBarriers();
 	}
 
@@ -700,6 +705,13 @@ namespace limbo::Gfx
 		if (buffer->CurrentState == newState) return;
 		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(buffer->Resource.Get(), buffer->CurrentState, newState));
 		buffer->CurrentState = newState;
+	}
+
+	void Device::UAVBarrier(Handle<Texture> texture)
+	{
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
+		FAILIF(!t);
+		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(t->Resource.Get()));
 	}
 
 	void Device::UAVBarrier(Handle<Buffer> buffer)

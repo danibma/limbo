@@ -16,6 +16,8 @@ RWTexture2D<float4> g_Output : register(u0, space0);
 cbuffer $Globals : register(b0, space0)
 {
 	float radius;
+    float power;
+    uint  samples;
 }
 
 float ShootAmbientOcclusionRay(float3 orig, float3 dir, float minT, float maxT)
@@ -54,17 +56,20 @@ void RTAORayGen()
     float4 position = g_Positions[pixel];
     float4 normal   = g_Normals[pixel];
 
-    float ao = 1.0f;
-
-    if (position.w != 0.0f)
+    float ao = 0.0f;
+    for (uint i = 0; i < samples; ++i)
     {
-        // Random ray, sampled on cosine-weighted hemisphere around normal 
-        float3 dir = GetCosHemisphereSample(seed, normal.xyz);
+        if (position.w != 0.0f)
+        {
+			// Random ray, sampled on cosine-weighted hemisphere around normal 
+            float3 dir = GetCosHemisphereSample(seed, normal.xyz);
 
-        ao = ShootAmbientOcclusionRay(position.xyz, dir, 0.1f, radius);
+            ao += ShootAmbientOcclusionRay(position.xyz, dir, 0.1f, radius);
+        }
     }
 
-    g_Output[pixel] = float4(ao, ao, ao, 1.0f);
+    ao /= samples;
+    g_Output[pixel] = 1 - (saturate(1 - ao) * power);
 }
 
 [shader("miss")]
@@ -78,3 +83,4 @@ void RTAOAnyHit(inout AORayPayload payload, in BuiltInTriangleIntersectionAttrib
 {
 	if (!AnyHitAlphaTest(attr.barycentrics)) IgnoreHit();
 }
+

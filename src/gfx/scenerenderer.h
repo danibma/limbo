@@ -54,9 +54,10 @@ namespace limbo::Gfx
 	{
 		bool		bEnableVSync		= true;
 
-		// SSAO
+		// Ambient Occlusion
 		float		SSAORadius			= 0.3f;
 		float		SSAOPower			= 1.2f;
+		int			RTAOSamples			= 2;
 
 		// Scene
 		int			CurrentTonemap		= 1; // Tonemap enum
@@ -86,7 +87,6 @@ namespace limbo::Gfx
 	private:
 		std::vector<Scene*>				m_Scenes;
 		AccelerationStructure			m_SceneAS;
-		SceneInfo						m_SceneInfo;
 		Handle<Buffer>					m_SceneInfoBuffers[NUM_BACK_BUFFERS];
 
 		Handle<Buffer>					m_ScenesMaterials;
@@ -124,6 +124,8 @@ namespace limbo::Gfx
 		RendererTweaks				Tweaks;
 		FPSCamera					Camera;
 		PointLight					Light;
+
+		SceneInfo					SceneInfo;
 
 		bool						bNeedsEnvMapChange = true;
 		EnvironmentMapList			EnvironmentMaps;

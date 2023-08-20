@@ -85,25 +85,12 @@ namespace limbo::Gfx
 		Device(Core::Window* window, GfxDeviceFlags flags);
 		~Device();
 
+		void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst);
 		void CopyTextureToBackBuffer(Handle<Texture> texture);
 		void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst);
 		void CopyBufferToTexture(Buffer* src, Texture* dst);
 		void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 		void CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
-
-		template<typename T1, typename T2>
-		void CopyResource(Handle<T1> src, Handle<T2> dst)
-		{
-			static_assert(std::_Is_any_of_v<T1, Texture, Buffer>);
-			static_assert(std::_Is_any_of_v<T2, Texture, Buffer>);
-
-			Texture* dstResource = ResourceManager::Ptr->GetTexture(dst);
-			FAILIF(!dstResource);
-			Buffer* srcResource = ResourceManager::Ptr->GetBuffer(src);
-			FAILIF(!srcResource);
-
-			m_CommandList->CopyResource(dstResource->Resource.Get(), srcResource->Resource.Get());
-		}
 
 		void BeginEvent(const char* name, uint64 color = 0);
 		void EndEvent();
@@ -157,6 +144,7 @@ namespace limbo::Gfx
 		void TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
 		void TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
 
+		void UAVBarrier(Handle<Texture> texture);
 		void UAVBarrier(Handle<Buffer> buffer);
 
 		uint32 GetBackbufferWidth();
@@ -182,6 +170,8 @@ namespace limbo::Gfx
 
 		void InstallDrawState();
 		void BindSwapchainRenderTargets();
+
+		
 	};
 
 	inline const GPUInfo& GetGPUInfo()
@@ -199,10 +189,9 @@ namespace limbo::Gfx
 		Device::Ptr->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
 	}
 
-	template<typename T1, typename T2>
-	void CopyResource(Handle<T1> src, Handle<T2> dst)
+	inline void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
 	{
-		Device::Ptr->CopyResource(src, dst);
+		Device::Ptr->CopyTextureToTexture(src, dst);
 	}
 
 	inline void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)

@@ -263,24 +263,26 @@ namespace limbo::Gfx
 		uploadArrayToGPU(m_ScenesMaterials, materials, "ScenesMaterials");
 		uploadArrayToGPU(m_SceneInstances,  instances, "SceneInstances");
 
-		m_SceneInfo.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->BasicHandle.Index;
-		m_SceneInfo.InstancesBufferIndex = GetBuffer(m_SceneInstances)->BasicHandle.Index;
+		SceneInfo.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->BasicHandle.Index;
+		SceneInfo.InstancesBufferIndex = GetBuffer(m_SceneInstances)->BasicHandle.Index;
 	}
 
 	void SceneRenderer::UpdateSceneInfo()
 	{
-		m_SceneInfo.View					= Camera.View;
-		m_SceneInfo.InvView					= glm::inverse(Camera.View);
-		m_SceneInfo.Projection				= Camera.Proj;
-		m_SceneInfo.InvProjection			= glm::inverse(Camera.Proj);
-		m_SceneInfo.ViewProjection			= Camera.ViewProj;
-		m_SceneInfo.CameraPos				= Camera.Eye;
-		m_SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRVHandle[0].Index;
-		m_SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
-		m_SceneInfo.FrameIndex++;
+		SceneInfo.PrevView				= SceneInfo.View;
+
+		SceneInfo.View					= Camera.View;
+		SceneInfo.InvView				= glm::inverse(Camera.View);
+		SceneInfo.Projection			= Camera.Proj;
+		SceneInfo.InvProjection			= glm::inverse(Camera.Proj);
+		SceneInfo.ViewProjection		= Camera.ViewProj;
+		SceneInfo.CameraPos				= Camera.Eye;
+		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRVHandle[0].Index;
+		SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
+		SceneInfo.FrameIndex++;
 
 		Handle<Buffer> currentBuffer = m_SceneInfoBuffers[Device::Ptr->GetCurrentFrameIndex()];
-		memcpy(GetMappedData(currentBuffer), &m_SceneInfo, sizeof(SceneInfo));
+		memcpy(GetMappedData(currentBuffer), &SceneInfo, sizeof(SceneInfo));
 	}
 
 	void SceneRenderer::ClearScenes()
