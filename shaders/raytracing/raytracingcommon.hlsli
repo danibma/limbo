@@ -85,7 +85,11 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
     const float mipLevel = 0;
 
     float4 finalAlbedo = material.AlbedoFactor;
-    finalAlbedo *= SampleLevel2D(material.AlbedoIndex, LinearWrap, vertex.UV, mipLevel);
+    if (material.AlbedoIndex != -1)
+    {
+        float4 albedo = SampleLevel2D(material.AlbedoIndex, LinearWrap, vertex.UV, mipLevel);
+        finalAlbedo *= albedo;
+    }
 
     float roughness = material.RoughnessFactor;
     float metallic = material.MetallicFactor;
@@ -96,10 +100,10 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
         metallic *= roughnessMetalMap.b;
     }
 
-    float4 emissive = 0.0f;
+    float3 emissive = material.EmissiveFactor;
     if (material.EmissiveIndex != -1)
     {
-        emissive = SampleLevel2D(material.EmissiveIndex, LinearWrap, vertex.UV, mipLevel);
+        emissive = SampleLevel2D(material.EmissiveIndex, LinearWrap, vertex.UV, mipLevel).rgb;
     }
 
     float ao = 1.0f;
@@ -120,7 +124,7 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
     data.Roughness  = roughness;
     data.Metallic   = metallic;
     data.AO         = ao;
-    data.Emissive   = emissive.rgb;
+    data.Emissive   = emissive;
 
     return data;
 }

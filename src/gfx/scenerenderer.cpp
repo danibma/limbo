@@ -13,8 +13,8 @@ namespace limbo::Gfx
 {
 	SceneRenderer::SceneRenderer(Core::Window* window)
 		: Window(window)
-		, Camera(CreateCamera(float3(0.0f, 0.0f, 2.0f), float3(0.0f, 0.0f, -1.0f)))
-		, Light({.Position = float3(0.0f, 1.0f, 0.0f), .Color = float3(1, 0.45f, 0) })
+		, Camera(CreateCamera(float3(0.0f, 1.0f, 4.0f), float3(0.0f, 0.0f, -1.0f)))
+		, Light({.Position = float3(0.0f, 1.7f, 0.0f), .Color = float3(1, 0.45f, 0) })
 	{
 		const char* env_maps_path = "assets/environment";
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
@@ -31,7 +31,7 @@ namespace limbo::Gfx
 			Gfx::Map(m_SceneInfoBuffers[i]);
 		}
 
-		LoadNewScene("assets/models/Sponza/Sponza.gltf");
+		LoadNewScene("assets/models/cornell_box.glb");
 
 		// Deferred shader
 		m_DeferredShadingShader = Gfx::CreateShader({

@@ -144,8 +144,9 @@ namespace limbo::Gfx
 		}
 
 		{
-			std::string debugName  = std::format(" Material({}) {}", index, "Emissive");
-			material.EmissiveIndex = LoadTexture(&cgltfMaterial->emissive_texture, debugName.c_str(), Format::RGBA8_UNORM);
+			std::string debugName   = std::format(" Material({}) {}", index, "Emissive");
+			material.EmissiveIndex  = LoadTexture(&cgltfMaterial->emissive_texture, debugName.c_str(), Format::RGBA8_UNORM);
+			material.EmissiveFactor = glm::make_vec3(cgltfMaterial->emissive_factor);
 		}
 
 		{

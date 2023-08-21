@@ -36,11 +36,10 @@ struct Material
 	int    EmissiveIndex;
 	int    AmbientOcclusionIndex;
 
-	uint3  SPACING;
-
 	float4 AlbedoFactor;
 	float  MetallicFactor;
 	float  RoughnessFactor;
+	float3 EmissiveFactor;
 };
 
 struct MeshVertex

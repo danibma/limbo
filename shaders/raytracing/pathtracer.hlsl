@@ -1,4 +1,5 @@
 ﻿#include "raytracingcommon.hlsli"
+#include "../random.hlsli"
 
 RaytracingAccelerationStructure Scene : register(t0, space0);
 RWTexture2D<float4> RenderTarget : register(u0);
@@ -36,13 +37,18 @@ void RayGen()
     float2 pixel = float2(DispatchRaysIndex().xy);
     float2 resolution = float2(DispatchRaysDimensions().xy);
 
+    uint seed = RandomSeed(pixel, resolution, GSceneInfo.FrameIndex);
+
     pixel = (((pixel + 0.5f) / resolution) * 2.f - 1.f);
     RayDesc ray = GeneratePinholeCameraRay(pixel);
 
-    int bounces = 2;
+    float3 radiance = 0.0f;
+    float3 weight   = 1.0f;
+
+    const int bounces = 5;
     for (int i = 0; i < bounces; ++i)
     {
-        MaterialPayload payload = TraceMaterialRay(Scene, ray);
+        MaterialPayload payload = TraceMaterialRay(Scene, ray, RAY_FLAG_FORCE_OPAQUE);
 
         if (payload.IsHit() <= 0)
         {
@@ -55,12 +61,24 @@ void RayGen()
         Material material = GetMaterial(instance.Material);
         ShadingData shadingData = GetShadingData(material, vertex);
 
+
         if (GSceneInfo.SceneViewToRender > 0)
         {
             RenderTarget[DispatchRaysIndex().xy] = GetSceneDebugView(shadingData);
             return;
         }
 
-        RenderTarget[DispatchRaysIndex().xy] = float4(vertex.GeometryNormal, 1.0f);
+        float3 geometryNormal = vertex.GeometryNormal;
+
+        if (!payload.IsFrontFace())
+            geometryNormal = -geometryNormal;
+
+        radiance += weight * shadingData.Emissive;
+        ray.Origin += ray.Direction * payload.Distance;
+        ray.Direction = GetCosHemisphereSample(seed, geometryNormal);
+        weight *= shadingData.Albedo * 2.0f * dot(geometryNormal, ray.Direction);
     }
+
+    radiance /= float(bounces);
+	RenderTarget[DispatchRaysIndex().xy] = float4(radiance, 1.0f);
 }

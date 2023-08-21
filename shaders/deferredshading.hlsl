@@ -47,10 +47,12 @@ DeferredShadingOutput PSMain(VSOut input)
     Instance instance = GetInstance(instanceID);
     Material material = GetMaterial(instance.Material);
 
-    float4 albedo = Sample2D(material.AlbedoIndex, LinearWrap, input.UV);
-
     float4 finalAlbedo = material.AlbedoFactor;
-    finalAlbedo *= albedo;
+    if (material.AlbedoIndex != -1)
+    {
+	    float4 albedo = Sample2D(material.AlbedoIndex, LinearWrap, input.UV);
+	    finalAlbedo *= albedo;
+    }
 
     if (finalAlbedo.a <= ALPHA_THRESHOLD)
         discard;
@@ -64,10 +66,10 @@ DeferredShadingOutput PSMain(VSOut input)
         metallic *= roughnessMetalMap.b;
     }
 
-    float4 emissive = 0.0f;
+    float3 emissive = material.EmissiveFactor;
     if (material.EmissiveIndex != -1)
     {
-        emissive = Sample2D(material.EmissiveIndex, LinearWrap, input.UV);
+        emissive = Sample2D(material.EmissiveIndex, LinearWrap, input.UV).rgb;
     }
 
     float ao = 1.0f;
@@ -112,7 +114,7 @@ DeferredShadingOutput PSMain(VSOut input)
     result.Albedo               = finalAlbedo;
     result.Normal               = float4(normal, 1.0f);
     result.RoughnessMetallicAO  = float4(roughness, metallic, ao, 1.0f);
-    result.Emissive             = emissive;
+    result.Emissive             = float4(emissive, 1.0f);
 
     return result;
 }
