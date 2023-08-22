@@ -28,7 +28,7 @@ void EquirectToCubemap(uint3 ThreadID : SV_DispatchThreadID)
     theta /= PI;
 
 	// Sample equirectangular texture.
-    float4 color = g_EnvironmentEquirectangular.SampleLevel(LinearWrap, float2(phi, theta), 0);
+    float4 color = g_EnvironmentEquirectangular.SampleLevel(SLinearWrap, float2(phi, theta), 0);
 
 	// Write out color to output cubemap.
     g_OutEnvironmentCubemap[ThreadID] = color;
@@ -58,7 +58,7 @@ void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
         float cosTheta = max(0.0, dot(Li, N));
 
 		// PIs here cancel out because of division by pdf.
-        irradiance += 2.0 * g_EnvironmentCubemap.SampleLevel(LinearWrap, Li, 0).rgb * cosTheta;
+        irradiance += 2.0 * g_EnvironmentCubemap.SampleLevel(SLinearWrap, Li, 0).rgb * cosTheta;
     }
     irradiance /= float(NumSamples);
 
@@ -107,7 +107,7 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
         float NdotL = saturate(dot(N, L));
         if (NdotL > 0.0)
         {
-            color  += g_EnvironmentCubemap.SampleLevel(LinearWrap, L, 0).rgb * NdotL;
+            color  += g_EnvironmentCubemap.SampleLevel(SLinearWrap, L, 0).rgb * NdotL;
             weight += NdotL;
         }
     }

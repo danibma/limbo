@@ -4,7 +4,6 @@
 #include "buffer.h"
 #include "shader.h"
 #include "texture.h"
-#include "sampler.h"
 
 namespace limbo::Gfx
 {
@@ -27,9 +26,6 @@ namespace limbo::Gfx
 		static ResourceManager*		Ptr;
 
 		Handle<Texture>				EmptyTexture;
-		Handle<Sampler>				DefaultLinearClamp;
-		Handle<Sampler>				DefaultLinearWrap;
-		Handle<Sampler>				DefaultPointClamp;
 
 	public:
 		ResourceManager();
@@ -40,12 +36,10 @@ namespace limbo::Gfx
 		Handle<Texture> CreateTextureFromFile(const char* path, const char* debugName);
 		Handle<Texture> CreateTexture(const TextureSpec& spec);
 		Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
-		Handle<Sampler> CreateSampler(const D3D12_SAMPLER_DESC& spec);
 
 		Buffer* GetBuffer(Handle<Buffer> buffer);
 		Shader* GetShader(Handle<Shader> shader);
 		Texture* GetTexture(Handle<Texture> texture);
-		Sampler* GetSampler(Handle<Sampler> sampler);
 
 		void Map(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
 		void Unmap(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
@@ -56,7 +50,6 @@ namespace limbo::Gfx
 		void DestroyBuffer(Handle<Buffer> buffer, bool bImmediate = false);
 		void DestroyShader(Handle<Shader> shader, bool bImmediate = false);
 		void DestroyTexture(Handle<Texture> texture, bool bImmediate = false);
-		void DestroySampler(Handle<Sampler> sampler, bool bImmediate = false);
 
 		void RunDeletionQueue();
 		void ForceDeletionQueue();
@@ -65,7 +58,6 @@ namespace limbo::Gfx
 		Pool<Buffer,  1<<14>		m_Buffers;
 		Pool<Texture, 1<<10>		m_Textures;
 		Pool<Shader,    128>		m_Shaders;
-		Pool<Sampler,     8>		m_Samplers;
 
 		bool					m_bOnShutdown = false;
 
@@ -99,11 +91,6 @@ namespace limbo::Gfx
 		return ResourceManager::Ptr->CreateTexture(resource, spec);
 	}
 
-	inline Handle<Sampler> CreateSampler(const D3D12_SAMPLER_DESC& spec)
-	{
-		return ResourceManager::Ptr->CreateSampler(spec);
-	}
-
 	inline void DestroyBuffer(Handle<Buffer> handle, bool bImmediate = false)
 	{
 		ensure(handle.IsValid());
@@ -120,12 +107,6 @@ namespace limbo::Gfx
 	{
 		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyTexture(handle, bImmediate);
-	}
-
-	inline void DestroySampler(Handle<Sampler> sampler, bool bImmediate = false)
-	{
-		ensure(sampler.IsValid());
-		ResourceManager::Ptr->DestroySampler(sampler, bImmediate);
 	}
 
 	inline Handle<Texture> GetShaderRT(Handle<Shader> shader, uint8 rtIndex)
@@ -213,19 +194,6 @@ namespace limbo::Gfx
 		s->SetBuffer(parameterName, buffer);
 	}
 
-	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Sampler> sampler)
-	{
-		if (!sampler.IsValid())
-		{
-			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
-			return;
-		}
-
-		Shader* s = ResourceManager::Ptr->GetShader(shader);
-		FAILIF(!s);
-		s->SetSampler(parameterName, sampler);
-	}
-
 	// Used to bind render targets, from other shaders, as a texture
 	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Shader> rtShader, uint8 rtIndex)
 	{
@@ -249,21 +217,6 @@ namespace limbo::Gfx
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 		s->SetConstant(parameterName, &value);
-	}
-
-	inline Handle<Sampler> GetDefaultLinearWrapSampler()
-	{
-		return ResourceManager::Ptr->DefaultLinearWrap;
-	}
-
-	inline Handle<Sampler> GetDefaultLinearClampSampler()
-	{
-		return ResourceManager::Ptr->DefaultLinearClamp;
-	}
-
-	inline Handle<Sampler> GetDefaultPointClampSampler()
-	{
-		return ResourceManager::Ptr->DefaultPointClamp;
 	}
 
 	// This can be used as a TextureID for ImGui

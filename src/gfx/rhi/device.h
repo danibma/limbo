@@ -53,10 +53,9 @@ namespace limbo::Gfx
 		Swapchain*							m_Swapchain;
 		uint32								m_FrameIndex;
 
-		DescriptorHeap*						m_Srvheap;
+		DescriptorHeap*						m_GlobalHeap;
 		DescriptorHeap*						m_Dsvheap;
 		DescriptorHeap*						m_Rtvheap;
-		DescriptorHeap*						m_Samplerheap;
 
 		std::vector<D3D12_RESOURCE_BARRIER> m_ResourceBarriers;
 

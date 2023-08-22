@@ -21,7 +21,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
     float2 targetDimensions = float2(width, height);
     float2 uv = (threadID + 0.5f) / targetDimensions;
 
-    float3 pixelPos = g_Positions.SampleLevel(LinearWrap, uv, 0).rgb;
+    float3 pixelPos = g_Positions.SampleLevel(SLinearWrap, uv, 0).rgb;
     float3 normal = NormalFromDepth(threadID, g_SceneDepth, GSceneInfo.InvProjection);
 
     uint seed = RandomSeed(threadID, targetDimensions, GSceneInfo.FrameIndex);
@@ -54,7 +54,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
 
         if (all(offset.xy >= 0) && all(offset.xy <= 1))
         {
-            float sampleDepth = g_Positions.SampleLevel(LinearWrap, offset.xy, 0).z;
+            float sampleDepth = g_Positions.SampleLevel(SLinearWrap, offset.xy, 0).z;
 
             float rangeCheck = smoothstep(0.0, 1.0, radius / abs(pixelPos.z - sampleDepth));
             occlusion += (sampleDepth >= samplePos.z + bias) * rangeCheck;
@@ -84,7 +84,7 @@ void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
         for (int y = -blurSize; y < blurSize; ++y)
         {
             float2 offset = float2(float(x), float(y)) * texelSize;
-            result += g_SSAOTexture.SampleLevel(LinearWrap, UVs + offset, 0).r;
+            result += g_SSAOTexture.SampleLevel(SLinearWrap, UVs + offset, 0).r;
         }
     }
     g_BlurredSSAOTexture[threadID] = result / (4.0 * 4.0);

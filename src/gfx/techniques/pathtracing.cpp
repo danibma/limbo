@@ -75,7 +75,6 @@ namespace limbo::Gfx
 		sceneRenderer->BindSceneInfo(m_RTShader);
 		SetParameter(m_RTShader, "Scene", sceneAS);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
-		SetParameter(m_RTShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
 	}

@@ -52,8 +52,6 @@ namespace limbo::Gfx
 		SetParameter(m_SSAOShader, "g_Positions", positionsMap);
 		SetParameter(m_SSAOShader, "g_UnblurredSSAOTexture", m_UnblurredSSAOTexture);
 		SetParameter(m_SSAOShader, "g_SceneDepth", sceneDepthMap);
-		SetParameter(m_SSAOShader, "LinearWrap", GetDefaultLinearWrapSampler());
-		SetParameter(m_SSAOShader, "PointClamp", GetDefaultPointClampSampler());
 		SetParameter(m_SSAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
 		SetParameter(m_SSAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
 		Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
@@ -61,7 +59,6 @@ namespace limbo::Gfx
 
 		BeginEvent("SSAO Blur Texture");
 		BindShader(m_BlurSSAOShader);
-		SetParameter(m_BlurSSAOShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		SetParameter(m_BlurSSAOShader, "g_SSAOTexture", m_UnblurredSSAOTexture);
 		SetParameter(m_BlurSSAOShader, "g_BlurredSSAOTexture", m_BlurredSSAOTexture);
 		Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);

@@ -49,7 +49,7 @@ float3 GetSky(float3 rayDir)
 {
     float3 uv = normalize(rayDir);
     TextureCube<float4> skyTexture = ResourceDescriptorHeap[GSceneInfo.SkyIndex];
-    return skyTexture.SampleLevel(LinearWrap, uv, 0).rgb;
+    return skyTexture.SampleLevel(SLinearWrap, uv, 0).rgb;
 }
 
 // Returns true if it passed the alpha test
@@ -61,7 +61,7 @@ bool AnyHitAlphaTest(float2 attribBarycentrics)
     Material material = GetMaterial(instance.Material);
 
     float4 finalAlbedo = material.AlbedoFactor;
-    finalAlbedo *= SampleLevel2D(material.AlbedoIndex, LinearWrap, vertex.UV, 0);
+    finalAlbedo *= SampleLevel2D(material.AlbedoIndex, SLinearWrap, vertex.UV, 0);
 
     return finalAlbedo.a > ALPHA_THRESHOLD;
 }
@@ -87,7 +87,7 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
     float4 finalAlbedo = material.AlbedoFactor;
     if (material.AlbedoIndex != -1)
     {
-        float4 albedo = SampleLevel2D(material.AlbedoIndex, LinearWrap, vertex.UV, mipLevel);
+        float4 albedo = SampleLevel2D(material.AlbedoIndex, SLinearWrap, vertex.UV, mipLevel);
         finalAlbedo *= albedo;
     }
 
@@ -95,7 +95,7 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
     float metallic = material.MetallicFactor;
     if (material.RoughnessMetalIndex != -1)
     {
-        float4 roughnessMetalMap = SampleLevel2D(material.RoughnessMetalIndex, LinearWrap, vertex.UV, mipLevel);
+        float4 roughnessMetalMap = SampleLevel2D(material.RoughnessMetalIndex, SLinearWrap, vertex.UV, mipLevel);
         roughness *= roughnessMetalMap.g;
         metallic *= roughnessMetalMap.b;
     }
@@ -103,20 +103,20 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
     float3 emissive = material.EmissiveFactor;
     if (material.EmissiveIndex != -1)
     {
-        emissive = SampleLevel2D(material.EmissiveIndex, LinearWrap, vertex.UV, mipLevel).rgb;
+        emissive = SampleLevel2D(material.EmissiveIndex, SLinearWrap, vertex.UV, mipLevel).rgb;
     }
 
     float ao = 1.0f;
     if (material.AmbientOcclusionIndex != -1)
     {
-        float4 AOMap = SampleLevel2D(material.AmbientOcclusionIndex, LinearWrap, vertex.UV, mipLevel);
+        float4 AOMap = SampleLevel2D(material.AmbientOcclusionIndex, SLinearWrap, vertex.UV, mipLevel);
         ao = AOMap.r;
     }
 
     float3 normal = normalize(vertex.Normal);
     if (material.NormalIndex != -1 && false) // no support for normal mapping in ray tracing for now
     {
-        float4 normalMap = SampleLevel2D(material.NormalIndex, LinearWrap, vertex.UV, mipLevel);
+        float4 normalMap = SampleLevel2D(material.NormalIndex, SLinearWrap, vertex.UV, mipLevel);
     }
 
     data.Albedo     = finalAlbedo.rgb;

@@ -13,9 +13,9 @@ void GenerateMip(uint2 threadID : SV_DispatchThreadID)
     float2 texcoords = TexelSize * (threadID + 0.5);
 
 	//The samplers linear interpolation will mix the four pixel values to the new pixels color
-    float4 color = PreviousMip.SampleLevel(LinearClamp, texcoords, 0);
+    float4 color = PreviousMip.SampleLevel(SLinearClamp, texcoords, 0);
 
-    float4 alpha = PreviousMip.GatherAlpha(LinearClamp, texcoords, 0);
+    float4 alpha = PreviousMip.GatherAlpha(SLinearClamp, texcoords, 0);
     color.a = max(alpha.r, max(alpha.g, max(alpha.b, alpha.a)));
 
 	//Write the final color into the destination texture.

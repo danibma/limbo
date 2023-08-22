@@ -10,7 +10,6 @@ namespace limbo::Gfx
 		SRV,
 		RTV,
 		DSV,
-		SAMPLERS
 	};
 
 	struct DescriptorHandle
@@ -56,8 +55,6 @@ namespace limbo::Gfx
 			return D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		case DescriptorHeapType::DSV: 
 			return D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-		case DescriptorHeapType::SAMPLERS:
-			return D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
 		default: 
 			return D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES;
 		}

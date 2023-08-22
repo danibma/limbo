@@ -37,7 +37,7 @@ float3 ReinhardTonemap(float3 finalColor)
 
 float4 PSMain(in QuadResult quad) : SV_Target
 {
-	float3 finalColor = g_sceneTexture.Sample(LinearWrap, quad.UV).rgb;
+	float3 finalColor = g_sceneTexture.Sample(SLinearWrap, quad.UV).rgb;
 
     if (g_TonemapMode == 1)
     {

@@ -28,45 +28,6 @@ namespace limbo::Gfx
 				.Type = TextureType::Texture2D,
 				.InitialData = &textureData,
 			});
-
-			DefaultLinearWrap = Gfx::CreateSampler({
-				.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-				.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-				.MipLODBias = 0,
-				.MaxAnisotropy = 0,
-				.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
-				.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
-				.MinLOD = 0.0f,
-				.MaxLOD = D3D12_FLOAT32_MAX
-			});
-
-			DefaultLinearClamp = Gfx::CreateSampler({
-				.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-				.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				.MipLODBias = 0,
-				.MaxAnisotropy = 0,
-				.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
-				.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
-				.MinLOD = 0.0f,
-				.MaxLOD = D3D12_FLOAT32_MAX
-			});
-
-			DefaultPointClamp = Gfx::CreateSampler({
-				.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT,
-				.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
-				.MipLODBias = 0,
-				.MaxAnisotropy = 0,
-				.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER,
-				.BorderColor = { 0.0f, 0.0f, 0.0f, 0.0f },
-				.MinLOD = 0.0f,
-				.MaxLOD = D3D12_FLOAT32_MAX
-			});
 		});
 	}
 
@@ -109,11 +70,6 @@ namespace limbo::Gfx
 		return m_Textures.AllocateHandle(resource, spec);
 	}
 
-	Handle<Sampler> ResourceManager::CreateSampler(const D3D12_SAMPLER_DESC& spec)
-	{
-		return m_Samplers.AllocateHandle(spec);
-	}
-
 	Gfx::Buffer* ResourceManager::GetBuffer(Handle<Buffer> buffer)
 	{
 		return m_Buffers.Get(buffer);
@@ -127,11 +83,6 @@ namespace limbo::Gfx
 	Gfx::Texture* ResourceManager::GetTexture(Handle<Texture> texture)
 	{
 		return m_Textures.Get(texture);
-	}
-
-	Sampler* ResourceManager::GetSampler(Handle<Sampler> sampler)
-	{
-		return m_Samplers.Get(sampler);
 	}
 
 	void ResourceManager::Map(Handle<Buffer> buffer, uint32 subresource, D3D12_RANGE* range)
@@ -190,18 +141,6 @@ namespace limbo::Gfx
 			{
 				DELETE_RESOURCE(texture, m_Textures);
 			}
-		}
-	}
-
-	void ResourceManager::DestroySampler(Handle<Sampler> sampler, bool bImmediate)
-	{
-		if (bImmediate)
-		{
-			m_Samplers.DeleteHandle(sampler);
-		}
-		else
-		{
-			DELETE_RESOURCE(sampler, m_Samplers);
 		}
 	}
 

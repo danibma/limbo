@@ -91,7 +91,6 @@ namespace limbo::Gfx
 		void SetConstant(const char* parameterName, const void* data);
 		void SetTexture(const char* parameterName, Handle<class Texture> texture, uint32 mipLevel = ~0);
 		void SetBuffer(const char* parameterName, Handle<class Buffer> buffer);
-		void SetSampler(const char* parameterName, Handle<class Sampler> sampler);
 		void SetAccelerationStructure(const char* parameterName, class AccelerationStructure* accelerationStructure);
 
 		void ResizeRenderTargets(uint32 width, uint32 height);

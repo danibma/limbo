@@ -103,7 +103,6 @@ namespace limbo::Gfx
 		SetParameter(m_RTAOShader, "g_Positions", positionsMap);
 		SetParameter(m_RTAOShader, "g_Normals", normalsMap);
 		SetParameter(m_RTAOShader, "g_Output", m_NoisedTexture);
-		SetParameter(m_RTAOShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
 		EndEvent();
 

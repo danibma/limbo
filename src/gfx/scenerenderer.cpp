@@ -131,7 +131,6 @@ namespace limbo::Gfx
 		{
 			BeginEvent("Geometry Pass");
 			BindShader(m_DeferredShadingShader);
-			SetParameter(m_DeferredShadingShader, "LinearWrap", GetDefaultLinearWrapSampler());
 			BindSceneInfo(m_DeferredShadingShader);
 			for (Scene* scene : m_Scenes)
 			{
@@ -154,7 +153,6 @@ namespace limbo::Gfx
 			BindShader(m_SkyboxShader);
 			BindSceneInfo(m_SkyboxShader);
 			SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
-			SetParameter(m_SkyboxShader, "LinearWrap", GetDefaultLinearWrapSampler());
 			m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
 			{
 				BindVertexBufferView(mesh.PositionsLocation);
@@ -170,7 +168,6 @@ namespace limbo::Gfx
 			// PBR scene info
 			SetParameter(m_PBRShader, "lightPos", Light.Position);
 			SetParameter(m_PBRShader, "lightColor", Light.Color);
-			SetParameter(m_PBRShader, "LinearClamp", GetDefaultLinearClampSampler());
 			// Bind deferred shading render targets
 			SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
 			SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
@@ -203,7 +200,6 @@ namespace limbo::Gfx
 		BindShader(m_CompositeShader);
 		SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
 		SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
-		SetParameter(m_CompositeShader, "LinearWrap", GetDefaultLinearWrapSampler());
 		Draw(6);
 		EndEvent();
 
@@ -338,7 +334,6 @@ namespace limbo::Gfx
 			BindShader(equirectToCubemap);
 			SetParameter(equirectToCubemap, "g_EnvironmentEquirectangular", equirectangularTexture);
 			SetParameter(equirectToCubemap, "g_OutEnvironmentCubemap", m_EnvironmentCubemap);
-			SetParameter(equirectToCubemap, "LinearWrap", GetDefaultLinearWrapSampler());
 			Dispatch(equirectangularTextureSize.x / 32, equirectangularTextureSize.y / 32, 6);
 
 			DestroyShader(equirectToCubemap);
@@ -368,7 +363,6 @@ namespace limbo::Gfx
 			BindShader(irradianceShader);
 			SetParameter(irradianceShader, "g_EnvironmentCubemap", m_EnvironmentCubemap);
 			SetParameter(irradianceShader, "g_IrradianceMap", m_IrradianceMap);
-			SetParameter(irradianceShader, "LinearWrap", GetDefaultLinearWrapSampler());
 			Dispatch(irradianceSize.x / 32, irradianceSize.y / 32, 6);
 
 			DestroyShader(irradianceShader);
@@ -399,7 +393,6 @@ namespace limbo::Gfx
 
 			BindShader(prefilterShader);
 			SetParameter(prefilterShader, "g_EnvironmentCubemap", m_EnvironmentCubemap);
-			SetParameter(prefilterShader, "LinearWrap", GetDefaultLinearWrapSampler());
 
 			const float deltaRoughness = 1.0f / glm::max(float(prefilterMipLevels - 1), 1.0f);
 			for (uint32_t level = 0, size = prefilterSize.x; level < prefilterMipLevels; ++level, size /= 2)

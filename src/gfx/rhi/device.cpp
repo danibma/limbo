@@ -127,10 +127,9 @@ namespace limbo::Gfx
 		}
 #endif
 
-		m_Srvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV,    8196, true);
+		m_GlobalHeap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV,    8196, true);
 		m_Rtvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV,     128);
 		m_Dsvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV,      64);
-		m_Samplerheap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SAMPLERS, 16, true);
 
 		D3D12_COMMAND_QUEUE_DESC queueDesc = {
 			.Type = D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -178,8 +177,8 @@ namespace limbo::Gfx
 			ensure(m_FenceEvent);
 		}
 
-		ID3D12DescriptorHeap* heaps[] = { m_Srvheap->GetHeap(), m_Samplerheap->GetHeap() };
-		m_CommandList->SetDescriptorHeaps(2, heaps);
+		ID3D12DescriptorHeap* heaps[] = { m_GlobalHeap->GetHeap() };
+		m_CommandList->SetDescriptorHeaps(_countof(heaps), heaps);
 
 		// ImGui Stuff
 		if (flags & GfxDeviceFlag::EnableImgui)
@@ -192,11 +191,11 @@ namespace limbo::Gfx
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.ItemInnerSpacing = ImVec2(10.0f, 0.0f);
 
-			DescriptorHandle imguiDescriptor = m_Srvheap->AllocateHandle();
+			DescriptorHandle imguiDescriptor = m_GlobalHeap->AllocateHandle();
 
 			ImGui_ImplGlfw_InitForOther(window->GetGlfwHandle(), true);
 			ImGui_ImplDX12_Init(m_Device.Get(), NUM_BACK_BUFFERS, D3DFormat(m_Swapchain->GetFormat()),
-			                    m_Srvheap->GetHeap(), imguiDescriptor.CpuHandle, imguiDescriptor.GPUHandle);
+			                    m_GlobalHeap->GetHeap(), imguiDescriptor.CpuHandle, imguiDescriptor.GPUHandle);
 
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
@@ -208,10 +207,9 @@ namespace limbo::Gfx
 	{
 		WaitGPU();
 
-		delete m_Srvheap;
+		delete m_GlobalHeap;
 		delete m_Rtvheap;
 		delete m_Dsvheap;
-		delete m_Samplerheap;
 
 		if (m_Flags & GfxDeviceFlag::EnableImgui)
 		{
@@ -567,8 +565,8 @@ namespace limbo::Gfx
 		DX_CHECK(m_CommandAllocators[m_FrameIndex]->Reset());
 		DX_CHECK(m_CommandList->Reset(m_CommandAllocators[m_FrameIndex].Get(), nullptr));
 
-		ID3D12DescriptorHeap* heaps[] = { m_Srvheap->GetHeap(), m_Samplerheap->GetHeap() };
-		m_CommandList->SetDescriptorHeaps(2, heaps);
+		ID3D12DescriptorHeap* heaps[] = { m_GlobalHeap->GetHeap() };
+		m_CommandList->SetDescriptorHeaps(_countof(heaps), heaps);
 
 		// Prepare frame render targets
 		{
@@ -655,13 +653,11 @@ namespace limbo::Gfx
 		switch (heapType)
 		{
 		case DescriptorHeapType::SRV:
-			return m_Srvheap->AllocateHandle();
+			return m_GlobalHeap->AllocateHandle();
 		case DescriptorHeapType::RTV:
 			return m_Rtvheap->AllocateHandle();
 		case DescriptorHeapType::DSV:
 			return m_Dsvheap->AllocateHandle();
-		case DescriptorHeapType::SAMPLERS:
-			return m_Samplerheap->AllocateHandle();
 		default: 
 			return DescriptorHandle();
 		}
@@ -793,7 +789,6 @@ namespace limbo::Gfx
 		FAILIF(!t);
 
 		BindShader(m_GenerateMipsShader);
-		SetParameter(m_GenerateMipsShader, "LinearClamp", GetDefaultLinearClampSampler());
 		for (uint16 i = 1; i < t->Spec.MipLevels; ++i)
 		{
 			uint2 outputMipSize = { t->Spec.Width , t->Spec.Height };

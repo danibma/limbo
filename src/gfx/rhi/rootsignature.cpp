@@ -20,6 +20,26 @@ namespace limbo::Gfx
 		uint32 currentRP = 0;
 		uint32 rsCost = 0;
 
+		D3D12_STATIC_SAMPLER_DESC staticSamplers[16] = {};
+		auto addStaticSampler = [&staticSamplers](uint32 registerSlot, D3D12_FILTER filter, D3D12_TEXTURE_ADDRESS_MODE wrapMode, D3D12_COMPARISON_FUNC compareFunc = D3D12_COMPARISON_FUNC_ALWAYS)
+		{
+			staticSamplers[registerSlot] = {
+				.Filter = filter,
+				.AddressU = wrapMode,
+				.AddressV = wrapMode,
+				.AddressW = wrapMode,
+				.MipLODBias = 0.0f,
+				.MaxAnisotropy = 8,
+				.ComparisonFunc = compareFunc,
+				.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
+				.MinLOD = 0.0f,
+				.MaxLOD = FLT_MAX,
+				.ShaderRegister = registerSlot,
+				.RegisterSpace = 1,
+				.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
+			};
+		};
+
 		auto processResourceBinding = [&rootParameters, &ranges, &currentRP, &rsCost, this](const D3D12_SHADER_INPUT_BIND_DESC& bindDesc, auto* reflection)
 		{
 			switch (bindDesc.Type) {
@@ -128,25 +148,8 @@ namespace limbo::Gfx
 
 				break;
 			}
-			case D3D_SIT_SAMPLER:
-			{
-				uint32 hashedName = Algo::Hash(bindDesc.Name);
-				if (m_ParameterMap.contains(hashedName)) break;
-
-				m_ParameterMap[hashedName] = {
-					.Type = ShaderParameterType::Samplers,
-					.RPIndex = currentRP,
-				};
-
-				ranges[currentRP].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1, bindDesc.BindPoint, bindDesc.Space);
-
-				rootParameters[currentRP].InitAsDescriptorTable(1, &ranges[currentRP]);
-
-				currentRP++;
-				rsCost += 1;
-
+			case D3D_SIT_SAMPLER: // Don't do anything, we use static samplers
 				break;
-			}
 			default: LB_ERROR("Invalid Resource Type");
 			}
 		};
@@ -194,8 +197,14 @@ namespace limbo::Gfx
 
 		flags |= D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
 
+		// Static Samplers: these are the equivalents of the samplers in bindings.hlsl
+		uint32 numStaticSamplers = 0;
+		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP);  // SLinearWrap
+		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // SLinearClamp
+		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_WRAP);  // SPointClamp
+
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc;
-		desc.Init_1_1(currentRP, rootParameters, 0, nullptr, flags);
+		desc.Init_1_1(currentRP, rootParameters, numStaticSamplers, staticSamplers, flags);
 
 		ID3DBlob* rootSigBlob;
 		ID3DBlob* errorBlob;

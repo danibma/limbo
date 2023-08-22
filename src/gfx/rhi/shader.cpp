@@ -154,17 +154,6 @@ namespace limbo::Gfx
 			parameter.Descriptor = b->BasicHandle.GPUHandle;
 	}
 
-	void Shader::SetSampler(const char* parameterName, Handle<Sampler> sampler)
-	{
-		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
-		if (!parameter.IsValid()) return;
-
-		Sampler* s = ResourceManager::Ptr->GetSampler(sampler);
-		FAILIF(!s);
-
-		parameter.Descriptor = s->Handle.GPUHandle;
-	}
-
 	void Shader::SetAccelerationStructure(const char* parameterName, AccelerationStructure* accelerationStructure)
 	{
 		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);

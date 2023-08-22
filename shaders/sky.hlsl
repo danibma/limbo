@@ -29,7 +29,7 @@ TextureCube g_EnvironmentCube;
 
 float4 PSMain(SkyboxVertexOutput vertex) : SV_Target
 {
-    float3 color = g_EnvironmentCube.SampleLevel(LinearWrap, vertex.local_position.xyz, 0).xyz;
+    float3 color = g_EnvironmentCube.SampleLevel(SLinearWrap, vertex.local_position.xyz, 0).xyz;
 
     return float4(color, 1.0);
 }

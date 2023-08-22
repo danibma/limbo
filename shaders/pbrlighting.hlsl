@@ -85,17 +85,17 @@ uint bEnableAO;
 float4 PSMain(QuadResult quad) : SV_Target
 {
 	// gbuffer values
-    float3 worldPos             = g_WorldPosition.Sample(LinearClamp, quad.UV).rgb;
-    float3 albedo               = g_Albedo.Sample(LinearClamp, quad.UV).rgb;
-    float3 normal               = g_Normal.Sample(LinearClamp, quad.UV).rgb;
-    float3 emissive             = g_Emissive.Sample(LinearClamp, quad.UV).rgb;
-    float alpha                 = g_Albedo.Sample(LinearClamp, quad.UV).a;
-    float3 roughnessMetallicAO  = g_RoughnessMetallicAO.Sample(LinearClamp, quad.UV).rgb;
+    float3 worldPos             = g_WorldPosition.Sample(SLinearClamp, quad.UV).rgb;
+    float3 albedo               = g_Albedo.Sample(SLinearClamp, quad.UV).rgb;
+    float3 normal               = g_Normal.Sample(SLinearClamp, quad.UV).rgb;
+    float3 emissive             = g_Emissive.Sample(SLinearClamp, quad.UV).rgb;
+    float alpha                 = g_Albedo.Sample(SLinearClamp, quad.UV).a;
+    float3 roughnessMetallicAO  = g_RoughnessMetallicAO.Sample(SLinearClamp, quad.UV).rgb;
     float roughness             = roughnessMetallicAO.x;
     float metallic              = roughnessMetallicAO.y;
     float ao                    = roughnessMetallicAO.z;
     if (bEnableAO > 0)
-        ao *= g_AmbientOcclusion.Sample(LinearClamp, quad.UV).r;
+        ao *= g_AmbientOcclusion.Sample(SLinearClamp, quad.UV).r;
 
     if (alpha == 0.0f)
         discard;
@@ -172,14 +172,14 @@ float4 PSMain(QuadResult quad) : SV_Target
     // Get diffuse contribution factor (as with direct lighting).
     float3 kD = lerp(1.0 - F, 0.0, metallic);
   
-    float3 irradiance = g_IrradianceMap.SampleLevel(LinearClamp, N, 0).rgb;
+    float3 irradiance = g_IrradianceMap.SampleLevel(SLinearClamp, N, 0).rgb;
     float3 diffuse = kD * irradiance * albedo * ao;
   
     float specularLevels = QueryTextureLevels(g_PrefilterMap);
-    float3 prefilteredColor = g_PrefilterMap.SampleLevel(LinearClamp, R, roughness * specularLevels).rgb;
+    float3 prefilteredColor = g_PrefilterMap.SampleLevel(SLinearClamp, R, roughness * specularLevels).rgb;
 
     // Split-sum approximation factors for Cook-Torrance specular BRDF.
-    float2 envBRDF = g_LUT.Sample(LinearClamp, float2(NdotV, roughness)).rg;
+    float2 envBRDF = g_LUT.Sample(SLinearClamp, float2(NdotV, roughness)).rg;
 
     // Total specular IBL contribution.
     float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) * ComputeSpecOcclusion(NdotV, ao, roughness);

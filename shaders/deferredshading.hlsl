@@ -50,7 +50,7 @@ DeferredShadingOutput PSMain(VSOut input)
     float4 finalAlbedo = material.AlbedoFactor;
     if (material.AlbedoIndex != -1)
     {
-	    float4 albedo = Sample2D(material.AlbedoIndex, LinearWrap, input.UV);
+	    float4 albedo = Sample2D(material.AlbedoIndex, SLinearWrap, input.UV);
 	    finalAlbedo *= albedo;
     }
 
@@ -61,7 +61,7 @@ DeferredShadingOutput PSMain(VSOut input)
     float metallic = material.MetallicFactor;
     if (material.RoughnessMetalIndex != -1)
     {
-        float4 roughnessMetalMap = Sample2D(material.RoughnessMetalIndex, LinearWrap, input.UV);
+        float4 roughnessMetalMap = Sample2D(material.RoughnessMetalIndex, SLinearWrap, input.UV);
         roughness *= roughnessMetalMap.g;
         metallic *= roughnessMetalMap.b;
     }
@@ -69,20 +69,20 @@ DeferredShadingOutput PSMain(VSOut input)
     float3 emissive = material.EmissiveFactor;
     if (material.EmissiveIndex != -1)
     {
-        emissive = Sample2D(material.EmissiveIndex, LinearWrap, input.UV).rgb;
+        emissive = Sample2D(material.EmissiveIndex, SLinearWrap, input.UV).rgb;
     }
 
     float ao = 1.0f;
     if (material.AmbientOcclusionIndex != -1)
     {
-        float4 AOMap = Sample2D(material.AmbientOcclusionIndex, LinearWrap, input.UV);
+        float4 AOMap = Sample2D(material.AmbientOcclusionIndex, SLinearWrap, input.UV);
 		ao = AOMap.r;
     }
 
     float3 normal = normalize(input.Normal);
     if (material.NormalIndex != -1)
     {
-        float4 normalMap = Sample2D(material.NormalIndex, LinearWrap, input.UV);
+        float4 normalMap = Sample2D(material.NormalIndex, SLinearWrap, input.UV);
 
         float3 viewDirection = normalize(GSceneInfo.CameraPos - input.WorldPos.xyz);
 

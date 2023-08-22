@@ -31,7 +31,6 @@ namespace limbo::Gfx
 		SRV = 0,
 		UAV,
 		CBV,
-		Samplers,
 		Constants,
 		MAX
 	};
@@ -86,7 +85,6 @@ namespace limbo::Gfx
 		case ShaderParameterType::SRV: return "SRV";
 		case ShaderParameterType::UAV: return "UAV";
 		case ShaderParameterType::CBV: return "CBV";
-		case ShaderParameterType::Samplers: return "Samplers";
 		case ShaderParameterType::Constants: return "Constants";
 		case ShaderParameterType::MAX:
 		default: return "";
