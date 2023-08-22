@@ -31,7 +31,8 @@ namespace limbo::Gfx
 			Gfx::Map(m_SceneInfoBuffers[i]);
 		}
 
-		LoadNewScene("assets/models/cornell_box.glb");
+		//LoadNewScene("assets/models/cornell_box.glb");
+		LoadNewScene("assets/models/Sponza/Sponza.gltf");
 
 		// Deferred shader
 		m_DeferredShadingShader = Gfx::CreateShader({
@@ -277,7 +278,7 @@ namespace limbo::Gfx
 		SceneInfo.InvProjection			= glm::inverse(Camera.Proj);
 		SceneInfo.ViewProjection		= Camera.ViewProj;
 		SceneInfo.CameraPos				= Camera.Eye;
-		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRVHandle[0].Index;
+		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRVHandle.Index;
 		SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
 		SceneInfo.FrameIndex++;
 

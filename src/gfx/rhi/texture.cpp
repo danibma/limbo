@@ -53,8 +53,6 @@ namespace limbo::Gfx
 			InitialState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
 		else if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
 			InitialState = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		else if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
-			InitialState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 		else
 			InitialState = D3D12_RESOURCE_STATE_COMMON;
 
@@ -262,15 +260,9 @@ namespace limbo::Gfx
 
 		if (spec.bCreateSrv)
 		{
-			for (uint8 i = 0; i < spec.MipLevels; ++i)
-			{
-				if (i > 0 && (spec.Type == TextureType::Texture3D || spec.Type == TextureType::TextureCube))
-					break;
-
-				if (SRVHandle[i].CpuHandle.ptr == 0)
-					SRVHandle[i] = device->AllocateHandle(DescriptorHeapType::SRV);
-				CreateSrv(spec, d3ddevice, srvformat, i);
-			}
+			if (SRVHandle.CpuHandle.ptr == 0)
+				SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);
+			CreateSrv(spec, d3ddevice, srvformat);
 		}
 
 		if (spec.InitialData)
@@ -316,7 +308,7 @@ namespace limbo::Gfx
 		InitResource(Spec);
 	}
 
-	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel)
+	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
 			.Format = format,
@@ -327,8 +319,8 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
 			srvDesc.Texture1D = {
-				.MostDetailedMip = mipLevel,
-				.MipLevels = spec.MipLevels,
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
 				.ResourceMinLODClamp = 0.0f
 			};
 		}
@@ -336,8 +328,8 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 			srvDesc.Texture2D = {
-				.MostDetailedMip = mipLevel,
-				.MipLevels = mipLevel == 0 ? spec.MipLevels : 1u,
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
 				.PlaneSlice = 0,
 				.ResourceMinLODClamp = 0.0f
 			};
@@ -346,8 +338,8 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
 			srvDesc.Texture3D = {
-				.MostDetailedMip = mipLevel,
-				.MipLevels = spec.MipLevels,
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
 				.ResourceMinLODClamp = 0.0f
 			};
 		}
@@ -355,12 +347,12 @@ namespace limbo::Gfx
 		{
 			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			srvDesc.TextureCube = {
-				.MostDetailedMip = mipLevel,
-				.MipLevels = spec.MipLevels,
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
 				.ResourceMinLODClamp = 0.0f
 			};
 		}
 
-		device->CreateShaderResourceView(Resource.Get(), &srvDesc, SRVHandle[mipLevel].CpuHandle);
+		device->CreateShaderResourceView(Resource.Get(), &srvDesc, SRVHandle.CpuHandle);
 	}
 }

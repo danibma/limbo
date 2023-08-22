@@ -33,7 +33,8 @@ namespace limbo::Gfx
 #if !NO_LOG
 		if (!bIsProfiling)
 		{
-			if (!IsUnderPIX())
+			// note: disabled pix capture for now, it redirects the GPU validation into their stuff, so the app does not get any GPU validation errors
+			if (!IsUnderPIX() && false) 
 			{
 				HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
 				if (pixGPUCapturer)
@@ -791,8 +792,6 @@ namespace limbo::Gfx
 		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t);
 
-		bool bIsRGB = t->Spec.Format == Format::RGBA8_UNORM_SRGB;
-
 		BindShader(m_GenerateMipsShader);
 		SetParameter(m_GenerateMipsShader, "LinearClamp", GetDefaultLinearClampSampler());
 		for (uint16 i = 1; i < t->Spec.MipLevels; ++i)
@@ -802,7 +801,6 @@ namespace limbo::Gfx
 			outputMipSize.y >>= i;
 			float2 texelSize = { 1.0f / outputMipSize.x, 1.0f / outputMipSize.y };
 
-			SetParameter(m_GenerateMipsShader, "bIsRGB", bIsRGB ? 1 : 0);
 			SetParameter(m_GenerateMipsShader, "TexelSize", texelSize);
 			SetParameter(m_GenerateMipsShader, "PreviousMip", texture, i - 1);
 			SetParameter(m_GenerateMipsShader, "OutputMip", texture, i);

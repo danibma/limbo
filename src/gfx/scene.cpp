@@ -321,6 +321,6 @@ namespace limbo::Gfx
 
 		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t, -1);
-		return t->SRVHandle[0].Index;
+		return t->SRVHandle.Index;
 	}
 }

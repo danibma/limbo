@@ -151,7 +151,7 @@ namespace limbo::Gfx
 	uint64 ResourceManager::GetTextureID(Handle<Texture> texture)
 	{
 		Texture* t = GetTexture(texture);
-		return t->SRVHandle->GPUHandle.ptr;
+		return t->SRVHandle.GPUHandle.ptr;
 	}
 
 	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer, bool bImmediate)

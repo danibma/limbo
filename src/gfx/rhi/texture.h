@@ -28,7 +28,7 @@ namespace limbo::Gfx
 		D3D12_RESOURCE_STATES		CurrentState[D3D12_REQ_MIP_LEVELS];
 		D3D12_RESOURCE_STATES		InitialState;
 		DescriptorHandle			BasicHandle[D3D12_REQ_MIP_LEVELS];
-		DescriptorHandle			SRVHandle[D3D12_REQ_MIP_LEVELS];
+		DescriptorHandle			SRVHandle;
 		TextureSpec					Spec;
 
 	public:
@@ -43,7 +43,7 @@ namespace limbo::Gfx
 
 		// D3D12 Specific
 		void CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel);
-		void CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel);
+		void CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
 		void CreateRtv(const TextureSpec& spec, ID3D12Device* device);
 		void CreateDsv(const TextureSpec& spec, ID3D12Device* device);
 

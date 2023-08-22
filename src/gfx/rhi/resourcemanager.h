@@ -238,7 +238,7 @@ namespace limbo::Gfx
 		Shader* s = ResourceManager::Ptr->GetShader(shader);
 		FAILIF(!s);
 
-		s->SetTexture(parameterName, GetShaderRT(rtShader, rtIndex), 0);
+		s->SetTexture(parameterName, GetShaderRT(rtShader, rtIndex), ~0);
 	}
 
 	template<typename T>

@@ -106,21 +106,21 @@ namespace limbo::Gfx
 		FAILIF(!t);
 
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
-		if (parameter.Type == ShaderParameterType::UAV)
+		if (parameter.Type == ShaderParameterType::UAV || mipLevel != ~0)
 		{
 			FAILIF(t->BasicHandle[level].GPUHandle.ptr == 0); // texture is not a SRV
-			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+			newState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			parameter.Descriptor = t->BasicHandle[level].GPUHandle;
 		}
 		else if (parameter.Type == ShaderParameterType::SRV)
 		{
-			FAILIF(t->SRVHandle[level].GPUHandle.ptr == 0); // texture is not a SRVs
-			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-			parameter.Descriptor = t->SRVHandle[level].GPUHandle;
+			FAILIF(t->SRVHandle.GPUHandle.ptr == 0); // texture is not a SRVs
+			newState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			parameter.Descriptor = t->SRVHandle.GPUHandle;
 		}
 		else if (parameter.Type == ShaderParameterType::Constants) // bindless
 		{
-			parameter.Data = &t->SRVHandle[level].Index;
+			parameter.Data = &t->SRVHandle.Index;
 		}
 		else
 		{
