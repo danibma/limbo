@@ -13,7 +13,7 @@ namespace limbo::Gfx
 			.Width = GetBackbufferWidth(),
 			.Height = GetBackbufferHeight(),
 			.DebugName = "RTAO Texture W/ Noise",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = Format::RGBA8_UNORM,
 			.Type = TextureType::Texture2D,
 		});
@@ -24,7 +24,7 @@ namespace limbo::Gfx
 			.Width = GetBackbufferWidth(),
 			.Height = GetBackbufferHeight(),
 			.DebugName = "RTAO Final Texture",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = Format::RGBA8_UNORM,
 			.Type = TextureType::Texture2D,
 		});
@@ -134,7 +134,7 @@ namespace limbo::Gfx
 			.Width = GetBackbufferWidth(),
 			.Height = GetBackbufferHeight(),
 			.DebugName = "RTAO Previous Frame",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = Format::RGBA8_UNORM,
 			.Type = TextureType::Texture2D,
 		});

@@ -6,6 +6,16 @@
 
 namespace limbo::Gfx
 {
+	enum class TextureUsage
+	{
+		None			= 1 << 0,
+		UnorderedAccess = 1 << 1,
+		ShaderResource	= 1 << 2,
+		RenderTarget	= 1 << 3,
+		DepthStencil	= 1 << 4,
+	};
+	DECLARE_BITMASK_TYPE(TextureUsage);
+
 	struct TextureSpec
 	{
 	public:
@@ -13,12 +23,11 @@ namespace limbo::Gfx
 		uint32					Height;
 		uint16					MipLevels = 1;
 		std::string				DebugName;
-		D3D12_RESOURCE_FLAGS	ResourceFlags = D3D12_RESOURCE_FLAG_NONE;
+		TextureUsage			Flags = TextureUsage::None;
 		D3D12_CLEAR_VALUE		ClearValue;
 		Format					Format = Format::R8_UNORM;
 		TextureType				Type = TextureType::Texture2D;
 		void*					InitialData;
-		bool					bCreateSrv = true;
 	};
 
 	class Texture

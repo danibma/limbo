@@ -320,7 +320,7 @@ namespace limbo::Gfx
 			.Width = equirectangularTextureSize.x,
 			.Height = equirectangularTextureSize.y,
 			.DebugName = "Environment Cubemap",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = Format::RGBA16_SFLOAT,
 			.Type = TextureType::TextureCube,
 		});
@@ -354,7 +354,7 @@ namespace limbo::Gfx
 				.Width = irradianceSize.x,
 				.Height = irradianceSize.y,
 				.DebugName = "Irradiance Map",
-				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 				.Format = Format::RGBA16_SFLOAT,
 				.Type = TextureType::TextureCube,
 			});
@@ -386,7 +386,7 @@ namespace limbo::Gfx
 				.Height = prefilterSize.y,
 				.MipLevels = prefilterMipLevels,
 				.DebugName = "PreFilter Map",
-				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 				.Format = Format::RGBA16_SFLOAT,
 				.Type = TextureType::TextureCube,
 			});
@@ -423,7 +423,7 @@ namespace limbo::Gfx
 				.Width = brdfLUTMapSize.x,
 				.Height = brdfLUTMapSize.y,
 				.DebugName = "BRDF LUT Map",
-				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+				.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 				.Format = Format::RG16_SFLOAT,
 				.Type = TextureType::Texture2D,
 			});

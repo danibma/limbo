@@ -23,10 +23,10 @@ namespace limbo::Gfx
 				.Width = 1,
 				.Height = 1,
 				.DebugName = "Empty Texture",
+				.Flags = TextureUsage::ShaderResource,
 				.Format = Format::RGBA8_UNORM,
 				.Type = TextureType::Texture2D,
 				.InitialData = &textureData,
-				.bCreateSrv = true
 			});
 
 			DefaultLinearWrap = Gfx::CreateSampler({

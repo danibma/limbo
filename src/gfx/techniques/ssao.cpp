@@ -13,7 +13,7 @@ namespace limbo::Gfx
 			.Width = GetBackbufferWidth(),
 			.Height = GetBackbufferHeight(),
 			.DebugName = "SSAO Texture",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = Gfx::Format::R8_UNORM,
 		});
 		m_SSAOShader = Gfx::CreateShader({
@@ -26,7 +26,7 @@ namespace limbo::Gfx
 			.Width = GetBackbufferWidth(),
 			.Height = GetBackbufferHeight(),
 			.DebugName = "Blurred SSAO Texture",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = Gfx::Format::R8_UNORM,
 		});
 		m_BlurSSAOShader = Gfx::CreateShader({

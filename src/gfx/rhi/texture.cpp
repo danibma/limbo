@@ -16,9 +16,26 @@ namespace limbo::Gfx
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
 
-		D3D12_RESOURCE_FLAGS resourceFlags = spec.ResourceFlags;
-		if (!spec.bCreateSrv)
-			resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+		InitialState = D3D12_RESOURCE_STATE_COMMON;
+
+		D3D12_RESOURCE_FLAGS resourceFlags = D3D12_RESOURCE_FLAG_NONE;
+		if (EnumHasAllFlags(spec.Flags, TextureUsage::UnorderedAccess))
+			resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+
+		if (EnumHasAllFlags(spec.Flags, TextureUsage::RenderTarget))
+		{
+			resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+			InitialState = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		}
+
+		if (EnumHasAllFlags(spec.Flags, TextureUsage::DepthStencil))
+		{
+			resourceFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+			InitialState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
+
+			if (!EnumHasAllFlags(spec.Flags, TextureUsage::ShaderResource))
+				resourceFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+		}
 
 		D3D12_RESOURCE_DESC desc = {
 			.Dimension = D3DTextureType(spec.Type),
@@ -48,13 +65,6 @@ namespace limbo::Gfx
 		const D3D12_CLEAR_VALUE* clearValue = nullptr;
 		if (spec.ClearValue.Format != DXGI_FORMAT_UNKNOWN)
 			clearValue = &spec.ClearValue;
-
-		if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
-			InitialState = D3D12_RESOURCE_STATE_DEPTH_WRITE;
-		else if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
-			InitialState = D3D12_RESOURCE_STATE_RENDER_TARGET;
-		else
-			InitialState = D3D12_RESOURCE_STATE_COMMON;
 
 		for (uint16 i = 0; i < spec.MipLevels; ++i)
 			CurrentState[i] = InitialState;
@@ -99,6 +109,7 @@ namespace limbo::Gfx
 			.Width = (uint32)width,
 			.Height = (uint32)height,
 			.DebugName = debugName,
+			.Flags = TextureUsage::ShaderResource,
 			.Format = format,
 			.Type = TextureType::Texture2D,
 			.InitialData = data,
@@ -221,13 +232,13 @@ namespace limbo::Gfx
 		ID3D12Device* d3ddevice = device->GetDevice();
 
 		DXGI_FORMAT srvformat = D3DFormat(spec.Format);
-		if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
+		if (EnumHasAllFlags(spec.Flags, TextureUsage::RenderTarget))
 		{
 			if (BasicHandle[0].CpuHandle.ptr == 0)
 				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::RTV);
 			CreateRtv(spec, d3ddevice);
 		}
-		else if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL)
+		else if (EnumHasAllFlags(spec.Flags, TextureUsage::DepthStencil))
 		{
 			if (BasicHandle[0].CpuHandle.ptr == 0)
 				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::DSV);
@@ -248,7 +259,7 @@ namespace limbo::Gfx
 				break;
 			}
 		}
-		else if (spec.ResourceFlags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)
+		else if (EnumHasAllFlags(spec.Flags, TextureUsage::UnorderedAccess))
 		{
 			for (uint8 i = 0; i < spec.MipLevels; ++i)
 			{
@@ -258,7 +269,7 @@ namespace limbo::Gfx
 			}
 		}
 
-		if (spec.bCreateSrv)
+		if (EnumHasAllFlags(spec.Flags, TextureUsage::ShaderResource))
 		{
 			if (SRVHandle.CpuHandle.ptr == 0)
 				SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);

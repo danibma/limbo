@@ -309,7 +309,7 @@ namespace limbo::Gfx
 			.Height = (uint32)height,
 			.MipLevels = CalculateMipCount(width),
 			.DebugName = dname.c_str(),
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = format,
 			.Type = TextureType::Texture2D,
 			.InitialData = data

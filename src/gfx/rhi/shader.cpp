@@ -282,7 +282,7 @@ namespace limbo::Gfx
 				.Width = Device::Ptr->GetBackbufferWidth(),
 				.Height = Device::Ptr->GetBackbufferHeight(),
 				.DebugName = debugName.c_str(),
-				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+				.Flags = TextureUsage::RenderTarget | TextureUsage::ShaderResource,
 				.ClearValue = {
 					.Format = D3DFormat(spec.RTFormats[index].RTFormat),
 					.Color = { 0.0f, 0.0f, 0.0f, 0.0f }
@@ -360,7 +360,7 @@ namespace limbo::Gfx
 							.Width = Device::Ptr->GetBackbufferWidth(),
 							.Height = Device::Ptr->GetBackbufferHeight(),
 							.DebugName = debugName.c_str(),
-							.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+							.Flags = TextureUsage::DepthStencil | TextureUsage::ShaderResource,
 							.ClearValue = {
 								.Format = D3DFormat(spec.DepthFormat.RTFormat),
 								.DepthStencil = {

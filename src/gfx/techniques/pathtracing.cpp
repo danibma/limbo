@@ -14,7 +14,7 @@ namespace limbo::Gfx
 			.Width = GetBackbufferWidth(),
 			.Height = GetBackbufferHeight(),
 			.DebugName = "Path Tracing Final Texture",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
 			.Format = Format::RGBA8_UNORM,
 			.Type = TextureType::Texture2D,
 		});

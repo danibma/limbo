@@ -56,10 +56,9 @@ namespace limbo::Gfx
 			std::string debugName = std::format("swapchain backbuffer({})", i);
 			m_Backbuffers[i] = CreateTexture(tempBuffer, {
 				.DebugName = debugName.c_str(),
-				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+				.Flags = TextureUsage::RenderTarget,
 				.Format = m_Format,
 				.Type = TextureType::Texture2D,
-				.bCreateSrv = false
 			});
 
 			std::string depthDebugName = std::format("swapchain depth backbuffer({})", i);
@@ -67,7 +66,7 @@ namespace limbo::Gfx
 				.Width = m_BackbufferWidth,
 				.Height = m_BackbufferHeight,
 				.DebugName = depthDebugName.c_str(),
-				.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL,
+				.Flags = TextureUsage::DepthStencil,
 				.ClearValue = {
 					.Format = D3DFormat(m_DepthFormat),
 					.DepthStencil = {
@@ -77,7 +76,6 @@ namespace limbo::Gfx
 				},
 				.Format = m_DepthFormat,
 				.Type = TextureType::Texture2D,
-				.bCreateSrv = false
 			});
 
 			tempBuffer->Release();
