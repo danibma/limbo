@@ -59,6 +59,7 @@ float3 FresnelSchlickRoughness(float NdotV, float3 F0, float roughness)
     return F0 + (max(1 - roughness, F0) - F0) * pow(1 - saturate(NdotV), 5.0);
 }
 
+// 4.10.2 Specular occlusion from frostbite - https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
 float ComputeSpecOcclusion(float NdotV , float AO , float roughness)
 {
 	return saturate(pow( NdotV + AO , exp2( -16.0f * roughness - 1.0f )) - 1.0f + AO );
