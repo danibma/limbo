@@ -70,8 +70,8 @@ namespace limbo::Gfx
 						.Flags = BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView,
 					});
 
-					device->BuildRaytracingAccelerationStructure(ASInputs, blasScratch, blasResult);
-					device->UAVBarrier(blasResult);
+					device->GetCommandContext(ContextType::Direct)->BuildRaytracingAccelerationStructure(ASInputs, blasScratch, blasResult);
+					device->GetCommandContext(ContextType::Direct)->UAVBarrier(blasResult);
 					DestroyBuffer(blasScratch);
 					mesh.BLAS = blasResult;
 					bUpdateBLAS = true;
@@ -138,8 +138,8 @@ namespace limbo::Gfx
 		}
 
 		// build top level acceleration structure
-		device->BuildRaytracingAccelerationStructure(TLASInput, m_ScratchBuffer, m_TLAS);
-		device->UAVBarrier(m_TLAS);
+		device->GetCommandContext(ContextType::Direct)->BuildRaytracingAccelerationStructure(TLASInput, m_ScratchBuffer, m_TLAS);
+		device->GetCommandContext(ContextType::Direct)->UAVBarrier(m_TLAS);
 
 		EndEvent();
 	}

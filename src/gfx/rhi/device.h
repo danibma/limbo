@@ -3,9 +3,7 @@
 #include "definitions.h"
 #include "resourcepool.h"
 #include "resourcemanager.h"
-
-#include <vector>
-
+#include "commandcontext.h"
 #include "shaderbindingtable.h"
 
 namespace limbo::Core
@@ -18,12 +16,14 @@ namespace limbo::Gfx
 	enum class DescriptorHeapType : uint8;
 	struct DescriptorHandle;
 	class DescriptorHeap;
+	class CommandQueue;
 	struct WindowInfo;
 	struct DrawInfo;
 	class Swapchain;
 	class Buffer;
 	class Texture;
 	class Shader;
+	class Fence;
 
 	typedef uint8 GfxDeviceFlags;
 
@@ -34,19 +34,20 @@ namespace limbo::Gfx
 
 	class Device
 	{
+		using CommandQueueList   = std::array<CommandQueue*, (int)ContextType::MAX>;
+		using CommandContextList = std::array<CommandContext*, (int)ContextType::MAX>;
+
+	private:
 		ComPtr<IDXGIFactory2>				m_Factory;
 		ComPtr<IDXGIAdapter1>				m_Adapter;
 		ComPtr<ID3D12Device5>				m_Device;
 
-		ComPtr<ID3D12CommandAllocator>		m_CommandAllocators[NUM_BACK_BUFFERS];
-		ComPtr<ID3D12GraphicsCommandList4>	m_CommandList;
-		ComPtr<ID3D12CommandQueue>			m_CommandQueue;
+		CommandContextList					m_CommandContexts;
+		CommandQueueList					m_CommandQueues;
+		Fence*								m_PresentFence;
+
 
 		CD3DX12FeatureSupport				m_FeatureSupport;
-
-		ComPtr<ID3D12Fence>					m_Fence;
-		HANDLE								m_FenceEvent;
-		uint64								m_FenceValues[3] = { 0, 0, 0 };
 
 		Swapchain*							m_Swapchain;
 		uint32								m_FrameIndex;
@@ -54,8 +55,6 @@ namespace limbo::Gfx
 		DescriptorHeap*						m_GlobalHeap;
 		DescriptorHeap*						m_Dsvheap;
 		DescriptorHeap*						m_Rtvheap;
-
-		std::vector<D3D12_RESOURCE_BARRIER> m_ResourceBarriers;
 
 		GfxDeviceFlags						m_Flags;
 		bool								m_bNeedsResize = false;
@@ -66,7 +65,6 @@ namespace limbo::Gfx
 
 		GPUInfo								m_GPUInfo;
 
-		Handle<Shader>						m_BoundShader;
 		Handle<Shader>						m_GenerateMipsShader;
 
 	public:
@@ -82,36 +80,13 @@ namespace limbo::Gfx
 		Device(Core::Window* window, GfxDeviceFlags flags);
 		~Device();
 
-		void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst);
-		void CopyTextureToBackBuffer(Handle<Texture> texture);
-		void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst);
-		void CopyBufferToTexture(Buffer* src, Texture* dst);
-		void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
-		void CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+		void Present(bool bEnableVSync);
 
-		void BeginEvent(const char* name, uint64 color = 0);
-		void EndEvent();
-		void ScopedEvent(const char* name, uint64 color = 0);
+		void HandleWindowResize(uint32 width, uint32 height);
+
 		// This will capture the next frame and create a .wpix file, in the root directory, with a random name
 		void TakeGPUCapture();
 		void OpenLastGPUCapture();
-
-		void BindVertexBuffer(Handle<Buffer> buffer);
-		void BindIndexBuffer(Handle<Buffer> buffer);
-		void BindVertexBufferView(VertexBufferView view);
-		void BindIndexBufferView(IndexBufferView view);
-		void BindShader(Handle<Shader> shader);
-		void Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
-		void DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
-
-		void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth);
-		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
-
-		void Present(bool bEnableVSync);
-
-		void BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, Handle<Buffer> scratch, Handle<Buffer> result);
-
-		void HandleWindowResize(uint32 width, uint32 height);
 
 		uint32 GetCurrentFrameIndex() const
 		{
@@ -123,6 +98,8 @@ namespace limbo::Gfx
 			return m_GPUInfo;
 		}
 
+		Handle<Texture> GetCurrentBackbuffer() const;
+		Handle<Texture> GetCurrentDepthBackbuffer() const;
 		Format GetSwapchainFormat();
 		Format GetSwapchainDepthFormat();
 
@@ -130,18 +107,9 @@ namespace limbo::Gfx
 
 		// D3D12 specific
 		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
-		ID3D12GraphicsCommandList4* GetCommandList() const { return m_CommandList.Get(); }
+		CommandContext* GetCommandContext(ContextType type) const { return m_CommandContexts.at((int)type); }
 
 		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
-
-		void TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel = ~0);
-		void TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel = ~0);
-
-		void TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState);
-		void TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState);
-
-		void UAVBarrier(Handle<Texture> texture);
-		void UAVBarrier(Handle<Buffer> buffer);
 
 		uint32 GetBackbufferWidth();
 		uint32 GetBackbufferHeight();
@@ -155,19 +123,10 @@ namespace limbo::Gfx
 		void DestroyResources();
 
 		void PickGPU();
-		void WaitGPU();
-
-		void NextFrame();
+		void IdleGPU();
 
 		bool IsUnderPIX();
 		bool IsUnderRenderDoc();
-
-		void SubmitResourceBarriers();
-
-		void InstallDrawState();
-		void BindSwapchainRenderTargets();
-
-		
 	};
 
 	inline const GPUInfo& GetGPUInfo()
@@ -177,32 +136,32 @@ namespace limbo::Gfx
 
 	inline void CopyTextureToBackBuffer(Handle<Texture> texture)
 	{
-		Device::Ptr->CopyTextureToBackBuffer(texture);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyTextureToBackBuffer(texture);
 	}
 
 	inline void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
 	{
-		Device::Ptr->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
 	}
 
 	inline void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
 	{
-		Device::Ptr->CopyTextureToTexture(src, dst);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyTextureToTexture(src, dst);
 	}
 
 	inline void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
 	{
-		Device::Ptr->CopyBufferToTexture(src, dst);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyBufferToTexture(src, dst);
 	}
 
 	inline void BeginEvent(const char* name, uint64 color = 0)
 	{
-		Device::Ptr->BeginEvent(name, color);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->BeginEvent(name, color);
 	}
 
 	inline void ScopedEvent(const char* name, uint64 color = 0)
 	{
-		Device::Ptr->ScopedEvent(name, color);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->ScopedEvent(name, color);
 	}
 
 	inline void ReloadShaders()
@@ -212,7 +171,7 @@ namespace limbo::Gfx
 
 	inline void EndEvent()
 	{
-		Device::Ptr->EndEvent();
+		Device::Ptr->GetCommandContext(ContextType::Direct)->EndEvent();
 	}
 
 	inline void TakeGPUCapture()
@@ -227,47 +186,47 @@ namespace limbo::Gfx
 
 	inline void BindVertexBuffer(Handle<Buffer> buffer)
 	{
-		Device::Ptr->BindVertexBuffer(buffer);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->BindVertexBuffer(buffer);
 	}
 
 	inline void BindIndexBuffer(Handle<Buffer> buffer)
 	{
-		Device::Ptr->BindIndexBuffer(buffer);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->BindIndexBuffer(buffer);
 	}
 
 	inline void BindVertexBufferView(VertexBufferView view)
 	{
-		Device::Ptr->BindVertexBufferView(view);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->BindVertexBufferView(view);
 	}
 
 	inline void BindIndexBufferView(IndexBufferView view)
 	{
-		Device::Ptr->BindIndexBufferView(view);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->BindIndexBufferView(view);
 	}
 
 	inline void BindShader(Handle<Shader> shader)
 	{
-		Device::Ptr->BindShader(shader);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->BindShader(shader);
 	}
 
 	inline void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
 	{
-		Device::Ptr->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
 	inline void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
 	{
-		Device::Ptr->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
 	inline void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
-		Device::Ptr->Dispatch(groupCountX, groupCountY, groupCountZ);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->Dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 
 	inline void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1)
 	{
-		Device::Ptr->DispatchRays(sbt, width, height, depth);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->DispatchRays(sbt, width, height, depth);
 	}
 
 	inline void Present(bool bEnableVSync)

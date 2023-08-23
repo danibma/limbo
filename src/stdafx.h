@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
-
+#include <array>
 
 // Third Party
 #include <d3d12/d3d12.h>

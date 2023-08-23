@@ -11,6 +11,15 @@ namespace limbo::Gfx
 {
 	constexpr uint8	NUM_BACK_BUFFERS = 3;
 
+	enum class ContextType : uint8
+	{
+		Direct = 0,
+		Copy,
+		Compute,
+
+		MAX
+	};
+
 	enum class TextureType : uint8
 	{
 		Texture1D,
@@ -88,6 +97,40 @@ namespace limbo::Gfx
 		case ShaderParameterType::Constants: return "Constants";
 		case ShaderParameterType::MAX:
 		default: return "";
+		}
+	}
+
+	inline std::string_view CmdListTypeToStr(ContextType type)
+	{
+		switch (type)
+		{
+		case ContextType::Direct:
+			return "Direct";
+		case ContextType::Copy:
+			return "Copy";
+		case ContextType::Compute:
+			return "Compute";
+		case ContextType::MAX:
+		default:
+			ensure(false);
+			return "NONE";
+		}
+	}
+
+	inline D3D12_COMMAND_LIST_TYPE D3DCmdListType(ContextType type)
+	{
+		switch (type)
+		{
+		case ContextType::Direct:
+			return D3D12_COMMAND_LIST_TYPE_DIRECT;
+		case ContextType::Copy:
+			return D3D12_COMMAND_LIST_TYPE_COPY;
+		case ContextType::Compute:
+			return D3D12_COMMAND_LIST_TYPE_COMPUTE;
+		case ContextType::MAX:
+		default: 
+			ensure(false);
+			return D3D12_COMMAND_LIST_TYPE_NONE;
 		}
 	}
 

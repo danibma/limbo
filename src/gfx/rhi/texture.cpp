@@ -340,7 +340,7 @@ namespace limbo::Gfx
 
 			Buffer* allocationBuffer = ResourceManager::Ptr->GetBuffer(uploadBuffer);
 			FAILIF(!allocationBuffer);
-			Device::Ptr->CopyBufferToTexture(allocationBuffer, this);
+			Device::Ptr->GetCommandContext(ContextType::Direct)->CopyBufferToTexture(allocationBuffer, this);
 			DestroyBuffer(uploadBuffer);
 		}
 

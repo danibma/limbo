@@ -127,7 +127,7 @@ namespace limbo::Gfx
 			ensure(false);
 		}
 
-		Device::Ptr->TransitionResource(t, newState, mipLevel);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->TransitionResource(t, newState, mipLevel);
 	}
 
 	void Shader::SetBuffer(const char* parameterName, Handle<Buffer> buffer)
@@ -146,7 +146,7 @@ namespace limbo::Gfx
 		else if (parameter.Type == ShaderParameterType::CBV)
 			newState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 
-		Device::Ptr->TransitionResource(b, newState);
+		Device::Ptr->GetCommandContext(ContextType::Direct)->TransitionResource(b, newState);
 
 		if (parameter.Type == ShaderParameterType::Constants) // bindless
 			parameter.Data = &b->BasicHandle.Index;
