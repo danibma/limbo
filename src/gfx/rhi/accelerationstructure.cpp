@@ -21,7 +21,7 @@ namespace limbo::Gfx
 	void AccelerationStructure::Build(const std::vector<Scene*>& scenes)
 	{
 		Device* device = Device::Ptr;
-		ID3D12Device5* d3ddevice = device->GetDXRDevice();
+		ID3D12Device5* d3ddevice = device->GetDevice();
 
 		BeginEvent("Build Acceleration Structure");
 

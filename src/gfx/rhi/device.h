@@ -36,12 +36,10 @@ namespace limbo::Gfx
 	{
 		ComPtr<IDXGIFactory2>				m_Factory;
 		ComPtr<IDXGIAdapter1>				m_Adapter;
-		ComPtr<ID3D12Device>				m_Device;
-		ComPtr<ID3D12Device5>				m_DXRDevice;
+		ComPtr<ID3D12Device5>				m_Device;
 
 		ComPtr<ID3D12CommandAllocator>		m_CommandAllocators[NUM_BACK_BUFFERS];
-		ComPtr<ID3D12GraphicsCommandList>	m_CommandList;
-		ComPtr<ID3D12GraphicsCommandList4>	m_DXRCommandList;
+		ComPtr<ID3D12GraphicsCommandList4>	m_CommandList;
 		ComPtr<ID3D12CommandQueue>			m_CommandQueue;
 
 		CD3DX12FeatureSupport				m_FeatureSupport;
@@ -131,9 +129,8 @@ namespace limbo::Gfx
 		bool CanTakeGPUCapture();
 
 		// D3D12 specific
-		ID3D12Device* GetDevice() const { return m_Device.Get(); }
-		ID3D12Device5* GetDXRDevice() const { return m_DXRDevice.Get(); }
-		ID3D12GraphicsCommandList* GetCommandList() const { return m_CommandList.Get(); }
+		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
+		ID3D12GraphicsCommandList4* GetCommandList() const { return m_CommandList.Get(); }
 
 		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
 

@@ -226,6 +226,54 @@ namespace limbo::Gfx
 		device->CreateDepthStencilView(Resource.Get(), &desc, BasicHandle[0].CpuHandle);
 	}
 
+	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = format,
+			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
+		};
+
+		if (spec.Type == TextureType::Texture1D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+			srvDesc.Texture1D = {
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (spec.Type == TextureType::Texture2D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D = {
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
+				.PlaneSlice = 0,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (spec.Type == TextureType::Texture3D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+			srvDesc.Texture3D = {
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (spec.Type == TextureType::TextureCube)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			srvDesc.TextureCube = {
+				.MostDetailedMip = 0,
+				.MipLevels = ~0u,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+
+		device->CreateShaderResourceView(Resource.Get(), &srvDesc, SRVHandle.CpuHandle);
+	}
+
 	void Texture::InitResource(const TextureSpec& spec)
 	{
 		Device* device = Device::Ptr;
@@ -317,53 +365,5 @@ namespace limbo::Gfx
 
 		CreateResource(Spec);
 		InitResource(Spec);
-	}
-
-	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
-	{
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
-			.Format = format,
-			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
-		};
-
-		if (spec.Type == TextureType::Texture1D)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
-			srvDesc.Texture1D = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-		else if (spec.Type == TextureType::Texture2D)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			srvDesc.Texture2D = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.PlaneSlice = 0,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-		else if (spec.Type == TextureType::Texture3D)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-			srvDesc.Texture3D = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-		else if (spec.Type == TextureType::TextureCube)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			srvDesc.TextureCube = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-
-		device->CreateShaderResourceView(Resource.Get(), &srvDesc, SRVHandle.CpuHandle);
 	}
 }

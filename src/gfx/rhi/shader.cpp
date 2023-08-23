@@ -47,7 +47,7 @@ namespace limbo::Gfx
 		: m_Name(spec.ProgramName), m_Spec(spec)
 	{
 		Device* device = Device::Ptr;
-		ID3D12Device* d3ddevice = device->GetDevice();
+		ID3D12Device5* d3ddevice = device->GetDevice();
 
 		m_RootSignature = new RootSignature(m_Name + " RS");
 
@@ -60,7 +60,7 @@ namespace limbo::Gfx
 		else if (spec.Type == ShaderType::Graphics)
 			CreateGraphicsPipeline(d3ddevice, spec, false);
 		else if (spec.Type == ShaderType::RayTracing)
-			CreateRayTracingState(device->GetDXRDevice(), spec);
+			CreateRayTracingState(d3ddevice, spec);
 	}
 
 	Shader::~Shader()
@@ -577,6 +577,6 @@ namespace limbo::Gfx
 		else if (Type == ShaderType::Graphics)
 			CreateGraphicsPipeline(Device::Ptr->GetDevice(), m_Spec, true);
 		else if (Type == ShaderType::RayTracing)
-			CreateRayTracingState(Device::Ptr->GetDXRDevice(), m_Spec);
+			CreateRayTracingState(Device::Ptr->GetDevice(), m_Spec);
 	}
 }

@@ -79,6 +79,7 @@ namespace limbo::Gfx
 		DX_CHECK(m_FeatureSupport.Init(m_Device.Get()));
 		check(m_FeatureSupport.ResourceBindingTier() >= D3D12_RESOURCE_BINDING_TIER_3);
 		check(m_FeatureSupport.HighestShaderModel() >= D3D_SHADER_MODEL_6_6);
+		check(m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1);
 
 #if !NO_LOG
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
@@ -153,19 +154,6 @@ namespace limbo::Gfx
 			DX_CHECK(m_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_CommandAllocators[i])));
 
 		DX_CHECK(m_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_CommandAllocators[m_FrameIndex].Get(), nullptr, IID_PPV_ARGS(&m_CommandList)));
-
-		// Get raytracing interfaces
-		if (m_FeatureSupport.RaytracingTier() > D3D12_RAYTRACING_TIER_NOT_SUPPORTED)
-		{
-			check(m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1);
-			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(&m_DXRDevice)));
-			DX_CHECK(m_CommandList->QueryInterface(IID_PPV_ARGS(&m_DXRCommandList)));
-		}
-		else
-		{
-			LB_WARN("Raytracing not supported on this device");
-		}
-
 
 		// Create synchronization objects
 		{
@@ -453,7 +441,7 @@ namespace limbo::Gfx
 		}
 		else
 		{
-			m_DXRCommandList->SetPipelineState1(shader->StateObject.Get());
+			m_CommandList->SetPipelineState1(shader->StateObject.Get());
 		}
 	}
 
@@ -494,7 +482,7 @@ namespace limbo::Gfx
 
 		D3D12_DISPATCH_RAYS_DESC desc;
 		sbt.Commit(desc, width, height, depth);
-		m_DXRCommandList->DispatchRays(&desc);
+		m_CommandList->DispatchRays(&desc);
 	}
 
 	void Device::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
@@ -601,7 +589,7 @@ namespace limbo::Gfx
 		desc.Inputs = inputs;
 		desc.ScratchAccelerationStructureData = GetBuffer(scratch)->Resource->GetGPUVirtualAddress();
 		desc.DestAccelerationStructureData = GetBuffer(result)->Resource->GetGPUVirtualAddress();
-		m_DXRCommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
+		m_CommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
 	}
 
 	void Device::HandleWindowResize(uint32 width, uint32 height)
