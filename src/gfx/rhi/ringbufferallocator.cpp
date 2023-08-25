@@ -56,7 +56,7 @@ namespace limbo::Gfx
 
 		FAILIF(offset == InvalidOffset);
 
-		allocation.Context		= Device::Ptr->GetCommandContext(ContextType::Copy);
+		allocation.Context		= GetCommandContext(ContextType::Copy);
 		allocation.Buffer		= GetBuffer(m_Buffer);
 		allocation.Offset		= offset;
 		allocation.Size			= size;

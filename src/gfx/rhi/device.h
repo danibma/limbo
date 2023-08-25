@@ -156,34 +156,39 @@ namespace limbo::Gfx
 		return Device::Ptr->GetRingBufferAllocator();
 	}
 
+	inline CommandContext* GetCommandContext(ContextType type = ContextType::Direct)
+	{
+		return Device::Ptr->GetCommandContext(type);
+	}
+
 	inline void CopyTextureToBackBuffer(Handle<Texture> texture)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyTextureToBackBuffer(texture);
+		GetCommandContext()->CopyTextureToBackBuffer(texture);
 	}
 
 	inline void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
+		GetCommandContext()->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
 	}
 
 	inline void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyTextureToTexture(src, dst);
+		GetCommandContext()->CopyTextureToTexture(src, dst);
 	}
 
 	inline void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->CopyBufferToTexture(src, dst);
+		GetCommandContext()->CopyBufferToTexture(src, dst);
 	}
 
 	inline void BeginEvent(const char* name, uint64 color = 0)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->BeginEvent(name, color);
+		GetCommandContext()->BeginEvent(name, color);
 	}
 
 	inline void ScopedEvent(const char* name, uint64 color = 0)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->ScopedEvent(name, color);
+		GetCommandContext()->ScopedEvent(name, color);
 	}
 
 	inline void ReloadShaders()
@@ -193,7 +198,7 @@ namespace limbo::Gfx
 
 	inline void EndEvent()
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->EndEvent();
+		GetCommandContext()->EndEvent();
 	}
 
 	inline void TakeGPUCapture()
@@ -208,47 +213,47 @@ namespace limbo::Gfx
 
 	inline void BindVertexBuffer(Handle<Buffer> buffer)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->BindVertexBuffer(buffer);
+		GetCommandContext()->BindVertexBuffer(buffer);
 	}
 
 	inline void BindIndexBuffer(Handle<Buffer> buffer)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->BindIndexBuffer(buffer);
+		GetCommandContext()->BindIndexBuffer(buffer);
 	}
 
 	inline void BindVertexBufferView(VertexBufferView view)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->BindVertexBufferView(view);
+		GetCommandContext()->BindVertexBufferView(view);
 	}
 
 	inline void BindIndexBufferView(IndexBufferView view)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->BindIndexBufferView(view);
+		GetCommandContext()->BindIndexBufferView(view);
 	}
 
 	inline void BindShader(Handle<Shader> shader)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->BindShader(shader);
+		GetCommandContext()->BindShader(shader);
 	}
 
 	inline void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
+		GetCommandContext()->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
 	inline void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+		GetCommandContext()->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
 	inline void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->Dispatch(groupCountX, groupCountY, groupCountZ);
+		GetCommandContext()->Dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 
 	inline void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1)
 	{
-		Device::Ptr->GetCommandContext(ContextType::Direct)->DispatchRays(sbt, width, height, depth);
+		GetCommandContext()->DispatchRays(sbt, width, height, depth);
 	}
 
 	inline void Present(bool bEnableVSync)

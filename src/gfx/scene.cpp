@@ -269,7 +269,7 @@ namespace limbo::Gfx
 		}
 
 		CopyBufferToBuffer(upload, m_GeometryBuffer, bufferSize);
-		Device::Ptr->GetCommandContext(ContextType::Direct)->TransitionResource(m_GeometryBuffer, D3D12_RESOURCE_STATE_GENERIC_READ);
+		GetCommandContext()->TransitionResource(m_GeometryBuffer, D3D12_RESOURCE_STATE_GENERIC_READ);
 		DestroyBuffer(upload);
 	}
 
