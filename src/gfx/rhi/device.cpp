@@ -100,25 +100,15 @@ namespace limbo::Gfx
 					D3D12_MESSAGE_SEVERITY_INFO
 				};
 
-				// Suppress individual messages by their ID
-				D3D12_MESSAGE_ID DenyIds[] =
-				{
-					// This occurs when there are uninitialized descriptors in a descriptor table, even when a
-					// shader does not access the missing descriptors.
-					D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,
-				};
-
 				D3D12_INFO_QUEUE_FILTER NewFilter = {};
 				NewFilter.DenyList.NumSeverities = _countof(Severities);
 				NewFilter.DenyList.pSeverityList = Severities;
-				NewFilter.DenyList.NumIDs = _countof(DenyIds);
-				NewFilter.DenyList.pIDList = DenyIds;
 
-				d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true);
-				d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true);
-				d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false);
+				DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true));
+				DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true));
+				DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false));
 
-				d3d12InfoQueue->PushStorageFilter(&NewFilter);
+				DX_CHECK(d3d12InfoQueue->PushStorageFilter(&NewFilter));
 
 				DWORD messageCallbackCookie;
 				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, this, &messageCallbackCookie));
@@ -245,7 +235,7 @@ namespace limbo::Gfx
 		uint64 presentValue = m_PresentFence->Signal(m_CommandQueues[(int)ContextType::Direct]);
 		m_PresentFence->CpuWait(presentValue);
 
-		ResourceManager::Ptr->RunDeletionQueue();
+		OnPrepareFrame.Broadcast();
 
 		if (m_bNeedsResize)
 		{
@@ -358,6 +348,145 @@ namespace limbo::Gfx
 		}
 	}
 
+	DescriptorHandle Device::AllocateTempHandle(DescriptorHeapType heapType)
+	{
+		switch (heapType)
+		{
+		case DescriptorHeapType::SRV:
+			return m_GlobalHeap->AllocateTempHandle();
+		case DescriptorHeapType::RTV:
+			return m_Rtvheap->AllocateTempHandle();
+		case DescriptorHeapType::DSV:
+			return m_Dsvheap->AllocateTempHandle();
+		default:
+			return DescriptorHandle();
+		}
+	}
+
+	void Device::FreeHandle(DescriptorHandle& handle)
+	{
+		switch (handle.OwnerHeapType)
+		{
+		case DescriptorHeapType::SRV:
+			m_GlobalHeap->FreeHandle(handle);
+		case DescriptorHeapType::RTV:
+			m_Rtvheap->FreeHandle(handle);
+		case DescriptorHeapType::DSV:
+			m_Dsvheap->FreeHandle(handle);
+		}
+	}
+
+	void Device::CreateSRV(Texture* texture, DescriptorHandle& descriptorHandle, uint8 mipLevel)
+	{
+		DXGI_FORMAT format;
+		switch (texture->Spec.Format)
+		{
+		case Format::D16_UNORM:
+			format = DXGI_FORMAT_R16_UNORM;
+			break;
+		case Format::D32_SFLOAT:
+			format = DXGI_FORMAT_R32_FLOAT;
+			break;
+		case Format::D32_SFLOAT_S8_UINT:
+			format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+			break;
+		default:
+			format = D3DFormat(texture->Spec.Format);
+			break;
+		}
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
+			.Format = format,
+			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
+		};
+
+		uint32 mostDetailedMip = mipLevel;
+		uint32 mipLevels = mipLevel == 0 ? ~0 : 1;
+
+		if (texture->Spec.Type == TextureType::Texture1D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+			srvDesc.Texture1D = {
+				.MostDetailedMip = mostDetailedMip,
+				.MipLevels = mipLevels,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (texture->Spec.Type == TextureType::Texture2D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+			srvDesc.Texture2D = {
+				.MostDetailedMip = mostDetailedMip,
+				.MipLevels = mipLevels,
+				.PlaneSlice = 0,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (texture->Spec.Type == TextureType::Texture3D)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+			srvDesc.Texture3D = {
+				.MostDetailedMip = mostDetailedMip,
+				.MipLevels = mipLevels,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		else if (texture->Spec.Type == TextureType::TextureCube)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			srvDesc.TextureCube = {
+				.MostDetailedMip = mostDetailedMip,
+				.MipLevels = mipLevels,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+
+		m_Device->CreateShaderResourceView(texture->Resource.Get(), &srvDesc, descriptorHandle.CpuHandle);
+	}
+
+	void Device::CreateUAV(Texture* texture, DescriptorHandle& descriptorHandle, uint8 mipLevel)
+	{
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+
+		DXGI_FORMAT format = D3DFormat(texture->Spec.Format);
+		uavDesc.Format = format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ? DXGI_FORMAT_R8G8B8A8_UNORM : format;
+
+		if (texture->Spec.Type == TextureType::Texture1D)
+		{
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
+			uavDesc.Texture1D = {
+				.MipSlice = mipLevel
+			};
+		}
+		else if (texture->Spec.Type == TextureType::Texture2D)
+		{
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+			uavDesc.Texture2D = {
+				.MipSlice = mipLevel,
+				.PlaneSlice = 0
+			};
+		}
+		else if (texture->Spec.Type == TextureType::Texture3D)
+		{
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+			uavDesc.Texture3D.MipSlice = mipLevel;
+			uavDesc.Texture3D.FirstWSlice = 0;
+			uavDesc.Texture3D.WSize = -1;
+		}
+		else if (texture->Spec.Type == TextureType::TextureCube)
+		{
+			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+			uavDesc.Texture2DArray = {
+				.MipSlice = mipLevel,
+				.FirstArraySlice = 0,
+				.ArraySize = 6,
+				.PlaneSlice = 0
+			};
+		}
+
+		m_Device->CreateUnorderedAccessView(texture->Resource.Get(), nullptr, &uavDesc, descriptorHandle.CpuHandle);
+	}
+
 	void Device::TakeGPUCapture()
 	{
 		if (!m_bPIXCanCapture) return;
@@ -413,6 +542,8 @@ namespace limbo::Gfx
 		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t);
 
+		bool bIsRGB = t->Spec.Format == Format::RGBA8_UNORM_SRGB;
+
 		BindShader(m_GenerateMipsShader);
 		for (uint16 i = 1; i < t->Spec.MipLevels; ++i)
 		{
@@ -421,11 +552,11 @@ namespace limbo::Gfx
 			outputMipSize.y >>= i;
 			float2 texelSize = { 1.0f / outputMipSize.x, 1.0f / outputMipSize.y };
 
+			SetParameter(m_GenerateMipsShader, "bIsRGB", bIsRGB ? 1 : 0);
 			SetParameter(m_GenerateMipsShader, "TexelSize", texelSize);
 			SetParameter(m_GenerateMipsShader, "PreviousMip", texture, i - 1);
 			SetParameter(m_GenerateMipsShader, "OutputMip", texture, i);
 			Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
-			GetCommandContext(ContextType::Direct)->UAVBarrier(texture);
 		}
 
 		GetCommandContext(ContextType::Direct)->TransitionResource(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, t->Spec.MipLevels - 1);

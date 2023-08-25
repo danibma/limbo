@@ -91,6 +91,7 @@ namespace limbo::Gfx
 
 	Buffer::~Buffer()
 	{
+		Device::Ptr->FreeHandle(BasicHandle);
 	}
 
 	void Buffer::CreateCBV(ID3D12Device* device, const BufferSpec& spec)

@@ -78,6 +78,9 @@ namespace limbo::Gfx
 		DECLARE_MULTICAST_DELEGATE(TReloadShaders);
 		TReloadShaders ReloadShaders;
 
+		DECLARE_MULTICAST_DELEGATE(TOnPrepareFrame);
+		TOnPrepareFrame OnPrepareFrame;
+
 	public:
 		Device(Core::Window* window, GfxDeviceFlags flags);
 		~Device();
@@ -116,8 +119,14 @@ namespace limbo::Gfx
 		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
 		CommandContext* GetCommandContext(ContextType type) const { return m_CommandContexts.at((int)type); }
 		CommandQueue* GetCommandQueue(ContextType type) const { return m_CommandQueues.at((int)type); }
+		Fence* GetPresentFence() const { return m_PresentFence; }
 
 		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
+		DescriptorHandle AllocateTempHandle(DescriptorHeapType heapType);
+		void FreeHandle(DescriptorHandle& handle);
+
+		void CreateSRV(Texture* texture, DescriptorHandle& descriptorHandle, uint8 mipLevel = 0);
+		void CreateUAV(Texture* texture, DescriptorHandle& descriptorHandle, uint8 mipLevel = 0);
 
 		uint32 GetBackbufferWidth();
 		uint32 GetBackbufferHeight();

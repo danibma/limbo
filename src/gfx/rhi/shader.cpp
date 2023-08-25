@@ -106,17 +106,26 @@ namespace limbo::Gfx
 		FAILIF(!t);
 
 		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
-		if (parameter.Type == ShaderParameterType::UAV || mipLevel != ~0)
+		if (parameter.Type == ShaderParameterType::UAV)
 		{
-			FAILIF(t->BasicHandle[level].GPUHandle.ptr == 0); // texture is not a SRV
+			FAILIF(t->BasicHandle[level].GPUHandle.ptr == 0); // handle was not created in a shader visible heap
 			newState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			parameter.Descriptor = t->BasicHandle[level].GPUHandle;
 		}
 		else if (parameter.Type == ShaderParameterType::SRV)
 		{
-			FAILIF(t->SRVHandle.GPUHandle.ptr == 0); // texture is not a SRVs
+			if (mipLevel != ~0 && mipLevel > 0)
+			{
+				DescriptorHandle srvHandle = Device::Ptr->AllocateTempHandle(DescriptorHeapType::SRV);
+				Device::Ptr->CreateSRV(t, srvHandle, level);
+				parameter.Descriptor = srvHandle.GPUHandle;
+			}
+			else
+			{
+				FAILIF(t->SRVHandle.GPUHandle.ptr == 0); // handle was not created in a shader visible heap
+				parameter.Descriptor = t->SRVHandle.GPUHandle;
+			}
 			newState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-			parameter.Descriptor = t->SRVHandle.GPUHandle;
 		}
 		else if (parameter.Type == ShaderParameterType::Constants) // bindless
 		{

@@ -51,10 +51,10 @@ namespace limbo::Gfx
 		void ReloadSize(uint32 width, uint32 height);
 
 		// D3D12 Specific
-		void CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel);
-		void CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format);
-		void CreateRtv(const TextureSpec& spec, ID3D12Device* device);
-		void CreateDsv(const TextureSpec& spec, ID3D12Device* device);
+		void CreateUAV(uint8 mipLevel);
+		void CreateSRV();
+		void CreateRTV();
+		void CreateDSV();
 
 		void CreateResource(const TextureSpec& spec);
 		void InitResource(const TextureSpec& spec);

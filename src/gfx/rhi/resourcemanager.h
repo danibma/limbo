@@ -59,9 +59,9 @@ namespace limbo::Gfx
 		Pool<Texture, 1<<10>		m_Textures;
 		Pool<Shader,    128>		m_Shaders;
 
-		bool					m_bOnShutdown = false;
+		bool						m_bOnShutdown = false;
 
-		std::deque<Deletion>	m_DeletionQueue;
+		std::deque<Deletion>		m_DeletionQueue;
 	};
 
 

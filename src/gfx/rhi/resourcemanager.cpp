@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "resourcemanager.h"
 
+#include "device.h"
 #include "gfx/gfx.h"
 
 namespace limbo::Gfx
@@ -28,6 +29,11 @@ namespace limbo::Gfx
 				.Type = TextureType::Texture2D,
 				.InitialData = &textureData,
 			});
+		});
+
+		Device::Ptr->OnPrepareFrame.AddLambda([&]()
+		{
+			RunDeletionQueue();
 		});
 	}
 

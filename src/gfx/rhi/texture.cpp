@@ -128,62 +128,30 @@ namespace limbo::Gfx
 		InitResource(spec);
 	}
 
-	void Texture::CreateUav(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format, uint8 mipLevel)
+	void Texture::CreateUAV(uint8 mipLevel)
 	{
-		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
-			.Format = format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB ? DXGI_FORMAT_R8G8B8A8_UNORM : format,
-		};
-
-		if (spec.Type == TextureType::Texture1D)
-		{
-			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
-			uavDesc.Texture1D = {
-				.MipSlice = mipLevel
-			};
-		}
-		else if (spec.Type == TextureType::Texture2D)
-		{
-			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-			uavDesc.Texture2D = {
-				.MipSlice = mipLevel,
-				.PlaneSlice = 0
-			};
-		}
-		else if (spec.Type == TextureType::Texture3D)
-		{
-			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
-			uavDesc.Texture3D.MipSlice = mipLevel;
-			uavDesc.Texture3D.FirstWSlice = 0;
-			uavDesc.Texture3D.WSize = -1;
-		}
-		else if (spec.Type == TextureType::TextureCube)
-		{
-			uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-			uavDesc.Texture2DArray = {
-				.MipSlice = mipLevel,
-				.FirstArraySlice = 0,
-				.ArraySize = 6,
-				.PlaneSlice = 0
-			};
-		}
-
-		device->CreateUnorderedAccessView(Resource.Get(), nullptr, &uavDesc, BasicHandle[mipLevel].CpuHandle);
+		Device::Ptr->CreateUAV(this, BasicHandle[mipLevel], mipLevel);
 	}
 
-	void Texture::CreateRtv(const TextureSpec& spec, ID3D12Device* device)
+	void Texture::CreateSRV()
+	{
+		Device::Ptr->CreateSRV(this, SRVHandle);
+	}
+
+	void Texture::CreateRTV()
 	{
 		D3D12_RENDER_TARGET_VIEW_DESC desc = {
-			.Format = D3DFormat(spec.Format),
+			.Format = D3DFormat(Spec.Format),
 		};
 
-		if (spec.Type == TextureType::Texture1D)
+		if (Spec.Type == TextureType::Texture1D)
 		{
 			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE1D;
 			desc.Texture1D = {
 				.MipSlice = 0
 			};
 		}
-		else if (spec.Type == TextureType::Texture2D)
+		else if (Spec.Type == TextureType::Texture2D)
 		{
 			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 			desc.Texture2D = {
@@ -191,7 +159,7 @@ namespace limbo::Gfx
 				.PlaneSlice = 0
 			};
 		}
-		else if (spec.Type == TextureType::Texture3D)
+		else if (Spec.Type == TextureType::Texture3D)
 		{
 			desc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE3D;
 			desc.Texture3D.MipSlice = 0;
@@ -199,25 +167,25 @@ namespace limbo::Gfx
 			desc.Texture3D.WSize = -1;
 		}
 
-		device->CreateRenderTargetView(Resource.Get(), &desc, BasicHandle[0].CpuHandle);
+		Device::Ptr->GetDevice()->CreateRenderTargetView(Resource.Get(), &desc, BasicHandle[0].CpuHandle);
 	}
 
-	void Texture::CreateDsv(const TextureSpec& spec, ID3D12Device* device)
+	void Texture::CreateDSV()
 	{
-		FAILIF(spec.Type == TextureType::Texture3D); // this is not a valid texture type fro DSV
+		FAILIF(Spec.Type == TextureType::Texture3D); // this is not a valid texture type fro DSV
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC desc = {
-			.Format = D3DFormat(spec.Format),
+			.Format = D3DFormat(Spec.Format),
 		};
 
-		if (spec.Type == TextureType::Texture1D)
+		if (Spec.Type == TextureType::Texture1D)
 		{
 			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE1D;
 			desc.Texture1D = {
 				.MipSlice = 0
 			};
 		}
-		else if (spec.Type == TextureType::Texture2D)
+		else if (Spec.Type == TextureType::Texture2D)
 		{
 			desc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 			desc.Texture2D = {
@@ -225,89 +193,27 @@ namespace limbo::Gfx
 			};
 		}
 
-		device->CreateDepthStencilView(Resource.Get(), &desc, BasicHandle[0].CpuHandle);
-	}
-
-	void Texture::CreateSrv(const TextureSpec& spec, ID3D12Device* device, DXGI_FORMAT format)
-	{
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {
-			.Format = format,
-			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING
-		};
-
-		if (spec.Type == TextureType::Texture1D)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
-			srvDesc.Texture1D = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-		else if (spec.Type == TextureType::Texture2D)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			srvDesc.Texture2D = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.PlaneSlice = 0,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-		else if (spec.Type == TextureType::Texture3D)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
-			srvDesc.Texture3D = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-		else if (spec.Type == TextureType::TextureCube)
-		{
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
-			srvDesc.TextureCube = {
-				.MostDetailedMip = 0,
-				.MipLevels = ~0u,
-				.ResourceMinLODClamp = 0.0f
-			};
-		}
-
-		device->CreateShaderResourceView(Resource.Get(), &srvDesc, SRVHandle.CpuHandle);
+		Device::Ptr->GetDevice()->CreateDepthStencilView(Resource.Get(), &desc, BasicHandle[0].CpuHandle);
 	}
 
 	void Texture::InitResource(const TextureSpec& spec)
 	{
+		Spec = spec;
+
 		Device* device = Device::Ptr;
-		ID3D12Device* d3ddevice = device->GetDevice();
 
 		DXGI_FORMAT srvformat = D3DFormat(spec.Format);
 		if (EnumHasAllFlags(spec.Flags, TextureUsage::RenderTarget))
 		{
 			if (BasicHandle[0].CpuHandle.ptr == 0)
 				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::RTV);
-			CreateRtv(spec, d3ddevice);
+			CreateRTV();
 		}
 		else if (EnumHasAllFlags(spec.Flags, TextureUsage::DepthStencil))
 		{
 			if (BasicHandle[0].CpuHandle.ptr == 0)
 				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::DSV);
-			CreateDsv(spec, d3ddevice);
-			switch (spec.Format)
-			{
-			case Format::D16_UNORM: 
-				srvformat = DXGI_FORMAT_R16_UNORM;
-				break;
-			case Format::D32_SFLOAT: 
-				srvformat = DXGI_FORMAT_R32_FLOAT;
-				break;
-			case Format::D32_SFLOAT_S8_UINT: 
-				srvformat = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
-				break;
-			default:
-				ensure(false);
-				break;
-			}
+			CreateDSV();
 		}
 		else if (EnumHasAllFlags(spec.Flags, TextureUsage::UnorderedAccess))
 		{
@@ -315,7 +221,7 @@ namespace limbo::Gfx
 			{
 				if (BasicHandle[i].CpuHandle.ptr == 0)
 					BasicHandle[i] = device->AllocateHandle(DescriptorHeapType::SRV);
-				CreateUav(spec, d3ddevice, srvformat, i);
+				CreateUAV(i);
 			}
 		}
 
@@ -323,7 +229,7 @@ namespace limbo::Gfx
 		{
 			if (SRVHandle.CpuHandle.ptr == 0)
 				SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);
-			CreateSrv(spec, d3ddevice, srvformat);
+			CreateSRV();
 		}
 
 		if (spec.InitialData)
@@ -339,6 +245,9 @@ namespace limbo::Gfx
 			memcpy(allocation.MappedData, spec.InitialData, size);
 			allocation.Context->CopyBufferToTexture(allocation.Buffer, this, allocation.Offset);
 			GetRingBufferAllocator()->Free(allocation);
+			// TEMP: since I now have multiple command contexts, we have to track the resources states per command context instead...
+			device->GetCommandContext(ContextType::Direct)->TransitionResource(this, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+			device->GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
 		}
 
 		if (!spec.DebugName.empty())
@@ -351,6 +260,9 @@ namespace limbo::Gfx
 
 	Texture::~Texture()
 	{
+		Device::Ptr->FreeHandle(SRVHandle);
+		for (uint8 i = 0; i < Spec.MipLevels; ++i)
+			Device::Ptr->FreeHandle(BasicHandle[i]);
 	}
 
 	void Texture::ReloadSize(uint32 width, uint32 height)

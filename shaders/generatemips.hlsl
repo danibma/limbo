@@ -4,6 +4,7 @@ Texture2D<float4>	PreviousMip;
 RWTexture2D<float4> OutputMip;
 
 float2 TexelSize; // 1.0 / destination dimension
+uint bIsRGB;
 
 [numthreads(8, 8, 1)]
 void GenerateMip(uint2 threadID : SV_DispatchThreadID)
@@ -17,6 +18,9 @@ void GenerateMip(uint2 threadID : SV_DispatchThreadID)
 
     float4 alpha = PreviousMip.GatherAlpha(SLinearClamp, texcoords, 0);
     color.a = max(alpha.r, max(alpha.g, max(alpha.b, alpha.a)));
+
+    if (bIsRGB == 1)
+        color = float4(pow(color.rgb, (float3) (1.0 / 2.2)), color.a);
 
 	//Write the final color into the destination texture.
     OutputMip[threadID] = color;
