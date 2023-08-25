@@ -7,6 +7,8 @@
 
 #include <stb/stb_image.h>
 
+#include "ringbufferallocator.h"
+
 namespace limbo::Gfx
 {
 	void Texture::CreateResource(const TextureSpec& spec)
@@ -329,19 +331,14 @@ namespace limbo::Gfx
 			uint8 bytesPerChannel = D3DBytesPerChannel(spec.Format);
 			uint8 numChannels = 4;
 
-			std::string uploadName = std::string(spec.DebugName) + " (Upload Buffer)";
 			uint32 rowPitch = Math::Align(spec.Width * numChannels, (uint32)D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
-			Handle<Buffer> uploadBuffer = CreateBuffer({
-				.DebugName = uploadName.c_str(),
-				.ByteSize = rowPitch * spec.Height * bytesPerChannel,
-				.Flags = BufferUsage::Upload,
-				.InitialData = spec.InitialData
-			});
+			uint64 size = rowPitch * spec.Height * bytesPerChannel;
 
-			Buffer* allocationBuffer = ResourceManager::Ptr->GetBuffer(uploadBuffer);
-			FAILIF(!allocationBuffer);
-			Device::Ptr->GetCommandContext(ContextType::Direct)->CopyBufferToTexture(allocationBuffer, this);
-			DestroyBuffer(uploadBuffer);
+			RingBufferAllocation allocation;
+			GetRingBufferAllocator()->Allocate(size, allocation);
+			memcpy(allocation.MappedData, spec.InitialData, size);
+			allocation.Context->CopyBufferToTexture(allocation.Buffer, this, allocation.Offset);
+			GetRingBufferAllocator()->Free(allocation);
 		}
 
 		if (!spec.DebugName.empty())

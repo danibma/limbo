@@ -3,6 +3,7 @@
 // STL
 #include <string>
 #include <queue>
+#include <deque>
 #include <vector>
 #include <unordered_map>
 #include <functional>

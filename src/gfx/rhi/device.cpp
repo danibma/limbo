@@ -2,11 +2,11 @@
 #include "device.h"
 #include "commandcontext.h"
 #include "commandqueue.h"
-
-#include "core/window.h"
-#include "gfx/gfx.h"
 #include "swapchain.h"
 #include "descriptorheap.h"
+#include "ringbufferallocator.h"
+#include "core/window.h"
+#include "gfx/gfx.h"
 
 #include <comdef.h>
 
@@ -212,6 +212,7 @@ namespace limbo::Gfx
 	{
 		DestroyShader(m_GenerateMipsShader);
 
+		delete m_UploadRingBuffer;
 		delete m_Swapchain;
 	}
 
@@ -222,8 +223,6 @@ namespace limbo::Gfx
 		if (m_Flags & GfxDeviceFlag::EnableImgui)
 		{
 			BeginEvent("ImGui");
-
-			//context->BindSwapchainRenderTargets();
 
 			ImGui::Render();
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context->Get());
@@ -241,11 +240,10 @@ namespace limbo::Gfx
 
 		context->Execute();
 		m_Swapchain->Present(bEnableVSync);
+		m_FrameIndex = m_Swapchain->GetCurrentIndex();
 
 		uint64 presentValue = m_PresentFence->Signal(m_CommandQueues[(int)ContextType::Direct]);
 		m_PresentFence->CpuWait(presentValue);
-
-		m_FrameIndex = m_Swapchain->GetCurrentIndex();
 
 		ResourceManager::Ptr->RunDeletionQueue();
 
@@ -265,8 +263,6 @@ namespace limbo::Gfx
 			m_bNeedsShaderReload = false;
 			LB_LOG("Shaders got reloaded. It took %.2fs", t.ElapsedSeconds());
 		}
-
-		context->Reset();
 
 		// Prepare frame render targets
 		{
@@ -343,6 +339,8 @@ namespace limbo::Gfx
 			.CsEntryPoint = "GenerateMip",
 			.Type = ShaderType::Compute
 		});
+
+		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256));
 	}
 
 	DescriptorHandle Device::AllocateHandle(DescriptorHeapType heapType)
@@ -427,6 +425,7 @@ namespace limbo::Gfx
 			SetParameter(m_GenerateMipsShader, "PreviousMip", texture, i - 1);
 			SetParameter(m_GenerateMipsShader, "OutputMip", texture, i);
 			Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
+			GetCommandContext(ContextType::Direct)->UAVBarrier(texture);
 		}
 
 		GetCommandContext(ContextType::Direct)->TransitionResource(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, t->Spec.MipLevels - 1);

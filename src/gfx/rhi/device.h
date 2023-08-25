@@ -14,6 +14,7 @@ namespace limbo::Core
 namespace limbo::Gfx
 {
 	enum class DescriptorHeapType : uint8;
+	class RingBufferAllocator;
 	struct DescriptorHandle;
 	class DescriptorHeap;
 	class CommandQueue;
@@ -46,6 +47,7 @@ namespace limbo::Gfx
 		CommandQueueList					m_CommandQueues;
 		Fence*								m_PresentFence;
 
+		RingBufferAllocator*				m_UploadRingBuffer;
 
 		CD3DX12FeatureSupport				m_FeatureSupport;
 
@@ -98,6 +100,11 @@ namespace limbo::Gfx
 			return m_GPUInfo;
 		}
 
+		RingBufferAllocator* GetRingBufferAllocator() const
+		{
+			return m_UploadRingBuffer;
+		}
+
 		Handle<Texture> GetCurrentBackbuffer() const;
 		Handle<Texture> GetCurrentDepthBackbuffer() const;
 		Format GetSwapchainFormat();
@@ -108,6 +115,7 @@ namespace limbo::Gfx
 		// D3D12 specific
 		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
 		CommandContext* GetCommandContext(ContextType type) const { return m_CommandContexts.at((int)type); }
+		CommandQueue* GetCommandQueue(ContextType type) const { return m_CommandQueues.at((int)type); }
 
 		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
 
@@ -132,6 +140,11 @@ namespace limbo::Gfx
 	inline const GPUInfo& GetGPUInfo()
 	{
 		return Device::Ptr->GetGPUInfo();
+	}
+
+	inline RingBufferAllocator* GetRingBufferAllocator()
+	{
+		return Device::Ptr->GetRingBufferAllocator();
 	}
 
 	inline void CopyTextureToBackBuffer(Handle<Texture> texture)

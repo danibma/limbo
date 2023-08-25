@@ -20,6 +20,7 @@ namespace limbo::Gfx
 
 		// Stall CPU until fence value is signaled on the GPU
 		void CpuWait(uint64 fenceValue);
+		void CpuWait();
 
 		// Returns true if the fence has reached this value or higher
 		bool IsComplete(uint64 fenceValue);
@@ -46,13 +47,14 @@ namespace limbo::Gfx
 		~CommandQueue();
 
 		ID3D12CommandQueue* Get() const { return m_Queue.Get(); }
+		Fence* GetFence() const { return m_Fence; }
 
 		ID3D12CommandAllocator* RequestAllocator();
 		void FreeAllocator(ID3D12CommandAllocator* allocator, uint64 fenceValue);
 
 		// At the moment we only have one command list of each type, if in the future we have multiple,
 		// make this take a span as paremeter instead of a single context
-		void ExecuteCommandLists(CommandContext* context);
+		uint64 ExecuteCommandLists(CommandContext* context);
 		void WaitForIdle();
 	};
 }

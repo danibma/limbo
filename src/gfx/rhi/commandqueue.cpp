@@ -40,6 +40,11 @@ namespace limbo::Gfx
 			PIXNotifyWakeFromFenceSignal(m_CompleteEvent);
 	}
 
+	void Fence::CpuWait()
+	{
+		CpuWait(m_CurrentValue);
+	}
+
 	bool Fence::IsComplete(uint64 fenceValue)
 	{
 		return fenceValue <= m_Fence->GetCompletedValue();
@@ -102,13 +107,14 @@ namespace limbo::Gfx
 		m_AllocatorPool.push({ allocator, fenceValue });
 	}
 
-	void CommandQueue::ExecuteCommandLists(CommandContext* context)
+	uint64 CommandQueue::ExecuteCommandLists(CommandContext* context)
 	{
 		ID3D12CommandList* cmd[1] = { context->Get() };
 		m_Queue->ExecuteCommandLists(1, cmd);
 
 		uint64 fenceValue = m_Fence->Signal(this);
 		context->Free(fenceValue);
+		return fenceValue;
 	}
 
 	void CommandQueue::WaitForIdle()

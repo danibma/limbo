@@ -11,6 +11,8 @@ namespace limbo::Gfx
 	class DescriptorHeap;
 	class CommandContext
 	{
+		bool								m_bIsClosed = false;
+
 		ID3D12CommandAllocator*				m_Allocator;
 		ComPtr<ID3D12GraphicsCommandList4>	m_CommandList;
 		CommandQueue*						m_ParentQueue;
@@ -26,12 +28,13 @@ namespace limbo::Gfx
 		CommandContext(CommandQueue* queue, ContextType type, ID3D12Device5* device, DescriptorHeap* globalHeap);
 		~CommandContext();
 
+		CommandQueue* GetQueue() const { return m_ParentQueue; }
 		ID3D12GraphicsCommandList4* Get() const { return m_CommandList.Get(); }
 
 		void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst);
 		void CopyTextureToBackBuffer(Handle<Texture> texture);
-		void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst);
-		void CopyBufferToTexture(Buffer* src, Texture* dst);
+		void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst, uint64 dstOffset = 0);
+		void CopyBufferToTexture(Buffer* src, Texture* dst, uint64 dstOffset = 0);
 		void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 		void CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 
@@ -65,8 +68,8 @@ namespace limbo::Gfx
 		void BindSwapchainRenderTargets();
 
 		void Reset();
-		void Execute();
 		void Free(uint64 fenceValue);
+		uint64 Execute();
 
 	private:
 		void InstallDrawState();

@@ -54,30 +54,30 @@ namespace limbo::Gfx
 		SubmitResourceBarriers();
 	}
 
-	void CommandContext::CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
+	void CommandContext::CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst, uint64 dstOffset)
 	{
 		Texture* dstTexture = ResourceManager::Ptr->GetTexture(dst);
 		FAILIF(!dstTexture);
 		Buffer* srcBuffer = ResourceManager::Ptr->GetBuffer(src);
 		FAILIF(!srcBuffer);
 
-		CopyBufferToTexture(srcBuffer, dstTexture);
+		CopyBufferToTexture(srcBuffer, dstTexture, dstOffset);
 	}
 
-	void CommandContext::CopyBufferToTexture(Buffer* src, Texture* dst)
+	void CommandContext::CopyBufferToTexture(Buffer* src, Texture* dst, uint64 dstOffset)
 	{
 		TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST, ~0);
 		SubmitResourceBarriers();
 
 		D3D12_RESOURCE_DESC dstDesc = dst->Resource->GetDesc();
 
-		D3D12_PLACED_SUBRESOURCE_FOOTPRINT srcFootprints[D3D12_REQ_MIP_LEVELS] = {};
-		Device::Ptr->GetDevice()->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, 0, srcFootprints, nullptr, nullptr, nullptr);
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprints[D3D12_REQ_MIP_LEVELS] = {};
+		Device::Ptr->GetDevice()->GetCopyableFootprints(&dstDesc, 0, dstDesc.MipLevels, dstOffset, footprints, nullptr, nullptr, nullptr);
 
 		D3D12_TEXTURE_COPY_LOCATION srcLocation = {
 			.pResource = src->Resource.Get(),
 			.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-			.PlacedFootprint = srcFootprints[0]
+			.PlacedFootprint = footprints[0]
 		};
 
 		D3D12_TEXTURE_COPY_LOCATION dstLocation = {
@@ -277,6 +277,7 @@ namespace limbo::Gfx
 	{
 		m_Allocator = m_ParentQueue->RequestAllocator();
 		DX_CHECK(m_CommandList->Reset(m_Allocator, nullptr));
+		m_bIsClosed = false;
 
 		if (m_Type != ContextType::Copy)
 		{
@@ -285,16 +286,20 @@ namespace limbo::Gfx
 		}
 	}
 
-	void CommandContext::Execute()
+	uint64 CommandContext::Execute()
 	{
 		DX_CHECK(m_CommandList->Close());
-		m_ParentQueue->ExecuteCommandLists(this);
+		m_bIsClosed = true;
+		return m_ParentQueue->ExecuteCommandLists(this);
 	}
 
 	void CommandContext::Free(uint64 fenceValue)
 	{
 		m_ParentQueue->FreeAllocator(m_Allocator, fenceValue);
 		m_Allocator = nullptr;
+
+		if (m_bIsClosed)
+			Reset();
 	}
 
 	void CommandContext::Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
