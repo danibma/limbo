@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "buffer.h"
 #include "device.h"
+#include "ringbufferallocator.h"
 
 #include "core/utils.h"
 
@@ -70,17 +71,11 @@ namespace limbo::Gfx
 			}
 			else
 			{
-				std::string uploadName = std::string(spec.DebugName) + " (Upload Buffer)";
-				Handle<Buffer> uploadBuffer = CreateBuffer({
-					.DebugName = uploadName.c_str(),
-					.ByteSize = spec.ByteSize,
-					.Flags = BufferUsage::Upload,
-					.InitialData = spec.InitialData
-				});
-				Buffer* allocationBuffer = ResourceManager::Ptr->GetBuffer(uploadBuffer);
-				FAILIF(!allocationBuffer);
-				Device::Ptr->GetCommandContext(ContextType::Direct)->CopyBufferToBuffer(allocationBuffer, this, spec.ByteSize, 0, 0);
-				DestroyBuffer(uploadBuffer);
+				RingBufferAllocation allocation;
+				GetRingBufferAllocator()->Allocate(spec.ByteSize, allocation);
+				memcpy(allocation.MappedData, spec.InitialData, spec.ByteSize);
+				allocation.Context->CopyBufferToBuffer(allocation.Buffer, this, spec.ByteSize, allocation.Offset, 0);
+				GetRingBufferAllocator()->Free(allocation);
 			}
 		}
 
