@@ -182,23 +182,73 @@ FORCEINLINE void Noop(Args... args) {}
 #define LB_NON_COPYABLE(TYPE)  \
     TYPE(TYPE const &) = delete; TYPE &operator =(TYPE const &) = delete
 
-#define DECLARE_BITMASK_TYPE(Enum) \
-	inline constexpr Enum& operator|=(Enum& Lhs, Enum Rhs) { return Lhs = (Enum)((__underlying_type(Enum))Lhs | (__underlying_type(Enum))Rhs); } \
-	inline constexpr Enum& operator&=(Enum& Lhs, Enum Rhs) { return Lhs = (Enum)((__underlying_type(Enum))Lhs & (__underlying_type(Enum))Rhs); } \
-	inline constexpr Enum& operator^=(Enum& Lhs, Enum Rhs) { return Lhs = (Enum)((__underlying_type(Enum))Lhs ^ (__underlying_type(Enum))Rhs); } \
-	inline constexpr Enum  operator| (Enum  Lhs, Enum Rhs) { return (Enum)((__underlying_type(Enum))Lhs | (__underlying_type(Enum))Rhs); } \
-	inline constexpr Enum  operator& (Enum  Lhs, Enum Rhs) { return (Enum)((__underlying_type(Enum))Lhs & (__underlying_type(Enum))Rhs); } \
-	inline constexpr Enum  operator^ (Enum  Lhs, Enum Rhs) { return (Enum)((__underlying_type(Enum))Lhs ^ (__underlying_type(Enum))Rhs); } \
-	inline constexpr bool  operator! (Enum  E) { return !(__underlying_type(Enum))E; } \
-	inline constexpr Enum  operator~ (Enum  E) { return (Enum)~(__underlying_type(Enum))E; }
+//
+// TEnableIf
+//
+template <bool Predicate, typename Result = void>
+class TEnableIf;
 
-template<typename Enum, typename = std::enable_if_t<std::is_enum_v<Enum>>>
+template <typename Result>
+class TEnableIf<true, Result>
+{
+public:
+	using type = Result;
+	using Type = Result;
+};
+
+template <typename Result>
+class TEnableIf<false, Result>
+{ };
+
+//
+// TIsEnum
+//
+template <typename T>
+struct TIsEnum
+{
+	enum { Value = __is_enum(T) };
+};
+
+// Support bitwise operation
+template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
+constexpr Type operator&(Type a, Type b)
+{
+	return static_cast<Type>(static_cast<__underlying_type(Type)>(a) & static_cast<__underlying_type(Type)>(b));
+}
+
+template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
+constexpr Type operator|(Type a, Type b)
+{
+	return static_cast<Type>(static_cast<__underlying_type(Type)>(a) | static_cast<__underlying_type(Type)>(b));
+}
+
+template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
+constexpr Type operator~(Type a)
+{
+	return static_cast<Type>(~static_cast<__underlying_type(Type)>(a));
+}
+
+template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
+constexpr Type operator|=(Type a, Type b)
+{
+	a = static_cast<Type>(static_cast<__underlying_type(Type)>(a) | static_cast<__underlying_type(Type)>(b));
+	return a;
+}
+
+template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
+constexpr Type operator&=(Type a, Type b)
+{
+	a = static_cast<Type>(static_cast<__underlying_type(Type)>(a) | static_cast<__underlying_type(Type)>(b));
+	return a;
+}
+
+template<typename Enum, typename = TEnableIf<TIsEnum<Enum>::Value>>
 constexpr inline bool EnumHasAllFlags(Enum Flags, Enum Contains)
 {
 	return (((__underlying_type(Enum))Flags) & (__underlying_type(Enum))Contains) == ((__underlying_type(Enum))Contains);
 }
 
-template<typename Enum, typename = std::enable_if_t<std::is_enum_v<Enum>>>
+template<typename Enum, typename = TEnableIf<TIsEnum<Enum>::Value>>
 constexpr inline bool EnumHasAnyFlags(Enum Flags, Enum Contains)
 {
 	return (((__underlying_type(Enum))Flags) & (__underlying_type(Enum))Contains) != 0;

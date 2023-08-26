@@ -9,16 +9,15 @@ namespace limbo::Gfx
 {
 	enum class BufferUsage
 	{
-		Vertex = 1 << 0 ,
-		Index = 1 << 1,
-		Constant = 1 << 2,
-		Structured = 1 << 3,
-		Upload = 1 << 4,
-		Byte = 1 << 5,
-		AccelerationStructure = 1 << 6,
-		ShaderResourceView = 1 << 7
+		Vertex					= 1 << 0,
+		Index					= 1 << 1,
+		Constant				= 1 << 2,
+		Structured				= 1 << 3,
+		Upload					= 1 << 4,
+		Byte					= 1 << 5,
+		AccelerationStructure	= 1 << 6,
+		ShaderResourceView		= 1 << 7
 	};
-	DECLARE_BITMASK_TYPE(BufferUsage);
 
 	struct BufferSpec
 	{
@@ -29,7 +28,6 @@ namespace limbo::Gfx
 		BufferUsage		Flags		= BufferUsage::Constant;
 		const void*		InitialData = nullptr;
 	};
-
 
 	class Buffer
 	{

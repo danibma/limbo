@@ -14,7 +14,6 @@ namespace limbo::Gfx
 		RenderTarget	= 1 << 3,
 		DepthStencil	= 1 << 4,
 	};
-	DECLARE_BITMASK_TYPE(TextureUsage);
 
 	struct TextureSpec
 	{
