@@ -33,7 +33,6 @@ namespace limbo::Gfx
 	{
 	public:
 		ComPtr<ID3D12Resource>		Resource;
-		D3D12_RESOURCE_STATES		CurrentState[D3D12_REQ_MIP_LEVELS];
 		D3D12_RESOURCE_STATES		InitialState;
 		DescriptorHandle			BasicHandle[D3D12_REQ_MIP_LEVELS];
 		DescriptorHandle			SRVHandle;

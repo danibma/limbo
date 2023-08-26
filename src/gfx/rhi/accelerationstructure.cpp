@@ -71,7 +71,7 @@ namespace limbo::Gfx
 					});
 
 					GetCommandContext()->BuildRaytracingAccelerationStructure(ASInputs, blasScratch, blasResult);
-					GetCommandContext()->UAVBarrier(blasResult);
+					GetCommandContext()->InsertUAVBarrier(blasResult);
 					DestroyBuffer(blasScratch);
 					mesh.BLAS = blasResult;
 					bUpdateBLAS = true;
@@ -139,7 +139,7 @@ namespace limbo::Gfx
 
 		// build top level acceleration structure
 		GetCommandContext()->BuildRaytracingAccelerationStructure(TLASInput, m_ScratchBuffer, m_TLAS);
-		GetCommandContext()->UAVBarrier(m_TLAS);
+		GetCommandContext()->InsertUAVBarrier(m_TLAS);
 
 		EndEvent();
 	}

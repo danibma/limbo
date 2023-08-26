@@ -144,6 +144,15 @@ namespace limbo::Gfx
 		return t;
 	}
 
+	template<typename ResourceType, TEnableIf<TIsSame<ResourceType, Texture>::Value, int> = 0, TEnableIf<TIsSame<ResourceType, Buffer>::Value, int> = 0>
+	ResourceType* GetResource(Handle<ResourceType> resource)
+	{
+		if constexpr (TIsSame<ResourceType, Texture>::Value)
+			return GetTexture(resource);
+		else
+			return GetBuffer(resource);
+	}
+
 	inline void Map(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
 	{
 		ResourceManager::Ptr->Map(buffer, subresource, range);

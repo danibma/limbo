@@ -223,7 +223,7 @@ namespace limbo::Gfx
 		{
 			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
 			Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
-			context->TransitionResource(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
+			context->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
 
 			context->SubmitResourceBarriers();
 		}
@@ -259,12 +259,12 @@ namespace limbo::Gfx
 			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
 			Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
 			FAILIF(!backbuffer);
-			context->TransitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			context->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 			Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
 			Texture* depthBackbuffer = ResourceManager::Ptr->GetTexture(depthBackBufferHandle);
 			FAILIF(!depthBackbuffer);
-			context->TransitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+			context->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 			context->SubmitResourceBarriers();
 		}
@@ -315,12 +315,12 @@ namespace limbo::Gfx
 		Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
 		Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
 		FAILIF(!backbuffer);
-		GetCommandContext(ContextType::Direct)->TransitionResource(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 		Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
 		Texture* depthBackbuffer = ResourceManager::Ptr->GetTexture(depthBackBufferHandle);
 		FAILIF(!depthBackbuffer);
-		GetCommandContext(ContextType::Direct)->TransitionResource(depthBackbuffer, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
 
@@ -557,9 +557,10 @@ namespace limbo::Gfx
 			SetParameter(m_GenerateMipsShader, "PreviousMip", texture, i - 1);
 			SetParameter(m_GenerateMipsShader, "OutputMip", texture, i);
 			Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
+			GetCommandContext(ContextType::Direct)->InsertUAVBarrier(t);
 		}
 
-		GetCommandContext(ContextType::Direct)->TransitionResource(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, t->Spec.MipLevels - 1);
+		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, t->Spec.MipLevels - 1);
 		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
 	}
 

@@ -117,7 +117,7 @@ namespace limbo::Gfx
 
 		++m_AccumCount;
 
-		GetCommandContext()->UAVBarrier(m_FinalTexture);
+		GetCommandContext()->InsertUAVBarrier(m_FinalTexture);
 		CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
 	}
 

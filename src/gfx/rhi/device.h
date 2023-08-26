@@ -146,151 +146,150 @@ namespace limbo::Gfx
 		bool IsUnderRenderDoc();
 	};
 
-	inline const GPUInfo& GetGPUInfo()
+	//
+	// Global Device
+	//
+
+	FORCEINLINE const GPUInfo& GetGPUInfo()
 	{
 		return Device::Ptr->GetGPUInfo();
 	}
 
-	inline RingBufferAllocator* GetRingBufferAllocator()
+	FORCEINLINE RingBufferAllocator* GetRingBufferAllocator()
 	{
 		return Device::Ptr->GetRingBufferAllocator();
 	}
 
-	inline CommandContext* GetCommandContext(ContextType type = ContextType::Direct)
+	FORCEINLINE CommandContext* GetCommandContext(ContextType type = ContextType::Direct)
 	{
 		return Device::Ptr->GetCommandContext(type);
 	}
 
-	inline void CopyTextureToBackBuffer(Handle<Texture> texture)
-	{
-		GetCommandContext()->CopyTextureToBackBuffer(texture);
-	}
-
-	inline void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
-	{
-		GetCommandContext()->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
-	}
-
-	inline void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
-	{
-		GetCommandContext()->CopyTextureToTexture(src, dst);
-	}
-
-	inline void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
-	{
-		GetCommandContext()->CopyBufferToTexture(src, dst);
-	}
-
-	inline void BeginEvent(const char* name, uint64 color = 0)
-	{
-		GetCommandContext()->BeginEvent(name, color);
-	}
-
-	inline void ScopedEvent(const char* name, uint64 color = 0)
-	{
-		GetCommandContext()->ScopedEvent(name, color);
-	}
-
-	inline void ReloadShaders()
+	FORCEINLINE void ReloadShaders()
 	{
 		Device::Ptr->MarkReloadShaders();
 	}
 
-	inline void EndEvent()
-	{
-		GetCommandContext()->EndEvent();
-	}
-
-	inline void TakeGPUCapture()
-	{
-		Device::Ptr->TakeGPUCapture();
-	}
-
-	inline void OpenLastGPUCapture()
-	{
-		Device::Ptr->OpenLastGPUCapture();
-	}
-
-	inline void BindVertexBuffer(Handle<Buffer> buffer)
-	{
-		GetCommandContext()->BindVertexBuffer(buffer);
-	}
-
-	inline void BindIndexBuffer(Handle<Buffer> buffer)
-	{
-		GetCommandContext()->BindIndexBuffer(buffer);
-	}
-
-	inline void BindVertexBufferView(VertexBufferView view)
-	{
-		GetCommandContext()->BindVertexBufferView(view);
-	}
-
-	inline void BindIndexBufferView(IndexBufferView view)
-	{
-		GetCommandContext()->BindIndexBufferView(view);
-	}
-
-	inline void BindShader(Handle<Shader> shader)
-	{
-		GetCommandContext()->BindShader(shader);
-	}
-
-	inline void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
-	{
-		GetCommandContext()->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
-	}
-
-	inline void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
-	{
-		GetCommandContext()->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
-	}
-
-	inline void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
-	{
-		GetCommandContext()->Dispatch(groupCountX, groupCountY, groupCountZ);
-	}
-
-	inline void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1)
-	{
-		GetCommandContext()->DispatchRays(sbt, width, height, depth);
-	}
-
-	inline void Present(bool bEnableVSync)
+	FORCEINLINE void Present(bool bEnableVSync)
 	{
 		Device::Ptr->Present(bEnableVSync);
 	}
 
-	inline Format GetSwapchainFormat()
+	FORCEINLINE Format GetSwapchainFormat()
 	{
 		return Device::Ptr->GetSwapchainFormat();
 	}
 
-	inline uint32 GetBackbufferWidth()
+	FORCEINLINE uint32 GetBackbufferWidth()
 	{
 		return Device::Ptr->GetBackbufferWidth();
 	}
 
-	inline uint32 GetBackbufferHeight()
+	FORCEINLINE uint32 GetBackbufferHeight()
 	{
 		return Device::Ptr->GetBackbufferHeight();
 	}
 
-	inline uint16 CalculateMipCount(uint32 width, uint32 height = 0, uint32 depth = 0)
-	{
-		uint16 mipCount = 0;
-		uint32 mipSize = Math::Max(width, Math::Max(height, depth));
-		while (mipSize >= 1) { mipSize >>= 1; mipCount++; }
-		return mipCount;
-	}
-
-	inline void GenerateMipLevels(Handle<Texture> texture)
+	FORCEINLINE void GenerateMipLevels(Handle<Texture> texture)
 	{
 		Device::Ptr->GenerateMipLevels(texture);
 	}
 
-	inline bool CanTakeGPUCapture()
+	FORCEINLINE bool CanTakeGPUCapture()
 	{
 		return Device::Ptr->CanTakeGPUCapture();
+	}
+
+	FORCEINLINE void TakeGPUCapture()
+	{
+		Device::Ptr->TakeGPUCapture();
+	}
+
+	FORCEINLINE void OpenLastGPUCapture()
+	{
+		Device::Ptr->OpenLastGPUCapture();
+	}
+
+	//
+	// Global Command Context
+	//
+	FORCEINLINE void CopyTextureToBackBuffer(Handle<Texture> texture)
+	{
+		GetCommandContext()->CopyTextureToBackBuffer(texture);
+	}
+
+	FORCEINLINE void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
+	{
+		GetCommandContext()->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
+	}
+
+	FORCEINLINE void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
+	{
+		GetCommandContext()->CopyTextureToTexture(src, dst);
+	}
+
+	FORCEINLINE void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
+	{
+		GetCommandContext()->CopyBufferToTexture(src, dst);
+	}
+
+	FORCEINLINE void BeginEvent(const char* name, uint64 color = 0)
+	{
+		GetCommandContext()->BeginEvent(name, color);
+	}
+
+	FORCEINLINE void ScopedEvent(const char* name, uint64 color = 0)
+	{
+		GetCommandContext()->ScopedEvent(name, color);
+	}
+
+	FORCEINLINE void EndEvent()
+	{
+		GetCommandContext()->EndEvent();
+	}
+
+	FORCEINLINE void BindVertexBuffer(Handle<Buffer> buffer)
+	{
+		GetCommandContext()->BindVertexBuffer(buffer);
+	}
+
+	FORCEINLINE void BindIndexBuffer(Handle<Buffer> buffer)
+	{
+		GetCommandContext()->BindIndexBuffer(buffer);
+	}
+
+	FORCEINLINE void BindVertexBufferView(VertexBufferView view)
+	{
+		GetCommandContext()->BindVertexBufferView(view);
+	}
+
+	FORCEINLINE void BindIndexBufferView(IndexBufferView view)
+	{
+		GetCommandContext()->BindIndexBufferView(view);
+	}
+
+	FORCEINLINE void BindShader(Handle<Shader> shader)
+	{
+		GetCommandContext()->BindShader(shader);
+	}
+
+	FORCEINLINE void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
+	{
+		GetCommandContext()->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
+	}
+
+	FORCEINLINE void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
+	{
+		GetCommandContext()->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
+	}
+
+	FORCEINLINE void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	{
+		GetCommandContext()->Dispatch(groupCountX, groupCountY, groupCountZ);
+	}
+
+	FORCEINLINE void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1)
+	{
+		GetCommandContext()->DispatchRays(sbt, width, height, depth);
 	}
 }

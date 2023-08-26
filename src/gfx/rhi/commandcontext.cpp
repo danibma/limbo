@@ -37,8 +37,8 @@ namespace limbo::Gfx
 		Texture* srcTexture = GetTexture(src);
 		Texture* dstTexture = GetTexture(dst);
 
-		TransitionResource(srcTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
-		TransitionResource(dstTexture, D3D12_RESOURCE_STATE_COPY_DEST);
+		InsertResourceBarrier(srcTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		InsertResourceBarrier(dstTexture, D3D12_RESOURCE_STATE_COPY_DEST);
 
 		SubmitResourceBarriers();
 		m_CommandList->CopyResource(dstTexture->Resource.Get(), srcTexture->Resource.Get());
@@ -50,7 +50,7 @@ namespace limbo::Gfx
 
 		CopyTextureToTexture(texture, backBufferHandle);
 
-		TransitionResource(backBufferHandle, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		InsertResourceBarrier(GetTexture(backBufferHandle), D3D12_RESOURCE_STATE_RENDER_TARGET);
 		SubmitResourceBarriers();
 	}
 
@@ -66,7 +66,7 @@ namespace limbo::Gfx
 
 	void CommandContext::CopyBufferToTexture(Buffer* src, Texture* dst, uint64 dstOffset)
 	{
-		TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST, ~0);
+		InsertResourceBarrier(dst, D3D12_RESOURCE_STATE_COPY_DEST, ~0);
 		SubmitResourceBarriers();
 
 		D3D12_RESOURCE_DESC dstDesc = dst->Resource->GetDesc();
@@ -100,8 +100,8 @@ namespace limbo::Gfx
 
 	void CommandContext::CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
 	{
-		TransitionResource(src, D3D12_RESOURCE_STATE_GENERIC_READ);
-		TransitionResource(dst, D3D12_RESOURCE_STATE_COPY_DEST);
+		InsertResourceBarrier(src, D3D12_RESOURCE_STATE_COPY_SOURCE);
+		InsertResourceBarrier(dst, D3D12_RESOURCE_STATE_COPY_DEST);
 		SubmitResourceBarriers();
 
 		m_CommandList->CopyBufferRegion(dst->Resource.Get(), dstOffset, src->Resource.Get(), srcOffset, numBytes);
@@ -111,7 +111,7 @@ namespace limbo::Gfx
 	{
 		ResourceManager* rm = ResourceManager::Ptr;
 		Buffer* vb = rm->GetBuffer(buffer);
-		TransitionResource(vb, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+		InsertResourceBarrier(vb, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
 		D3D12_VERTEX_BUFFER_VIEW vbView = {
 			.BufferLocation = vb->Resource->GetGPUVirtualAddress(),
@@ -125,7 +125,7 @@ namespace limbo::Gfx
 	{
 		ResourceManager* rm = ResourceManager::Ptr;
 		Buffer* ib = rm->GetBuffer(buffer);
-		TransitionResource(ib, D3D12_RESOURCE_STATE_INDEX_BUFFER);
+		InsertResourceBarrier(ib, D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
 		D3D12_INDEX_BUFFER_VIEW ibView = {
 			.BufferLocation = ib->Resource->GetGPUVirtualAddress(),
@@ -176,9 +176,9 @@ namespace limbo::Gfx
 			{
 				// first transition the render targets to the correct resource state
 				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
-					TransitionResource(pBoundShader->RenderTargets[i].Texture, D3D12_RESOURCE_STATE_RENDER_TARGET);
+					InsertResourceBarrier(GetTexture(pBoundShader->RenderTargets[i].Texture), D3D12_RESOURCE_STATE_RENDER_TARGET);
 				if (pBoundShader->DepthTarget.Texture.IsValid())
-					TransitionResource(pBoundShader->DepthTarget.Texture, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+					InsertResourceBarrier(GetTexture(pBoundShader->DepthTarget.Texture), D3D12_RESOURCE_STATE_DEPTH_WRITE);
 				SubmitResourceBarriers();
 
 				D3D12_CPU_DESCRIPTOR_HANDLE* dsvhandle = nullptr;
@@ -251,6 +251,32 @@ namespace limbo::Gfx
 		}
 	}
 
+	bool CommandContext::IsTransitionAllowed(D3D12_RESOURCE_STATES state)
+	{
+		constexpr int VALID_COMPUTE_QUEUE_RESOURCE_STATES =
+			D3D12_RESOURCE_STATE_COMMON
+			| D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+			| D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE
+			| D3D12_RESOURCE_STATE_COPY_DEST
+			| D3D12_RESOURCE_STATE_COPY_SOURCE
+			| D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+
+		constexpr int VALID_COPY_QUEUE_RESOURCE_STATES =
+			D3D12_RESOURCE_STATE_COMMON
+			| D3D12_RESOURCE_STATE_COPY_DEST
+			| D3D12_RESOURCE_STATE_COPY_SOURCE;
+
+		if (D3DCmdListType(m_Type) == D3D12_COMMAND_LIST_TYPE_COMPUTE)
+		{
+			return (state & VALID_COMPUTE_QUEUE_RESOURCE_STATES) == state;
+		}
+		else if (D3DCmdListType(m_Type) == D3D12_COMMAND_LIST_TYPE_COPY)
+		{
+			return (state & VALID_COPY_QUEUE_RESOURCE_STATES) == state;
+		}
+		return true;
+	}
+
 	void CommandContext::BindSwapchainRenderTargets()
 	{
 		ResourceManager* rm = ResourceManager::Ptr;
@@ -267,6 +293,9 @@ namespace limbo::Gfx
 		FAILIF(!depthBackbuffer);
 
 		m_CommandList->OMSetRenderTargets(1, &backbuffer->BasicHandle[0].CpuHandle, false, &depthBackbuffer->BasicHandle[0].CpuHandle);
+
+		InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		SubmitResourceBarriers();
 
 		constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 		m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -338,7 +367,7 @@ namespace limbo::Gfx
 
 	void CommandContext::BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, Handle<Buffer> scratch, Handle<Buffer> result)
 	{
-		TransitionResource(scratch, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		InsertResourceBarrier(GetBuffer(scratch), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		SubmitResourceBarriers();
 
@@ -347,62 +376,6 @@ namespace limbo::Gfx
 		desc.ScratchAccelerationStructureData = GetBuffer(scratch)->Resource->GetGPUVirtualAddress();
 		desc.DestAccelerationStructureData = GetBuffer(result)->Resource->GetGPUVirtualAddress();
 		m_CommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
-	}
-
-
-	void CommandContext::TransitionResource(Buffer* buffer, D3D12_RESOURCE_STATES newState)
-	{
-		if (buffer->CurrentState == newState) return;
-		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(buffer->Resource.Get(), buffer->CurrentState, newState));
-		buffer->CurrentState = newState;
-	}
-
-	void CommandContext::TransitionResource(Handle<Texture> texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel)
-	{
-		Texture* t = ResourceManager::Ptr->GetTexture(texture);
-		FAILIF(!t);
-		TransitionResource(t, newState, mipLevel);
-	}
-
-	void CommandContext::TransitionResource(Handle<Buffer> buffer, D3D12_RESOURCE_STATES newState)
-	{
-		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
-		FAILIF(!b);
-		TransitionResource(b, newState);
-	}
-
-	void CommandContext::TransitionResource(Texture* texture, D3D12_RESOURCE_STATES newState, uint32 mipLevel)
-	{
-		D3D12_RESOURCE_STATES oldState;
-		if (mipLevel == ~0)
-		{
-			if (texture->CurrentState[0] == newState) return;
-			oldState = texture->CurrentState[0];
-			for (uint8 i = 0; i < texture->Spec.MipLevels; ++i)
-				texture->CurrentState[i] = newState;
-		}
-		else
-		{
-			if (texture->CurrentState[mipLevel] == newState) return;
-			oldState = texture->CurrentState[mipLevel];
-			texture->CurrentState[mipLevel] = newState;
-		}
-
-		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::Transition(texture->Resource.Get(), oldState, newState, mipLevel));
-	}
-
-	void CommandContext::UAVBarrier(Handle<Texture> texture)
-	{
-		Texture* t = ResourceManager::Ptr->GetTexture(texture);
-		FAILIF(!t);
-		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(t->Resource.Get()));
-	}
-
-	void CommandContext::UAVBarrier(Handle<Buffer> buffer)
-	{
-		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
-		FAILIF(!b);
-		m_ResourceBarriers.emplace_back(CD3DX12_RESOURCE_BARRIER::UAV(b->Resource.Get()));
 	}
 
 	void CommandContext::BeginEvent(const char* name, uint64 color)

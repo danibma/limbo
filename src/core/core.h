@@ -209,6 +209,12 @@ struct TIsEnum
 	enum { Value = __is_enum(T) };
 };
 
+//
+// TIsSame
+//
+template<typename A, typename B>	struct TIsSame { enum { Value = false }; };
+template<typename T>				struct TIsSame<T, T> { enum { Value = true }; };
+
 // Support bitwise operation
 template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
 constexpr Type operator&(Type a, Type b)

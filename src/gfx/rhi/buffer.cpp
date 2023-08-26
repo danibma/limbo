@@ -8,7 +8,7 @@
 namespace limbo::Gfx
 {
 	Buffer::Buffer(const BufferSpec& spec)
-		: CurrentState(D3D12_RESOURCE_STATE_COMMON), ByteStride(spec.ByteStride), ByteSize(spec.ByteSize)
+		: InitialState(D3D12_RESOURCE_STATE_COMMON), ByteStride(spec.ByteStride), ByteSize(spec.ByteSize)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device* d3ddevice = device->GetDevice();
@@ -41,11 +41,11 @@ namespace limbo::Gfx
 		if (EnumHasAllFlags(spec.Flags, BufferUsage::Upload))
 		{
 			heapType = D3D12_HEAP_TYPE_UPLOAD;
-			CurrentState = D3D12_RESOURCE_STATE_GENERIC_READ;
+			InitialState = D3D12_RESOURCE_STATE_COPY_SOURCE;
 		}
 
 		if (EnumHasAllFlags(spec.Flags, BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView))
-			CurrentState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
+			InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 
 		// #todo: use CreatePlacedResource instead of CreateCommittedResource
 		D3D12_HEAP_PROPERTIES heapProps = {
@@ -56,7 +56,6 @@ namespace limbo::Gfx
 			.VisibleNodeMask = 0
 		};
 
-		InitialState = CurrentState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
 													InitialState,
 													nullptr,

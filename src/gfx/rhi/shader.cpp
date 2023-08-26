@@ -105,11 +105,10 @@ namespace limbo::Gfx
 		Texture* t = ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t);
 
-		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
+		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 		if (parameter.Type == ShaderParameterType::UAV)
 		{
 			FAILIF(t->BasicHandle[level].GPUHandle.ptr == 0); // handle was not created in a shader visible heap
-			newState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 			parameter.Descriptor = t->BasicHandle[level].GPUHandle;
 		}
 		else if (parameter.Type == ShaderParameterType::SRV)
@@ -125,7 +124,7 @@ namespace limbo::Gfx
 				FAILIF(t->SRVHandle.GPUHandle.ptr == 0); // handle was not created in a shader visible heap
 				parameter.Descriptor = t->SRVHandle.GPUHandle;
 			}
-			newState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 		}
 		else if (parameter.Type == ShaderParameterType::Constants) // bindless
 		{
@@ -136,7 +135,7 @@ namespace limbo::Gfx
 			ensure(false);
 		}
 
-		GetCommandContext()->TransitionResource(t, newState, mipLevel);
+		GetCommandContext()->InsertResourceBarrier(t, newState, mipLevel);
 	}
 
 	void Shader::SetBuffer(const char* parameterName, Handle<Buffer> buffer)
@@ -155,7 +154,7 @@ namespace limbo::Gfx
 		else if (parameter.Type == ShaderParameterType::CBV)
 			newState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 
-		GetCommandContext()->TransitionResource(b, newState);
+		GetCommandContext()->InsertResourceBarrier(b, newState);
 
 		if (parameter.Type == ShaderParameterType::Constants) // bindless
 			parameter.Data = &b->BasicHandle.Index;

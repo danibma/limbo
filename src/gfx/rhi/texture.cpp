@@ -68,8 +68,6 @@ namespace limbo::Gfx
 		if (spec.ClearValue.Format != DXGI_FORMAT_UNKNOWN)
 			clearValue = &spec.ClearValue;
 
-		for (uint16 i = 0; i < spec.MipLevels; ++i)
-			CurrentState[i] = InitialState;
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
 			         InitialState, 
 			         clearValue,
@@ -245,9 +243,6 @@ namespace limbo::Gfx
 			memcpy(allocation.MappedData, spec.InitialData, size);
 			allocation.Context->CopyBufferToTexture(allocation.Buffer, this, allocation.Offset);
 			GetRingBufferAllocator()->Free(allocation);
-			// TEMP: since I now have multiple command contexts, we have to track the resources states per command context instead...
-			device->GetCommandContext(ContextType::Direct)->TransitionResource(this, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-			device->GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
 		}
 
 		if (!spec.DebugName.empty())

@@ -246,6 +246,14 @@ namespace limbo::Gfx
 		}
 	}
 
+	inline uint16 CalculateMipCount(uint32 width, uint32 height = 0, uint32 depth = 0)
+	{
+		uint16 mipCount = 0;
+		uint32 mipSize = Math::Max(width, Math::Max(height, depth));
+		while (mipSize >= 1) { mipSize >>= 1; mipCount++; }
+		return mipCount;
+	}
+
 	namespace Internal
 	{
 		void DXHandleError(HRESULT hr, const char* file, int line);
