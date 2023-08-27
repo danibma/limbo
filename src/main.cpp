@@ -8,6 +8,7 @@
 #include "core/timer.h"
 #include "core/window.h"
 #include "core/commandline.h"
+#include "core/jobsystem.h"
 
 #include "tests/tests.h"
 
@@ -22,6 +23,8 @@ using namespace limbo;
 
 int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lpCmdLine, int nCmdShow)
 {
+	Core::JobSystem::Initialize();
+
 	Core::CommandLine::Init(lpCmdLine);
 	if (Core::CommandLine::HasArg("--tests"))
 		return Tests::ExecuteTests(lpCmdLine);

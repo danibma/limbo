@@ -41,7 +41,7 @@ namespace limbo::Tests::Gfx
 			.DebugName = "triangle vb",
 			.ByteStride = sizeof(Vertex),
 			.ByteSize = sizeof(Vertex) * 3,
-			.Usage = limbo::Gfx::BufferUsage::Vertex,
+			.Flags = limbo::Gfx::BufferUsage::Vertex,
 			.InitialData = vertices
 		});
 

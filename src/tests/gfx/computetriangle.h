@@ -25,7 +25,7 @@ namespace limbo::Tests::Gfx
 			.Width = limbo::Gfx::GetBackbufferWidth(),
 			.Height = limbo::Gfx::GetBackbufferHeight(),
 			.DebugName = "triangle output texture",
-			.ResourceFlags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS,
+			.Flags = limbo::Gfx::TextureUsage::UnorderedAccess,
 			.Format = limbo::Gfx::Format::RGBA8_UNORM,
 			.Type = limbo::Gfx::TextureType::Texture2D
 		});
