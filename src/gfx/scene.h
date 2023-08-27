@@ -44,7 +44,6 @@ namespace limbo::Gfx
 	class Scene
 	{
 		std::vector<Mesh>								m_Meshes;
-		std::unordered_map<const cgltf_texture*, uint32> m_TexturesMap;
 		std::vector<Handle<Texture>>					m_Textures;
 		char											m_FolderPath[256];
 		char											m_SceneName[128];

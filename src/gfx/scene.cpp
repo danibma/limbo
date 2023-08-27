@@ -41,6 +41,8 @@ namespace limbo::Gfx
 		};
 
 		std::vector<TextureData> TextureStreams;
+		// map the cgltf_texture to the index in TextureStreams
+		std::unordered_map<uintptr_t, uint32> TexturesMap;
 	}
 
 	Scene::Scene(const char* path)
@@ -87,6 +89,7 @@ namespace limbo::Gfx
 
 		// Clear streams
 		PrimitivesStreams.clear();
+		TexturesMap.clear();
 		for (TextureData& texture : TextureStreams)
 		{
 			free(texture.Data);
@@ -215,9 +218,9 @@ namespace limbo::Gfx
 		}
 		ensure(data);
 
-		m_TexturesMap[texture] = (uint32)TextureStreams.size();
 
 		std::scoped_lock<std::mutex> lock(m_AddToTextureMapMutex);
+		TexturesMap[(uintptr_t)texture] = (uint32)TextureStreams.size();
 		TextureStreams.emplace_back(dname, width, height, channels, data);
 	}
 
@@ -226,7 +229,7 @@ namespace limbo::Gfx
 		if (!textureView->texture)
 			return -1;
 
-		TextureData& textureData = TextureStreams.at(m_TexturesMap[textureView->texture]);
+		TextureData& textureData = TextureStreams.at(TexturesMap[(uintptr_t)textureView->texture]);
 		check(textureData.Data);
 		textureData.Name += debugName;
 
