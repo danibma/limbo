@@ -269,7 +269,7 @@ namespace limbo::Gfx
 		}
 
 		CopyBufferToBuffer(upload, m_GeometryBuffer, bufferSize);
-		GetCommandContext()->InsertResourceBarrier(m_GeometryBuffer, D3D12_RESOURCE_STATE_GENERIC_READ);
+		GetCommandContext()->InsertResourceBarrier(m_GeometryBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 		DestroyBuffer(upload);
 	}
 
