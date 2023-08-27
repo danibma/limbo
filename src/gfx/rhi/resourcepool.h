@@ -43,6 +43,12 @@ namespace limbo::Gfx
 			}
 		}
 
+		~Pool()
+		{
+			for (uint16 i = 0; i < MAX_SIZE; ++i)
+				free(m_Objects[i].Data);
+		}
+
 		template<class... Args>
 		Handle<HandleType> AllocateHandle(Args&&... args)
 		{

@@ -65,7 +65,7 @@ namespace limbo::Gfx
 		for (size_t i = 0; i < data->textures_count; ++i)
 			LoadTexture(&data->textures[i]);
 #else
-		Core::JobSystem::ExecuteMany((uint32)data->textures_count, 20, [this, data](Core::JobDispatchArgs args)
+		Core::JobSystem::ExecuteMany((uint32)data->textures_count, (uint32)data->textures_count / Core::JobSystem::ThreadCount(), [this, data](Core::JobDispatchArgs args)
 		{
 			LoadTexture(&data->textures[args.jobIndex]);
 		});
