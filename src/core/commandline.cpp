@@ -44,7 +44,9 @@ namespace limbo::Core
 
 	void CommandLine::Init(const char* args)
 	{
+#if !NO_LOG
 		ConsoleHandle = Win32Console::Open();
+#endif
 
 		size_t charNum = strlen(args);
 		std::string arg = "";
@@ -103,6 +105,8 @@ namespace limbo::Core
 
 	CommandLine::~CommandLine()
 	{
+#if !NO_LOG
 		Win32Console::Close(ConsoleHandle);
+#endif
 	}
 }
