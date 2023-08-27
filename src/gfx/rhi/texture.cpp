@@ -236,13 +236,17 @@ namespace limbo::Gfx
 			uint8 bytesPerChannel = D3DBytesPerChannel(spec.Format);
 			uint8 numChannels = 4;
 
-			uint32 rowPitch = Math::Align(spec.Width * numChannels, (uint32)D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
-			uint64 size = rowPitch * spec.Height * bytesPerChannel;
 
+			D3D12_SUBRESOURCE_DATA subresourceData = {
+				spec.InitialData,
+				spec.Width * numChannels * bytesPerChannel,
+				spec.Width * spec.Height * numChannels * bytesPerChannel,
+			};
+
+			uint64 size = spec.Width * numChannels * spec.Height * bytesPerChannel;
 			RingBufferAllocation allocation;
 			GetRingBufferAllocator()->Allocate(size, allocation);
-			memcpy(allocation.MappedData, spec.InitialData, size);
-			allocation.Context->CopyBufferToTexture(allocation.Buffer, this, allocation.Offset);
+			UpdateSubresources(allocation.Context->Get(), Resource.Get(), allocation.Buffer->Resource.Get(), allocation.Offset, 0, 1, &subresourceData);
 			GetRingBufferAllocator()->Free(allocation);
 		}
 
