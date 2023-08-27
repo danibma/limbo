@@ -44,6 +44,7 @@ namespace limbo::Gfx
 	class Scene
 	{
 		std::vector<Mesh>								m_Meshes;
+		std::unordered_map<const cgltf_texture*, uint32> m_TexturesMap;
 		std::vector<Handle<Texture>>					m_Textures;
 		char											m_FolderPath[256];
 		char											m_SceneName[128];
@@ -52,6 +53,8 @@ namespace limbo::Gfx
 
 		// this will contains all the geometry information about all the meshes
 		Handle<Buffer>									m_GeometryBuffer;
+
+		std::mutex										m_AddToTextureMapMutex;
 
 	public:
 		std::vector<Material>							Materials;
@@ -77,7 +80,8 @@ namespace limbo::Gfx
 		void ProcessMesh(const cgltf_node* node, const cgltf_mesh* mesh, const cgltf_primitive* primitive);
 		void ProcessPrimitivesData();
 
-		int LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Format format);
+		void LoadTexture(const cgltf_texture* texture);
+		uint CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName, Format format);
 	};
 
 	inline Scene* LoadScene(const char* path)

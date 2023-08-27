@@ -69,7 +69,7 @@ namespace limbo::Gfx
 
 		m_Fence = new Fence(device);
 
-		for (int i = 0; i < NUM_BACK_BUFFERS; ++i)
+		for (int i = 0; i < NUM_BACK_BUFFERS + 1; ++i)
 		{
 			ID3D12CommandAllocator* allocator;
 			DX_CHECK(device->GetDevice()->CreateCommandAllocator(D3DCmdListType(type), IID_PPV_ARGS(&allocator)));

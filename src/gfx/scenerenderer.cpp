@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include "scene.h"
+#include "core/jobsystem.h"
 #include "rhi/device.h"
 #include "techniques/pathtracing.h"
 #include "techniques/rtao.h"
@@ -30,6 +31,13 @@ namespace limbo::Gfx
 			});
 			Gfx::Map(m_SceneInfoBuffers[i]);
 		}
+
+		Core::JobSystem::Execute([this]()
+		{
+			m_SSAO = std::make_unique<SSAO>();
+			m_RTAO = std::make_unique<RTAO>();
+			m_PathTracing = std::make_unique<PathTracing>();
+		});
 
 		//LoadNewScene("assets/models/cornell_box.glb");
 		LoadNewScene("assets/models/Sponza/Sponza.gltf");
@@ -85,9 +93,7 @@ namespace limbo::Gfx
 			.Type = Gfx::ShaderType::Graphics
 		});
 
-		m_SSAO			= std::make_unique<SSAO>();
-		m_RTAO			= std::make_unique<RTAO>();
-		m_PathTracing	= std::make_unique<PathTracing>();
+		Core::JobSystem::WaitIdle();
 	}
 
 	SceneRenderer::~SceneRenderer()

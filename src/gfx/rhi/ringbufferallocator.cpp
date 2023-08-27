@@ -29,7 +29,7 @@ namespace limbo::Gfx
 
 		uint64 freedOffset = 0;
 
-		while(!m_PreDeletedList.empty())
+		while (!m_PreDeletedList.empty())
 		{
 			PreDeletedAllocation& deleted = m_PreDeletedList.front();
 			if (!m_Queue->GetFence()->IsComplete(deleted.FenceValue))
@@ -53,7 +53,24 @@ namespace limbo::Gfx
 			offset = 0;
 			m_CurrentOffset = size;
 		}
+		else
+		{
+			// as a last resort, wait until a previous allocation can already be cleared
+			if (!m_PreDeletedList.empty())
+			{
+				PreDeletedAllocation& deleted = m_PreDeletedList.front();
+				if (!m_Queue->GetFence()->IsComplete(deleted.FenceValue))
+				{
+					LB_WARN("Upload ring buffer allocation requested but allocator is full. Waiting for an allocation to be freed.");
+					m_Queue->GetFence()->CpuWait(deleted.FenceValue);
+					Allocate(size, allocation);
+					return;
+				}
+			}
+		}
 
+		// if, even after waiting for an allocation to be done, we still can't allocate, it means
+		// some allocation is not being freed or is not temporary, which is not the way to use this allocator
 		FAILIF(offset == InvalidOffset);
 
 		allocation.Context		= GetCommandContext(ContextType::Copy);

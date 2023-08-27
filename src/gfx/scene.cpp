@@ -15,6 +15,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#include "core/jobsystem.h"
 #include "rhi/resourcemanager.h"
 
 namespace limbo::Gfx
@@ -23,19 +24,27 @@ namespace limbo::Gfx
 	{
 		struct PrimitiveData
 		{
-			std::vector<float3> positionStream;
-			std::vector<float3> normalsStream;
-			std::vector<float2> texcoordsStream;
-			std::vector<uint32> indicesStream;
+			std::vector<float3> PositionStream;
+			std::vector<float3> NormalsStream;
+			std::vector<float2> TexCoordsStream;
+			std::vector<uint32> IndicesStream;
+		};
+		std::vector<PrimitiveData> PrimitivesStreams;
+
+		struct TextureData
+		{
+			std::string Name;
+			int			Width = 0;
+			int			Height = 0;
+			int			Channels = 0;
+			void*		Data;
 		};
 
-		std::vector<PrimitiveData> PrimitivesStreams;
+		std::vector<TextureData> TextureStreams;
 	}
 
 	Scene::Scene(const char* path)
 	{
-		PrimitivesStreams.clear();
-
 		LB_LOG("Starting loading %s", path);
 		Core::Timer timer;
 
@@ -48,6 +57,18 @@ namespace limbo::Gfx
 
 		Paths::GetPath(path, m_FolderPath);
 		Paths::GetFilename(path, m_SceneName);
+
+		// load all textures
+#if 0
+		for (size_t i = 0; i < data->textures_count; ++i)
+			LoadTexture(&data->textures[i]);
+#else
+		Core::JobSystem::ExecuteMany((uint32)data->textures_count, 20, [this, data](Core::JobDispatchArgs args)
+		{
+			LoadTexture(&data->textures[args.jobIndex]);
+		});
+		Core::JobSystem::WaitIdle();
+#endif
 
 		// process materials
 		for (size_t i = 0; i < data->materials_count; ++i)
@@ -63,6 +84,15 @@ namespace limbo::Gfx
 		ProcessPrimitivesData();
 
 		LB_LOG("Finished loading %s (took %.2fs)", path, timer.ElapsedSeconds());
+
+		// Clear streams
+		PrimitivesStreams.clear();
+		for (TextureData& texture : TextureStreams)
+		{
+			free(texture.Data);
+			texture.Data = nullptr;
+		}
+		TextureStreams.clear();
 	}
 
 	Scene* Scene::Load(const char* path)
@@ -123,12 +153,12 @@ namespace limbo::Gfx
 			const cgltf_pbr_metallic_roughness& workflow = cgltfMaterial->pbr_metallic_roughness;
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "Albedo");
-				material.AlbedoIndex  = LoadTexture(&workflow.base_color_texture, debugName.c_str(), Format::RGBA8_UNORM_SRGB);
+				material.AlbedoIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str(), Format::RGBA8_UNORM_SRGB);
 				material.AlbedoFactor = glm::make_vec4(workflow.base_color_factor);
 			}
 			{
 				std::string debugName		 = std::format(" Material({}) {}", index, "MetallicRoughness");
-				material.RoughnessMetalIndex = LoadTexture(&workflow.metallic_roughness_texture, debugName.c_str(), Format::RGBA8_UNORM);
+				material.RoughnessMetalIndex = CreateTextureResource(&workflow.metallic_roughness_texture, debugName.c_str(), Format::RGBA8_UNORM);
 				material.RoughnessFactor	 = workflow.roughness_factor;
 				material.MetallicFactor		 = workflow.metallic_factor;
 			}
@@ -140,19 +170,83 @@ namespace limbo::Gfx
 
 		{
 			std::string debugName = std::format(" Material({}) {}", index, "Normal");
-			material.NormalIndex  = LoadTexture(&cgltfMaterial->normal_texture, debugName.c_str(), Format::RGBA8_UNORM);
+			material.NormalIndex  = CreateTextureResource(&cgltfMaterial->normal_texture, debugName.c_str(), Format::RGBA8_UNORM);
 		}
 
 		{
 			std::string debugName   = std::format(" Material({}) {}", index, "Emissive");
-			material.EmissiveIndex  = LoadTexture(&cgltfMaterial->emissive_texture, debugName.c_str(), Format::RGBA8_UNORM);
+			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str(), Format::RGBA8_UNORM);
 			material.EmissiveFactor = glm::make_vec3(cgltfMaterial->emissive_factor);
 		}
 
 		{
 			std::string debugName			= std::format(" Material({}) {}", index, "AmbientOcclusion");
-			material.AmbientOcclusionIndex  = LoadTexture(&cgltfMaterial->occlusion_texture, debugName.c_str(), Format::RGBA8_UNORM);
+			material.AmbientOcclusionIndex  = CreateTextureResource(&cgltfMaterial->occlusion_texture, debugName.c_str(), Format::RGBA8_UNORM);
 		}
+	}
+
+
+	void Scene::LoadTexture(const cgltf_texture* texture)
+	{
+		if (!texture)
+			return;
+
+		int width = 0;
+		int height = 0;
+		int channels = 0;
+		void* data;
+
+		std::string dname;
+		cgltf_image* image = texture->image;
+		if (image->uri)
+		{
+			dname = image->uri;
+			std::string filename = std::string(m_FolderPath) + std::string(image->uri);
+			data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
+		}
+		else
+		{
+			dname = m_SceneName;
+			cgltf_buffer_view* bufferView = image->buffer_view;
+			cgltf_buffer* buffer = bufferView->buffer;
+			uint32 size = (uint32)bufferView->size;
+			void* bufferLocation = (uint8*)buffer->data + bufferView->offset;
+			data = stbi_load_from_memory((stbi_uc*)bufferLocation, size, &width, &height, &channels, 4);
+		}
+		ensure(data);
+
+		m_TexturesMap[texture] = (uint32)TextureStreams.size();
+
+		std::scoped_lock<std::mutex> lock(m_AddToTextureMapMutex);
+		TextureStreams.emplace_back(dname, width, height, channels, data);
+	}
+
+	uint Scene::CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName, Format format)
+	{
+		if (!textureView->texture)
+			return -1;
+
+		TextureData& textureData = TextureStreams.at(m_TexturesMap[textureView->texture]);
+		check(textureData.Data);
+		textureData.Name += debugName;
+
+		Handle<Texture> texture = CreateTexture({
+			.Width = (uint32)textureData.Width,
+			.Height = (uint32)textureData.Height,
+			.MipLevels = CalculateMipCount(textureData.Width),
+			.DebugName = textureData.Name.c_str(),
+			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
+			.Format = format,
+			.Type = TextureType::Texture2D,
+			.InitialData = textureData.Data
+		});
+
+		Gfx::GenerateMipLevels(texture);
+		m_Textures.push_back(texture);
+
+		Texture* t = ResourceManager::Ptr->GetTexture(texture);
+		FAILIF(!t, -1);
+		return t->SRVHandle.Index;
 	}
 
 	void Scene::ProcessMesh(const cgltf_node* node, const cgltf_mesh* mesh, const cgltf_primitive* primitive)
@@ -182,16 +276,16 @@ namespace limbo::Gfx
 				}
 			};
 
-			readAttributeData("POSITION", primitiveData.positionStream, 3);
-			readAttributeData("NORMAL", primitiveData.normalsStream, 3);
-			readAttributeData("TEXCOORD_0", primitiveData.texcoordsStream, 2);
+			readAttributeData("POSITION", primitiveData.PositionStream, 3);
+			readAttributeData("NORMAL", primitiveData.NormalsStream, 3);
+			readAttributeData("TEXCOORD_0", primitiveData.TexCoordsStream, 2);
 		}
 
 		// process indices
 		cgltf_accessor* indices = primitive->indices;
-		primitiveData.indicesStream.resize(indices->count);
+		primitiveData.IndicesStream.resize(indices->count);
 		for (size_t idx = 0; idx < indices->count; ++idx)
-			primitiveData.indicesStream[idx] = (uint32)cgltf_accessor_read_index(primitive->indices, idx);
+			primitiveData.IndicesStream[idx] = (uint32)cgltf_accessor_read_index(primitive->indices, idx);
 
 		cgltf_material* material = primitive->material;
 		Mesh& result = m_Meshes.emplace_back();
@@ -208,10 +302,10 @@ namespace limbo::Gfx
 		// Calculate the geometry buffer size
 		for (size_t i = 0; i < PrimitivesStreams.size(); ++i)
 		{
-			bufferSize += PrimitivesStreams[i].positionStream.size()  * sizeof(float3);
-			bufferSize += PrimitivesStreams[i].normalsStream.size()   * sizeof(float3);
-			bufferSize += PrimitivesStreams[i].texcoordsStream.size() * sizeof(float2);
-			bufferSize += PrimitivesStreams[i].indicesStream.size()   * sizeof(uint32);
+			bufferSize += PrimitivesStreams[i].PositionStream.size()  * sizeof(float3);
+			bufferSize += PrimitivesStreams[i].NormalsStream.size()   * sizeof(float3);
+			bufferSize += PrimitivesStreams[i].TexCoordsStream.size() * sizeof(float2);
+			bufferSize += PrimitivesStreams[i].IndicesStream.size()   * sizeof(uint32);
 		}
 
 		elementCount = (uint32)bufferSize / sizeof(uint32);
@@ -251,76 +345,25 @@ namespace limbo::Gfx
 		{
 			check(dataOffset % sizeof(uint32) == 0); // the offset is a 32bit value, do not let it overflow
 
-			CopyData(m_Meshes[i].PositionsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].positionStream);
-			CopyData(m_Meshes[i].NormalsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].normalsStream);
-			CopyData(m_Meshes[i].TexCoordsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].texcoordsStream);
+			CopyData(m_Meshes[i].PositionsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].PositionStream);
+			CopyData(m_Meshes[i].NormalsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].NormalsStream);
+			CopyData(m_Meshes[i].TexCoordsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].TexCoordsStream);
 
-			size_t streamSize = PrimitivesStreams[i].indicesStream.size() * sizeof(uint32);
+			size_t streamSize = PrimitivesStreams[i].IndicesStream.size() * sizeof(uint32);
 			m_Meshes[i].IndicesLocation = {
 				.BufferLocation = geoBufferAddress + dataOffset,
 				.SizeInBytes = (uint32)streamSize,
 				.Offset = (uint32)dataOffset
 			};
-			memcpy(data + dataOffset, PrimitivesStreams[i].indicesStream.data(), streamSize);
+			memcpy(data + dataOffset, PrimitivesStreams[i].IndicesStream.data(), streamSize);
 			dataOffset += streamSize;
 
-			m_Meshes[i].IndexCount  = PrimitivesStreams[i].indicesStream.size();
-			m_Meshes[i].VertexCount = PrimitivesStreams[i].positionStream.size();
+			m_Meshes[i].IndexCount  = PrimitivesStreams[i].IndicesStream.size();
+			m_Meshes[i].VertexCount = PrimitivesStreams[i].PositionStream.size();
 		}
 
 		CopyBufferToBuffer(upload, m_GeometryBuffer, bufferSize);
 		GetCommandContext()->InsertResourceBarrier(m_GeometryBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 		DestroyBuffer(upload);
-	}
-
-	int Scene::LoadTexture(const cgltf_texture_view* textureView, const char* debugName, Format format)
-	{
-		if (!textureView->texture)
-			return -1;
-
-		int width	 = 0;
-		int height	 = 0;
-		int channels = 0;
-		void* data;
-
-		std::string dname;
-		cgltf_image* image = textureView->texture->image;
-		if (image->uri)
-		{
-			dname = image->uri;
-			std::string filename = std::string(m_FolderPath) + std::string(image->uri);
-			data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
-		}
-		else
-		{
-			dname = m_SceneName;
-			cgltf_buffer_view* bufferView = image->buffer_view;
-			cgltf_buffer* buffer = bufferView->buffer;
-			uint32 size = (uint32)bufferView->size;
-			void* bufferLocation = (uint8*)buffer->data + bufferView->offset;
-			data = stbi_load_from_memory((stbi_uc*)bufferLocation, size, &width, &height, &channels, 4);
-		}
-		ensure(data);
-
-		dname += debugName;
-
-		Handle<Texture> texture = CreateTexture({
-			.Width = (uint32)width,
-			.Height = (uint32)height,
-			.MipLevels = CalculateMipCount(width),
-			.DebugName = dname.c_str(),
-			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
-			.Format = format,
-			.Type = TextureType::Texture2D,
-			.InitialData = data
-		});
-		free(data);
-
-		Gfx::GenerateMipLevels(texture);
-		m_Textures.push_back(texture);
-
-		Texture* t = ResourceManager::Ptr->GetTexture(texture);
-		FAILIF(!t, -1);
-		return t->SRVHandle.Index;
 	}
 }
