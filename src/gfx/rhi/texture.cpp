@@ -197,6 +197,7 @@ namespace limbo::Gfx
 	void Texture::InitResource(const TextureSpec& spec)
 	{
 		Spec = spec;
+		bResetState = true;
 
 		Device* device = Device::Ptr;
 

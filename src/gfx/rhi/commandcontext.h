@@ -105,9 +105,10 @@ namespace limbo::Gfx
 			D3D12_RESOURCE_STATES oldState = resourceState.Get(subresource);
 
 			// Common state promotion - https://learn.microsoft.com/en-us/windows/win32/direct3d12/using-resource-barriers-to-synchronize-resource-states-in-direct3d-12#common-state-promotion
-			if (oldState == D3D12_RESOURCE_STATE_UNKNOWN)
+			if (oldState == D3D12_RESOURCE_STATE_UNKNOWN || resource->bResetState)
 			{
 				resourceState.Set(newState, subresource);
+				resource->bResetState = false;
 			}
 			else
 			{

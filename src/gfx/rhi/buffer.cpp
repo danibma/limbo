@@ -148,6 +148,8 @@ namespace limbo::Gfx
 
 	void Buffer::InitResource(const BufferSpec& spec)
 	{
+		bResetState = true;
+
 		if (EnumHasAllFlags(spec.Flags, BufferUsage::Constant))
 		{
 			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);

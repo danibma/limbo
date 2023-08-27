@@ -37,6 +37,7 @@ namespace limbo::Gfx
 		DescriptorHandle			BasicHandle[D3D12_REQ_MIP_LEVELS];
 		DescriptorHandle			SRVHandle;
 		TextureSpec					Spec;
+		bool						bResetState;
 
 	public:
 		Texture() = default;

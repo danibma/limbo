@@ -39,6 +39,7 @@ namespace limbo::Gfx
 
 		uint32					ByteStride = 0;
 		uint64					ByteSize = 0;
+		bool					bResetState;
 
 	public:
 		Buffer() = default;
