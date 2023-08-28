@@ -9,6 +9,7 @@
 #include "core/window.h"
 #include "core/commandline.h"
 #include "core/jobsystem.h"
+#include "gfx/profiler.h"
 
 #include "tests/tests.h"
 
@@ -41,6 +42,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 	Gfx::Init(window, Gfx::GfxDeviceFlag::EnableImgui);
 
+	Profiler::Initialize();
+
 	Gfx::SceneRenderer* sceneRenderer = Gfx::CreateSceneRenderer(window);
 
 	Core::Timer deltaTimer;
@@ -60,9 +63,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		UI::Render(sceneRenderer, deltaTime);
 
 		sceneRenderer->Render(deltaTime);
+
+		PROFILE_GPU_PRESENT();
 	}
 
 	Gfx::DestroySceneRenderer(sceneRenderer);
+	Profiler::Shutdown();
 	Gfx::Shutdown();
 	Core::DestroyWindow(window);
 

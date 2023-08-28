@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "uirenderer.h"
 
+#include "profiler.h"
 #include "scenerenderer.h"
 #include "core/window.h"
 #include "rhi/device.h"
@@ -68,8 +69,17 @@ namespace limbo::UI
 				ImGui::EndMenu();
 			}
 
+			if (ImGui::BeginMenu("Windows"))
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+				ImGui::Checkbox("Show Profiler", &Globals::bShowProfiler);
+				ImGui::PopStyleVar();
+
+				ImGui::EndMenu();
+			}
+
 			char menuText[256];
-			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps)", Gfx::GetGPUInfo().Name, dt, 1000.0f / dt);
+			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps) | GPU Time: %.2f ms", Gfx::GetGPUInfo().Name, dt, 1000.0f / dt, GGPUProfiler.GetRenderTime());
 			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(menuText).x) - 10.0f);
 			ImGui::Text(menuText);
 

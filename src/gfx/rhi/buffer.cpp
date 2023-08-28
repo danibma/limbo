@@ -44,6 +44,12 @@ namespace limbo::Gfx
 			InitialState = D3D12_RESOURCE_STATE_COPY_SOURCE;
 		}
 
+		if (EnumHasAllFlags(spec.Flags, BufferUsage::Readback))
+		{
+			heapType = D3D12_HEAP_TYPE_READBACK;
+			InitialState = D3D12_RESOURCE_STATE_COPY_DEST;
+		}
+
 		if (EnumHasAllFlags(spec.Flags, BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView))
 			InitialState = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 

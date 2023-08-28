@@ -90,6 +90,11 @@ namespace limbo::Gfx
 		delete m_Fence;
 	}
 
+	void CommandQueue::GetTimestampFrequency(uint64* frequency)
+	{
+		DX_CHECK(m_Queue->GetTimestampFrequency(frequency));
+	}
+
 	ID3D12CommandAllocator* CommandQueue::RequestAllocator()
 	{
 		ID3D12CommandAllocator* allocator = nullptr;

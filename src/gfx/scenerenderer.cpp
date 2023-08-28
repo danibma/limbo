@@ -3,6 +3,7 @@
 
 #include <filesystem>
 
+#include "profiler.h"
 #include "scene.h"
 #include "core/jobsystem.h"
 #include "rhi/device.h"
@@ -121,6 +122,8 @@ namespace limbo::Gfx
 
 	void SceneRenderer::Render(float dt)
 	{
+		PROFILE_GPU_SCOPE(GetCommandContext(), "Render");
+
 		BeginEvent("Loading Environment Map");
 		if (bNeedsEnvMapChange)
 		{
@@ -135,25 +138,31 @@ namespace limbo::Gfx
 
 		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
 		{
-			BeginEvent("Geometry Pass");
-			BindShader(m_DeferredShadingShader);
-			BindSceneInfo(m_DeferredShadingShader);
-			for (Scene* scene : m_Scenes)
 			{
-				scene->IterateMeshes([&](const Mesh& mesh)
+				PROFILE_GPU_SCOPE(GetCommandContext(), "Geometry Pass");
+				BeginEvent("Geometry Pass");
+				BindShader(m_DeferredShadingShader);
+				BindSceneInfo(m_DeferredShadingShader);
+				for (Scene* scene : m_Scenes)
 				{
-					SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
+					scene->IterateMeshes([&](const Mesh& mesh)
+						{
+							SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
 
-					BindIndexBufferView(mesh.IndicesLocation);
-					DrawIndexed((uint32)mesh.IndexCount);
-				});
+							BindIndexBufferView(mesh.IndicesLocation);
+							DrawIndexed((uint32)mesh.IndexCount);
+						});
+				}
+				EndEvent();
 			}
-			EndEvent();
-
-			if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
-				m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
-			else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
-				m_RTAO->Render(this, &m_SceneAS, GetShaderRT(m_DeferredShadingShader, 1), GetShaderRT(m_DeferredShadingShader, 3));
+			
+			{
+				PROFILE_GPU_SCOPE(GetCommandContext(ContextType::Direct), "Ambient Occlusion");
+				if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
+					m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
+				else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
+					m_RTAO->Render(this, &m_SceneAS, GetShaderRT(m_DeferredShadingShader, 1), GetShaderRT(m_DeferredShadingShader, 3));
+			}
 
 			BeginEvent("Render Skybox");
 			BindShader(m_SkyboxShader);
@@ -167,31 +176,34 @@ namespace limbo::Gfx
 			});
 			EndEvent();
 
-			BeginEvent("PBR Lighting");
-			BindShader(m_PBRShader);
-			BindSceneInfo(m_PBRShader);
-			SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
-			// PBR scene info
-			SetParameter(m_PBRShader, "lightPos", Light.Position);
-			SetParameter(m_PBRShader, "lightColor", Light.Color);
-			// Bind deferred shading render targets
-			SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
-			SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
-			SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
-			SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
-			SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
+			{
+				PROFILE_GPU_SCOPE(GetCommandContext(), "Lighting");
+				BeginEvent("PBR Lighting");
+				BindShader(m_PBRShader);
+				BindSceneInfo(m_PBRShader);
+				SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
+				// PBR scene info
+				SetParameter(m_PBRShader, "lightPos", Light.Position);
+				SetParameter(m_PBRShader, "lightColor", Light.Color);
+				// Bind deferred shading render targets
+				SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
+				SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
+				SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
+				SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
+				SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
 
-			if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
-				SetParameter(m_PBRShader, "g_AmbientOcclusion", m_RTAO->GetFinalTexture());
-			else
-				SetParameter(m_PBRShader, "g_AmbientOcclusion", m_SSAO->GetBlurredTexture());
+				if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
+					SetParameter(m_PBRShader, "g_AmbientOcclusion", m_RTAO->GetFinalTexture());
+				else
+					SetParameter(m_PBRShader, "g_AmbientOcclusion", m_SSAO->GetBlurredTexture());
 
-			// Bind irradiance map
-			SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
-			SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
-			SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
-			Draw(6);
-			EndEvent();
+				// Bind irradiance map
+				SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
+				SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
+				SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
+				Draw(6);
+				EndEvent();
+			}
 
 			m_SceneTexture = GetShaderRT(m_PBRShader, 0);
 		}
@@ -202,14 +214,20 @@ namespace limbo::Gfx
 		}
 
 		// render scene composite
-		BeginEvent("Scene Composite");
-		BindShader(m_CompositeShader);
-		SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
-		SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
-		Draw(6);
-		EndEvent();
+		{
+			PROFILE_GPU_SCOPE(GetCommandContext(ContextType::Direct), "Scene Composite");
+			BeginEvent("Scene Composite");
+			BindShader(m_CompositeShader);
+			SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
+			SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
+			Draw(6);
+			EndEvent();
+		}
 
-		Gfx::Present(Tweaks.bEnableVSync);
+		{
+			PROFILE_GPU_SCOPE(GetCommandContext(ContextType::Direct), "Present");
+			Gfx::Present(Tweaks.bEnableVSync);
+		}
 	}
 
 	void SceneRenderer::LoadNewScene(const char* path)

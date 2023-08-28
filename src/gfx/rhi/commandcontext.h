@@ -68,6 +68,7 @@ namespace limbo::Gfx
 
 		CommandQueue* GetQueue() const { return m_ParentQueue; }
 		ID3D12GraphicsCommandList4* Get() const { return m_CommandList.Get(); }
+		ContextType GetType() const { return m_Type; }
 
 		void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst);
 		void CopyTextureToBackBuffer(Handle<Texture> texture);

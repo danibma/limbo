@@ -16,7 +16,8 @@ namespace limbo::Gfx
 		Upload					= 1 << 4,
 		Byte					= 1 << 5,
 		AccelerationStructure	= 1 << 6,
-		ShaderResourceView		= 1 << 7
+		ShaderResourceView		= 1 << 7,
+		Readback				= 1 << 8
 	};
 
 	struct BufferSpec

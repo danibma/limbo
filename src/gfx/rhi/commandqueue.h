@@ -49,6 +49,8 @@ namespace limbo::Gfx
 		ID3D12CommandQueue* Get() const { return m_Queue.Get(); }
 		Fence* GetFence() const { return m_Fence; }
 
+		void GetTimestampFrequency(uint64* frequency);
+
 		ID3D12CommandAllocator* RequestAllocator();
 		void FreeAllocator(ID3D12CommandAllocator* allocator, uint64 fenceValue);
 
