@@ -16,13 +16,12 @@
 - Open `build/limbo.sln` and Compile/Run
 
 ## Some notable features
+- Physically Based Rendering (UE4 Microfacet BRDF, Image Based Lighting)
 - Bindless resources, including Vertex Pulling
 - Deferred shading
 - Shader hot-reloading
 - Screen space ambient occlusion
 - Raytraced ambient occlusion (no denoising yet, only temporal accumulation)
-- Image Based Lighting
-- Cook-Torrance specular BRDF (w/ Lambertian diffuse)
  
 ## Screenshots
 ### Ambient Occlusion
