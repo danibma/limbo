@@ -64,7 +64,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		sceneRenderer->Render(deltaTime);
 
-		PROFILE_GPU_PRESENT();
+		Profiler::Present();
 	}
 
 	Gfx::DestroySceneRenderer(sceneRenderer);

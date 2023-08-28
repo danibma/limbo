@@ -4,6 +4,7 @@
 namespace limbo
 {
 	extern class GPUProfiler GGPUProfiler;
+	extern class CPUProfiler GCPUProfiler;
 
 	namespace Gfx
 	{
@@ -33,6 +34,27 @@ namespace limbo
 		void EndFrame();
 	};
 
+	class CPUProfiler
+	{
+	private:
+		Core::Timer m_Timer;
+		double		m_AvgRenderTime = 0;
+
+	public:
+		void Initialize();
+		void Shutdown();
+
+		void StartProfile(const char* name);
+		void EndProfile(const char* name);
+
+		double GetRenderTime() const
+		{
+			return m_AvgRenderTime;
+		}
+
+		void EndFrame();
+	};
+
 	template<typename ProfilerType>
 	class ScopedProfile
 	{
@@ -43,14 +65,21 @@ namespace limbo
 		ScopedProfile(Gfx::CommandContext* cmd, const char* name)
 			: m_Context(cmd), m_Name(name)
 		{
-			if constexpr (TIsSame<ProfilerType, GPUProfiler>::Value)
-				GGPUProfiler.StartProfile(m_Context, m_Name.c_str());
+			GGPUProfiler.StartProfile(m_Context, m_Name.c_str());
+		}
+
+		ScopedProfile(const char* name)
+			: m_Context(nullptr), m_Name(name)
+		{
+			GCPUProfiler.StartProfile(m_Name.c_str());
 		}
 
 		~ScopedProfile()
 		{
 			if constexpr (TIsSame<ProfilerType, GPUProfiler>::Value)
 				GGPUProfiler.EndProfile(m_Context, m_Name.c_str());
+			else
+				GCPUProfiler.EndProfile(m_Name.c_str());
 		}
 	};
 
@@ -58,12 +87,20 @@ namespace limbo
 	{
 		inline void Initialize()
 		{
+			GCPUProfiler.Initialize();
 			GGPUProfiler.Initialize();
 		}
 
 		inline void Shutdown()
 		{
+			GCPUProfiler.Shutdown();
 			GGPUProfiler.Shutdown();
+		}
+
+		inline void Present()
+		{
+			GCPUProfiler.EndFrame();
+			GGPUProfiler.EndFrame();
 		}
 	}
 }
@@ -71,11 +108,17 @@ namespace limbo
 #define CONCAT_IMPL( x, y ) x##y
 #define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
 
+// GPU
 #define PROFILE_GPU_SCOPE(CommandContext, Name) limbo::ScopedProfile<GPUProfiler> MACRO_CONCAT(__s__, __COUNTER__)(CommandContext, Name)
 #define PROFILE_GPU_BEGIN(CommandContext, Name) limbo::GGPUProfiler.StartProfile(CommandContext, Name)
-#define PROFILE_GPU_END(CommandContext, Name) limbo::GGPUProfiler.EndProfile(CommandContext, Name)
-#define PROFILE_GPU_PRESENT() limbo::GGPUProfiler.EndFrame()
+#define PROFILE_GPU_END(CommandContext, Name)   limbo::GGPUProfiler.EndProfile(CommandContext, Name)
 
-//#undef CONCAT_IMPL
-//#undef MACRO_CONCAT
+// CPU
+#define PROFILE_CPU_SCOPE(Name) limbo::ScopedProfile<CPUProfiler> MACRO_CONCAT(__s__, __COUNTER__)(Name)
+#define PROFILE_CPU_BEGIN(Name) limbo::GCPUProfiler.StartProfile(Name)
+#define PROFILE_CPU_END(Name)   limbo::GGPUProfiler.EndProfile(Name)
 
+// Both
+#define PROFILE_SCOPE(CommandContext, Name) PROFILE_CPU_SCOPE(Name); PROFILE_GPU_SCOPE(CommandContext, Name)
+#define PROFILE_BEGIN(CommandContext, Name) PROFILE_CPU_BEGIN(Name); PROFILE_GPU_BEGIN(CommandContext, Name)
+#define PROFILE_END(CommandContext, Name)   PROFILE_CPU_END(Name);   PROFILE_GPU_END(CommandContext, Name)

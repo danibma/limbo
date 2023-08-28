@@ -122,7 +122,7 @@ namespace limbo::Gfx
 
 	void SceneRenderer::Render(float dt)
 	{
-		PROFILE_GPU_SCOPE(GetCommandContext(), "Render");
+		PROFILE_SCOPE(GetCommandContext(), "Render");
 
 		BeginEvent("Loading Environment Map");
 		if (bNeedsEnvMapChange)
@@ -139,25 +139,25 @@ namespace limbo::Gfx
 		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
 		{
 			{
-				PROFILE_GPU_SCOPE(GetCommandContext(), "Geometry Pass");
+				PROFILE_SCOPE(GetCommandContext(), "Geometry Pass");
 				BeginEvent("Geometry Pass");
 				BindShader(m_DeferredShadingShader);
 				BindSceneInfo(m_DeferredShadingShader);
 				for (Scene* scene : m_Scenes)
 				{
 					scene->IterateMeshes([&](const Mesh& mesh)
-						{
-							SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
+					{
+						SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
 
-							BindIndexBufferView(mesh.IndicesLocation);
-							DrawIndexed((uint32)mesh.IndexCount);
-						});
+						BindIndexBufferView(mesh.IndicesLocation);
+						DrawIndexed((uint32)mesh.IndexCount);
+					});
 				}
 				EndEvent();
 			}
 			
 			{
-				PROFILE_GPU_SCOPE(GetCommandContext(ContextType::Direct), "Ambient Occlusion");
+				PROFILE_SCOPE(GetCommandContext(ContextType::Direct), "Ambient Occlusion");
 				if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
 					m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
 				else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
@@ -177,7 +177,7 @@ namespace limbo::Gfx
 			EndEvent();
 
 			{
-				PROFILE_GPU_SCOPE(GetCommandContext(), "Lighting");
+				PROFILE_SCOPE(GetCommandContext(), "Lighting");
 				BeginEvent("PBR Lighting");
 				BindShader(m_PBRShader);
 				BindSceneInfo(m_PBRShader);
@@ -215,7 +215,7 @@ namespace limbo::Gfx
 
 		// render scene composite
 		{
-			PROFILE_GPU_SCOPE(GetCommandContext(ContextType::Direct), "Scene Composite");
+			PROFILE_SCOPE(GetCommandContext(ContextType::Direct), "Scene Composite");
 			BeginEvent("Scene Composite");
 			BindShader(m_CompositeShader);
 			SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
@@ -224,6 +224,7 @@ namespace limbo::Gfx
 			EndEvent();
 		}
 
+		// present
 		{
 			PROFILE_GPU_SCOPE(GetCommandContext(ContextType::Direct), "Present");
 			Gfx::Present(Tweaks.bEnableVSync);
