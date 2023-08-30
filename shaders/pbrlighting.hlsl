@@ -1,42 +1,18 @@
-﻿#include "iblcommon.hlsli"
-#include "quad.hlsli"
+﻿#include "quad.hlsli"
+#include "iblcommon.hlsli"
+#include "brdf.hlsli"
 
 //
 // Vertex Shader
 //
 QuadResult VSMain(uint vertexID : SV_VertexID)
 {
-	uint vertex = vertexID * 4;
-
-	QuadResult result;
-	result.Position.x = quadVertices[vertex];
-	result.Position.y = quadVertices[vertex + 1];
-	result.Position.z = 0.0f;
-	result.Position.w = 1.0f;
-
-	result.UV.x = quadVertices[vertex + 2];
-	result.UV.y = quadVertices[vertex + 3];
-
-	return result;
+    VS_DRAW_QUAD(vertexID);
 }
 
 //
 // Pixel Shader
 //
-
-// Single term for separable Schlick-GGX below.
-float SchlickG1(float cosTheta, float k)
-{
-    return cosTheta / (cosTheta * (1.0 - k) + k);
-}
-
-// Schlick-GGX approximation of geometric attenuation function using Smith's method.
-float SchlickGGX(float NdotL, float NdotV, float roughness)
-{
-    float r = roughness + 1.0;
-    float k = (r * r) / 8.0; // Epic suggests using this roughness remapping for analytic lights.
-    return SchlickG1(NdotL, k) * SchlickG1(NdotV, k);
-}
 
 // Returns number of mipmap levels for specular IBL environment map.
 uint QueryTextureLevels(TextureCube tex)
@@ -44,13 +20,6 @@ uint QueryTextureLevels(TextureCube tex)
     uint width, height, levels;
     tex.GetDimensions(0, width, height, levels);
     return levels;
-}
-
-// Normal Schlick but using Epic's modification, using a Spherical Gaussian approximation to replace the power.
-// Epic claims that this is slightly more efficient to calculate
-float3 FresnelSchlick(float HdotV, float3 F0)
-{
-    return F0 + (1.0 - F0) * pow(2, (-5.55473f * HdotV - 6.98316f));
 }
 
 // Fresnel Schlick taking count of roughness, by Sébastien Lagarde - https://seblagarde.wordpress.com/2011/08/17/hello-world/
@@ -115,57 +84,37 @@ float4 PSMain(QuadResult quad) : SV_Target
     else if (GSceneInfo.SceneViewToRender == 7)
         return float4((float3)ao, 1.0f);
 
-    // Outgoing light direction (vector from world-space fragment position to the "eye").
+    MaterialProperties material;
+    material.BaseColor = albedo;
+    material.Normal    = normal;
+    material.Roughness = roughness;
+    material.Metallic  = metallic;
+
     float3 V = normalize(GSceneInfo.CameraPos - worldPos);
-
 	float3 N = normalize(normal);
+    float3 L = normalize(lightPos - worldPos); // light direction
 
-    // Angle between surface normal and outgoing light direction.
-    float NdotV = abs(saturate(dot(N, V))) + 1e-5f;
-		
-	// Specular reflection vector.
-    float3 R = 2.0 * NdotV * N - V;
+    float  NdotV;
+    float3 F0;
 
-    float3 fDieletric = (float3)0.02f;
-    float3 F0 = lerp(fDieletric, albedo, metallic);
-    
     // reflectance equation
     float3 directLighting = 0.0f;
     
-    // do this per light, atm we only have one
+    // Per Light
 	{
-        float3 L = normalize(lightPos - worldPos); // light direction
-        float3 H = normalize(V + L); // half vector
-
         float distance = length(lightPos - worldPos);
         float attenuation = 1.0f / (distance * distance);
         float3 radiance = lightColor * attenuation;
 
-        float NdotL = max(dot(N, L),  0.0f);
-        float NdotH = max(dot(N, H), 0.0);
-        float HdotV = max(dot(H, V), 0.0f);
-    
-		// terms for the cook-torrance specular microfacet BRDF
-        float  D = NDF_GGX(NdotH, roughness);
-        float  G = SchlickGGX(NdotL, NdotV, roughness);
-        float3 F = FresnelSchlick(HdotV, F0);
+        BRDFContext brdf;
+        directLighting += DefaultBRDF(brdf, V, N, L, material) * radiance;
 
-        // Diffuse scattering happens due to light being refracted multiple times by a dielectric medium.
-		// Metals on the other hand either reflect or absorb energy, so diffuse contribution is always zero.
-		// To be energy conserving we must scale diffuse BRDF contribution based on Fresnel factor & metalness.
-        float3 kD = lerp(float3(1, 1, 1) - F, float3(0, 0, 0), metallic);
-
-		// Lambert diffuse BRDF.
-		// We don't scale by 1/PI for lighting & material units to be more convenient.
-		// See: https://seblagarde.wordpress.com/2012/01/08/pi-or-not-to-pi-in-game-lighting-equation/
-        float3 diffuse = kD * albedo;
-    
-        // Cook-Torrance specular microfacet BRDF.
-        float3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * NdotL * NdotV);
-    
-		// add to outgoing radiance Lo
-        directLighting += (diffuse + specularBRDF) * radiance * NdotL;
+        NdotV = brdf.NdotV;
+        F0    = brdf.F0;
     }
+
+	// Specular reflection vector.
+    float3 R = 2.0 * NdotV * N - V;
 
     float3 F = FresnelSchlickRoughness(NdotV, F0, roughness);
 

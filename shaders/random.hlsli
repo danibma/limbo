@@ -76,6 +76,16 @@ float3 GetCosHemisphereSample(inout uint randSeed, float3 hitNorm)
     return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(1 - randVal.x);
 }
 
+// Uniformly sample point on a hemisphere.
+// Cosine-weighted sampling would be a better fit for Lambertian BRDF but since this
+// compute shader runs only once as a pre-processing step performance is not *that* important.
+// See: "Physically Based Rendering" 2nd ed., section 13.6.1.
+float3 SampleHemisphere(float u1, float u2)
+{
+    const float u1p = sqrt(max(0.0, 1.0 - u1 * u1));
+    return float3(cos(TwoPI * u2) * u1p, sin(TwoPI * u2) * u1p, u1);
+}
+
 // Van der Corput radical inverse - http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
 float RadicalInverse_VdC(uint bits)
 {

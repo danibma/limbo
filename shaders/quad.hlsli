@@ -27,4 +27,4 @@ static const float quadVertices[] =
 	result.Position.w = 1.0f; \
 	result.UV.x = quadVertices[vertex + 2]; \
 	result.UV.y = quadVertices[vertex + 3]; \
-	return result;
+	return result

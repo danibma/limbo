@@ -2,6 +2,7 @@
 
 #include "common.hlsli"
 #include "random.hlsli"
+#include "brdf.hlsli"
 
 static const float Epsilon = 0.00001;
 
@@ -14,14 +15,12 @@ float2 Hammersley(uint i)
     return Hammersley(i, NumSamples);
 }
 
-// Uniformly sample point on a hemisphere.
-// Cosine-weighted sampling would be a better fit for Lambertian BRDF but since this
-// compute shader runs only once as a pre-processing step performance is not *that* important.
-// See: "Physically Based Rendering" 2nd ed., section 13.6.1.
-float3 SampleHemisphere(float u1, float u2)
+// Schlick-GGX approximation of geometric attenuation function using Smith's method (IBL version).
+float SchlickGGX_IBL(float NdotL, float V, float roughness)
 {
-	const float u1p = sqrt(max(0.0, 1.0 - u1 * u1));
-	return float3(cos(TwoPI * u2) * u1p, sin(TwoPI * u2) * u1p, u1);
+    float r = roughness;
+    float k = (r * r) / 2.0; // Epic suggests using this roughness remapping for IBL lighting.
+    return SchlickG1(NdotL, k) * SchlickG1(V, k);
 }
 
 // Importance sample GGX normal distribution function for a fixed roughness value.
@@ -44,17 +43,6 @@ float3 ImportanceSampleGGX(float2 Xi, float roughness, float3 N)
 
 	// Tangent to world space
     return TangentX * H.x + TangentY * H.y + N * H.z;
-}
-
-// GGX/Towbridge-Reitz normal distribution function.
-// Uses Disney's reparametrization of alpha = roughness^2.
-float NDF_GGX(float NdotH, float roughness)
-{
-	float alpha = roughness * roughness;
-	float alphaSq = alpha * alpha;
-
-	float denom = (NdotH * NdotH) * (alphaSq - 1.0) + 1.0;
-	return alphaSq / (PI * denom * denom);
 }
 
 // Convert point from tangent/shading space to world space.

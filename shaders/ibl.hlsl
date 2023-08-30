@@ -1,9 +1,5 @@
 ﻿#include "iblcommon.hlsli"
 
-// Code inspired by
-// Epic's Real Shading in Unreal Engine 4 - https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
-// PBR by Michal Siejak - https://github.com/Nadrin/PBR
-
 TextureCube g_EnvironmentCubemap;
 
 //
@@ -120,20 +116,6 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
 // LUT BRDF
 //
 RWTexture2D<float2> LUT : register(u0);
-
-// Single term for separable Schlick-GGX below.
-float SchlickG1(float cosTheta, float k)
-{
-    return cosTheta / (cosTheta * (1.0 - k) + k);
-}
-
-// Schlick-GGX approximation of geometric attenuation function using Smith's method (IBL version).
-float SchlickGGX_IBL(float NdotL, float V, float roughness)
-{
-    float r = roughness;
-    float k = (r * r) / 2.0; // Epic suggests using this roughness remapping for IBL lighting.
-    return SchlickG1(NdotL, k) * SchlickG1(V, k);
-}
 
 // Pre-integrates Cook-Torrance specular BRDF for varying roughness and viewing directions.
 // Results are saved into 2D LUT texture in the form of A and B split-sum approximation terms,
