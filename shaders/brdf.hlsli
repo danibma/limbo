@@ -2,7 +2,6 @@
 
 // Resources used:
 // Epic's Real Shading in Unreal Engine 4 - https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
-// PBR by Michal Siejak - https://github.com/Nadrin/PBR
 // BRDF Crash course by Jakub Boksansky - https://boksajak.github.io/files/CrashCourseBRDF.pdf
 // Moving Frostbite to Physically Based Rendering - https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
 
@@ -17,6 +16,7 @@ struct MaterialProperties
 
     float Roughness;
     float Metallic;
+    float AO;
 };
 
 struct BRDFContext
@@ -142,9 +142,9 @@ BRDFContext InitBRDF(float3 V, float3 N, float3 L, in MaterialProperties materia
     return brdf;
 }
 
-float3 DefaultBRDF(inout BRDFContext brdfContext, float3 V, float3 N, float3 L, MaterialProperties material)
+float3 DefaultBRDF(float3 V, float3 N, float3 L, MaterialProperties material)
 {
-    brdfContext = InitBRDF(V, N, L, material);
+    BRDFContext brdfContext = InitBRDF(V, N, L, material);
 
     float3 specularBRDF = Microfacet(brdfContext);
     float3 diffuseBRDF  = Diffuse_Lambert(brdfContext);

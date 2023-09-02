@@ -40,7 +40,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
         float3 kernelSample = float3(Random01(seed), Random01(seed), Random01(seed));
 #else
         float pdf;
-        float3 kernelSample = HemisphereSampleCosineWeight(Hammersley(i, KERNEL_SIZE), pdf);
+        float3 kernelSample = CosineWeightSampleHemisphere(Hammersley(i, KERNEL_SIZE), pdf);
 #endif
 
 		// get sample position

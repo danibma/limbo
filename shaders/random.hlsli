@@ -34,7 +34,7 @@ float Random01(inout uint seed)
 
 // Samples a direction within a hemisphere oriented along +Z axis with a *cosine-weighted* distribution
 // Source: "Sampling Transformations Zoo" - Shirley et al. Ray Tracing Gems
-float3 HemisphereSampleCosineWeight(float2 u, out float pdf)
+float3 CosineWeightSampleHemisphere(float2 u, out float pdf)
 {
 	float a = sqrt(u.x);
 	float b = 2.0f * PI * u.y;
@@ -47,6 +47,15 @@ float3 HemisphereSampleCosineWeight(float2 u, out float pdf)
 	pdf = result.z * INV_PI;
 
 	return result;
+}
+
+// Uniformly sample point on a hemisphere.
+// See: "Physically Based Rendering" 3nd ed., section 13.6.1.
+float3 UniformSampleHemisphere(float u1, float u2)
+{
+    float r = sqrt(max(0.0, 1.0f - u1 * u1));
+    float phi = 2 * PI * u2;
+    return float3(r * cos(phi), r * sin(phi), u1);
 }
 
 // Utility function to get a vector perpendicular to an input vector 
@@ -74,16 +83,6 @@ float3 GetCosHemisphereSample(inout uint randSeed, float3 hitNorm)
 
 	// Get our cosine-weighted hemisphere lobe sample direction
     return tangent * (r * cos(phi).x) + bitangent * (r * sin(phi)) + hitNorm.xyz * sqrt(1 - randVal.x);
-}
-
-// Uniformly sample point on a hemisphere.
-// Cosine-weighted sampling would be a better fit for Lambertian BRDF but since this
-// compute shader runs only once as a pre-processing step performance is not *that* important.
-// See: "Physically Based Rendering" 2nd ed., section 13.6.1.
-float3 SampleHemisphere(float u1, float u2)
-{
-    const float u1p = sqrt(max(0.0, 1.0 - u1 * u1));
-    return float3(cos(TwoPI * u2) * u1p, sin(TwoPI * u2) * u1p, u1);
 }
 
 // Van der Corput radical inverse - http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html

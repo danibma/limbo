@@ -66,6 +66,8 @@ namespace limbo::Gfx::SC
             arguments.emplace_back(L"-Qembed_debug");           // Embed PDB in shader container (must be used with /Zi)
         }
 
+        arguments.emplace_back(DXC_ARG_ALL_RESOURCES_BOUND);
+
         // Compile shader
         ComPtr<IDxcBlobEncoding> source = nullptr;
         dxcUtils->LoadFile(path.c_str(), nullptr, &source);

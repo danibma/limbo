@@ -336,7 +336,7 @@ namespace limbo::Gfx
 		if (m_BRDFLUTMap.IsValid())
 			DestroyTexture(m_BRDFLUTMap);
 
-		uint2 equirectangularTextureSize = { 1024, 1024 };
+		uint2 equirectangularTextureSize = { 512, 512 };
 		m_EnvironmentCubemap = CreateTexture({
 			.Width = equirectangularTextureSize.x,
 			.Height = equirectangularTextureSize.y,
@@ -359,7 +359,7 @@ namespace limbo::Gfx
 			BindShader(equirectToCubemap);
 			SetParameter(equirectToCubemap, "g_EnvironmentEquirectangular", equirectangularTexture);
 			SetParameter(equirectToCubemap, "g_OutEnvironmentCubemap", m_EnvironmentCubemap);
-			Dispatch(equirectangularTextureSize.x / 32, equirectangularTextureSize.y / 32, 6);
+			Dispatch(equirectangularTextureSize.x / 8, equirectangularTextureSize.y / 8, 6);
 
 			DestroyShader(equirectToCubemap);
 			DestroyTexture(equirectangularTexture);
@@ -369,7 +369,7 @@ namespace limbo::Gfx
 		// irradiance map
 		{
 			BeginEvent("DrawIrradianceMap");
-			uint2 irradianceSize = { 1024, 1024 };
+			uint2 irradianceSize = { 32, 32 };
 			m_IrradianceMap = CreateTexture({
 				.Width = irradianceSize.x,
 				.Height = irradianceSize.y,
@@ -388,7 +388,7 @@ namespace limbo::Gfx
 			BindShader(irradianceShader);
 			SetParameter(irradianceShader, "g_EnvironmentCubemap", m_EnvironmentCubemap);
 			SetParameter(irradianceShader, "g_IrradianceMap", m_IrradianceMap);
-			Dispatch(irradianceSize.x / 32, irradianceSize.y / 32, 6);
+			Dispatch(irradianceSize.x / 8, irradianceSize.y / 8, 6);
 
 			DestroyShader(irradianceShader);
 			EndEvent();
@@ -397,7 +397,7 @@ namespace limbo::Gfx
 		// Pre filter env map
 		{
 			BeginEvent("PreFilterEnvMap");
-			uint2 prefilterSize = { 1024, 1024 };
+			uint2 prefilterSize = { 128, 128 };
 			uint16 prefilterMipLevels = 5;
 
 			m_PrefilterMap = CreateTexture({
@@ -422,7 +422,7 @@ namespace limbo::Gfx
 			const float deltaRoughness = 1.0f / glm::max(float(prefilterMipLevels - 1), 1.0f);
 			for (uint32_t level = 0, size = prefilterSize.x; level < prefilterMipLevels; ++level, size /= 2)
 			{
-				const uint32_t numGroups = glm::max<uint32_t>(1, size / 32);
+				const uint32_t numGroups = glm::max<uint32_t>(1, size / 8);
 
 				SetParameter(prefilterShader, "g_PreFilteredMap", m_PrefilterMap, level);
 				SetParameter(prefilterShader, "roughness", level * deltaRoughness);
@@ -436,7 +436,7 @@ namespace limbo::Gfx
 		// Compute BRDF LUT map
 		{
 			BeginEvent("ComputeBRDFLUT");
-			uint2 brdfLUTMapSize = { 256, 256 };
+			uint2 brdfLUTMapSize = { 512, 512 };
 			m_BRDFLUTMap = CreateTexture({
 				.Width = brdfLUTMapSize.x,
 				.Height = brdfLUTMapSize.y,
@@ -453,7 +453,7 @@ namespace limbo::Gfx
 			});
 			BindShader(brdfLUTShader);
 			SetParameter(brdfLUTShader, "LUT", m_BRDFLUTMap);
-			Dispatch(brdfLUTMapSize.x / 32, brdfLUTMapSize.y / 32, 6);
+			Dispatch(brdfLUTMapSize.x / 8, brdfLUTMapSize.y / 8, 6);
 
 			DestroyShader(brdfLUTShader);
 			EndEvent();

@@ -1,5 +1,9 @@
 ﻿#include "iblcommon.hlsli"
 
+// Resources used:
+// Epic's Real Shading in Unreal Engine 4 - https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
+// PBR by Michal Siejak - https://github.com/Nadrin/PBR
+
 TextureCube g_EnvironmentCubemap;
 
 //
@@ -8,7 +12,7 @@ TextureCube g_EnvironmentCubemap;
 Texture2D g_EnvironmentEquirectangular : register(t0);
 RWTexture2DArray<float4> g_OutEnvironmentCubemap : register(u0);
 
-[numthreads(32, 32, 1)]
+[numthreads(8, 8, 1)]
 void EquirectToCubemap(uint3 ThreadID : SV_DispatchThreadID)
 {
     float outputWidth, outputHeight, outputDepth;
@@ -35,7 +39,7 @@ void EquirectToCubemap(uint3 ThreadID : SV_DispatchThreadID)
 //
 RWTexture2DArray<float4> g_IrradianceMap;
 
-[numthreads(32, 32, 1)]
+[numthreads(8, 8, 1)]
 void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
 {
     uint outputWidth, outputHeight, outputDepth;
@@ -50,8 +54,8 @@ void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
     for (uint i = 0; i < NumSamples; ++i)
     {
         float2 u = Hammersley(i);
-        float3 Li = TangentToWorld(SampleHemisphere(u.x, u.y), N);
-        float cosTheta = max(0.0, dot(Li, N));
+        float3 Li = TangentToWorld(UniformSampleHemisphere(u.x, u.y), N);
+        float cosTheta = saturate(dot(Li, N));
 
 		// PIs here cancel out because of division by pdf.
         irradiance += 2.0 * g_EnvironmentCubemap.SampleLevel(SLinearWrap, Li, 0).rgb * cosTheta;
@@ -69,7 +73,7 @@ RWTexture2DArray<float4> g_PreFilteredMap;
 // Roughness value to pre-filter for.
 float roughness;
 
-[numthreads(32, 32, 1)]
+[numthreads(8, 8, 1)]
 void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
 {
 	// Make sure we won't write past output when computing higher mipmap levels.
@@ -80,24 +84,17 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
         return;
     }
 	
-	// Get input cubemap dimensions at zero mipmap level.
-    float inputWidth, inputHeight, inputLevels;
-    g_EnvironmentCubemap.GetDimensions(0, inputWidth, inputHeight, inputLevels);
-
-	// Approximation: Assume zero viewing angle (isotropic reflections).
     float3 N = GetSamplingVector(ThreadID, float(outputWidth), float(outputHeight));
     float3 V = N;
 	
     float3 color = 0;
     float weight = 0;
 
-	// Convolve environment map using GGX NDF importance sampling.
     for (uint i = 0; i < NumSamples; ++i)
     {
         float2 Xi = Hammersley(i);
         float3 H = ImportanceSampleGGX(Xi, roughness, N);
 
-		// Compute incident direction (L) by reflecting viewing direction (V) around half-vector (H).
         float3 L = 2.0 * dot(V, H) * H - V;
 
         float NdotL = saturate(dot(N, L));
@@ -120,7 +117,7 @@ RWTexture2D<float2> LUT : register(u0);
 // Pre-integrates Cook-Torrance specular BRDF for varying roughness and viewing directions.
 // Results are saved into 2D LUT texture in the form of A and B split-sum approximation terms,
 // which act as a scale and bias to F0 (Fresnel reflectance at normal incidence) during rendering.
-[numthreads(32, 32, 1)]
+[numthreads(8, 8, 1)]
 void ComputeBRDFLUT(uint2 ThreadID : SV_DispatchThreadID)
 {
 	// Get output LUT dimensions.

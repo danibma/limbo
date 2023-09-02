@@ -2,42 +2,20 @@
 #include "iblcommon.hlsli"
 #include "brdf.hlsli"
 
-//
-// Vertex Shader
-//
-QuadResult VSMain(uint vertexID : SV_VertexID)
-{
-    VS_DRAW_QUAD(vertexID);
-}
+/*
+    A lot of references were used to (learn how to) implement this shader.
+    Most of this references are linked in brdf.hlsli and ibl.hlsl.
 
-//
-// Pixel Shader
-//
+    Alongside the references linked in those files, https://learnopengl.com/ PBR section was a huge help as well.
+*/
 
-// Returns number of mipmap levels for specular IBL environment map.
-uint QueryTextureLevels(TextureCube tex)
-{
-    uint width, height, levels;
-    tex.GetDimensions(0, width, height, levels);
-    return levels;
-}
-
-// Fresnel Schlick taking count of roughness, by Sébastien Lagarde - https://seblagarde.wordpress.com/2011/08/17/hello-world/
-float3 FresnelSchlickRoughness(float NdotV, float3 F0, float roughness)
-{
-    return F0 + (max(1 - roughness, F0) - F0) * pow(1 - saturate(NdotV), 5.0);
-}
-
-// 4.10.2 Specular occlusion from frostbite - https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
-float ComputeSpecOcclusion(float NdotV , float AO , float roughness)
-{
-	return saturate(pow( NdotV + AO , exp2( -16.0f * roughness - 1.0f )) - 1.0f + AO );
-}
+QuadResult VSMain(uint vertexID : SV_VertexID) { VS_DRAW_QUAD(vertexID); }
 
 // Light info
 float3 lightPos;
 float3 lightColor;
 
+// GBuffer textures
 Texture2D g_WorldPosition;
 Texture2D g_Albedo;
 Texture2D g_Normal;
@@ -45,6 +23,7 @@ Texture2D g_RoughnessMetallicAO;
 Texture2D g_Emissive;
 Texture2D g_AmbientOcclusion;
 
+// IBL Textures
 TextureCube g_IrradianceMap;
 TextureCube g_PrefilterMap;
 Texture2D   g_LUT;
@@ -71,17 +50,17 @@ float4 PSMain(QuadResult quad) : SV_Target
 
     if (GSceneInfo.SceneViewToRender == 1)
         return float4(albedo, 1.0f);
-    else if (GSceneInfo.SceneViewToRender == 2)
+    if (GSceneInfo.SceneViewToRender == 2)
         return float4(normal, 1.0f);
-    else if (GSceneInfo.SceneViewToRender == 3)
+    if (GSceneInfo.SceneViewToRender == 3)
         return float4(worldPos, 1.0f);
-    else if (GSceneInfo.SceneViewToRender == 4)
+    if (GSceneInfo.SceneViewToRender == 4)
         return float4((float3)metallic, 1.0f);
-    else if (GSceneInfo.SceneViewToRender == 5)
+    if (GSceneInfo.SceneViewToRender == 5)
         return float4((float3)roughness, 1.0f);
-    else if (GSceneInfo.SceneViewToRender == 6)
+    if (GSceneInfo.SceneViewToRender == 6)
         return float4(emissive, 1.0f);
-    else if (GSceneInfo.SceneViewToRender == 7)
+    if (GSceneInfo.SceneViewToRender == 7)
         return float4((float3)ao, 1.0f);
 
     MaterialProperties material;
@@ -89,13 +68,11 @@ float4 PSMain(QuadResult quad) : SV_Target
     material.Normal    = normal;
     material.Roughness = roughness;
     material.Metallic  = metallic;
+    material.AO        = ao;
 
     float3 V = normalize(GSceneInfo.CameraPos - worldPos);
 	float3 N = normalize(normal);
     float3 L = normalize(lightPos - worldPos); // light direction
-
-    float  NdotV;
-    float3 F0;
 
     // reflectance equation
     float3 directLighting = 0.0f;
@@ -106,36 +83,12 @@ float4 PSMain(QuadResult quad) : SV_Target
         float attenuation = 1.0f / (distance * distance);
         float3 radiance = lightColor * attenuation;
 
-        BRDFContext brdf;
-        directLighting += DefaultBRDF(brdf, V, N, L, material) * radiance;
-
-        NdotV = brdf.NdotV;
-        F0    = brdf.F0;
+        directLighting += DefaultBRDF(V, N, L, material) * radiance;
     }
 
-	// Specular reflection vector.
-    float3 R = 2.0 * NdotV * N - V;
-
-    float3 F = FresnelSchlickRoughness(NdotV, F0, roughness);
-
-    // Get diffuse contribution factor (as with direct lighting).
-    float3 kD = lerp(1.0 - F, 0.0, metallic);
-  
-    float3 irradiance = g_IrradianceMap.SampleLevel(SLinearClamp, N, 0).rgb;
-    float3 diffuse = kD * irradiance * albedo * ao;
-  
-    float specularLevels = QueryTextureLevels(g_PrefilterMap);
-    float3 prefilteredColor = g_PrefilterMap.SampleLevel(SLinearClamp, R, roughness * specularLevels).rgb;
-
-    // Split-sum approximation factors for Cook-Torrance specular BRDF.
-    float2 envBRDF = g_LUT.Sample(SLinearClamp, float2(NdotV, roughness)).rg;
-
-    // Total specular IBL contribution.
-    float3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y) * ComputeSpecOcclusion(NdotV, ao, roughness);
-  
-    float3 ambient = diffuse + specular + emissive;
+    float3 indirectLighting = CalculateIBL(N, V, material, g_IrradianceMap, g_PrefilterMap, g_LUT);
     
-    float3 color = ambient + directLighting;
+    float3 color = indirectLighting + directLighting + emissive;
     float4 finalColor = float4(color, 1.0f);
     
     return finalColor;
