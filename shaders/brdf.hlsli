@@ -137,7 +137,8 @@ BRDFContext InitBRDF(float3 V, float3 N, float3 L, in MaterialProperties materia
     brdf.F0 = lerp(MIN_DIELECTRICS_F0, material.BaseColor, material.Metallic);
     brdf.F  = FresnelSchlick(brdf.HdotV, brdf.F0);
 
-    brdf.Roughness = material.Roughness;
+    // Preserve specular highlight
+    brdf.Roughness = max(0.05, material.Roughness);
 
     return brdf;
 }

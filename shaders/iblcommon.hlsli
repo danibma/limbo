@@ -16,11 +16,11 @@ float2 Hammersley(uint i)
 }
 
 // Schlick-GGX approximation of geometric attenuation function using Smith's method (IBL version).
-float SchlickGGX_IBL(float NdotL, float V, float roughness)
+float SchlickGGX_IBL(float NdotL, float NdotV, float roughness)
 {
     float r = roughness;
     float k = (r * r) / 2.0; // Epic suggests using this roughness remapping for IBL lighting.
-    return SchlickG1(NdotL, k) * SchlickG1(V, k);
+    return SchlickG1(NdotV, k) * SchlickG1(NdotL, k);
 }
 
 // Importance sample GGX normal distribution function for a fixed roughness value.
@@ -42,7 +42,7 @@ float3 ImportanceSampleGGX(float2 Xi, float roughness, float3 N)
     float3 TangentY = cross(N, TangentX);
 
 	// Tangent to world space
-    return TangentX * H.x + TangentY * H.y + N * H.z;
+    return normalize(TangentX * H.x + TangentY * H.y + N * H.z);
 }
 
 // Convert point from tangent/shading space to world space.
@@ -101,7 +101,12 @@ uint QueryTextureLevels(TextureCube tex)
 // Fresnel Schlick taking count of roughness, by Sébastien Lagarde - https://seblagarde.wordpress.com/2011/08/17/hello-world/
 float3 FresnelSchlickRoughness(float NdotV, float3 F0, float roughness)
 {
+#if 0
     return F0 + (max(1 - roughness, F0) - F0) * pow(1 - saturate(NdotV), 5.0);
+#else
+    float val = 1.0 - NdotV;
+    return F0 + (max(1.0 - roughness, F0) - F0) * (val * val * val * val * val); //Faster than pow
+#endif
 }
 
 // 4.10.2 - Specular occlusion from frostbite - https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
@@ -140,6 +145,9 @@ float3 Specular_IBL(in MaterialProperties material, float3 F, float3 N, float3 V
 
 float3 CalculateIBL(float3 N, float3 V, in MaterialProperties material, TextureCube IrradianceMap, TextureCube PrefilterEnvMap, Texture2D BRDFLUT)
 {
+    // Preserve specular highlight
+    material.Roughness = max(0.05, material.Roughness);
+
     float NdotV = saturate(dot(N, V));
     float3 F0 = lerp(MIN_DIELECTRICS_F0, material.BaseColor, material.Metallic);
 

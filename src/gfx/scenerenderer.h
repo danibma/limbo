@@ -64,7 +64,7 @@ namespace limbo::Gfx
 		int			CurrentSceneView	= 0; // SceneView enum
 		int			CurrentRenderPath	= 0; // RenderPath enum
 		int			CurrentAOTechnique  = 1; // AmbientOcclusion enum
-		int			SelectedEnvMapIdx	= 4;
+		int			SelectedEnvMapIdx	= 1;
 	};
 
 	struct PointLight

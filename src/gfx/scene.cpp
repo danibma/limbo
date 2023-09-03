@@ -178,7 +178,7 @@ namespace limbo::Gfx
 
 		{
 			std::string debugName   = std::format(" Material({}) {}", index, "Emissive");
-			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str(), Format::RGBA8_UNORM);
+			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str(), Format::RGBA8_UNORM_SRGB);
 			material.EmissiveFactor = glm::make_vec3(cgltfMaterial->emissive_factor);
 		}
 

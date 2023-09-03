@@ -58,7 +58,7 @@ void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
         float cosTheta = saturate(dot(Li, N));
 
 		// PIs here cancel out because of division by pdf.
-        irradiance += 2.0 * g_EnvironmentCubemap.SampleLevel(SLinearWrap, Li, 0).rgb * cosTheta;
+        irradiance += 2.0 * g_EnvironmentCubemap.SampleLevel(SLinearClamp, Li, 0).rgb * cosTheta;
     }
     irradiance /= float(NumSamples);
 
@@ -100,7 +100,7 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
         float NdotL = saturate(dot(N, L));
         if (NdotL > 0.0)
         {
-            color  += g_EnvironmentCubemap.SampleLevel(SLinearWrap, L, 0).rgb * NdotL;
+            color  += g_EnvironmentCubemap.SampleLevel(SLinearClamp, L, 0).rgb * NdotL;
             weight += NdotL;
         }
     }
@@ -145,9 +145,7 @@ void ComputeBRDFLUT(uint2 ThreadID : SV_DispatchThreadID)
     {
         float2 Xi = Hammersley(i);
         float3 H = ImportanceSampleGGX(Xi, roughness, N);
-
-		// Compute incident direction
-        float3 L = 2.0 * dot(V, H) * H - V;
+        float3 L = normalize(2.0 * dot(V, H) * H - V);
 
         float NdotL = saturate(L.z);
         float NdotH = saturate(H.z);

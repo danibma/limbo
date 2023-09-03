@@ -88,7 +88,7 @@ float4 PSMain(QuadResult quad) : SV_Target
 
     float3 indirectLighting = CalculateIBL(N, V, material, g_IrradianceMap, g_PrefilterMap, g_LUT);
     
-    float3 color = indirectLighting + directLighting + emissive;
+    float3 color = directLighting + indirectLighting + emissive;
     float4 finalColor = float4(color, 1.0f);
     
     return finalColor;
