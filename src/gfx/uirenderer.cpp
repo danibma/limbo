@@ -124,6 +124,11 @@ namespace limbo::UI
 				ImGui::ColorEdit3("Light Color", &sceneRenderer->Light.Color[0]);
 			}
 
+			if (ImGui::CollapsingHeader("Sun", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat3("Direction", &sceneRenderer->Sun.Direction[0], 0.1f);
+			}
+
 			ImGui::End();
 		}
 	}

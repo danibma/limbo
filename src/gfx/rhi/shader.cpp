@@ -276,8 +276,8 @@ namespace limbo::Gfx
 				debugName = std::format("{} RT {}", spec.ProgramName, index);
 
 			return CreateTexture({
-				.Width = Device::Ptr->GetBackbufferWidth(),
-				.Height = Device::Ptr->GetBackbufferHeight(),
+				.Width  = spec.RTSize.x != 0 ? spec.RTSize.x : GetBackbufferWidth(),
+				.Height = spec.RTSize.y != 0 ? spec.RTSize.y : GetBackbufferHeight(),
 				.DebugName = debugName.c_str(),
 				.Flags = TextureUsage::RenderTarget | TextureUsage::ShaderResource,
 				.ClearValue = {
@@ -292,9 +292,9 @@ namespace limbo::Gfx
 		Device::Ptr->OnResizedSwapchain.AddRaw(this, &Shader::ResizeRenderTargets);
 
 		RTCount = 0;
-		for (uint8 i = 0; spec.RTFormats[i].RTFormat != Format::UNKNOWN || spec.RTFormats[i].RTTexture.IsValid(); ++i)
+		for (uint8 i = 0; spec.RTFormats[i].IsValid() || spec.RTFormats[i].RTTexture.IsValid(); ++i)
 			RTCount++;
-		if (RTCount <= 0)
+		if (RTCount <= 0 && !spec.DepthFormat.IsValid())
 		{
 			desc.RTVFormats[0]		= D3DFormat(Device::Ptr->GetSwapchainFormat());
 			desc.DSVFormat			= D3DFormat(Device::Ptr->GetSwapchainDepthFormat());
@@ -328,7 +328,7 @@ namespace limbo::Gfx
 			}
 			desc.NumRenderTargets = RTCount;
 
-			if (spec.DepthFormat.RTFormat == Format::UNKNOWN && !spec.DepthFormat.RTTexture.IsValid())
+			if (!spec.DepthFormat.IsValid() && !spec.DepthFormat.RTTexture.IsValid())
 			{
 				desc.DepthStencilState.DepthEnable = false;
 			}
@@ -354,8 +354,8 @@ namespace limbo::Gfx
 
 					DepthTarget = {
 						.Texture = CreateTexture({
-							.Width = Device::Ptr->GetBackbufferWidth(),
-							.Height = Device::Ptr->GetBackbufferHeight(),
+							.Width  = spec.RTSize.x != 0 ? spec.RTSize.x : GetBackbufferWidth(),
+							.Height = spec.RTSize.y != 0 ? spec.RTSize.y : GetBackbufferHeight(),
 							.DebugName = debugName.c_str(),
 							.Flags = TextureUsage::DepthStencil | TextureUsage::ShaderResource,
 							.ClearValue = {
@@ -404,7 +404,7 @@ namespace limbo::Gfx
 		};
 
 		D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+		rasterizerDesc.CullMode = spec.CullMode;
 		rasterizerDesc.FrontCounterClockwise = true;
 
 		D3D12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
@@ -440,7 +440,7 @@ namespace limbo::Gfx
 		}
 		else
 		{
-			if (RTCount <= 0)
+			if (RTCount <= 0 && !spec.DepthFormat.IsValid())
 			{
 				desc.RTVFormats[0] = D3DFormat(Device::Ptr->GetSwapchainFormat());
 				desc.DSVFormat = D3DFormat(Device::Ptr->GetSwapchainDepthFormat());
@@ -455,7 +455,7 @@ namespace limbo::Gfx
 					desc.RTVFormats[i] = D3DFormat(spec.RTFormats[i].RTFormat);
 				desc.NumRenderTargets = RTCount;
 
-				if (spec.DepthFormat.RTFormat == Format::UNKNOWN && !spec.DepthFormat.RTTexture.IsValid())
+				if (!spec.DepthFormat.IsValid() && !spec.DepthFormat.RTTexture.IsValid())
 					desc.DepthStencilState.DepthEnable = false;
 				else
 					desc.DSVFormat = D3DFormat(spec.DepthFormat.RTFormat);

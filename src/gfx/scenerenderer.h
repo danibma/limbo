@@ -73,6 +73,11 @@ namespace limbo::Gfx
 		float3 Color;
 	};
 
+	struct DirectionalLight
+	{
+		float3 Direction;
+	};
+
 	class PathTracing;
 	class Texture;
 	class Buffer;
@@ -93,6 +98,8 @@ namespace limbo::Gfx
 		Handle<Buffer>					m_SceneInstances;
 
 		Handle<Texture>					m_SceneTexture;
+
+		Handle<Shader>					m_ShadowMapShader;
 
 		// Skybox
 		Handle<Shader>					m_SkyboxShader;
@@ -124,6 +131,7 @@ namespace limbo::Gfx
 		RendererTweaks				Tweaks;
 		FPSCamera					Camera;
 		PointLight					Light;
+		DirectionalLight			Sun;
 
 		SceneInfo					SceneInfo;
 

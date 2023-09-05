@@ -20,9 +20,11 @@ namespace limbo::Gfx
 			Format					RTFormat;
 			const char*				DebugName = ""; // If the RTTexture is set, this does nothing
 
-			Handle<class Texture>	RTTexture;
+			Handle<class Texture>	RTTexture; // Use an already created texture, eg. from another shader
 
 			RenderPassOp			LoadRenderPassOp = RenderPassOp::Clear;
+
+			bool IsValid() const { return RTFormat != Format::UNKNOWN; }
 		};
 
 		struct RaytracingLib
@@ -38,10 +40,12 @@ namespace limbo::Gfx
 		const char*						PSEntryPoint = "PSMain";
 		const char*						CsEntryPoint = "CSMain";
 
+		uint2							RTSize = { 0, 0 }; // If the RTFormats have RTTexture set, this does nothing
 		RenderTargetDesc				RTFormats[8];
 		RenderTargetDesc				DepthFormat = { Format::UNKNOWN };
 
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		D3D12_CULL_MODE					CullMode = D3D12_CULL_MODE_BACK;
 
 		/**
 		 * Fill this for raytracing and set the type to ShaderType::RayTracing.

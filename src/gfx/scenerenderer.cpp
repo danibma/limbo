@@ -17,6 +17,7 @@ namespace limbo::Gfx
 		: Window(window)
 		, Camera(CreateCamera(float3(0.0f, 1.0f, 4.0f), float3(0.0f, 0.0f, -1.0f)))
 		, Light({.Position = float3(0.0f, 0.5f, 0.0f), .Color = float3(1, 0.45f, 0) })
+		, Sun({ 21.0f, 72.0f, 20.0f })
 	{
 		const char* env_maps_path = "assets/environment";
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
@@ -88,6 +89,24 @@ namespace limbo::Gfx
 			.Type = Gfx::ShaderType::Graphics
 		});
 
+		// Shadow Map shader
+		m_ShadowMapShader = Gfx::CreateShader({
+			.ProgramName = "shadowmap",
+			.RTSize = { SHADOWMAP_SIZE, SHADOWMAP_SIZE },
+			.RTFormats = {
+				{
+					.RTFormat = Gfx::Format::RGBA8_UNORM,
+					.DebugName = "Shadow Map RT",
+				}
+			},
+			.DepthFormat = {
+				.RTFormat = Gfx::Format::D32_SFLOAT,
+				.DebugName = "Shadow Map Depth",
+			},
+			.CullMode = D3D12_CULL_MODE_NONE,
+			.Type = Gfx::ShaderType::Graphics
+		});
+
 		// Composite shader
 		m_CompositeShader = Gfx::CreateShader({
 			.ProgramName = "scenecomposite",
@@ -104,6 +123,7 @@ namespace limbo::Gfx
 		DestroyTexture(m_PrefilterMap);
 		DestroyTexture(m_BRDFLUTMap);
 
+		DestroyShader(m_ShadowMapShader);
 		DestroyShader(m_PBRShader);
 		DestroyShader(m_SkyboxShader);
 		DestroyShader(m_DeferredShadingShader);
@@ -155,7 +175,29 @@ namespace limbo::Gfx
 				}
 				EndEvent();
 			}
-			
+
+			ImGui::Begin("Shadow Maps");
+			ImGui::Image((ImTextureID)Gfx::GetShaderRTTextureID(m_ShadowMapShader, 0), ImVec2(512, 512));
+			ImGui::End();
+
+			// Shadow map
+			{
+				PROFILE_SCOPE(GetCommandContext(), "Shadow Map");
+				BeginEvent("Shadow Map");
+				BindShader(m_ShadowMapShader);
+				BindSceneInfo(m_ShadowMapShader);
+				for (Scene* scene : m_Scenes)
+				{
+					scene->IterateMeshes([&](const Mesh& mesh)
+					{
+						SetParameter(m_ShadowMapShader, "instanceID", mesh.InstanceID);
+
+						BindIndexBufferView(mesh.IndicesLocation);
+						DrawIndexed((uint32)mesh.IndexCount);
+					});
+				}
+				EndEvent();
+			}
 			{
 				PROFILE_SCOPE(GetCommandContext(ContextType::Direct), "Ambient Occlusion");
 				if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
@@ -291,6 +333,8 @@ namespace limbo::Gfx
 
 	void SceneRenderer::UpdateSceneInfo()
 	{
+		SceneInfo.SunView				= glm::lookAt(Sun.Direction, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f));
+
 		SceneInfo.PrevView				= SceneInfo.View;
 
 		SceneInfo.View					= Camera.View;

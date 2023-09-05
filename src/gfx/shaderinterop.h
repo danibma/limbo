@@ -8,6 +8,8 @@
 #define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
 #define PAD uint MACRO_CONCAT(padding, __COUNTER__)
 
+#define SHADOWMAP_SIZE 1024
+
 struct SceneInfo
 {
 	float4x4	View;
@@ -16,6 +18,7 @@ struct SceneInfo
 	float4x4	Projection;
 	float4x4	InvProjection;
 	float4x4	ViewProjection;
+	float4x4	SunView;
 	float3		CameraPos;
 
 	uint		FrameIndex;
