@@ -87,7 +87,7 @@ namespace limbo::Gfx
 			PreparePreviousFrameTexture();
 		}
 
-		BeginEvent("RTAO");
+		BeginProfileEvent("RTAO");
 		BindShader(m_RTAOShader);
 
 		ShaderBindingTable SBT(m_RTAOShader);
@@ -104,16 +104,16 @@ namespace limbo::Gfx
 		SetParameter(m_RTAOShader, "g_Normals", normalsMap);
 		SetParameter(m_RTAOShader, "g_Output", m_NoisedTexture);
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
-		EndEvent();
+		EndProfileEvent("RTAO");
 
-		BeginEvent("RTAO Denoise");
+		BeginProfileEvent("RTAO Denoise");
 		BindShader(m_DenoiseRTAOShader);
 		SetParameter(m_DenoiseRTAOShader, "accumCount", m_AccumCount);
 		SetParameter(m_DenoiseRTAOShader, "g_PreviousRTAOImage", m_PreviousFrame);
 		SetParameter(m_DenoiseRTAOShader, "g_CurrentRTAOImage", m_NoisedTexture);
 		SetParameter(m_DenoiseRTAOShader, "g_DenoisedRTAOImage", m_FinalTexture);
 		Dispatch(GetBackbufferWidth() / 8, GetBackbufferHeight() / 8, 1);
-		EndEvent();
+		EndProfileEvent("RTAO Denoise");
 
 		++m_AccumCount;
 

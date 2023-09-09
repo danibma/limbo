@@ -64,7 +64,7 @@ namespace limbo::Gfx
 
 	void PathTracing::Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, const FPSCamera& camera)
 	{
-		BeginEvent("Path Tracing");
+		BeginProfileEvent("Path Tracing");
 		BindShader(m_RTShader);
 
 		ShaderBindingTable SBT(m_RTShader);
@@ -76,7 +76,7 @@ namespace limbo::Gfx
 		SetParameter(m_RTShader, "Scene", sceneAS);
 		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
 		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
-		EndEvent();
+		EndProfileEvent("Path Tracing");
 	}
 
 	Handle<Texture> PathTracing::GetFinalTexture() const

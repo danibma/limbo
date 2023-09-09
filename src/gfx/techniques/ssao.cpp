@@ -46,7 +46,7 @@ namespace limbo::Gfx
 
 	void SSAO::Render(SceneRenderer* sceneRenderer, Handle<Texture> positionsMap, Handle<Texture> sceneDepthMap)
 	{
-		BeginEvent("SSAO");
+		BeginProfileEvent("SSAO");
 		BindShader(m_SSAOShader);
 		sceneRenderer->BindSceneInfo(m_SSAOShader);
 		SetParameter(m_SSAOShader, "g_Positions", positionsMap);
@@ -55,14 +55,14 @@ namespace limbo::Gfx
 		SetParameter(m_SSAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
 		SetParameter(m_SSAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
 		Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
-		EndEvent();
+		EndProfileEvent("SSAO");
 
-		BeginEvent("SSAO Blur Texture");
+		BeginProfileEvent("SSAO Blur Texture");
 		BindShader(m_BlurSSAOShader);
 		SetParameter(m_BlurSSAOShader, "g_SSAOTexture", m_UnblurredSSAOTexture);
 		SetParameter(m_BlurSSAOShader, "g_BlurredSSAOTexture", m_BlurredSSAOTexture);
 		Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
-		EndEvent();
+		EndProfileEvent("SSAO Blur Texture");
 	}
 
 	Handle<Texture> SSAO::GetBlurredTexture() const

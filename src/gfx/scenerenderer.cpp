@@ -127,13 +127,13 @@ namespace limbo::Gfx
 	{
 		PROFILE_SCOPE(GetCommandContext(), "Render");
 
-		BeginEvent("Loading Environment Map");
 		if (bNeedsEnvMapChange)
 		{
+			BeginEvent("Loading Environment Map");
 			LoadEnvironmentMap(EnvironmentMaps[Tweaks.SelectedEnvMapIdx].string().c_str());
 			bNeedsEnvMapChange = false;
+			EndEvent();
 		}
-		EndEvent();
 
 		m_SceneAS.Build(m_Scenes);
 
@@ -144,8 +144,7 @@ namespace limbo::Gfx
 			m_ShadowMapping->Render(this);
 
 			{
-				PROFILE_SCOPE(GetCommandContext(), "Geometry Pass");
-				BeginEvent("Geometry Pass");
+				BeginProfileEvent("Geometry Pass");
 				BindShader(m_DeferredShadingShader);
 				BindSceneInfo(m_DeferredShadingShader);
 				for (Scene* scene : m_Scenes)
@@ -158,7 +157,7 @@ namespace limbo::Gfx
 						DrawIndexed((uint32)mesh.IndexCount);
 					});
 				}
-				EndEvent();
+				EndProfileEvent("Geometry Pass");
 			}
 
 			{
@@ -169,7 +168,7 @@ namespace limbo::Gfx
 					m_RTAO->Render(this, &m_SceneAS, GetShaderRT(m_DeferredShadingShader, 1), GetShaderRT(m_DeferredShadingShader, 3));
 			}
 
-			BeginEvent("Render Skybox");
+			BeginProfileEvent("Render Skybox");
 			BindShader(m_SkyboxShader);
 			BindSceneInfo(m_SkyboxShader);
 			SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
@@ -179,11 +178,10 @@ namespace limbo::Gfx
 				BindIndexBufferView(mesh.IndicesLocation);
 				DrawIndexed((uint32)mesh.IndexCount);
 			});
-			EndEvent();
+			EndProfileEvent("Render Skybox");
 
 			{
-				PROFILE_SCOPE(GetCommandContext(), "Lighting");
-				BeginEvent("PBR Lighting");
+				BeginProfileEvent("Lighting");
 				BindShader(m_PBRShader);
 				BindSceneInfo(m_PBRShader);
 				SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
@@ -208,7 +206,7 @@ namespace limbo::Gfx
 				SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
 				SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
 				Draw(6);
-				EndEvent();
+				EndProfileEvent("Lighting");
 			}
 
 			m_SceneTexture = GetShaderRT(m_PBRShader, 0);
@@ -221,13 +219,12 @@ namespace limbo::Gfx
 
 		// render scene composite
 		{
-			PROFILE_SCOPE(GetCommandContext(ContextType::Direct), "Scene Composite");
-			BeginEvent("Scene Composite");
+			BeginProfileEvent("Scene Composite");
 			BindShader(m_CompositeShader);
 			SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
 			SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
 			Draw(6);
-			EndEvent();
+			EndProfileEvent("Scene Composite");
 		}
 
 		// present

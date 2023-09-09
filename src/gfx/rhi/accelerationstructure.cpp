@@ -23,7 +23,7 @@ namespace limbo::Gfx
 		Device* device = Device::Ptr;
 		ID3D12Device5* d3ddevice = device->GetDevice();
 
-		BeginEvent("Build Acceleration Structure");
+		BeginProfileEvent("Build Acceleration Structure");
 
 		bool bUpdateBLAS = false;
 		std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instances;
@@ -141,7 +141,7 @@ namespace limbo::Gfx
 		GetCommandContext()->BuildRaytracingAccelerationStructure(TLASInput, m_ScratchBuffer, m_TLAS);
 		GetCommandContext()->InsertUAVBarrier(m_TLAS);
 
-		EndEvent();
+		EndProfileEvent("Build Acceleration Structure");
 	}
 
 	D3D12_GPU_DESCRIPTOR_HANDLE AccelerationStructure::GetDescriptor() const

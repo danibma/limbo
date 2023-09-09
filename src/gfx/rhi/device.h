@@ -5,6 +5,7 @@
 #include "resourcemanager.h"
 #include "commandcontext.h"
 #include "shaderbindingtable.h"
+#include "gfx/profiler.h"
 
 namespace limbo::Core
 {
@@ -231,6 +232,18 @@ namespace limbo::Gfx
 	FORCEINLINE void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
 	{
 		GetCommandContext()->CopyBufferToTexture(src, dst);
+	}
+
+	FORCEINLINE void BeginProfileEvent(const char* name, uint64 color = 0, ContextType type = ContextType::Direct)
+	{
+		GetCommandContext(type)->BeginEvent(name, color);
+		PROFILE_BEGIN(GetCommandContext(type), name);
+	}
+
+	FORCEINLINE void EndProfileEvent(const char* name, ContextType type = ContextType::Direct)
+	{
+		PROFILE_END(GetCommandContext(type), name);
+		GetCommandContext(type)->EndEvent();
 	}
 
 	FORCEINLINE void BeginEvent(const char* name, uint64 color = 0)

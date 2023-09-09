@@ -116,7 +116,7 @@ namespace limbo
 // CPU
 #define PROFILE_CPU_SCOPE(Name) limbo::ScopedProfile<CPUProfiler> MACRO_CONCAT(__s__, __COUNTER__)(Name)
 #define PROFILE_CPU_BEGIN(Name) limbo::GCPUProfiler.StartProfile(Name)
-#define PROFILE_CPU_END(Name)   limbo::GGPUProfiler.EndProfile(Name)
+#define PROFILE_CPU_END(Name)   limbo::GCPUProfiler.EndProfile(Name)
 
 // Both
 #define PROFILE_SCOPE(CommandContext, Name) PROFILE_CPU_SCOPE(Name); PROFILE_GPU_SCOPE(CommandContext, Name)

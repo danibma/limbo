@@ -6,6 +6,8 @@
 #include "rhi/device.h"
 #include "rhi/resourcemanager.h"
 
+#include <set>
+
 #define BEGIN_UI() \
 	if (UI::Globals::bShowProfiler) \
 	{ \
@@ -18,6 +20,17 @@ namespace limbo
 {
 	GPUProfiler GGPUProfiler;
 	CPUProfiler GCPUProfiler;
+
+	struct OrderedData
+	{
+		const char* Name;
+		double		Time;
+
+		bool operator<(const OrderedData& rhs) const
+		{
+			return Time < rhs.Time;
+		}
+	};
 
 	struct ProfileData
 	{
@@ -63,6 +76,10 @@ namespace limbo
 
 	void GPUProfiler::StartProfile(Gfx::CommandContext* cmd, const char* name)
 	{
+#if NO_LOG // don't run the profiler stuff in release mode
+		return;
+#endif
+
 		ensure(cmd->GetType() != Gfx::ContextType::Copy); // we don't support copy queues
 
 		uint32 profileIndex = -1;
@@ -88,6 +105,10 @@ namespace limbo
 
 	void GPUProfiler::EndProfile(Gfx::CommandContext* cmd, const char* name)
 	{
+#if NO_LOG // don't run the profiler stuff in release mode
+		return;
+#endif
+
 		ensure(cmd->GetType() != Gfx::ContextType::Copy); // we don't support copy queues
 
 		uint32 profileIndex = -1;
@@ -112,6 +133,10 @@ namespace limbo
 
 	void GPUProfiler::EndFrame()
 	{
+#if NO_LOG // don't run the profiler stuff in release mode
+		return;
+#endif
+
 		uint64 gpuFrequency = 0;
 		Gfx::Device::Ptr->GetCommandQueue(Gfx::ContextType::Direct)->GetTimestampFrequency(&gpuFrequency);
 
@@ -123,6 +148,8 @@ namespace limbo
 		BEGIN_UI()
 		if (UI::Globals::bShowProfiler)
 			ImGui::SeparatorText("GPU Times");
+
+		std::set<OrderedData> orderedData;
 
 		for (int profileIndex = 0; profileIndex < GPUProfiles.size(); ++profileIndex)
 		{
@@ -155,11 +182,16 @@ namespace limbo
 				m_AvgRenderTime = avgTime;
 
 			if (UI::Globals::bShowProfiler)
-				ImGui::Text("%s: %.2fms", profileData.Name.c_str(), avgTime);
+				orderedData.emplace(profileData.Name.c_str(), avgTime);
 		}
 
 		if (UI::Globals::bShowProfiler)
+		{
+			for (const OrderedData& data : orderedData)
+				ImGui::Text("%s: %.2fms", data.Name, data.Time);
+
 			ImGui::End();
+		}
 	}
 
 
@@ -176,6 +208,10 @@ namespace limbo
 
 	void CPUProfiler::StartProfile(const char* name)
 	{
+#if NO_LOG // don't run the profiler stuff in release mode
+		return;
+#endif
+
 		uint32 profileIndex = -1;
 		for (int i = 0; i < CPUProfiles.size(); ++i)
 		{
@@ -199,6 +235,10 @@ namespace limbo
 
 	void CPUProfiler::EndProfile(const char* name)
 	{
+#if NO_LOG // don't run the profiler stuff in release mode
+		return;
+#endif
+
 		uint32 profileIndex = -1;
 		for (int i = 0; i < CPUProfiles.size(); ++i)
 		{
@@ -216,9 +256,15 @@ namespace limbo
 
 	void CPUProfiler::EndFrame()
 	{
+#if NO_LOG // don't run the profiler stuff in release mode
+		return;
+#endif
+
 		BEGIN_UI()
 		if (UI::Globals::bShowProfiler)
 			ImGui::SeparatorText("CPU Times");
+
+		std::set<OrderedData> orderedData;
 
 		for (int profileIndex = 0; profileIndex < CPUProfiles.size(); ++profileIndex)
 		{
@@ -249,10 +295,15 @@ namespace limbo
 				m_AvgRenderTime = avgTime;
 
 			if (UI::Globals::bShowProfiler)
-				ImGui::Text("%s: %.2fms", profileData.Name.c_str(), avgTime);
+				orderedData.emplace(profileData.Name.c_str(), avgTime);
 		}
 
 		if (UI::Globals::bShowProfiler)
+		{
+			for (const OrderedData& data : orderedData)
+				ImGui::Text("%s: %.2fms", data.Name, data.Time);
+
 			ImGui::End();
+		}
 	}
 }

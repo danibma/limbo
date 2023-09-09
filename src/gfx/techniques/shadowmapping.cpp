@@ -47,8 +47,7 @@ namespace limbo::Gfx
 			DrawDebugWindow();
 
 		// Shadow map
-		PROFILE_SCOPE(GetCommandContext(), "Shadow Map");
-		BeginEvent("Shadow Map");
+		BeginProfileEvent("Shadow Map");
 		BindShader(m_ShadowMapShader);
 		sceneRenderer->BindSceneInfo(m_ShadowMapShader);
 		for (const Scene* scene : sceneRenderer->GetScenes())
@@ -61,7 +60,7 @@ namespace limbo::Gfx
 				DrawIndexed((uint32)mesh.IndexCount);
 			});
 		}
-		EndEvent();
+		EndProfileEvent("Shadow Map");
 }
 
 	void ShadowMapping::DrawDebugWindow()
