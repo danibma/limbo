@@ -4,7 +4,7 @@
 
 SamplerState SLinearWrap     : register(s0, space1);
 SamplerState SLinearClamp    : register(s1, space1);
-SamplerState SPointClamp     : register(s2, space1);
+SamplerState SPointWrap      : register(s2, space1);
 
 ConstantBuffer<SceneInfo> GSceneInfo : register(b100);
 

@@ -23,12 +23,57 @@ Texture2D g_RoughnessMetallicAO;
 Texture2D g_Emissive;
 Texture2D g_AmbientOcclusion;
 
+// Shadow maps
+Texture2D g_ShadowMap;
+
 // IBL Textures
 TextureCube g_IrradianceMap;
 TextureCube g_PrefilterMap;
 Texture2D   g_LUT;
 
 uint bEnableAO;
+
+#define SHADOW_AMBIENT 0.1f
+
+float CalculateShadow(float4 shadowCoord, float2 off)
+{
+    float shadowBias = 0.005f;
+    shadowCoord.y = -shadowCoord.y;
+
+    float shadow = 1.0;
+    if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0)
+    {
+        float dist = g_ShadowMap.Sample(SLinearWrap, shadowCoord.xy + off).r + shadowBias;
+        if (shadowCoord.w > 0.0 && dist < shadowCoord.z)
+        {
+            shadow = SHADOW_AMBIENT;
+        }
+    }
+    return shadow;
+}
+
+float ShadowPCF(float4 sc)
+{
+    int2 texDim;
+    g_ShadowMap.GetDimensions(texDim.x, texDim.y);
+    float scale = 1.5;
+    float dx = scale * 1.0 / float(texDim.x);
+    float dy = scale * 1.0 / float(texDim.y);
+
+    float shadowFactor = 0.0;
+    int count = 0;
+    int range = 1;
+
+    for (int x = -range; x <= range; x++)
+    {
+        for (int y = -range; y <= range; y++)
+        {
+            shadowFactor += CalculateShadow(sc, float2(dx * x, dy * y));
+            count++;
+        }
+    }
+    return shadowFactor / count;
+}
 
 float4 PSMain(QuadResult quad) : SV_Target
 {
@@ -87,8 +132,20 @@ float4 PSMain(QuadResult quad) : SV_Target
     }
 
     float3 indirectLighting = CalculateIBL(N, V, material, g_IrradianceMap, g_PrefilterMap, g_LUT);
-    
-    float3 color = directLighting + indirectLighting + emissive;
+
+    float4x4 biasMatrix = float4x4(
+		0.5, 0.0, 0.0, 0.5,
+		0.0, 0.5, 0.0, 0.5,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0);
+
+    float3 sunDirection = GSceneInfo.SunDirection.xyz;
+    sunDirection.z = -sunDirection.z;
+    float shadowBias = clamp(0.005 * tan(acos(saturate(dot(N, sunDirection)))), 0, 0.01f);
+    float4 shadowDepth = mul(mul(biasMatrix, GSceneInfo.SunViewProj), float4(worldPos, 1.0f));
+    float shadow = ShadowPCF(shadowDepth);
+
+    float3 color = ((directLighting + indirectLighting) * shadow) + emissive;
     float4 finalColor = float4(color, 1.0f);
     
     return finalColor;

@@ -19,10 +19,7 @@ float4 VSMain(uint vertexID : SV_VertexID) : SV_Position
 	Instance instance = GetInstance(instanceID);
     float3 pos = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
 
-    float4x4 ortho    = OrthographicProjection(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 96.0f);
-    float4x4 viewProj = mul(ortho, GSceneInfo.SunView);
-
-    float4x4 mvp = mul(viewProj, instance.LocalTransform);
+    float4x4 mvp = mul(GSceneInfo.SunViewProj, instance.LocalTransform);
     return mul(mvp, float4(pos, 1.0f));
 }
 

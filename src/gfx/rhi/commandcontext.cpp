@@ -166,8 +166,8 @@ namespace limbo::Gfx
 
 		if (pBoundShader->Type == ShaderType::Graphics)
 		{
-			int32 width = GetBackbufferWidth();
-			int32 height = GetBackbufferHeight();
+			int32 width = pBoundShader->RTSize.x > 0 ? pBoundShader->RTSize.x : GetBackbufferWidth();
+			int32 height = pBoundShader->RTSize.y > 0 ? pBoundShader->RTSize.y : GetBackbufferHeight();
 			if (pBoundShader->UseSwapchainRT)
 			{
 				BindSwapchainRenderTargets();

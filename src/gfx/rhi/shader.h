@@ -80,6 +80,7 @@ namespace limbo::Gfx
 		ShaderType							Type;
 		bool								UseSwapchainRT;
 
+		uint2								RTSize;
 		uint8								RTCount;
 		RenderTarget						RenderTargets[8];
 		RenderTarget						DepthTarget;

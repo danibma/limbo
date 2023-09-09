@@ -199,9 +199,9 @@ namespace limbo::Gfx
 
 		// Static Samplers: these are the equivalents of the samplers in bindings.hlsl
 		uint32 numStaticSamplers = 0;
-		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP);  // SLinearWrap
-		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP); // SLinearClamp
-		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_WRAP);  // SPointClamp
+		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP);   // SLinearWrap
+		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);  // SLinearClamp
+		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_WRAP);   // SPointWrap
 
 		CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc;
 		desc.Init_1_1(currentRP, rootParameters, numStaticSamplers, staticSamplers, flags);

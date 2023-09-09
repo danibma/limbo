@@ -17,7 +17,7 @@ namespace limbo::Gfx
 		: Window(window)
 		, Camera(CreateCamera(float3(0.0f, 1.0f, 4.0f), float3(0.0f, 0.0f, -1.0f)))
 		, Light({.Position = float3(0.0f, 0.5f, 0.0f), .Color = float3(1, 0.45f, 0) })
-		, Sun({ 21.0f, 72.0f, 20.0f })
+		, Sun({ 0.5f, 9.0f, 2.0f })
 	{
 		const char* env_maps_path = "assets/environment";
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
@@ -42,6 +42,7 @@ namespace limbo::Gfx
 		});
 
 		//LoadNewScene("assets/models/cornell_box.glb");
+		//LoadNewScene("assets/models/vulkanscene_shadow.gltf");
 		LoadNewScene("assets/models/Sponza/Sponza.gltf");
 
 		// Deferred shader
@@ -52,9 +53,8 @@ namespace limbo::Gfx
 				{ Gfx::Format::RGBA16_SFLOAT, "WorldPosition"},
 				{ Gfx::Format::RGBA16_SFLOAT, "Albedo"},
 				{ Gfx::Format::RGBA16_SFLOAT, "Normal" },
-				{ Gfx::Format::RGBA16_SFLOAT, "RoughnessMetallic" },
+				{ Gfx::Format::RGBA16_SFLOAT, "RoughnessMetallicAO" },
 				{ Gfx::Format::RGBA16_SFLOAT, "Emissive" },
-				{ Gfx::Format::R16_SFLOAT,    "AmbientOcclusion" },
 			},
 			.DepthFormat = { Gfx::Format::D32_SFLOAT },
 			.Type = Gfx::ShaderType::Graphics
@@ -95,7 +95,7 @@ namespace limbo::Gfx
 			.RTSize = { SHADOWMAP_SIZE, SHADOWMAP_SIZE },
 			.RTFormats = {
 				{
-					.RTFormat = Gfx::Format::RGBA8_UNORM,
+					.RTFormat = Gfx::Format::RGBA32_SFLOAT,
 					.DebugName = "Shadow Map RT",
 				}
 			},
@@ -176,9 +176,9 @@ namespace limbo::Gfx
 				EndEvent();
 			}
 
-			ImGui::Begin("Shadow Maps");
-			ImGui::Image((ImTextureID)Gfx::GetShaderRTTextureID(m_ShadowMapShader, 0), ImVec2(512, 512));
-			ImGui::End();
+			//ImGui::Begin("Shadow Maps");
+			//ImGui::Image((ImTextureID)Gfx::GetShaderRTTextureID(m_ShadowMapShader, 0), ImVec2(512, 512));
+			//ImGui::End();
 
 			// Shadow map
 			{
@@ -224,6 +224,7 @@ namespace limbo::Gfx
 				BindShader(m_PBRShader);
 				BindSceneInfo(m_PBRShader);
 				SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
+				SetParameter(m_PBRShader, "g_ShadowMap", GetShaderDepthTarget(m_ShadowMapShader));
 				// PBR scene info
 				SetParameter(m_PBRShader, "lightPos", Light.Position);
 				SetParameter(m_PBRShader, "lightColor", Light.Color);
@@ -333,7 +334,10 @@ namespace limbo::Gfx
 
 	void SceneRenderer::UpdateSceneInfo()
 	{
-		SceneInfo.SunView				= glm::lookAt(Sun.Direction, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f));
+		float4x4 lightVP = glm::orthoZO(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 50.0f) * glm::lookAt(Sun.Direction, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f));
+
+		SceneInfo.SunDirection			= float4(Sun.Direction, 1.0f);
+		SceneInfo.SunViewProj			= lightVP;
 
 		SceneInfo.PrevView				= SceneInfo.View;
 

@@ -44,7 +44,7 @@ namespace limbo::Gfx
 	};
 
 	Shader::Shader(const ShaderSpec& spec)
-		: m_Name(spec.ProgramName), m_Spec(spec)
+		: m_Name(spec.ProgramName), m_Spec(spec), RTSize(spec.RTSize)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device5* d3ddevice = device->GetDevice();
