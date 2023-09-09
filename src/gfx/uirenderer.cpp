@@ -73,6 +73,7 @@ namespace limbo::UI
 			{
 				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
 				ImGui::Checkbox("Show Profiler", &Globals::bShowProfiler);
+				ImGui::Checkbox("Show Shadow Maps Debug", &Globals::bDebugShadowMaps);
 				ImGui::PopStyleVar();
 
 				ImGui::EndMenu();
@@ -105,6 +106,9 @@ namespace limbo::UI
 
 				if (sceneRenderer->Tweaks.CurrentAOTechnique == (int)Gfx::AmbientOcclusion::RTAO)
 					ImGui::DragInt("RTAO Samples", &sceneRenderer->Tweaks.RTAOSamples, 1, 0, 16);
+
+				ImGui::SeparatorText("Shadows");
+				ImGui::Checkbox("Sun Casts Shadows", &sceneRenderer->Tweaks.bSunCastsShadows);
 			}
 
 			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))

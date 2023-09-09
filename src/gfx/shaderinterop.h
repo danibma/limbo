@@ -27,6 +27,11 @@ struct SceneInfo
 	uint		MaterialsBufferIndex;
 	uint		InstancesBufferIndex;
 	uint		SceneViewToRender;
+
+	uint		bSunCastsShadows : 1;
+	PAD;
+	PAD;
+	PAD;
 };
 #ifdef __cplusplus
 static_assert(sizeof(SceneInfo) % 16 == 0);

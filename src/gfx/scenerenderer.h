@@ -10,6 +10,11 @@
 
 namespace limbo::Gfx
 {
+	class ShadowMapping;
+}
+
+namespace limbo::Gfx
+{
 	enum class Tonemap : uint8
 	{
 		None = 0,
@@ -53,6 +58,8 @@ namespace limbo::Gfx
 	struct RendererTweaks
 	{
 		bool		bEnableVSync		= true;
+
+		bool		bSunCastsShadows	= true;
 
 		// Ambient Occlusion
 		float		SSAORadius			= 0.3f;
@@ -99,8 +106,6 @@ namespace limbo::Gfx
 
 		Handle<Texture>					m_SceneTexture;
 
-		Handle<Shader>					m_ShadowMapShader;
-
 		// Skybox
 		Handle<Shader>					m_SkyboxShader;
 		Scene*							m_SkyboxCube;
@@ -124,7 +129,7 @@ namespace limbo::Gfx
 		std::unique_ptr<SSAO>			m_SSAO;
 		std::unique_ptr<RTAO>			m_RTAO;
 		std::unique_ptr<PathTracing>	m_PathTracing;
-
+		std::unique_ptr<ShadowMapping>  m_ShadowMapping;
 	public:
 		Core::Window*				Window;
 
@@ -154,6 +159,7 @@ namespace limbo::Gfx
 		void LoadNewScene(const char* path);
 		void ClearScenes();
 		bool HasScenes() const;
+		const std::vector<Scene*>& GetScenes() const;
 
 		void BindSceneInfo(Handle<Shader> shaderToBind);
 

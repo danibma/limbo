@@ -9,6 +9,7 @@
 #include "rhi/device.h"
 #include "techniques/pathtracing.h"
 #include "techniques/rtao.h"
+#include "techniques/shadowmapping.h"
 #include "techniques/ssao.h"
 
 namespace limbo::Gfx
@@ -39,6 +40,7 @@ namespace limbo::Gfx
 			m_SSAO = std::make_unique<SSAO>();
 			m_RTAO = std::make_unique<RTAO>();
 			m_PathTracing = std::make_unique<PathTracing>();
+			m_ShadowMapping = std::make_unique<ShadowMapping>();
 		});
 
 		//LoadNewScene("assets/models/cornell_box.glb");
@@ -89,24 +91,6 @@ namespace limbo::Gfx
 			.Type = Gfx::ShaderType::Graphics
 		});
 
-		// Shadow Map shader
-		m_ShadowMapShader = Gfx::CreateShader({
-			.ProgramName = "shadowmap",
-			.RTSize = { SHADOWMAP_SIZE, SHADOWMAP_SIZE },
-			.RTFormats = {
-				{
-					.RTFormat = Gfx::Format::RGBA32_SFLOAT,
-					.DebugName = "Shadow Map RT",
-				}
-			},
-			.DepthFormat = {
-				.RTFormat = Gfx::Format::D32_SFLOAT,
-				.DebugName = "Shadow Map Depth",
-			},
-			.CullMode = D3D12_CULL_MODE_NONE,
-			.Type = Gfx::ShaderType::Graphics
-		});
-
 		// Composite shader
 		m_CompositeShader = Gfx::CreateShader({
 			.ProgramName = "scenecomposite",
@@ -123,7 +107,6 @@ namespace limbo::Gfx
 		DestroyTexture(m_PrefilterMap);
 		DestroyTexture(m_BRDFLUTMap);
 
-		DestroyShader(m_ShadowMapShader);
 		DestroyShader(m_PBRShader);
 		DestroyShader(m_SkyboxShader);
 		DestroyShader(m_DeferredShadingShader);
@@ -158,6 +141,8 @@ namespace limbo::Gfx
 
 		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
 		{
+			m_ShadowMapping->Render(this);
+
 			{
 				PROFILE_SCOPE(GetCommandContext(), "Geometry Pass");
 				BeginEvent("Geometry Pass");
@@ -176,28 +161,6 @@ namespace limbo::Gfx
 				EndEvent();
 			}
 
-			//ImGui::Begin("Shadow Maps");
-			//ImGui::Image((ImTextureID)Gfx::GetShaderRTTextureID(m_ShadowMapShader, 0), ImVec2(512, 512));
-			//ImGui::End();
-
-			// Shadow map
-			{
-				PROFILE_SCOPE(GetCommandContext(), "Shadow Map");
-				BeginEvent("Shadow Map");
-				BindShader(m_ShadowMapShader);
-				BindSceneInfo(m_ShadowMapShader);
-				for (Scene* scene : m_Scenes)
-				{
-					scene->IterateMeshes([&](const Mesh& mesh)
-					{
-						SetParameter(m_ShadowMapShader, "instanceID", mesh.InstanceID);
-
-						BindIndexBufferView(mesh.IndicesLocation);
-						DrawIndexed((uint32)mesh.IndexCount);
-					});
-				}
-				EndEvent();
-			}
 			{
 				PROFILE_SCOPE(GetCommandContext(ContextType::Direct), "Ambient Occlusion");
 				if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
@@ -224,7 +187,7 @@ namespace limbo::Gfx
 				BindShader(m_PBRShader);
 				BindSceneInfo(m_PBRShader);
 				SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
-				SetParameter(m_PBRShader, "g_ShadowMap", GetShaderDepthTarget(m_ShadowMapShader));
+				m_ShadowMapping->BindShadowMap(m_PBRShader);
 				// PBR scene info
 				SetParameter(m_PBRShader, "lightPos", Light.Position);
 				SetParameter(m_PBRShader, "lightColor", Light.Color);
@@ -336,6 +299,7 @@ namespace limbo::Gfx
 	{
 		float4x4 lightVP = glm::orthoZO(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 50.0f) * glm::lookAt(Sun.Direction, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f));
 
+		SceneInfo.bSunCastsShadows		= Tweaks.bSunCastsShadows;
 		SceneInfo.SunDirection			= float4(Sun.Direction, 1.0f);
 		SceneInfo.SunViewProj			= lightVP;
 
@@ -365,6 +329,11 @@ namespace limbo::Gfx
 	bool SceneRenderer::HasScenes() const
 	{
 		return m_Scenes.size() > 0;
+	}
+
+	const std::vector<Scene*>& SceneRenderer::GetScenes() const
+	{
+		return m_Scenes;
 	}
 
 	void SceneRenderer::BindSceneInfo(Handle<Shader> shaderToBind)
