@@ -20,6 +20,8 @@ namespace limbo::Gfx
 		, Light({.Position = float3(0.0f, 0.5f, 0.0f), .Color = float3(1, 0.45f, 0) })
 		, Sun({ 0.5f, 9.0f, 2.0f })
 	{
+		Device::Ptr->OnResizedSwapchain.AddRaw(&Camera, &FPSCamera::OnResize);
+
 		const char* env_maps_path = "assets/environment";
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 			EnvironmentMaps.emplace_back(entry.path());

@@ -7,6 +7,20 @@
 
 namespace limbo::Gfx
 {
+	void FPSCamera::OnResize(uint32 width, uint32 height)
+	{
+		// Update projection aspect ratio
+		const float aspectRatio = (float)width / (float)height;
+
+		Proj = glm::perspective(glm::radians(FOV), aspectRatio, NearZ, FarZ);
+
+		// update shadow map cascade projections
+		CascadeProjections[0] = glm::perspective(glm::radians(FOV), aspectRatio, NearZ , 30.0f);
+		CascadeProjections[1] = glm::perspective(glm::radians(FOV), aspectRatio, 30.0f , 80.0f);
+		CascadeProjections[2] = glm::perspective(glm::radians(FOV), aspectRatio, 80.0f , 400.0f);
+		CascadeProjections[3] = glm::perspective(glm::radians(FOV), aspectRatio, 400.0f, FarZ);
+	}
+
 	FPSCamera CreateCamera(const float3& eye, const float3& center)
 	{
 		FPSCamera fpsCamera = {};
@@ -18,8 +32,14 @@ namespace limbo::Gfx
 		fpsCamera.Up = float3(0.0f, 1.0f, 0.0f);
 
 		fpsCamera.View = glm::lookAt(eye, center, fpsCamera.Up);
-		fpsCamera.Proj = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 1e-1f, 1e4f);
+		fpsCamera.Proj = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, fpsCamera.NearZ, fpsCamera.FarZ);
 		fpsCamera.ViewProj = fpsCamera.Proj * fpsCamera.View;
+
+		// Create shadow map cascade projections
+		fpsCamera.CascadeProjections[0] = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, fpsCamera.NearZ, 30.0f);
+		fpsCamera.CascadeProjections[1] = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 30.0f			, 80.0f);
+		fpsCamera.CascadeProjections[2] = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 80.0f			, 400.0f);
+		fpsCamera.CascadeProjections[3] = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 400.0f			, fpsCamera.FarZ);
 
 		fpsCamera.PrevView		= fpsCamera.View;
 		fpsCamera.PrevProj		= fpsCamera.Proj;
@@ -33,11 +53,6 @@ namespace limbo::Gfx
 		// Update camera history
 		fpsCamera.PrevView = fpsCamera.View;
 		fpsCamera.PrevProj = fpsCamera.Proj;
-
-		// Update projection aspect ratio
-		const float aspectRatio = (float)Gfx::GetBackbufferWidth() / (float)Gfx::GetBackbufferHeight();
-
-		fpsCamera.Proj = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 1e-3f, 1e4f);
 
 		fpsCamera.CameraSpeed += Input::GetScrollY(window) / 10.0f;
 		if (fpsCamera.CameraSpeed <= 0.0f) fpsCamera.CameraSpeed = 0.1f;
