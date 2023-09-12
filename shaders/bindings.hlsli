@@ -7,6 +7,7 @@ SamplerState SLinearClamp    : register(s1, space1);
 SamplerState SPointWrap      : register(s2, space1);
 
 ConstantBuffer<SceneInfo> GSceneInfo : register(b100);
+ConstantBuffer<ShadowData> GShadowData : register(b101);
 
 float4 Sample2D(int index, SamplerState s, float2 uv)
 {

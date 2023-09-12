@@ -406,6 +406,7 @@ namespace limbo::Gfx
 		D3D12_RASTERIZER_DESC rasterizerDesc = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
 		rasterizerDesc.CullMode = spec.CullMode;
 		rasterizerDesc.FrontCounterClockwise = true;
+		rasterizerDesc.DepthClipEnable = spec.DepthClip;
 
 		D3D12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
 		blendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();

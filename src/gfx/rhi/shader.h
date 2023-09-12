@@ -47,6 +47,8 @@ namespace limbo::Gfx
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		D3D12_CULL_MODE					CullMode = D3D12_CULL_MODE_BACK;
 
+		bool							DepthClip = true;
+
 		/**
 		 * Fill this for raytracing and set the type to ShaderType::RayTracing.
 		 * You can set the program name in order to have a debug name for the shader.

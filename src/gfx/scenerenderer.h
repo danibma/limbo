@@ -99,7 +99,7 @@ namespace limbo::Gfx
 	private:
 		std::vector<Scene*>				m_Scenes;
 		AccelerationStructure			m_SceneAS;
-		Handle<Buffer>					m_SceneInfoBuffers[NUM_BACK_BUFFERS];
+		Handle<Buffer>					m_SceneInfoBuffers[NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
 
 		Handle<Buffer>					m_ScenesMaterials;
 		Handle<Buffer>					m_SceneInstances;

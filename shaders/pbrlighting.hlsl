@@ -16,15 +16,13 @@ float3 lightPos;
 float3 lightColor;
 
 // GBuffer textures
+Texture2D g_PixelPosition;
 Texture2D g_WorldPosition;
 Texture2D g_Albedo;
 Texture2D g_Normal;
 Texture2D g_RoughnessMetallicAO;
 Texture2D g_Emissive;
 Texture2D g_AmbientOcclusion;
-
-// Shadow maps
-Texture2D g_ShadowMap;
 
 // IBL Textures
 TextureCube g_IrradianceMap;
@@ -35,7 +33,7 @@ uint bEnableAO;
 
 #define SHADOW_AMBIENT 0.1f
 
-float CalculateShadow(float4 shadowCoord, float2 off)
+float CalculateShadow(float4 shadowCoord, float2 off, uint cascadeIndex)
 {
     float shadowBias = 0.005f;
     shadowCoord.y = -shadowCoord.y;
@@ -43,8 +41,8 @@ float CalculateShadow(float4 shadowCoord, float2 off)
     float shadow = 1.0;
     if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0)
     {
-        float dist = g_ShadowMap.Sample(SLinearWrap, shadowCoord.xy + off).r + shadowBias;
-        if (shadowCoord.w > 0.0 && dist < shadowCoord.z)
+        float dist = Sample2D(GShadowData.ShadowMap[cascadeIndex], SLinearWrap, shadowCoord.xy + off).r;
+        if (shadowCoord.w > 0.0 && dist < shadowCoord.z - shadowBias)
         {
             shadow = SHADOW_AMBIENT;
         }
@@ -52,11 +50,10 @@ float CalculateShadow(float4 shadowCoord, float2 off)
     return shadow;
 }
 
-float ShadowPCF(float4 sc)
+float ShadowPCF(float4 sc, uint cascadeIndex)
 {
-    int2 texDim;
-    g_ShadowMap.GetDimensions(texDim.x, texDim.y);
-    float scale = 1.5;
+    float2 texDim = GetDimensions2D(GShadowData.ShadowMap[cascadeIndex]);
+    float scale = 0.75;
     float dx = scale * 1.0 / float(texDim.x);
     float dy = scale * 1.0 / float(texDim.y);
 
@@ -68,7 +65,7 @@ float ShadowPCF(float4 sc)
     {
         for (int y = -range; y <= range; y++)
         {
-            shadowFactor += CalculateShadow(sc, float2(dx * x, dy * y));
+            shadowFactor += CalculateShadow(sc, float2(dx * x, dy * y), cascadeIndex);
             count++;
         }
     }
@@ -78,6 +75,7 @@ float ShadowPCF(float4 sc)
 float4 PSMain(QuadResult quad) : SV_Target
 {
 	// gbuffer values
+    float3 pixelPos              = g_PixelPosition.Sample(SLinearClamp, quad.UV).rgb;
     float3 worldPos             = g_WorldPosition.Sample(SLinearClamp, quad.UV).rgb;
     float3 albedo               = g_Albedo.Sample(SLinearClamp, quad.UV).rgb;
     float3 normal               = g_Normal.Sample(SLinearClamp, quad.UV).rgb;
@@ -138,13 +136,39 @@ float4 PSMain(QuadResult quad) : SV_Target
     [branch]
     if (any(GSceneInfo.bSunCastsShadows))
     {
+        // Get cascade index for the current fragment's view position
+        uint cascadeIndex = 0;
+        for (uint i = 0; i < SHADOWMAP_CASCADES - 1; ++i)
+        {
+            if (pixelPos.z < GShadowData.SplitDepth[i])
+            {
+                cascadeIndex = i + 1;
+            }
+        }
+
         float4x4 biasMatrix = float4x4(
 		0.5, 0.0, 0.0, 0.5,
 		0.0, 0.5, 0.0, 0.5,
 		0.0, 0.0, 1.0, 0.0,
 		0.0, 0.0, 0.0, 1.0);
-        float4 shadowDepth = mul(mul(biasMatrix, GSceneInfo.SunViewProj), float4(worldPos, 1.0f));
-        shadow = ShadowPCF(shadowDepth);
+        float4 shadowDepth = mul(mul(biasMatrix, GShadowData.LightViewProj[cascadeIndex]), float4(worldPos, 1.0f));
+        shadowDepth = shadowDepth / shadowDepth.w;
+        shadow = ShadowPCF(shadowDepth, cascadeIndex);
+
+        if (any(GSceneInfo.bShowShadowCascades))
+        {
+            switch (cascadeIndex)
+            {
+                case 0:
+                    return float4(1.0f, 1.0f, 1.0f, 1.0f);
+                case 1:
+                    return float4(1.0f, 0.0f, 0.0f, 1.0f);
+                case 2:
+                    return float4(0.0f, 1.0f, 0.0f, 1.0f);
+                case 3:
+                    return float4(0.0f, 0.0f, 1.0f, 1.0f);
+            }
+        }
     }
 
     float3 color = ((directLighting + indirectLighting) * shadow) + emissive;

@@ -5,6 +5,7 @@
 
 #include "profiler.h"
 #include "scene.h"
+#include "uirenderer.h"
 #include "core/jobsystem.h"
 #include "rhi/device.h"
 #include "techniques/pathtracing.h"
@@ -18,7 +19,7 @@ namespace limbo::Gfx
 		: Window(window)
 		, Camera(CreateCamera(float3(0.0f, 1.0f, 4.0f), float3(0.0f, 0.0f, -1.0f)))
 		, Light({.Position = float3(0.0f, 0.5f, 0.0f), .Color = float3(1, 0.45f, 0) })
-		, Sun({ 0.5f, 9.0f, 2.0f })
+		, Sun({ 0.5f, 12.0f, 2.0f })
 	{
 		Device::Ptr->OnResizedSwapchain.AddRaw(&Camera, &FPSCamera::OnResize);
 
@@ -143,7 +144,8 @@ namespace limbo::Gfx
 
 		if (Tweaks.CurrentRenderPath == (int)RenderPath::Deferred)
 		{
-			m_ShadowMapping->Render(this);
+			if (SceneInfo.bSunCastsShadows)
+				m_ShadowMapping->Render(this);
 
 			{
 				BeginProfileEvent("Geometry Pass");
@@ -192,6 +194,7 @@ namespace limbo::Gfx
 				SetParameter(m_PBRShader, "lightPos", Light.Position);
 				SetParameter(m_PBRShader, "lightColor", Light.Color);
 				// Bind deferred shading render targets
+				SetParameter(m_PBRShader, "g_PixelPosition", m_DeferredShadingShader, 0);
 				SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
 				SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
 				SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
@@ -296,11 +299,9 @@ namespace limbo::Gfx
 
 	void SceneRenderer::UpdateSceneInfo()
 	{
-		float4x4 lightVP = glm::orthoZO(-10.0f, 10.0f, -10.0f, 10.0f, -10.0f, 50.0f) * glm::lookAt(Sun.Direction, float3(0.0f, 0.0f, 0.0f), float3(0.0f, 1.0f, 0.0f));
-
 		SceneInfo.bSunCastsShadows		= Tweaks.bSunCastsShadows;
 		SceneInfo.SunDirection			= float4(Sun.Direction, 1.0f);
-		SceneInfo.SunViewProj			= lightVP;
+		SceneInfo.bShowShadowCascades	= UI::Globals::bShowShadowCascades;
 
 		SceneInfo.PrevView				= SceneInfo.View;
 

@@ -8,7 +8,6 @@
 #define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
 #define PAD uint MACRO_CONCAT(padding, __COUNTER__)
 
-#define SHADOWMAP_SIZE     2048
 #define SHADOWMAP_CASCADES 4
 
 struct SceneInfo
@@ -19,7 +18,6 @@ struct SceneInfo
 	float4x4	Projection;
 	float4x4	InvProjection;
 	float4x4	ViewProjection;
-	float4x4	SunViewProj;
 	float4		SunDirection;
 	float3		CameraPos;
 
@@ -29,13 +27,23 @@ struct SceneInfo
 	uint		InstancesBufferIndex;
 	uint		SceneViewToRender;
 
-	uint		bSunCastsShadows : 1;
-	PAD;
+	uint		bSunCastsShadows;
+	uint		bShowShadowCascades;
 	PAD;
 	PAD;
 };
 #ifdef __cplusplus
 static_assert(sizeof(SceneInfo) % 16 == 0);
+#endif
+
+struct ShadowData
+{
+	float4x4 LightViewProj[SHADOWMAP_CASCADES];
+	float4	 SplitDepth;
+	uint4	 ShadowMap;
+};
+#ifdef __cplusplus
+static_assert(sizeof(ShadowData) % 16 == 0);
 #endif
 
 struct Material
