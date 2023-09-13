@@ -153,9 +153,17 @@ namespace limbo::Gfx
 		SceneRenderer(Core::Window* window);
 		~SceneRenderer();
 
+		// Render Passes
+		void RenderGeometryPass();
+		void RenderAmbientOcclusionPass();
+		void RenderSkybox();
+		void RenderLightingPass();
+		void RenderSceneCompositePass();
+
 		// Update function with the time passed during that frame as a parameter, in ms
 		void Render(float dt);
 
+		// Scene functions
 		void LoadNewScene(const char* path);
 		void ClearScenes();
 		bool HasScenes() const;

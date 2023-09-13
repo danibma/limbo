@@ -126,6 +126,89 @@ namespace limbo::Gfx
 			DestroyScene(scene);
 	}
 
+	void SceneRenderer::RenderGeometryPass()
+	{
+		BeginProfileEvent("Geometry Pass");
+		BindShader(m_DeferredShadingShader);
+		BindSceneInfo(m_DeferredShadingShader);
+		for (Scene* scene : m_Scenes)
+		{
+			scene->IterateMeshes([&](const Mesh& mesh)
+			{
+				SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
+
+				BindIndexBufferView(mesh.IndicesLocation);
+				DrawIndexed((uint32)mesh.IndexCount);
+			});
+		}
+		EndProfileEvent("Geometry Pass");
+	}
+
+	void SceneRenderer::RenderAmbientOcclusionPass()
+	{
+		PROFILE_SCOPE(GetCommandContext(ContextType::Direct), "Ambient Occlusion");
+		if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
+			m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
+		else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
+			m_RTAO->Render(this, &m_SceneAS, GetShaderRT(m_DeferredShadingShader, 1), GetShaderRT(m_DeferredShadingShader, 3));
+	}
+
+	void SceneRenderer::RenderSkybox()
+	{
+		BeginProfileEvent("Render Skybox");
+		BindShader(m_SkyboxShader);
+		BindSceneInfo(m_SkyboxShader);
+		SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
+		m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
+		{
+			BindVertexBufferView(mesh.PositionsLocation);
+			BindIndexBufferView(mesh.IndicesLocation);
+			DrawIndexed((uint32)mesh.IndexCount);
+		});
+		EndProfileEvent("Render Skybox");
+	}
+
+	void SceneRenderer::RenderLightingPass()
+	{
+		BeginProfileEvent("Lighting");
+		BindShader(m_PBRShader);
+		BindSceneInfo(m_PBRShader);
+		SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
+		m_ShadowMapping->BindShadowMap(m_PBRShader);
+		// PBR scene info
+		SetParameter(m_PBRShader, "lightPos", Light.Position);
+		SetParameter(m_PBRShader, "lightColor", Light.Color);
+		// Bind deferred shading render targets
+		SetParameter(m_PBRShader, "g_PixelPosition", m_DeferredShadingShader, 0);
+		SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
+		SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
+		SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
+		SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
+		SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
+
+		if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
+			SetParameter(m_PBRShader, "g_AmbientOcclusion", m_RTAO->GetFinalTexture());
+		else
+			SetParameter(m_PBRShader, "g_AmbientOcclusion", m_SSAO->GetBlurredTexture());
+
+		// Bind irradiance map
+		SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
+		SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
+		SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
+		Draw(6);
+		EndProfileEvent("Lighting");
+	}
+
+	void SceneRenderer::RenderSceneCompositePass()
+	{
+		BeginProfileEvent("Scene Composite");
+		BindShader(m_CompositeShader);
+		SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
+		SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
+		Draw(6);
+		EndProfileEvent("Scene Composite");
+	}
+
 	void SceneRenderer::Render(float dt)
 	{
 		PROFILE_SCOPE(GetCommandContext(), "Render");
@@ -147,72 +230,12 @@ namespace limbo::Gfx
 			if (SceneInfo.bSunCastsShadows)
 				m_ShadowMapping->Render(this);
 
-			{
-				BeginProfileEvent("Geometry Pass");
-				BindShader(m_DeferredShadingShader);
-				BindSceneInfo(m_DeferredShadingShader);
-				for (Scene* scene : m_Scenes)
-				{
-					scene->IterateMeshes([&](const Mesh& mesh)
-					{
-						SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
+			RenderGeometryPass();
+			RenderAmbientOcclusionPass();
 
-						BindIndexBufferView(mesh.IndicesLocation);
-						DrawIndexed((uint32)mesh.IndexCount);
-					});
-				}
-				EndProfileEvent("Geometry Pass");
-			}
+			RenderSkybox();
 
-			{
-				PROFILE_SCOPE(GetCommandContext(ContextType::Direct), "Ambient Occlusion");
-				if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
-					m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
-				else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
-					m_RTAO->Render(this, &m_SceneAS, GetShaderRT(m_DeferredShadingShader, 1), GetShaderRT(m_DeferredShadingShader, 3));
-			}
-
-			BeginProfileEvent("Render Skybox");
-			BindShader(m_SkyboxShader);
-			BindSceneInfo(m_SkyboxShader);
-			SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
-			m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
-			{
-				BindVertexBufferView(mesh.PositionsLocation);
-				BindIndexBufferView(mesh.IndicesLocation);
-				DrawIndexed((uint32)mesh.IndexCount);
-			});
-			EndProfileEvent("Render Skybox");
-
-			{
-				BeginProfileEvent("Lighting");
-				BindShader(m_PBRShader);
-				BindSceneInfo(m_PBRShader);
-				SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
-				m_ShadowMapping->BindShadowMap(m_PBRShader);
-				// PBR scene info
-				SetParameter(m_PBRShader, "lightPos", Light.Position);
-				SetParameter(m_PBRShader, "lightColor", Light.Color);
-				// Bind deferred shading render targets
-				SetParameter(m_PBRShader, "g_PixelPosition", m_DeferredShadingShader, 0);
-				SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
-				SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
-				SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
-				SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
-				SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
-
-				if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
-					SetParameter(m_PBRShader, "g_AmbientOcclusion", m_RTAO->GetFinalTexture());
-				else
-					SetParameter(m_PBRShader, "g_AmbientOcclusion", m_SSAO->GetBlurredTexture());
-
-				// Bind irradiance map
-				SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
-				SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
-				SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
-				Draw(6);
-				EndProfileEvent("Lighting");
-			}
+			RenderLightingPass();
 
 			m_SceneTexture = GetShaderRT(m_PBRShader, 0);
 		}
@@ -223,14 +246,7 @@ namespace limbo::Gfx
 		}
 
 		// render scene composite
-		{
-			BeginProfileEvent("Scene Composite");
-			BindShader(m_CompositeShader);
-			SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
-			SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
-			Draw(6);
-			EndProfileEvent("Scene Composite");
-		}
+		RenderSceneCompositePass();
 
 		// present
 		{
