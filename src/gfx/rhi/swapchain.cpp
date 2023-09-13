@@ -9,7 +9,7 @@
 #include <format>
 
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	Swapchain::Swapchain(ID3D12CommandQueue* queue, IDXGIFactory2* factory, Core::Window* window)
 		: m_BackbufferWidth(window->Width), m_BackbufferHeight(window->Height), m_CommandQueue(queue)

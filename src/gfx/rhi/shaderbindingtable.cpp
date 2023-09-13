@@ -4,7 +4,7 @@
 #include "resourcemanager.h"
 #include "shader.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	ShaderBindingTable::ShaderBindingTable(Handle<Shader> shader)
 	{

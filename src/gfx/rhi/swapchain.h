@@ -9,7 +9,7 @@ namespace limbo::Core
 	class Window;
 }
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	struct WindowInfo;
 

@@ -9,7 +9,7 @@
 
 #include "ringbufferallocator.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	void Texture::CreateResource(const TextureSpec& spec)
 	{

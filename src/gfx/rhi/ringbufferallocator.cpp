@@ -4,7 +4,7 @@
 #include "commandqueue.h"
 #include "device.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	RingBufferAllocator::RingBufferAllocator(uint64 size)
 		: m_TotalSize(size), m_CurrentOffset(0)

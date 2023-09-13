@@ -55,32 +55,32 @@ namespace limbo
 	{
 		GPUProfiles.reserve(MaxProfiles);
 
-		m_Readback = Gfx::CreateBuffer({
+		m_Readback = RHI::CreateBuffer({
 			.DebugName = "Profiler Readback buffer",
-			.ByteSize = MaxProfiles * Gfx::NUM_BACK_BUFFERS * 2 * sizeof(uint64),
-			.Flags = Gfx::BufferUsage::Readback | Gfx::BufferUsage::Upload
+			.ByteSize = MaxProfiles * RHI::NUM_BACK_BUFFERS * 2 * sizeof(uint64),
+			.Flags = RHI::BufferUsage::Readback | RHI::BufferUsage::Upload
 		});
 
 		D3D12_QUERY_HEAP_DESC desc = {
 			.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP,
-			.Count = MaxProfiles * Gfx::NUM_BACK_BUFFERS * 2,
+			.Count = MaxProfiles * RHI::NUM_BACK_BUFFERS * 2,
 			.NodeMask = 0
 		};
-		DX_CHECK(Gfx::Device::Ptr->GetDevice()->CreateQueryHeap(&desc, IID_PPV_ARGS(&m_QueryHeap)));
+		DX_CHECK(RHI::Device::Ptr->GetDevice()->CreateQueryHeap(&desc, IID_PPV_ARGS(&m_QueryHeap)));
 	}
 
 	void GPUProfiler::Shutdown()
 	{
-		Gfx::DestroyBuffer(m_Readback);
+		RHI::DestroyBuffer(m_Readback);
 	}
 
-	void GPUProfiler::StartProfile(Gfx::CommandContext* cmd, const char* name)
+	void GPUProfiler::StartProfile(RHI::CommandContext* cmd, const char* name)
 	{
 #if NO_LOG // don't run the profiler stuff in release mode
 		return;
 #endif
 
-		ensure(cmd->GetType() != Gfx::ContextType::Copy); // we don't support copy queues
+		ensure(cmd->GetType() != RHI::ContextType::Copy); // we don't support copy queues
 
 		uint32 profileIndex = -1;
 		for (int i = 0; i < GPUProfiles.size(); ++i)
@@ -103,13 +103,13 @@ namespace limbo
 		cmd->Get()->EndQuery(m_QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, startQueryIdx);
 	}
 
-	void GPUProfiler::EndProfile(Gfx::CommandContext* cmd, const char* name)
+	void GPUProfiler::EndProfile(RHI::CommandContext* cmd, const char* name)
 	{
 #if NO_LOG // don't run the profiler stuff in release mode
 		return;
 #endif
 
-		ensure(cmd->GetType() != Gfx::ContextType::Copy); // we don't support copy queues
+		ensure(cmd->GetType() != RHI::ContextType::Copy); // we don't support copy queues
 
 		uint32 profileIndex = -1;
 		for (int i = 0; i < GPUProfiles.size(); ++i)
@@ -127,8 +127,8 @@ namespace limbo
 		cmd->Get()->EndQuery(m_QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, endQueryIdx);
 
 		// Resolve the data
-		const uint64 dstOffset = ((Gfx::Device::Ptr->GetCurrentFrameIndex() * MaxProfiles * 2) + startQueryIdx) * sizeof(uint64);
-		cmd->Get()->ResolveQueryData(m_QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, startQueryIdx, 2, Gfx::GetBuffer(m_Readback)->Resource.Get(), dstOffset);
+		const uint64 dstOffset = ((RHI::Device::Ptr->GetCurrentFrameIndex() * MaxProfiles * 2) + startQueryIdx) * sizeof(uint64);
+		cmd->Get()->ResolveQueryData(m_QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, startQueryIdx, 2, RHI::GetBuffer(m_Readback)->Resource.Get(), dstOffset);
 	}
 
 	void GPUProfiler::EndFrame()
@@ -138,12 +138,12 @@ namespace limbo
 #endif
 
 		uint64 gpuFrequency = 0;
-		Gfx::Device::Ptr->GetCommandQueue(Gfx::ContextType::Direct)->GetTimestampFrequency(&gpuFrequency);
+		RHI::Device::Ptr->GetCommandQueue(RHI::ContextType::Direct)->GetTimestampFrequency(&gpuFrequency);
 
 		const uint64* frameQueryData = nullptr;
-		Gfx::Map(m_Readback);
-		const uint64* queryData = (uint64*)Gfx::GetMappedData(m_Readback);
-		frameQueryData = queryData + (Gfx::Device::Ptr->GetCurrentFrameIndex() * MaxProfiles * 2);
+		RHI::Map(m_Readback);
+		const uint64* queryData = (uint64*)RHI::GetMappedData(m_Readback);
+		frameQueryData = queryData + (RHI::Device::Ptr->GetCurrentFrameIndex() * MaxProfiles * 2);
 
 		BEGIN_UI()
 		if (UI::Globals::bShowProfiler)

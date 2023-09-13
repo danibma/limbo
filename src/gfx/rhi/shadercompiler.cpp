@@ -3,7 +3,7 @@
 
 #include "core/utils.h"
 
-namespace limbo::Gfx::SC
+namespace limbo::RHI::SC
 {
 	bool Compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel )
 	{

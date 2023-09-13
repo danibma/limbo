@@ -4,7 +4,7 @@
 #include "device.h"
 #include "gfx/gfx.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 #define DELETE_RESOURCE(ResourceHandle, ResourceList) \
 	Deletion deletion = {}; \
@@ -17,7 +17,7 @@ namespace limbo::Gfx
 
 	ResourceManager::ResourceManager()
 	{
-		OnPostResourceManagerInit.AddLambda([&]()
+		Gfx::OnPostResourceManagerInit.AddLambda([&]()
 		{
 			uint32_t textureData = 0x00FFFFFF;
 			EmptyTexture = CreateTexture({
@@ -76,17 +76,17 @@ namespace limbo::Gfx
 		return m_Textures.AllocateHandle(resource, spec);
 	}
 
-	Gfx::Buffer* ResourceManager::GetBuffer(Handle<Buffer> buffer)
+	RHI::Buffer* ResourceManager::GetBuffer(Handle<Buffer> buffer)
 	{
 		return m_Buffers.Get(buffer);
 	}
 
-	Gfx::Shader* ResourceManager::GetShader(Handle<Shader> shader)
+	RHI::Shader* ResourceManager::GetShader(Handle<Shader> shader)
 	{
 		return m_Shaders.Get(shader);
 	}
 
-	Gfx::Texture* ResourceManager::GetTexture(Handle<Texture> texture)
+	RHI::Texture* ResourceManager::GetTexture(Handle<Texture> texture)
 	{
 		return m_Textures.Get(texture);
 	}

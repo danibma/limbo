@@ -6,7 +6,7 @@
 #include "device.h"
 #include "gfx/scene.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	AccelerationStructure::~AccelerationStructure()
 	{
@@ -18,7 +18,7 @@ namespace limbo::Gfx
 			DestroyBuffer(m_InstancesBuffer);
 	}
 
-	void AccelerationStructure::Build(const std::vector<Scene*>& scenes)
+	void AccelerationStructure::Build(const std::vector<Gfx::Scene*>& scenes)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device5* d3ddevice = device->GetDevice();
@@ -27,10 +27,10 @@ namespace limbo::Gfx
 
 		bool bUpdateBLAS = false;
 		std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instances;
-		for (Scene* scene : scenes)
+		for (Gfx::Scene* scene : scenes)
 		{
 			instances.reserve(instances.capacity() + scene->NumMeshes());
-			scene->IterateMeshesNoConst([&](Mesh& mesh)
+			scene->IterateMeshesNoConst([&](Gfx::Mesh& mesh)
 			{
 				if (!mesh.BLAS.IsValid())
 				{

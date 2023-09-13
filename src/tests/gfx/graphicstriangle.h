@@ -30,24 +30,24 @@ namespace limbo::Tests::Gfx
 			.Height = HEIGHT
 		});
 
-		limbo::Gfx::Init(window);
+		limbo::RHI::Init(window);
 
-		limbo::Gfx::FPSCamera camera = limbo::Gfx::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
+		limbo::RHI::FPSCamera camera = limbo::RHI::CreateCamera(float3(0.0f, 0.0f, 5.0f), float3(0.0f, 0.0f, -1.0f));
 
 		Vertex vertices[] = { {  0.0,  1.0, -1.0 },
 							  { -1.0, -1.0, -1.0 },
 							  {  1.0, -1.0, -1.0 } };
-		limbo::Gfx::Handle<limbo::Gfx::Buffer> vertexBuffer = limbo::Gfx::CreateBuffer({
+		limbo::RHI::Handle<limbo::RHI::Buffer> vertexBuffer = limbo::RHI::CreateBuffer({
 			.DebugName = "triangle vb",
 			.ByteStride = sizeof(Vertex),
 			.ByteSize = sizeof(Vertex) * 3,
-			.Flags = limbo::Gfx::BufferUsage::Vertex,
+			.Flags = limbo::RHI::BufferUsage::Vertex,
 			.InitialData = vertices
 		});
 
-		limbo::Gfx::Handle<limbo::Gfx::Shader> triangleShader = limbo::Gfx::CreateShader({
+		limbo::RHI::Handle<limbo::RHI::Shader> triangleShader = limbo::RHI::CreateShader({
 			.ProgramName = "../src/tests/gfx/shaders/triangle",
-			.Type = limbo::Gfx::ShaderType::Graphics
+			.Type = limbo::RHI::ShaderType::Graphics
 			});
 
 		Core::Timer deltaTimer;
@@ -58,25 +58,25 @@ namespace limbo::Tests::Gfx
 
 			window->PollEvents();
 			Noop(time); // remove warning
-			limbo::Gfx::UpdateCamera(window, camera, deltaTime);
+			limbo::RHI::UpdateCamera(window, camera, deltaTime);
 
 			float color[] = { 0.5f * cosf(time) + 0.5f,
 							  0.5f * sinf(time) + 0.5f,
 							  1.0f };
-			limbo::Gfx::SetParameter(triangleShader, "viewProj", camera.ViewProj);
-			limbo::Gfx::SetParameter(triangleShader, "model", float4x4(1.0f));
-			limbo::Gfx::SetParameter(triangleShader, "color", color);
-			limbo::Gfx::BindShader(triangleShader);
-			limbo::Gfx::BindVertexBuffer(vertexBuffer);
+			limbo::RHI::SetParameter(triangleShader, "viewProj", camera.ViewProj);
+			limbo::RHI::SetParameter(triangleShader, "model", float4x4(1.0f));
+			limbo::RHI::SetParameter(triangleShader, "color", color);
+			limbo::RHI::BindShader(triangleShader);
+			limbo::RHI::BindVertexBuffer(vertexBuffer);
 
-			limbo::Gfx::Draw(3);
-			limbo::Gfx::Present(true);
+			limbo::RHI::Draw(3);
+			limbo::RHI::Present(true);
 		}
 
-		limbo::Gfx::DestroyBuffer(vertexBuffer);
-		limbo::Gfx::DestroyShader(triangleShader);
+		limbo::RHI::DestroyBuffer(vertexBuffer);
+		limbo::RHI::DestroyShader(triangleShader);
 
-		limbo::Gfx::Shutdown();
+		limbo::RHI::Shutdown();
 		Core::DestroyWindow(window);
 
 		return 0;

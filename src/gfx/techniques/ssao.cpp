@@ -9,63 +9,63 @@ namespace limbo::Gfx
 {
 	SSAO::SSAO()
 	{
-		m_UnblurredSSAOTexture = Gfx::CreateTexture({
-			.Width = GetBackbufferWidth(),
-			.Height = GetBackbufferHeight(),
+		m_UnblurredSSAOTexture = RHI::CreateTexture({
+			.Width = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "SSAO Texture",
-			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
-			.Format = Gfx::Format::R8_UNORM,
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::R8_UNORM,
 		});
-		m_SSAOShader = Gfx::CreateShader({
+		m_SSAOShader = RHI::CreateShader({
 			.ProgramName = "ssao",
 			.CsEntryPoint = "ComputeSSAO",
-			.Type = Gfx::ShaderType::Compute
+			.Type = RHI::ShaderType::Compute
 		});
 
-		m_BlurredSSAOTexture = Gfx::CreateTexture({
-			.Width = GetBackbufferWidth(),
-			.Height = GetBackbufferHeight(),
+		m_BlurredSSAOTexture = RHI::CreateTexture({
+			.Width = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "Blurred SSAO Texture",
-			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
-			.Format = Gfx::Format::R8_UNORM,
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::R8_UNORM,
 		});
-		m_BlurSSAOShader = Gfx::CreateShader({
+		m_BlurSSAOShader = RHI::CreateShader({
 			.ProgramName = "ssao",
 			.CsEntryPoint = "BlurSSAO",
-			.Type = Gfx::ShaderType::Compute
+			.Type = RHI::ShaderType::Compute
 		});
 	}
 
 	SSAO::~SSAO()
 	{
-		DestroyTexture(m_UnblurredSSAOTexture);
-		DestroyTexture(m_BlurredSSAOTexture);
-		DestroyShader(m_SSAOShader);
-		DestroyShader(m_BlurSSAOShader);
+		RHI::DestroyTexture(m_UnblurredSSAOTexture);
+		RHI::DestroyTexture(m_BlurredSSAOTexture);
+		RHI::DestroyShader(m_SSAOShader);
+		RHI::DestroyShader(m_BlurSSAOShader);
 	}
 
-	void SSAO::Render(SceneRenderer* sceneRenderer, Handle<Texture> positionsMap, Handle<Texture> sceneDepthMap)
+	void SSAO::Render(SceneRenderer* sceneRenderer, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> sceneDepthMap)
 	{
-		BeginProfileEvent("SSAO");
-		BindShader(m_SSAOShader);
+		RHI::BeginProfileEvent("SSAO");
+		RHI::BindShader(m_SSAOShader);
 		sceneRenderer->BindSceneInfo(m_SSAOShader);
-		SetParameter(m_SSAOShader, "g_Positions", positionsMap);
-		SetParameter(m_SSAOShader, "g_UnblurredSSAOTexture", m_UnblurredSSAOTexture);
-		SetParameter(m_SSAOShader, "g_SceneDepth", sceneDepthMap);
-		SetParameter(m_SSAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
-		SetParameter(m_SSAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
-		Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
-		EndProfileEvent("SSAO");
+		RHI::SetParameter(m_SSAOShader, "g_Positions", positionsMap);
+		RHI::SetParameter(m_SSAOShader, "g_UnblurredSSAOTexture", m_UnblurredSSAOTexture);
+		RHI::SetParameter(m_SSAOShader, "g_SceneDepth", sceneDepthMap);
+		RHI::SetParameter(m_SSAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
+		RHI::SetParameter(m_SSAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
+		RHI::Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
+		RHI::EndProfileEvent("SSAO");
 
-		BeginProfileEvent("SSAO Blur Texture");
-		BindShader(m_BlurSSAOShader);
-		SetParameter(m_BlurSSAOShader, "g_SSAOTexture", m_UnblurredSSAOTexture);
-		SetParameter(m_BlurSSAOShader, "g_BlurredSSAOTexture", m_BlurredSSAOTexture);
-		Dispatch(GetBackbufferWidth() / 16, GetBackbufferHeight() / 16, 1);
-		EndProfileEvent("SSAO Blur Texture");
+		RHI::BeginProfileEvent("SSAO Blur Texture");
+		RHI::BindShader(m_BlurSSAOShader);
+		RHI::SetParameter(m_BlurSSAOShader, "g_SSAOTexture", m_UnblurredSSAOTexture);
+		RHI::SetParameter(m_BlurSSAOShader, "g_BlurredSSAOTexture", m_BlurredSSAOTexture);
+		RHI::Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
+		RHI::EndProfileEvent("SSAO Blur Texture");
 	}
 
-	Handle<Texture> SSAO::GetBlurredTexture() const
+	RHI::Handle<RHI::Texture> SSAO::GetBlurredTexture() const
 	{
 		return m_BlurredSSAOTexture;
 	}

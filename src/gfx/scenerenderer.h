@@ -8,9 +8,11 @@
 #include "rhi/accelerationstructure.h"
 #include "rhi/resourcepool.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
-	class ShadowMapping;
+	class Texture;
+	class Buffer;
+	class Shader;
 }
 
 namespace limbo::Gfx
@@ -85,10 +87,8 @@ namespace limbo::Gfx
 		float3 Direction;
 	};
 
+	class ShadowMapping;
 	class PathTracing;
-	class Texture;
-	class Buffer;
-	class Shader;
 	class Scene;
 	class SSAO;
 	class RTAO;
@@ -98,32 +98,32 @@ namespace limbo::Gfx
 
 	private:
 		std::vector<Scene*>				m_Scenes;
-		AccelerationStructure			m_SceneAS;
-		Handle<Buffer>					m_SceneInfoBuffers[NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
+		RHI::AccelerationStructure		m_SceneAS;
+		RHI::Handle<RHI::Buffer>		m_SceneInfoBuffers[RHI::NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
 
-		Handle<Buffer>					m_ScenesMaterials;
-		Handle<Buffer>					m_SceneInstances;
+		RHI::Handle<RHI::Buffer>		m_ScenesMaterials;
+		RHI::Handle<RHI::Buffer>		m_SceneInstances;
 
-		Handle<Texture>					m_SceneTexture;
+		RHI::Handle<RHI::Texture>		m_SceneTexture;
 
 		// Skybox
-		Handle<Shader>					m_SkyboxShader;
+		RHI::Handle<RHI::Shader>		m_SkyboxShader;
 		Scene*							m_SkyboxCube;
 
 		// Deferred shading
-		Handle<Shader>					m_DeferredShadingShader;
+		RHI::Handle<RHI::Shader>		m_DeferredShadingShader;
 
 		// IBL stuff
-		Handle<Texture>					m_EnvironmentCubemap;
-		Handle<Texture>					m_IrradianceMap;
-		Handle<Texture>					m_PrefilterMap;
-		Handle<Texture>					m_BRDFLUTMap;
+		RHI::Handle<RHI::Texture>		m_EnvironmentCubemap;
+		RHI::Handle<RHI::Texture>		m_IrradianceMap;
+		RHI::Handle<RHI::Texture>		m_PrefilterMap;
+		RHI::Handle<RHI::Texture>		m_BRDFLUTMap;
 
 		// PBR
-		Handle<Shader>					m_PBRShader;
+		RHI::Handle<RHI::Shader>		m_PBRShader;
 
 		// Scene Composite
-		Handle<Shader>					m_CompositeShader;
+		RHI::Handle<RHI::Shader>		m_CompositeShader;
 
 		// Techniques
 		std::unique_ptr<SSAO>			m_SSAO;
@@ -131,23 +131,23 @@ namespace limbo::Gfx
 		std::unique_ptr<PathTracing>	m_PathTracing;
 		std::unique_ptr<ShadowMapping>  m_ShadowMapping;
 	public:
-		Core::Window*				Window;
+		Core::Window*					Window;
 
-		RendererTweaks				Tweaks;
-		FPSCamera					Camera;
-		PointLight					Light;
-		DirectionalLight			Sun;
+		RendererTweaks					Tweaks;
+		FPSCamera						Camera;
+		PointLight						Light;
+		DirectionalLight				Sun;
 
-		SceneInfo					SceneInfo;
+		SceneInfo						SceneInfo;
 
-		bool						bNeedsEnvMapChange = true;
-		EnvironmentMapList			EnvironmentMaps;
+		bool							bNeedsEnvMapChange = true;
+		EnvironmentMapList				EnvironmentMaps;
 
 		// This string lists are used for the UI
-		const char*					TonemapList[(uint8)Tonemap::MAX]		= { "None", "AcesFilm", "Reinhard" };
-		const char*					SceneViewList[(uint8)SceneView::MAX]	= { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
-		const char*					RenderPathList[(uint8)RenderPath::MAX]	= { "Deferred", "Path Tracing" };
-		const char*					AOList[(uint8)AmbientOcclusion::MAX]	= { "None", "SSAO", "RTAO" };
+		const char*						TonemapList[(uint8)Tonemap::MAX]		= { "None", "AcesFilm", "Reinhard" };
+		const char*						SceneViewList[(uint8)SceneView::MAX]	= { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
+		const char*						RenderPathList[(uint8)RenderPath::MAX]	= { "Deferred", "Path Tracing" };
+		const char*						AOList[(uint8)AmbientOcclusion::MAX]	= { "None", "SSAO", "RTAO" };
 
 	public:
 		SceneRenderer(Core::Window* window);
@@ -169,7 +169,7 @@ namespace limbo::Gfx
 		bool HasScenes() const;
 		const std::vector<Scene*>& GetScenes() const;
 
-		void BindSceneInfo(Handle<Shader> shaderToBind);
+		void BindSceneInfo(RHI::Handle<RHI::Shader> shaderToBind);
 
 	private:
 		void LoadEnvironmentMap(const char* path);

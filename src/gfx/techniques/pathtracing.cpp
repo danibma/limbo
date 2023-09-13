@@ -10,16 +10,16 @@ namespace limbo::Gfx
 {
 	PathTracing::PathTracing()
 	{
-		m_FinalTexture = CreateTexture({
-			.Width = GetBackbufferWidth(),
-			.Height = GetBackbufferHeight(),
+		m_FinalTexture = RHI::CreateTexture({
+			.Width = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "Path Tracing Final Texture",
-			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
-			.Format = Format::RGBA8_UNORM,
-			.Type = TextureType::Texture2D,
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::RGBA8_UNORM,
+			.Type = RHI::TextureType::Texture2D,
 		});
 
-		m_RTShader = CreateShader({
+		m_RTShader = RHI::CreateShader({
 			.ProgramName = "Path Tracer",
 			.Libs = {
 				{
@@ -50,7 +50,7 @@ namespace limbo::Gfx
 				.MaxPayloadSizeInBytes = sizeof(float) + sizeof(uint) + sizeof(uint) + sizeof(float2) + sizeof(uint), // MaterialPayload
 				.MaxAttributeSizeInBytes = sizeof(float2) // float2 barycentrics
 			},
-			.Type = ShaderType::RayTracing,
+			.Type = RHI::ShaderType::RayTracing,
 		});
 	}
 
@@ -62,24 +62,24 @@ namespace limbo::Gfx
 			DestroyShader(m_RTShader);
 	}
 
-	void PathTracing::Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, const FPSCamera& camera)
+	void PathTracing::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
 	{
-		BeginProfileEvent("Path Tracing");
-		BindShader(m_RTShader);
+		RHI::BeginProfileEvent("Path Tracing");
+		RHI::BindShader(m_RTShader);
 
-		ShaderBindingTable SBT(m_RTShader);
+		RHI::ShaderBindingTable SBT(m_RTShader);
 		SBT.BindRayGen(L"RayGen");
 		SBT.BindMissShader(L"MaterialMiss");
 		SBT.BindHitGroup(L"MaterialHitGroup");
 
 		sceneRenderer->BindSceneInfo(m_RTShader);
-		SetParameter(m_RTShader, "Scene", sceneAS);
-		SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
-		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
-		EndProfileEvent("Path Tracing");
+		RHI::SetParameter(m_RTShader, "Scene", sceneAS);
+		RHI::SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
+		RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+		RHI::EndProfileEvent("Path Tracing");
 	}
 
-	Handle<Texture> PathTracing::GetFinalTexture() const
+	RHI::Handle<RHI::Texture> PathTracing::GetFinalTexture() const
 	{
 		return m_FinalTexture;
 	}

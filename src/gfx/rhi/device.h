@@ -12,7 +12,7 @@ namespace limbo::Core
 	class Window;
 }
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	enum class DescriptorHeapType : uint8;
 	class RingBufferAllocator;

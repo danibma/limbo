@@ -15,7 +15,7 @@
 
 #include <d3d12/d3dx12/d3dx12.h>
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	class StateObjectStream
 	{

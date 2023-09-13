@@ -3,8 +3,11 @@
 
 namespace limbo::Gfx
 {
-	class Buffer;
 	class Scene;
+}
+namespace limbo::RHI
+{
+	class Buffer;
 	class AccelerationStructure
 	{
 	private:
@@ -16,7 +19,7 @@ namespace limbo::Gfx
 		AccelerationStructure() = default;
 		~AccelerationStructure();
 
-		void Build(const std::vector<Scene*>& scenes);
+		void Build(const std::vector<Gfx::Scene*>& scenes);
 
 		D3D12_GPU_DESCRIPTOR_HANDLE GetDescriptor() const;
 	};

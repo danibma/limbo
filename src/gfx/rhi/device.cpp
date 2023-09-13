@@ -20,7 +20,7 @@ unsigned int DelegateHandle::CURRENT_ID = 0;
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 610; }
 extern "C" { __declspec(dllexport) extern const char* D3D12SDKPath = ".\\D3D12\\"; }
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	Device::Device(Core::Window* window, GfxDeviceFlags flags)
 		: m_Flags(flags), m_GPUInfo()
@@ -131,9 +131,9 @@ namespace limbo::Gfx
 		}
 
 		m_Swapchain = new Swapchain(m_CommandQueues[(int)ContextType::Direct]->Get(), m_Factory.Get(), window);
-		OnPostResourceManagerInit.AddRaw(this, &Device::InitResources);
-		OnPreResourceManagerShutdown.AddRaw(this, &Device::DestroyResources);
-		OnPreResourceManagerShutdown.AddRaw(this, &Device::IdleGPU);
+		Gfx::OnPostResourceManagerInit.AddRaw(this, &Device::InitResources);
+		Gfx::OnPreResourceManagerShutdown.AddRaw(this, &Device::DestroyResources);
+		Gfx::OnPreResourceManagerShutdown.AddRaw(this, &Device::IdleGPU);
 
 		window->OnWindowResize.AddRaw(this, &Device::HandleWindowResize);
 
@@ -142,7 +142,7 @@ namespace limbo::Gfx
 		m_PresentFence = new Fence(this);
 
 		// ImGui Stuff
-		if (flags & GfxDeviceFlag::EnableImgui)
+		if (flags & Gfx::GfxDeviceFlag::EnableImgui)
 		{
 			// Setup Dear ImGui context
 			IMGUI_CHECKVERSION();
@@ -174,7 +174,7 @@ namespace limbo::Gfx
 		delete m_Rtvheap;
 		delete m_Dsvheap;
 
-		if (m_Flags & GfxDeviceFlag::EnableImgui)
+		if (m_Flags & Gfx::GfxDeviceFlag::EnableImgui)
 		{
 			ImGui_ImplDX12_Shutdown();
 			ImGui_ImplGlfw_Shutdown();
@@ -188,7 +188,7 @@ namespace limbo::Gfx
 		}
 		
 #if !NO_LOG
-		if (m_Flags & GfxDeviceFlag::DetailedLogging)
+		if (m_Flags & Gfx::GfxDeviceFlag::DetailedLogging)
 		{
 			IDXGIDebug1* dxgiDebug;
 			DX_CHECK(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug)));
@@ -210,7 +210,7 @@ namespace limbo::Gfx
 	{
 		CommandContext* context = m_CommandContexts.at((int)ContextType::Direct);
 
-		if (m_Flags & GfxDeviceFlag::EnableImgui)
+		if (m_Flags & Gfx::GfxDeviceFlag::EnableImgui)
 		{
 			BeginEvent("ImGui");
 
@@ -269,7 +269,7 @@ namespace limbo::Gfx
 			context->SubmitResourceBarriers();
 		}
 
-		if (m_Flags & GfxDeviceFlag::EnableImgui)
+		if (m_Flags & Gfx::GfxDeviceFlag::EnableImgui)
 		{
 			ImGui_ImplDX12_NewFrame();
 			ImGui_ImplGlfw_NewFrame();

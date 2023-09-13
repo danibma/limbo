@@ -58,7 +58,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 		bool ReloadShadersBind = Input::IsKeyDown(window, Input::KeyCode::LeftControl) && Input::IsKeyDown(window, Input::KeyCode::R);
 		if (ReloadShadersBind)
-			Gfx::ReloadShaders();
+			RHI::ReloadShaders();
 
 		UI::Render(sceneRenderer, deltaTime);
 

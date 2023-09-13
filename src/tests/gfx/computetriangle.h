@@ -19,21 +19,21 @@ namespace limbo::Tests::Gfx
 			.Maximized = false
 		});
 
-		limbo::Gfx::Init(window);
+		limbo::RHI::Init(window);
 
-		limbo::Gfx::Handle<limbo::Gfx::Texture> outputTexture = limbo::Gfx::CreateTexture({
-			.Width = limbo::Gfx::GetBackbufferWidth(),
-			.Height = limbo::Gfx::GetBackbufferHeight(),
+		limbo::RHI::Handle<limbo::RHI::Texture> outputTexture = limbo::RHI::CreateTexture({
+			.Width = limbo::RHI::GetBackbufferWidth(),
+			.Height = limbo::RHI::GetBackbufferHeight(),
 			.DebugName = "triangle output texture",
-			.Flags = limbo::Gfx::TextureUsage::UnorderedAccess,
-			.Format = limbo::Gfx::Format::RGBA8_UNORM,
-			.Type = limbo::Gfx::TextureType::Texture2D
+			.Flags = limbo::RHI::TextureUsage::UnorderedAccess,
+			.Format = limbo::RHI::Format::RGBA8_UNORM,
+			.Type = limbo::RHI::TextureType::Texture2D
 		});
 
-		limbo::Gfx::Handle<limbo::Gfx::Shader> triangleShader = limbo::Gfx::CreateShader({
+		limbo::RHI::Handle<limbo::RHI::Shader> triangleShader = limbo::RHI::CreateShader({
 			.ProgramName = "../src/tests/gfx/shaders/compute_triangle",
 			.CsEntryPoint = "DrawTriangle",
-			.Type = limbo::Gfx::ShaderType::Compute
+			.Type = limbo::RHI::ShaderType::Compute
 		});
 
 
@@ -41,19 +41,19 @@ namespace limbo::Tests::Gfx
 		{
 			window->PollEvents();
 
-			limbo::Gfx::SetParameter(triangleShader, "output", outputTexture);
-			limbo::Gfx::BindShader(triangleShader);
-			limbo::Gfx::Dispatch(limbo::Gfx::GetBackbufferWidth() / 8, limbo::Gfx::GetBackbufferHeight() / 8, 1);
+			limbo::RHI::SetParameter(triangleShader, "output", outputTexture);
+			limbo::RHI::BindShader(triangleShader);
+			limbo::RHI::Dispatch(limbo::RHI::GetBackbufferWidth() / 8, limbo::RHI::GetBackbufferHeight() / 8, 1);
 
-			limbo::Gfx::CopyTextureToBackBuffer(outputTexture);
+			limbo::RHI::CopyTextureToBackBuffer(outputTexture);
 
-			limbo::Gfx::Present(true);
+			limbo::RHI::Present(true);
 		}
 
-		limbo::Gfx::DestroyTexture(outputTexture);
-		limbo::Gfx::DestroyShader(triangleShader);
+		limbo::RHI::DestroyTexture(outputTexture);
+		limbo::RHI::DestroyShader(triangleShader);
 
-		limbo::Gfx::Shutdown();
+		limbo::RHI::Shutdown();
 		Core::DestroyWindow(window);
 
 		return 0;

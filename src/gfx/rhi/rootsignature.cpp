@@ -4,7 +4,7 @@
 
 #include <d3d12shader.h>
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	RootSignature::RootSignature(const std::string& name)
 		: m_Name(name)

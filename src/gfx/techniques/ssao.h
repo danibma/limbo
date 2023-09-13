@@ -2,26 +2,29 @@
 
 #include "gfx/rhi/resourcepool.h"
 
+namespace limbo::RHI
+{
+	class Texture;
+	class Shader;
+}
+
 namespace limbo::Gfx
 {
 	class SceneRenderer;
-	class Texture;
-	class Shader;
-
 	class SSAO
 	{
 		// SSAO
-		Handle<Shader>				m_SSAOShader;
-		Handle<Texture>				m_UnblurredSSAOTexture;
-		Handle<Shader>				m_BlurSSAOShader;
-		Handle<Texture>				m_BlurredSSAOTexture;
+		RHI::Handle<RHI::Shader>			m_SSAOShader;
+		RHI::Handle<RHI::Texture>			m_UnblurredSSAOTexture;
+		RHI::Handle<RHI::Shader>			m_BlurSSAOShader;
+		RHI::Handle<RHI::Texture>			m_BlurredSSAOTexture;
 
 	public:
 		explicit SSAO();
 		~SSAO();
 
-		void Render(SceneRenderer* sceneRenderer, Handle<Texture> positionsMap, Handle<Texture> sceneDepthMap);
+		void Render(SceneRenderer* sceneRenderer, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> sceneDepthMap);
 
-		Handle<Texture> GetBlurredTexture() const;
+		RHI::Handle<RHI::Texture> GetBlurredTexture() const;
 	};
 }

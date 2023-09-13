@@ -25,7 +25,7 @@ namespace limbo::Gfx
 	{
 		FPSCamera fpsCamera = {};
 
-		const float aspectRatio = (float)Gfx::GetBackbufferWidth() / (float)Gfx::GetBackbufferHeight();
+		const float aspectRatio = (float)RHI::GetBackbufferWidth() / (float)RHI::GetBackbufferHeight();
 
 		fpsCamera.Eye = eye;
 		fpsCamera.Center = center;

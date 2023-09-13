@@ -57,14 +57,14 @@ namespace limbo::UI
 
 			if (ImGui::BeginMenu("Renderer"))
 			{
-				if (Gfx::CanTakeGPUCapture() && ImGui::MenuItem("Take GPU Capture"))
-					Gfx::TakeGPUCapture();
+				if (RHI::CanTakeGPUCapture() && ImGui::MenuItem("Take GPU Capture"))
+					RHI::TakeGPUCapture();
 
-				if (Gfx::CanTakeGPUCapture() && ImGui::MenuItem("Open Last GPU Capture"))
-					Gfx::OpenLastGPUCapture();
+				if (RHI::CanTakeGPUCapture() && ImGui::MenuItem("Open Last GPU Capture"))
+					RHI::OpenLastGPUCapture();
 
 				if (ImGui::MenuItem("Reload Shaders", "Ctrl-R"))
-					Gfx::ReloadShaders();
+					RHI::ReloadShaders();
 
 				ImGui::EndMenu();
 			}
@@ -80,7 +80,7 @@ namespace limbo::UI
 			}
 
 			char menuText[256];
-			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps) | GPU Time: %.2f ms", Gfx::GetGPUInfo().Name, GCPUProfiler.GetRenderTime(), 1000.0f / GCPUProfiler.GetRenderTime(), GGPUProfiler.GetRenderTime());
+			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps) | GPU Time: %.2f ms", RHI::GetGPUInfo().Name, GCPUProfiler.GetRenderTime(), 1000.0f / GCPUProfiler.GetRenderTime(), GGPUProfiler.GetRenderTime());
 			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(menuText).x) - 10.0f);
 			ImGui::Text(menuText);
 

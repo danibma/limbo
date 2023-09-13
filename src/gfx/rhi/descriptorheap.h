@@ -3,7 +3,7 @@
 #include "core/core.h"
 #include "definitions.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	enum class DescriptorHeapType : uint8
 	{

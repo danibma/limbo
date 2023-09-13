@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "resourcepool.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	class Shader;
 	class ShaderBindingTable

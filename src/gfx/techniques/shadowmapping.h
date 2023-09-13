@@ -2,28 +2,32 @@
 #include "gfx/shaderinterop.h"
 #include "gfx/rhi/resourcepool.h"
 
+namespace limbo::RHI
+{
+	class Texture;
+	class Shader;
+	class Buffer;
+}
+
 namespace limbo::Gfx
 {
 	struct FPSCamera;
 
 	class SceneRenderer;
-	class Texture;
-	class Shader;
-	class Buffer;
 	class ShadowMapping
 	{
-		Handle<Shader>			m_ShadowMapShaders[SHADOWMAP_CASCADES];
-		Handle<Buffer>			m_ShadowDataBuffer[NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
+		RHI::Handle<RHI::Shader>	m_ShadowMapShaders[SHADOWMAP_CASCADES];
+		RHI::Handle<RHI::Buffer>	m_ShadowDataBuffer[RHI::NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
 
-		ShadowData				m_ShadowData;
+		ShadowData					m_ShadowData;
 
-		float					m_CascadeSplitLambda = 0.95f;
+		float						m_CascadeSplitLambda = 0.95f;
 
 	public:
 		explicit ShadowMapping();
 		~ShadowMapping();
 
-		void BindShadowMap(Handle<Shader> shader);
+		void BindShadowMap(RHI::Handle<RHI::Shader> shader);
 
 		void Render(SceneRenderer* sceneRenderer);
 		void DrawDebugWindow();

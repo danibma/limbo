@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	class CommandContext;
 	class CommandQueue;

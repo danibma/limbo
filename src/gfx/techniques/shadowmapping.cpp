@@ -25,34 +25,34 @@ namespace limbo::Gfx
 		{
 			std::string debugName = std::format("Shadow Cascade [{}]", cascade);
 
-			m_ShadowMapShaders[cascade] = Gfx::CreateShader({
+			m_ShadowMapShaders[cascade] = RHI::CreateShader({
 				.ProgramName = "shadowmap",
 				.RTSize = { SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade] },
 				.RTFormats = {
 					{
-						.RTFormat = Gfx::Format::RGBA32_SFLOAT,
+						.RTFormat = RHI::Format::RGBA32_SFLOAT,
 						.DebugName = debugName.c_str(),
 					}
 				},
 				.DepthFormat = {
-					.RTFormat = Gfx::Format::D32_SFLOAT,
+					.RTFormat = RHI::Format::D32_SFLOAT,
 					.DebugName = debugName.c_str(),
 				},
 				.CullMode = D3D12_CULL_MODE_NONE,
 				.DepthClip = false,
-				.Type = Gfx::ShaderType::Graphics
+				.Type = RHI::ShaderType::Graphics
 			});
 		}
 
-		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
+		for (uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
 		{
 			std::string debugName = std::format("CascadedDataBuffer[{}]", i);
-			m_ShadowDataBuffer[i] = CreateBuffer({
+			m_ShadowDataBuffer[i] = RHI::CreateBuffer({
 				.DebugName = debugName.c_str(),
 				.ByteSize = sizeof(ShadowData),
-				.Flags = BufferUsage::Upload | BufferUsage::Constant,
+				.Flags = RHI::BufferUsage::Upload | RHI::BufferUsage::Constant,
 			});
-			Gfx::Map(m_ShadowDataBuffer[i]);
+			RHI::Map(m_ShadowDataBuffer[i]);
 		}
 	}
 
@@ -61,13 +61,13 @@ namespace limbo::Gfx
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 			DestroyShader(m_ShadowMapShaders[cascade]);
 
-		for (uint8 i = 0; i < NUM_BACK_BUFFERS; ++i)
+		for (uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
 			DestroyBuffer(m_ShadowDataBuffer[i]);
 	}
 
-	void ShadowMapping::BindShadowMap(Handle<Shader> shader)
+	void ShadowMapping::BindShadowMap(RHI::Handle<RHI::Shader> shader)
 	{
-		Handle<Buffer> currentBuffer = m_ShadowDataBuffer[Device::Ptr->GetCurrentFrameIndex()];
+		RHI::Handle<RHI::Buffer> currentBuffer = m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
 		SetParameter(shader, "GShadowData", currentBuffer);
 	}
 
@@ -79,31 +79,31 @@ namespace limbo::Gfx
 		CreateLightMatrices(&sceneRenderer->Camera, sceneRenderer->SceneInfo.SunDirection);
 
 		// Shadow map
-		BeginProfileEvent("Shadow Maps Pass");
+		RHI::BeginProfileEvent("Shadow Maps Pass");
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 		{
-			Handle<Buffer> currentBuffer = m_ShadowDataBuffer[Device::Ptr->GetCurrentFrameIndex()];
+			RHI::Handle<RHI::Buffer> currentBuffer = m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
 
 			std::string profileName = std::format("Shadow Cascade {}", cascade);
 
-			BeginProfileEvent(profileName.c_str());
-			BindShader(m_ShadowMapShaders[cascade]);
-			SetParameter(m_ShadowMapShaders[cascade], "GShadowData", currentBuffer);
-			SetParameter(m_ShadowMapShaders[cascade], "cascadeIndex", cascade);
+			RHI::BeginProfileEvent(profileName.c_str());
+			RHI::BindShader(m_ShadowMapShaders[cascade]);
+			RHI::SetParameter(m_ShadowMapShaders[cascade], "GShadowData", currentBuffer);
+			RHI::SetParameter(m_ShadowMapShaders[cascade], "cascadeIndex", cascade);
 			sceneRenderer->BindSceneInfo(m_ShadowMapShaders[cascade]);
 			for (const Scene* scene : sceneRenderer->GetScenes())
 			{
 				scene->IterateMeshes([&](const Mesh& mesh)
 				{
-					SetParameter(m_ShadowMapShaders[cascade], "instanceID", mesh.InstanceID);
+					RHI::SetParameter(m_ShadowMapShaders[cascade], "instanceID", mesh.InstanceID);
 
-					BindIndexBufferView(mesh.IndicesLocation);
-					DrawIndexed((uint32)mesh.IndexCount);
+					RHI::BindIndexBufferView(mesh.IndicesLocation);
+					RHI::DrawIndexed((uint32)mesh.IndexCount);
 				});
 			}
-			EndProfileEvent(profileName.c_str());
+			RHI::EndProfileEvent(profileName.c_str());
 		}
-		EndProfileEvent("Shadow Maps Pass");
+		RHI::EndProfileEvent("Shadow Maps Pass");
 }
 
 	void ShadowMapping::DrawDebugWindow()
@@ -111,7 +111,7 @@ namespace limbo::Gfx
 		ImGui::Begin("Shadow Map Debug", &UI::Globals::bDebugShadowMaps);
 		ImGui::Checkbox("Show Shadow Cascades", &UI::Globals::bShowShadowCascades);
 		ImGui::SliderInt("Shadow Cascade", &UI::Globals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
-		ImGui::Image((ImTextureID)Gfx::GetShaderRTTextureID(m_ShadowMapShaders[UI::Globals::ShadowCascadeIndex], 0), ImVec2(512, 512));
+		ImGui::Image((ImTextureID)RHI::GetShaderRTTextureID(m_ShadowMapShaders[UI::Globals::ShadowCascadeIndex], 0), ImVec2(512, 512));
 		ImGui::End();
 	}
 
@@ -206,7 +206,7 @@ namespace limbo::Gfx
 			lastSplitDist = cascadeSplits[cascade];
 		}
 
-		Handle<Buffer> currentBuffer = m_ShadowDataBuffer[Device::Ptr->GetCurrentFrameIndex()];
-		memcpy(GetMappedData(currentBuffer), &m_ShadowData, sizeof(ShadowData));
+		RHI::Handle<RHI::Buffer> currentBuffer = m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
+		memcpy(RHI::GetMappedData(currentBuffer), &m_ShadowData, sizeof(ShadowData));
 	}
 }

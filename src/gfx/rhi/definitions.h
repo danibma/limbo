@@ -7,7 +7,7 @@
 
 using namespace Microsoft::WRL;
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	constexpr uint8	NUM_BACK_BUFFERS = 3;
 
@@ -260,4 +260,4 @@ namespace limbo::Gfx
 		void DXMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext);
 	}
 }
-#define DX_CHECK(expression) { HRESULT _hr = expression; if (_hr != S_OK) limbo::Gfx::Internal::DXHandleError(_hr, __FILE__, __LINE__); }
+#define DX_CHECK(expression) { HRESULT _hr = expression; if (_hr != S_OK) limbo::RHI::Internal::DXHandleError(_hr, __FILE__, __LINE__); }

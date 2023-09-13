@@ -5,7 +5,7 @@
 #include "shader.h"
 #include "texture.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	struct Deletion
 	{

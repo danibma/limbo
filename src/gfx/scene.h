@@ -16,42 +16,45 @@ struct cgltf_primitive;
 struct cgltf_texture_view;
 struct cgltf_material;
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	class Texture;
 	class Buffer;
+}
 
+namespace limbo::Gfx
+{
 	struct Mesh
 	{
-		VertexBufferView		PositionsLocation;
-		VertexBufferView		NormalsLocation;
-		VertexBufferView		TexCoordsLocation;
-		IndexBufferView			IndicesLocation;
+		RHI::VertexBufferView		PositionsLocation;
+		RHI::VertexBufferView		NormalsLocation;
+		RHI::VertexBufferView		TexCoordsLocation;
+		RHI::IndexBufferView		IndicesLocation;
 
-		Handle<Buffer>			BLAS;
+		RHI::Handle<RHI::Buffer>	BLAS;
 
-		uint32					LocalMaterialIndex;
-		uint32					InstanceID;
+		uint32						LocalMaterialIndex;
+		uint32						InstanceID;
 
-		float4x4				Transform;
+		float4x4					Transform;
 
-		size_t					IndexCount = 0;
-		size_t					VertexCount = 0;
+		size_t						IndexCount = 0;
+		size_t						VertexCount = 0;
 
-		const char*				Name;
+		const char*					Name;
 	};
 
 	class Scene
 	{
 		std::vector<Mesh>								m_Meshes;
-		std::vector<Handle<Texture>>					m_Textures;
+		std::vector<RHI::Handle<RHI::Texture>>			m_Textures;
 		char											m_FolderPath[256];
 		char											m_SceneName[128];
 
 		std::unordered_map<cgltf_material*, uint32>		m_MaterialPtrToIndex;
 
 		// this will contains all the geometry information about all the meshes
-		Handle<Buffer>									m_GeometryBuffer;
+		RHI::Handle<RHI::Buffer>						m_GeometryBuffer;
 
 		std::mutex										m_AddToTextureMapMutex;
 
@@ -71,7 +74,7 @@ namespace limbo::Gfx
 
 		uint32 NumMeshes() const { return (uint32)m_Meshes.size(); }
 
-		Buffer* GetGeometryBuffer() const { return GetBuffer(m_GeometryBuffer); }
+		RHI::Buffer* GetGeometryBuffer() const { return GetBuffer(m_GeometryBuffer); }
 
 	private:
 		void ProcessNode(const cgltf_node* node);
@@ -80,7 +83,7 @@ namespace limbo::Gfx
 		void ProcessPrimitivesData();
 
 		void LoadTexture(const cgltf_texture* texture);
-		uint CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName, Format format);
+		uint CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName, RHI::Format format);
 	};
 
 	inline Scene* LoadScene(const char* path)

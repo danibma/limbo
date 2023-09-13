@@ -6,7 +6,7 @@ namespace limbo
 	extern class GPUProfiler GGPUProfiler;
 	extern class CPUProfiler GCPUProfiler;
 
-	namespace Gfx
+	namespace RHI
 	{
 		class CommandContext;
 		class Buffer;
@@ -15,7 +15,7 @@ namespace limbo
 	class GPUProfiler
 	{
 	private:
-		Gfx::Handle<Gfx::Buffer>	m_Readback;
+		RHI::Handle<RHI::Buffer>	m_Readback;
 		ComPtr<ID3D12QueryHeap>		m_QueryHeap;
 		double						m_AvgRenderTime = 0;
 
@@ -23,8 +23,8 @@ namespace limbo
 		void Initialize();
 		void Shutdown();
 
-		void StartProfile(Gfx::CommandContext* cmd, const char* name);
-		void EndProfile(Gfx::CommandContext* cmd, const char* name);
+		void StartProfile(RHI::CommandContext* cmd, const char* name);
+		void EndProfile(RHI::CommandContext* cmd, const char* name);
 
 		double GetRenderTime() const
 		{
@@ -58,11 +58,11 @@ namespace limbo
 	template<typename ProfilerType>
 	class ScopedProfile
 	{
-		Gfx::CommandContext* m_Context;
+		RHI::CommandContext* m_Context;
 		std::string			 m_Name;
 
 	public:
-		ScopedProfile(Gfx::CommandContext* cmd, const char* name)
+		ScopedProfile(RHI::CommandContext* cmd, const char* name)
 			: m_Context(cmd), m_Name(name)
 		{
 			GGPUProfiler.StartProfile(m_Context, m_Name.c_str());

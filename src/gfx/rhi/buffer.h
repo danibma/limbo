@@ -5,7 +5,7 @@
 #include "definitions.h"
 #include "descriptorheap.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	enum class BufferUsage
 	{

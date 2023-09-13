@@ -9,27 +9,27 @@ namespace limbo::Gfx
 {
 	RTAO::RTAO()
 	{
-		m_NoisedTexture = CreateTexture({
-			.Width = GetBackbufferWidth(),
-			.Height = GetBackbufferHeight(),
+		m_NoisedTexture = RHI::CreateTexture({
+			.Width = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "RTAO Texture W/ Noise",
-			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
-			.Format = Format::RGBA8_UNORM,
-			.Type = TextureType::Texture2D,
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::RGBA8_UNORM,
+			.Type = RHI::TextureType::Texture2D,
 		});
 
 		PreparePreviousFrameTexture();
 
-		m_FinalTexture = CreateTexture({
-			.Width = GetBackbufferWidth(),
-			.Height = GetBackbufferHeight(),
+		m_FinalTexture = RHI::CreateTexture({
+			.Width = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "RTAO Final Texture",
-			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
-			.Format = Format::RGBA8_UNORM,
-			.Type = TextureType::Texture2D,
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::RGBA8_UNORM,
+			.Type = RHI::TextureType::Texture2D,
 		});
 
-		m_RTAOShader = CreateShader({
+		m_RTAOShader = RHI::CreateShader({
 			.ProgramName = "RTAO",
 			.Libs = {
 				{
@@ -55,13 +55,13 @@ namespace limbo::Gfx
 				.MaxPayloadSizeInBytes = sizeof(float), // AOPayload
 				.MaxAttributeSizeInBytes = sizeof(float2) // float2 barycentrics
 			},
-			.Type = ShaderType::RayTracing,
+			.Type = RHI::ShaderType::RayTracing,
 		});
 
-		m_DenoiseRTAOShader = Gfx::CreateShader({
+		m_DenoiseRTAOShader = RHI::CreateShader({
 			.ProgramName = "raytracing/rtaoaccumulate",
 			.CsEntryPoint = "RTAOAccumulate",
-			.Type = Gfx::ShaderType::Compute
+			.Type = RHI::ShaderType::Compute
 		});
 	}
 
@@ -79,49 +79,49 @@ namespace limbo::Gfx
 			DestroyTexture(m_PreviousFrame);
 	}
 
-	void RTAO::Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, Handle<Texture> positionsMap, Handle<Texture> normalsMap)
+	void RTAO::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> normalsMap)
 	{
 		if (sceneRenderer->SceneInfo.PrevView != sceneRenderer->SceneInfo.View)
 		{
-			DestroyTexture(m_PreviousFrame);
+			RHI::DestroyTexture(m_PreviousFrame);
 			PreparePreviousFrameTexture();
 		}
 
-		BeginProfileEvent("RTAO");
-		BindShader(m_RTAOShader);
+		RHI::BeginProfileEvent("RTAO");
+		RHI::BindShader(m_RTAOShader);
 
-		ShaderBindingTable SBT(m_RTAOShader);
+		RHI::ShaderBindingTable SBT(m_RTAOShader);
 		SBT.BindRayGen(L"RTAORayGen");
 		SBT.BindMissShader(L"RTAOMiss");
 		SBT.BindHitGroup(L"RTAOHitGroup");
 
 		sceneRenderer->BindSceneInfo(m_RTAOShader);
-		SetParameter(m_RTAOShader, "SceneAS", sceneAS);
-		SetParameter(m_RTAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
-		SetParameter(m_RTAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
-		SetParameter(m_RTAOShader, "samples", sceneRenderer->Tweaks.RTAOSamples);
-		SetParameter(m_RTAOShader, "g_Positions", positionsMap);
-		SetParameter(m_RTAOShader, "g_Normals", normalsMap);
-		SetParameter(m_RTAOShader, "g_Output", m_NoisedTexture);
-		DispatchRays(SBT, GetBackbufferWidth(), GetBackbufferHeight());
-		EndProfileEvent("RTAO");
+		RHI::SetParameter(m_RTAOShader, "SceneAS", sceneAS);
+		RHI::SetParameter(m_RTAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
+		RHI::SetParameter(m_RTAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
+		RHI::SetParameter(m_RTAOShader, "samples", sceneRenderer->Tweaks.RTAOSamples);
+		RHI::SetParameter(m_RTAOShader, "g_Positions", positionsMap);
+		RHI::SetParameter(m_RTAOShader, "g_Normals", normalsMap);
+		RHI::SetParameter(m_RTAOShader, "g_Output", m_NoisedTexture);
+		RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+		RHI::EndProfileEvent("RTAO");
 
-		BeginProfileEvent("RTAO Denoise");
-		BindShader(m_DenoiseRTAOShader);
-		SetParameter(m_DenoiseRTAOShader, "accumCount", m_AccumCount);
-		SetParameter(m_DenoiseRTAOShader, "g_PreviousRTAOImage", m_PreviousFrame);
-		SetParameter(m_DenoiseRTAOShader, "g_CurrentRTAOImage", m_NoisedTexture);
-		SetParameter(m_DenoiseRTAOShader, "g_DenoisedRTAOImage", m_FinalTexture);
-		Dispatch(GetBackbufferWidth() / 8, GetBackbufferHeight() / 8, 1);
-		EndProfileEvent("RTAO Denoise");
+		RHI::BeginProfileEvent("RTAO Denoise");
+		RHI::BindShader(m_DenoiseRTAOShader);
+		RHI::SetParameter(m_DenoiseRTAOShader, "accumCount", m_AccumCount);
+		RHI::SetParameter(m_DenoiseRTAOShader, "g_PreviousRTAOImage", m_PreviousFrame);
+		RHI::SetParameter(m_DenoiseRTAOShader, "g_CurrentRTAOImage", m_NoisedTexture);
+		RHI::SetParameter(m_DenoiseRTAOShader, "g_DenoisedRTAOImage", m_FinalTexture);
+		RHI::Dispatch(RHI::GetBackbufferWidth() / 8, RHI::GetBackbufferHeight() / 8, 1);
+		RHI::EndProfileEvent("RTAO Denoise");
 
 		++m_AccumCount;
 
-		GetCommandContext()->InsertUAVBarrier(m_FinalTexture);
-		CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
+		RHI::GetCommandContext()->InsertUAVBarrier(m_FinalTexture);
+		RHI::CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
 	}
 
-	Handle<Texture> RTAO::GetFinalTexture() const
+	RHI::Handle<RHI::Texture> RTAO::GetFinalTexture() const
 	{
 		return m_FinalTexture;
 	}
@@ -129,13 +129,13 @@ namespace limbo::Gfx
 	void RTAO::PreparePreviousFrameTexture()
 	{
 		m_AccumCount = 0;
-		m_PreviousFrame = CreateTexture({
-			.Width = GetBackbufferWidth(),
-			.Height = GetBackbufferHeight(),
+		m_PreviousFrame = RHI::CreateTexture({
+			.Width = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "RTAO Previous Frame",
-			.Flags = TextureUsage::UnorderedAccess | TextureUsage::ShaderResource,
-			.Format = Format::RGBA8_UNORM,
-			.Type = TextureType::Texture2D,
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::RGBA8_UNORM,
+			.Type = RHI::TextureType::Texture2D,
 		});
 	}
 }

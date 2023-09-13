@@ -3,7 +3,7 @@
 #include "definitions.h"
 #include "resourcepool.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	class RootSignature;
 	namespace SC { struct Kernel; }

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	namespace SC { struct Kernel; }
 

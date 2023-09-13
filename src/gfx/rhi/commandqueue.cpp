@@ -4,7 +4,7 @@
 #include "commandcontext.h"
 #include "device.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	Fence::Fence(Device* device)
 	{

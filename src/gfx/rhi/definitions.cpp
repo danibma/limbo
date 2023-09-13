@@ -3,7 +3,7 @@
 
 #include <comdef.h>
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	namespace Internal
 	{

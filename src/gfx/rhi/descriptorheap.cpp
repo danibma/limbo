@@ -4,7 +4,7 @@
 #include "commandqueue.h"
 #include "device.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	DescriptorHeap::DescriptorHeap(ID3D12Device* device, DescriptorHeapType heapType, uint32 numDescriptors, bool bShaderVisible)
 		: m_HeapType(heapType), m_bShaderVisible(bShaderVisible), m_MaxDescriptors(numDescriptors)

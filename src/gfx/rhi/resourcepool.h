@@ -6,7 +6,7 @@
 #include <queue>
 #include <type_traits>
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	template<typename T>
 	class Handle

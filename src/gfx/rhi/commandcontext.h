@@ -4,7 +4,7 @@
 #include "resourcemanager.h"
 #include "shaderbindingtable.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	constexpr D3D12_RESOURCE_STATES D3D12_RESOURCE_STATE_UNKNOWN = (D3D12_RESOURCE_STATES)-1;
 

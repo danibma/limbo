@@ -6,7 +6,7 @@
 #include "gfx/gfx.h"
 #include "device.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	CommandContext::CommandContext(CommandQueue* queue, ContextType type, ID3D12Device5* device, DescriptorHeap* globalHeap)
 		: m_ParentQueue(queue), m_Type(type), m_GlobalHeap(globalHeap)

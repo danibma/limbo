@@ -5,7 +5,7 @@
 
 #include "core/utils.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	Buffer::Buffer(const BufferSpec& spec)
 		: InitialState(D3D12_RESOURCE_STATE_COMMON), ByteStride(spec.ByteStride), ByteSize(spec.ByteSize)

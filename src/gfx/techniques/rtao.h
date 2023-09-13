@@ -2,19 +2,23 @@
 
 #include "gfx/rhi/resourcepool.h"
 
-namespace limbo::Gfx
+namespace limbo::RHI
 {
 	class AccelerationStructure;
-	class SceneRenderer;
 	class Texture;
 	class Shader;
+}
+
+namespace limbo::Gfx
+{
+	class SceneRenderer;
 	class RTAO
 	{
-		Handle<Shader>				m_RTAOShader;
-		Handle<Shader>				m_DenoiseRTAOShader;
-		Handle<Texture>				m_NoisedTexture;
-		Handle<Texture>				m_FinalTexture;
-		Handle<Texture>				m_PreviousFrame;
+		RHI::Handle<RHI::Shader>	m_RTAOShader;
+		RHI::Handle<RHI::Shader>	m_DenoiseRTAOShader;
+		RHI::Handle<RHI::Texture>	m_NoisedTexture;
+		RHI::Handle<RHI::Texture>	m_FinalTexture;
+		RHI::Handle<RHI::Texture>	m_PreviousFrame;
 
 		uint32						m_AccumCount;
 
@@ -22,9 +26,9 @@ namespace limbo::Gfx
 		explicit RTAO();
 		~RTAO();
 
-		void Render(SceneRenderer* sceneRenderer, AccelerationStructure* sceneAS, Handle<Texture> positionsMap, Handle<Texture> normalsMap);
+		void Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> normalsMap);
 
-		Handle<Texture> GetFinalTexture() const;
+		RHI::Handle<RHI::Texture> GetFinalTexture() const;
 
 	private:
 		void PreparePreviousFrameTexture();
