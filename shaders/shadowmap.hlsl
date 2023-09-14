@@ -12,7 +12,6 @@ float4 VSMain(uint vertexID : SV_VertexID) : SV_Position
     return mul(mvp, float4(pos, 1.0f));
 }
 
-float4 PSMain(float4 v : SV_Position) : SV_Target
+void PSMain()
 {
-    return float4(v.zzz, 1.0f);
 }

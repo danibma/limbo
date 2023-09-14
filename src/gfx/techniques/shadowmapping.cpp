@@ -28,12 +28,6 @@ namespace limbo::Gfx
 			m_ShadowMapShaders[cascade] = RHI::CreateShader({
 				.ProgramName = "shadowmap",
 				.RTSize = { SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade] },
-				.RTFormats = {
-					{
-						.RTFormat = RHI::Format::RGBA32_SFLOAT,
-						.DebugName = debugName.c_str(),
-					}
-				},
 				.DepthFormat = {
 					.RTFormat = RHI::Format::D32_SFLOAT,
 					.DebugName = debugName.c_str(),
@@ -111,7 +105,7 @@ namespace limbo::Gfx
 		ImGui::Begin("Shadow Map Debug", &UI::Globals::bDebugShadowMaps);
 		ImGui::Checkbox("Show Shadow Cascades", &UI::Globals::bShowShadowCascades);
 		ImGui::SliderInt("Shadow Cascade", &UI::Globals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
-		ImGui::Image((ImTextureID)RHI::GetShaderRTTextureID(m_ShadowMapShaders[UI::Globals::ShadowCascadeIndex], 0), ImVec2(512, 512));
+		ImGui::Image((ImTextureID)RHI::GetShaderDTTextureID(m_ShadowMapShaders[UI::Globals::ShadowCascadeIndex]), ImVec2(512, 512));
 		ImGui::End();
 	}
 
