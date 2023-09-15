@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "rhi/resourcepool.h"
+#include "uirenderer.h"
 
 namespace limbo
 {
@@ -99,6 +100,15 @@ namespace limbo
 
 		inline void Present()
 		{
+			if (UI::Globals::bShowProfiler)
+			{
+				ImGui::SetNextWindowBgAlpha(0.7f);
+				ImGui::Begin("Profiler", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+				ImGui::SetWindowPos(ImVec2(ImGui::GetMainViewport()->Size.x - ImGui::GetWindowSize().x - 5.0f, 28.0f));
+				ImGui::Checkbox("Order results", &UI::Globals::bOrderProfilerResults);
+				ImGui::End();
+			}
+
 			GCPUProfiler.EndFrame();
 			GGPUProfiler.EndFrame();
 		}

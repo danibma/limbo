@@ -1,6 +1,5 @@
 ﻿#include "stdafx.h"
 #include "profiler.h"
-#include "uirenderer.h"
 
 #include "rhi/commandqueue.h"
 #include "rhi/device.h"
@@ -182,7 +181,12 @@ namespace limbo
 				m_AvgRenderTime = avgTime;
 
 			if (UI::Globals::bShowProfiler)
-				orderedData.emplace(profileData.Name.c_str(), avgTime);
+			{
+				if (UI::Globals::bOrderProfilerResults)
+					orderedData.emplace(profileData.Name.c_str(), avgTime);
+				else
+					ImGui::Text("%s: %.2fms", profileData.Name.c_str(), avgTime);
+			}
 		}
 
 		if (UI::Globals::bShowProfiler)
@@ -295,7 +299,12 @@ namespace limbo
 				m_AvgRenderTime = avgTime;
 
 			if (UI::Globals::bShowProfiler)
-				orderedData.emplace(profileData.Name.c_str(), avgTime);
+			{
+				if (UI::Globals::bOrderProfilerResults)
+					orderedData.emplace(profileData.Name.c_str(), avgTime);
+				else
+					ImGui::Text("%s: %.2fms", profileData.Name.c_str(), avgTime);
+			}
 		}
 
 		if (UI::Globals::bShowProfiler)
