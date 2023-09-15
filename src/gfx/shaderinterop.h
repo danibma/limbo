@@ -8,7 +8,7 @@
 #define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
 #define PAD uint MACRO_CONCAT(padding, __COUNTER__)
 
-#define SHADOWMAP_CASCADES 4
+#define SHADOWMAP_CASCADES 3
 
 struct SceneInfo
 {

@@ -13,9 +13,8 @@ namespace limbo::Gfx
 {
 	constexpr uint32 SHADOWMAP_SIZES[SHADOWMAP_CASCADES] =
 	{
+		8196,
 		4096,
-		2048,
-		2048,
 		2048,
 	};
 

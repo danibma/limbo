@@ -35,13 +35,13 @@ uint bEnableAO;
 
 float CalculateShadow(float4 shadowCoord, float2 off, uint cascadeIndex)
 {
-    float shadowBias = 0.005f;
+    float shadowBias = 0.001f;
     shadowCoord.y = -shadowCoord.y;
 
     float shadow = 1.0;
     if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0)
     {
-        float dist = Sample2D(GShadowData.ShadowMap[cascadeIndex], SLinearWrap, shadowCoord.xy + off).r;
+        float dist = Sample2D(GShadowData.ShadowMap[cascadeIndex], SPointWrap, shadowCoord.xy + off).r;
         if (shadowCoord.w > 0.0 && dist < shadowCoord.z - shadowBias)
         {
             shadow = SHADOW_AMBIENT;
