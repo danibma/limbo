@@ -1,8 +1,10 @@
 ﻿#include "stdafx.h"
 #include "commandcontext.h"
 
+#include "accelerationstructure.h"
 #include "commandqueue.h"
 #include "descriptorheap.h"
+#include "rootsignature.h"
 #include "gfx/gfx.h"
 #include "device.h"
 
@@ -187,9 +189,9 @@ namespace limbo::RHI
 				{
 					Texture* depthBackbuffer = rm->GetTexture(pBoundShader->DepthTarget.Texture);
 					FAILIF(!depthBackbuffer);
-					dsvhandle = &depthBackbuffer->BasicHandle[0].CpuHandle;
+					dsvhandle = &depthBackbuffer->UAVHandle[0].CpuHandle;
 					if (pBoundShader->DepthTarget.LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+						m_CommandList->ClearDepthStencilView(depthBackbuffer->UAVHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 				}
 
 				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -200,9 +202,9 @@ namespace limbo::RHI
 					FAILIF(!rt);
 
 					if (pBoundShader->RenderTargets[i].LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearRenderTargetView(rt->BasicHandle[0].CpuHandle, clearColor, 0, nullptr);
+						m_CommandList->ClearRenderTargetView(rt->UAVHandle[0].CpuHandle, clearColor, 0, nullptr);
 
-					rtHandles[i] = rt->BasicHandle[0].CpuHandle;
+					rtHandles[i] = rt->UAVHandle[0].CpuHandle;
 				}
 
 				m_CommandList->OMSetRenderTargets(pBoundShader->RTCount, rtHandles, false, dsvhandle);
@@ -227,6 +229,57 @@ namespace limbo::RHI
 			m_CommandList->RSSetViewports(1, &viewport);
 			m_CommandList->RSSetScissorRects(1, &scissor);
 		}
+
+		pBoundShader->Bind(m_CommandList.Get());
+	}
+
+	void CommandContext::BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)
+	{
+		constexpr uint64 MaxBindCount = 16;
+		constexpr uint32 DescriptorCopyRanges[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+		static_assert(_countof(DescriptorCopyRanges) == MaxBindCount);
+
+		check(count < MaxBindCount);
+		check(count > 0);
+
+		DescriptorHandle tempAlloc = m_GlobalHeap->AllocateTemp(count);
+
+		D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptors[MaxBindCount];
+		for (uint32 i = 0; i < count; ++i)
+			srcDescriptors[i] = handles[i].CpuHandle;
+
+		uint32 destRanges[1] = { count };
+		Device::Ptr->GetDevice()->CopyDescriptors(1, &tempAlloc.CpuHandle, destRanges, count, srcDescriptors, DescriptorCopyRanges, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+		ResourceManager* rm = ResourceManager::Ptr;
+		Shader* shader = rm->GetShader(m_BoundShader);
+
+		if (shader->Type == ShaderType::Graphics)
+			m_CommandList->SetGraphicsRootDescriptorTable(rootParameter, tempAlloc.GPUHandle);
+		else
+			m_CommandList->SetComputeRootDescriptorTable(rootParameter, tempAlloc.GPUHandle);
+	}
+
+	void CommandContext::BindConstants(uint32 rootParameter, uint32 num32bitValues, uint32 offsetIn32bits, const void* data)
+	{
+		ResourceManager* rm = ResourceManager::Ptr;
+		Shader* shader = rm->GetShader(m_BoundShader);
+
+		if (shader->Type == ShaderType::Graphics)
+			m_CommandList->SetGraphicsRoot32BitConstants(rootParameter, num32bitValues, data, offsetIn32bits);
+		else
+			m_CommandList->SetComputeRoot32BitConstants(rootParameter, num32bitValues, data, offsetIn32bits);
+	}
+
+	void CommandContext::BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress)
+	{
+		ResourceManager* rm = ResourceManager::Ptr;
+		Shader* shader = rm->GetShader(m_BoundShader);
+
+		if (shader->Type == ShaderType::Graphics)
+			m_CommandList->SetGraphicsRootShaderResourceView(rootParameter, gpuVirtualAddress);
+		else
+			m_CommandList->SetComputeRootShaderResourceView(rootParameter, gpuVirtualAddress);
 	}
 
 	void CommandContext::InstallDrawState()
@@ -235,8 +288,6 @@ namespace limbo::RHI
 
 		ResourceManager* rm = ResourceManager::Ptr;
 		Shader* shader = rm->GetShader(m_BoundShader);
-
-		shader->SetRootParameters(m_CommandList.Get());
 
 		if (shader->Type == ShaderType::Graphics)
 			m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -292,14 +343,14 @@ namespace limbo::RHI
 		Texture* depthBackbuffer = rm->GetTexture(depthBackBufferHandle);
 		FAILIF(!depthBackbuffer);
 
-		m_CommandList->OMSetRenderTargets(1, &backbuffer->BasicHandle[0].CpuHandle, false, &depthBackbuffer->BasicHandle[0].CpuHandle);
+		m_CommandList->OMSetRenderTargets(1, &backbuffer->UAVHandle[0].CpuHandle, false, &depthBackbuffer->UAVHandle[0].CpuHandle);
 
 		InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		SubmitResourceBarriers();
 
 		constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		m_CommandList->ClearDepthStencilView(depthBackbuffer->BasicHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-		m_CommandList->ClearRenderTargetView(backbuffer->BasicHandle[0].CpuHandle, clearColor, 0, nullptr);
+		m_CommandList->ClearDepthStencilView(depthBackbuffer->UAVHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		m_CommandList->ClearRenderTargetView(backbuffer->UAVHandle[0].CpuHandle, clearColor, 0, nullptr);
 	}
 
 	void CommandContext::Reset()

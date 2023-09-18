@@ -8,16 +8,16 @@ struct AORayPayload
 
 RaytracingAccelerationStructure SceneAS : register(t0, space0);
 
-Texture2D g_Positions : register(t1, space0);
-Texture2D g_Normals   : register(t2, space0);
-
 RWTexture2D<float4> g_Output : register(u0, space0);
 
-cbuffer $Globals : register(b0, space0)
+cbuffer Constants : register(b0, space0)
 {
 	float radius;
     float power;
     uint  samples;
+
+    uint positionsTextureIndex;
+    uint normalsTextureIndex;
 }
 
 float ShootAmbientOcclusionRay(float3 orig, float3 dir, float minT, float maxT)
@@ -53,8 +53,8 @@ void RTAORayGen()
 
     uint seed = RandomSeed(pixel, resolution, GSceneInfo.FrameIndex);
 
-    float4 position = g_Positions[pixel];
-    float4 normal   = g_Normals[pixel];
+    float4 position = GetTexture(positionsTextureIndex)[pixel];
+    float4 normal = GetTexture(normalsTextureIndex)[pixel];
 
     float ao = 0.0f;
     for (uint i = 0; i < samples; ++i)

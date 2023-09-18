@@ -13,6 +13,7 @@ namespace limbo::RHI
 	private:
 		using HitGroupDescList = std::vector<D3D12_HIT_GROUP_DESC>;
 		using ExportsList = std::vector<D3D12_EXPORT_DESC>;
+		using TInputLayout = std::vector<D3D12_INPUT_ELEMENT_DESC>;
 
 	public:
 		struct RenderTargetDesc
@@ -39,6 +40,9 @@ namespace limbo::RHI
 		const char*						VSEntryPoint = "VSMain";
 		const char*						PSEntryPoint = "PSMain";
 		const char*						CsEntryPoint = "CSMain";
+
+		TInputLayout					InputLayout;
+		RootSignature*					RootSignature = nullptr;
 
 		uint2							RTSize = { 0, 0 }; // If the RTFormats have RTTexture set, this does nothing
 		RenderTargetDesc				RTFormats[8];
@@ -69,14 +73,12 @@ namespace limbo::RHI
 			bool					bIsExternal = false; // if the render target comes from another shader, this is true
 		};
 
-		using InputLayout = std::vector<D3D12_INPUT_ELEMENT_DESC>;
-
 		std::string							m_Name;
 		ShaderSpec							m_Spec;
 		DelegateHandle						m_ReloadShaderDelHandle;
-		RootSignature*						m_RootSignature;
 
 	public:
+		RootSignature*						RootSignature;
 		ComPtr<ID3D12PipelineState>			PipelineState;
 		ComPtr<ID3D12StateObject>			StateObject; // for RayTracing
 		ShaderType							Type;
@@ -93,18 +95,12 @@ namespace limbo::RHI
 
 		~Shader();
 
-		void SetRootParameters(ID3D12GraphicsCommandList* cmd);
-
-		void SetConstant(const char* parameterName, const void* data);
-		void SetTexture(const char* parameterName, Handle<class Texture> texture, uint32 mipLevel = ~0);
-		void SetBuffer(const char* parameterName, Handle<class Buffer> buffer);
-		void SetAccelerationStructure(const char* parameterName, class AccelerationStructure* accelerationStructure);
+		void Bind(ID3D12GraphicsCommandList* cmd);
 
 		void ResizeRenderTargets(uint32 width, uint32 height);
 		void ReloadShader();
 
 	private:
-		void CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout);
 		void CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
 		void CreateRenderTargets(const ShaderSpec& spec, D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc);
 		void CreateGraphicsPipeline(ID3D12Device* device, const ShaderSpec& spec, bool bIsReloading);

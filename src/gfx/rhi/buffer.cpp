@@ -96,7 +96,7 @@ namespace limbo::RHI
 
 	Buffer::~Buffer()
 	{
-		Device::Ptr->FreeHandle(BasicHandle);
+		Device::Ptr->FreeHandle(CBVHandle);
 	}
 
 	void Buffer::CreateCBV(ID3D12Device* device, const BufferSpec& spec)
@@ -106,7 +106,7 @@ namespace limbo::RHI
 			.SizeInBytes = Math::Max(Math::Align((uint32)spec.ByteSize, (uint32)256), (uint32)256ul)
 		};
 
-		device->CreateConstantBufferView(&cbvDesc, BasicHandle.CpuHandle);
+		device->CreateConstantBufferView(&cbvDesc, CBVHandle.CpuHandle);
 	}
 
 	void Buffer::CreateSRV(ID3D12Device* device, const BufferSpec& spec)
@@ -134,7 +134,7 @@ namespace limbo::RHI
 			srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
 		}
 
-		device->CreateShaderResourceView(Resource.Get(), &srvDesc, BasicHandle.CpuHandle);
+		device->CreateShaderResourceView(Resource.Get(), &srvDesc, CBVHandle.CpuHandle);
 	}
 
 	void Buffer::CreateSRV_AS(ID3D12Device* device, const BufferSpec& spec)
@@ -149,7 +149,7 @@ namespace limbo::RHI
 			.Location = Resource->GetGPUVirtualAddress()
 		};
 
-		device->CreateShaderResourceView(nullptr, &srvDesc, BasicHandle.CpuHandle);
+		device->CreateShaderResourceView(nullptr, &srvDesc, CBVHandle.CpuHandle);
 	}
 
 	void Buffer::InitResource(const BufferSpec& spec)
@@ -158,12 +158,12 @@ namespace limbo::RHI
 
 		if (EnumHasAllFlags(spec.Flags, BufferUsage::Constant))
 		{
-			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
+			CBVHandle = Device::Ptr->AllocatePersistent(DescriptorHeapType::CBV);
 			CreateCBV(Device::Ptr->GetDevice(), spec);
 		}
 		else if (EnumHasAllFlags(spec.Flags, BufferUsage::ShaderResourceView))
 		{
-			BasicHandle = Device::Ptr->AllocateHandle(DescriptorHeapType::SRV);
+			CBVHandle = Device::Ptr->AllocatePersistent(DescriptorHeapType::SRV);
 			if (EnumHasAllFlags(spec.Flags, BufferUsage::AccelerationStructure))
 				CreateSRV_AS(Device::Ptr->GetDevice(), spec);
 			else

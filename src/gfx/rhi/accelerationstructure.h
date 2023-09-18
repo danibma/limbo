@@ -21,6 +21,6 @@ namespace limbo::RHI
 
 		void Build(const std::vector<Gfx::Scene*>& scenes);
 
-		D3D12_GPU_DESCRIPTOR_HANDLE GetDescriptor() const;
+		Buffer* GetTLASBuffer() const;
 	};
 }

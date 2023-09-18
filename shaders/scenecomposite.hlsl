@@ -17,8 +17,8 @@ QuadResult VSMain(uint vertexID : SV_VertexID)
 	return result;
 }
 
-Texture2D	g_sceneTexture;
 uint		g_TonemapMode; // 0 = None, 1 = AcesFilm, 2 = Reinhard
+uint		g_sceneTexture;
 
 float3 AcesFilm(const float3 x)
 {
@@ -37,7 +37,7 @@ float3 ReinhardTonemap(float3 finalColor)
 
 float4 PSMain(in QuadResult quad) : SV_Target
 {
-	float3 finalColor = g_sceneTexture.Sample(SLinearWrap, quad.UV).rgb;
+    float3 finalColor = Sample2D(g_sceneTexture, SLinearWrap, quad.UV).rgb;
 
     if (g_TonemapMode == 1)
     {

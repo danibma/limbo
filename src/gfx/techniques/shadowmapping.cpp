@@ -8,6 +8,7 @@
 #include "gfx/uirenderer.h"
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"
+#include "gfx/rhi/rootsignature.h"
 
 namespace limbo::Gfx
 {
@@ -20,12 +21,19 @@ namespace limbo::Gfx
 
 	ShadowMapping::ShadowMapping()
 	{
+		m_CommonRS = new RHI::RootSignature("Shadow Mapping Common RS");
+		m_CommonRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_CommonRS->AddDescriptorTable(101, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_CommonRS->AddRootConstants(0, 2);
+		m_CommonRS->Create();
+
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 		{
 			std::string debugName = std::format("Shadow Cascade [{}]", cascade);
 
 			m_ShadowMapShaders[cascade] = RHI::CreateShader({
 				.ProgramName = "shadowmap",
+				.RootSignature = m_CommonRS,
 				.RTSize = { SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade] },
 				.DepthFormat = {
 					.RTFormat = RHI::Format::D32_SFLOAT,
@@ -56,12 +64,8 @@ namespace limbo::Gfx
 
 		for (uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
 			DestroyBuffer(m_ShadowDataBuffer[i]);
-	}
 
-	void ShadowMapping::BindShadowMap(RHI::Handle<RHI::Shader> shader)
-	{
-		RHI::Handle<RHI::Buffer> currentBuffer = m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
-		SetParameter(shader, "GShadowData", currentBuffer);
+		delete m_CommonRS;
 	}
 
 	void ShadowMapping::Render(SceneRenderer* sceneRenderer)
@@ -81,14 +85,25 @@ namespace limbo::Gfx
 
 			RHI::BeginProfileEvent(profileName.c_str());
 			RHI::BindShader(m_ShadowMapShaders[cascade]);
-			RHI::SetParameter(m_ShadowMapShaders[cascade], "GShadowData", currentBuffer);
-			RHI::SetParameter(m_ShadowMapShaders[cascade], "cascadeIndex", cascade);
-			sceneRenderer->BindSceneInfo(m_ShadowMapShaders[cascade]);
+			RHI::BindConstants(2, 0, cascade);
+
+			RHI::DescriptorHandle sceneHandle[] =
+			{
+				RHI::GetBuffer(sceneRenderer->GetSceneInfoBuffer())->CBVHandle
+			};
+			RHI::BindTempDescriptorTable(0, sceneHandle, 1);
+
+			RHI::DescriptorHandle shadowDataHandle[] =
+			{
+				RHI::GetBuffer(currentBuffer)->CBVHandle
+			};
+			RHI::BindTempDescriptorTable(1, shadowDataHandle, 1);
+
 			for (const Scene* scene : sceneRenderer->GetScenes())
 			{
 				scene->IterateMeshes([&](const Mesh& mesh)
 				{
-					RHI::SetParameter(m_ShadowMapShaders[cascade], "instanceID", mesh.InstanceID);
+					RHI::BindConstants(2, 1, mesh.InstanceID);
 
 					RHI::BindIndexBufferView(mesh.IndicesLocation);
 					RHI::DrawIndexed((uint32)mesh.IndexCount);
@@ -106,6 +121,11 @@ namespace limbo::Gfx
 		ImGui::SliderInt("Shadow Cascade", &UI::Globals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
 		ImGui::Image((ImTextureID)RHI::GetShaderDTTextureID(m_ShadowMapShaders[UI::Globals::ShadowCascadeIndex]), ImVec2(512, 512));
 		ImGui::End();
+	}
+
+	RHI::Handle<RHI::Buffer> ShadowMapping::GetShadowDataBuffer() const
+	{
+		return m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
 	}
 
 	/*
@@ -194,7 +214,7 @@ namespace limbo::Gfx
 			// Store split distance and matrix in cascade
 			m_ShadowData.SplitDepth[cascade]    = (camera->NearZ + splitDist * clipRange) * -1.0f;
 			m_ShadowData.LightViewProj[cascade] = lightOrthoMatrix * lightViewMatrix;
-			m_ShadowData.ShadowMap[cascade]		= GetTexture(GetShaderDepthTarget(m_ShadowMapShaders[cascade]))->SRVHandle.Index;
+			m_ShadowData.ShadowMap[cascade]		= GetTexture(GetShaderDepthTarget(m_ShadowMapShaders[cascade]))->SRV();
 
 			lastSplitDist = cascadeSplits[cascade];
 		}

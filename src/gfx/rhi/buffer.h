@@ -35,7 +35,7 @@ namespace limbo::RHI
 	public:
 		ComPtr<ID3D12Resource>	Resource;
 		D3D12_RESOURCE_STATES	InitialState;
-		DescriptorHandle		BasicHandle;
+		DescriptorHandle		CBVHandle;
 		void*					MappedData;
 
 		uint32					ByteStride = 0;

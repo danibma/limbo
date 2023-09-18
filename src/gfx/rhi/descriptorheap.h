@@ -10,6 +10,8 @@ namespace limbo::RHI
 		SRV,
 		RTV,
 		DSV,
+		UAV,
+		CBV
 	};
 
 	struct DescriptorHandle
@@ -27,38 +29,43 @@ namespace limbo::RHI
 
 		ComPtr<ID3D12DescriptorHeap>			m_Heap;
 		bool									m_bShaderVisible;
-
 		uint32									m_DescriptorSize;
-		const uint32							m_MaxDescriptors;
 
-		std::deque<uint32>						m_FreeDescriptors;
+		uint32									m_NumPersistent;
+
+		uint32									m_NumTemporary;
+
+		std::deque<uint32>						m_FreePersistents;
+		std::deque<uint32>						m_FreeTemporary;
 
 		// Descriptor Index, Fence Value - the descriptors can only be used when the operation corresponding to that fence value was already completed
-		std::deque<std::pair<uint32, uint64>>	m_DeletionQueue;
+		std::deque<std::pair<uint32, uint64>>	m_TempDeletionQueue;
 	public:
 		DescriptorHeap() = delete;
-		DescriptorHeap(ID3D12Device* device, DescriptorHeapType heapType, uint32 numDescriptors, bool bShaderVisible = false);
+		DescriptorHeap(ID3D12Device5* device, DescriptorHeapType heapType, uint32 numPersistent, uint32 numTemporary, bool bShaderVisible = false);
 		~DescriptorHeap();
 
 		DescriptorHeap(DescriptorHeap& heap) = delete;
 		DescriptorHeap(DescriptorHeap&& heap) = delete;
 
-		DescriptorHandle AllocateHandle();
-		DescriptorHandle AllocateTempHandle();
-		void FreeHandle(DescriptorHandle& handle);
+		DescriptorHandle AllocatePersistent();
+		void FreePersistent(DescriptorHandle& handle);
 
-		DescriptorHandle GetHandleByIndex(uint32 index);
+		DescriptorHandle AllocateTemp(uint32 count = 1);
 
 		ID3D12DescriptorHeap* GetHeap() const { return m_Heap.Get(); }
 
 	private:
-		uint32 GetNextDescriptor();
+		uint32 GetNextPersistent();
+		uint32 GetNextTemporary();
 	};
 
 	inline D3D12_DESCRIPTOR_HEAP_TYPE D3DDescriptorHeapType(DescriptorHeapType heapType)
 	{
 		switch (heapType)
 		{
+		case DescriptorHeapType::CBV:
+		case DescriptorHeapType::UAV:
 		case DescriptorHeapType::SRV: 
 			return D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		case DescriptorHeapType::RTV: 

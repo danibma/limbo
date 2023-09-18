@@ -18,6 +18,7 @@ namespace limbo::RHI
 	class RingBufferAllocator;
 	struct DescriptorHandle;
 	class DescriptorHeap;
+	class RootSignature;
 	class CommandQueue;
 	struct WindowInfo;
 	struct DrawInfo;
@@ -56,8 +57,11 @@ namespace limbo::RHI
 		uint32								m_FrameIndex;
 
 		DescriptorHeap*						m_GlobalHeap;
-		DescriptorHeap*						m_Dsvheap;
-		DescriptorHeap*						m_Rtvheap;
+		DescriptorHeap*						m_UAVHeap;
+		DescriptorHeap*						m_CBVHeap;
+		DescriptorHeap*						m_SRVHeap;
+		DescriptorHeap*						m_DSVHeap;
+		DescriptorHeap*						m_RTVHeap;
 
 		GfxDeviceFlags						m_Flags;
 		bool								m_bNeedsResize = false;
@@ -68,6 +72,7 @@ namespace limbo::RHI
 
 		GPUInfo								m_GPUInfo;
 
+		RootSignature*						m_GenerateMipsRS;
 		Handle<Shader>						m_GenerateMipsShader;
 
 	public:
@@ -122,8 +127,8 @@ namespace limbo::RHI
 		CommandQueue* GetCommandQueue(ContextType type) const { return m_CommandQueues.at((int)type); }
 		Fence* GetPresentFence() const { return m_PresentFence; }
 
-		DescriptorHandle AllocateHandle(DescriptorHeapType heapType);
-		DescriptorHandle AllocateTempHandle(DescriptorHeapType heapType);
+		DescriptorHandle AllocatePersistent(DescriptorHeapType heapType);
+		DescriptorHandle AllocateTemp(DescriptorHeapType heapType);
 		void FreeHandle(DescriptorHandle& handle);
 
 		void CreateSRV(Texture* texture, DescriptorHandle& descriptorHandle, uint8 mipLevel = 0);
@@ -284,6 +289,23 @@ namespace limbo::RHI
 	FORCEINLINE void BindShader(Handle<Shader> shader)
 	{
 		GetCommandContext()->BindShader(shader);
+	}
+
+	FORCEINLINE void BindTempDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)
+	{
+		GetCommandContext()->BindDescriptorTable(rootParameter, handles, count);
+	}
+
+	FORCEINLINE void BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress)
+	{
+		GetCommandContext()->BindRootSRV(rootParameter, gpuVirtualAddress);
+	}
+
+	template<typename T>
+	FORCEINLINE void BindConstants(uint32 rootParameter, uint32 offsetIn32bits, const T& data)
+	{
+		static_assert(sizeof(T) % sizeof(uint32) == 0);
+		GetCommandContext()->BindConstants(rootParameter, sizeof(T) / sizeof(uint32), offsetIn32bits, &data);
 	}
 
 	FORCEINLINE void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)

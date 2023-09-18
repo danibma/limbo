@@ -5,6 +5,7 @@
 namespace limbo::RHI
 {
 	class AccelerationStructure;
+	class RootSignature;
 	class Texture;
 	class Shader;
 }
@@ -14,6 +15,8 @@ namespace limbo::Gfx
 	class SceneRenderer;
 	class RTAO
 	{
+		RHI::RootSignature*			m_CommonRS;
+
 		RHI::Handle<RHI::Shader>	m_RTAOShader;
 		RHI::Handle<RHI::Shader>	m_DenoiseRTAOShader;
 		RHI::Handle<RHI::Texture>	m_NoisedTexture;

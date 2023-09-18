@@ -170,64 +170,6 @@ namespace limbo::RHI
 		ResourceManager::Ptr->Unmap(buffer, subresource, range);
 	}
 
-	inline void SetParameter(Handle<Shader> shader, const char* parameterName, class AccelerationStructure* accelerationStructure)
-	{
-		Shader* s = ResourceManager::Ptr->GetShader(shader);
-		FAILIF(!s);
-		s->SetAccelerationStructure(parameterName, accelerationStructure);
-	}
-
-	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Texture> texture, uint32 mipLevel = ~0)
-	{
-		if (!texture.IsValid())
-		{
-			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
-			return;
-		}
-
-		Shader* s = ResourceManager::Ptr->GetShader(shader);
-		FAILIF(!s);
-		s->SetTexture(parameterName, texture, mipLevel);
-	}
-
-	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Buffer> buffer)
-	{
-		if (!buffer.IsValid())
-		{
-			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
-			return;
-		}
-
-		Shader* s = ResourceManager::Ptr->GetShader(shader);
-		FAILIF(!s);
-		s->SetBuffer(parameterName, buffer);
-	}
-
-	// Used to bind render targets, from other shaders, as a texture
-	inline void SetParameter(Handle<Shader> shader, const char* parameterName, Handle<Shader> rtShader, uint8 rtIndex)
-	{
-		if (!rtShader.IsValid())
-		{
-			LB_WARN("Tried settings parameter '%s' but given handle is not valid!", parameterName);
-			return;
-		}
-
-		Shader* s = ResourceManager::Ptr->GetShader(shader);
-		FAILIF(!s);
-
-		s->SetTexture(parameterName, GetShaderRT(rtShader, rtIndex), ~0);
-	}
-
-	template<typename T>
-	inline void SetParameter(Handle<Shader> shader, const char* parameterName, const T& value)
-	{
-		ensure(sizeof(T) % sizeof(uint32) == 0); // the constant has to be 4 bytes
-
-		Shader* s = ResourceManager::Ptr->GetShader(shader);
-		FAILIF(!s);
-		s->SetConstant(parameterName, &value);
-	}
-
 	// This can be used as a TextureID for ImGui
 	inline uint64 GetTextureID(Handle<Texture> texture)
 	{
