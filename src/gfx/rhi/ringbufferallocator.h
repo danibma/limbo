@@ -54,6 +54,7 @@ namespace limbo::RHI
 		~RingBufferAllocator();
 
 		void Allocate(uint64 size, RingBufferAllocation& allocation);
+		void AllocateTemp(uint64 size, RingBufferAllocation& allocation);
 		void Free(RingBufferAllocation& allocation);
 	};
 }

@@ -122,8 +122,8 @@ namespace limbo::RHI
 #endif
 
 		m_GlobalHeap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV, 4098, 4098, true);
-		m_UAVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::UAV, 1024,    0);
-		m_CBVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::CBV, 128,     0);
+		m_UAVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::UAV, 2046,    0);
+		m_CBVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::CBV,  128,    0);
 		m_RTVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV,  128,    0);
 		m_DSVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV,   64,    0);
 
@@ -342,7 +342,7 @@ namespace limbo::RHI
 		});
 
 		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256), "Upload Ring Buffer");
-		m_TempBufferAllocator = new RingBufferAllocator(Utils::ToMB(16), "Temp Buffers Ring Buffer");
+		m_TempBufferAllocator = new RingBufferAllocator(Utils::ToMB(4), "Temp Buffers Ring Buffer");
 	}
 
 	DescriptorHandle Device::AllocatePersistent(DescriptorHeapType heapType)

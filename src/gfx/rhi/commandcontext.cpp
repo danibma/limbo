@@ -275,7 +275,7 @@ namespace limbo::RHI
 	void CommandContext::BindTempConstantBuffer(uint32 rootParameter, const void* data, uint64 dataSize)
 	{
 		RingBufferAllocation allocation;
-		RHI::GetTempBufferAllocator()->Allocate(Math::Align(dataSize, 256ull), allocation);
+		RHI::GetTempBufferAllocator()->AllocateTemp(Math::Align(dataSize, 256ull), allocation);
 		memcpy(allocation.MappedData, data, dataSize);
 		BindRootCBV(rootParameter, allocation.GPUAddress);
 	}

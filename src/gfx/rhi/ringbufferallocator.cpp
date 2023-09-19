@@ -81,6 +81,12 @@ namespace limbo::RHI
 		allocation.GPUAddress	= allocation.Buffer->Resource->GetGPUVirtualAddress() + offset;
 	}
 
+	void RingBufferAllocator::AllocateTemp(uint64 size, RingBufferAllocation& allocation)
+	{
+		Allocate(size, allocation);
+		Free(allocation);
+	}
+
 	void RingBufferAllocator::Free(RingBufferAllocation& allocation)
 	{
 		uint64 fenceValue = allocation.Context->Execute();
