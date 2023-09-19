@@ -22,8 +22,8 @@ namespace limbo::Gfx
 	ShadowMapping::ShadowMapping()
 	{
 		m_CommonRS = new RHI::RootSignature("Shadow Mapping Common RS");
-		m_CommonRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
-		m_CommonRS->AddDescriptorTable(101, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_CommonRS->AddRootCBV(100);
+		m_CommonRS->AddRootCBV(101);
 		m_CommonRS->AddRootConstants(0, 2);
 		m_CommonRS->Create();
 
@@ -44,26 +44,12 @@ namespace limbo::Gfx
 				.Type = RHI::ShaderType::Graphics
 			});
 		}
-
-		for (uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
-		{
-			std::string debugName = std::format("CascadedDataBuffer[{}]", i);
-			m_ShadowDataBuffer[i] = RHI::CreateBuffer({
-				.DebugName = debugName.c_str(),
-				.ByteSize = sizeof(ShadowData),
-				.Flags = RHI::BufferUsage::Upload | RHI::BufferUsage::Constant,
-			});
-			RHI::Map(m_ShadowDataBuffer[i]);
-		}
 	}
 
 	ShadowMapping::~ShadowMapping()
 	{
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 			DestroyShader(m_ShadowMapShaders[cascade]);
-
-		for (uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
-			DestroyBuffer(m_ShadowDataBuffer[i]);
 
 		delete m_CommonRS;
 	}
@@ -79,25 +65,14 @@ namespace limbo::Gfx
 		RHI::BeginProfileEvent("Shadow Maps Pass");
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 		{
-			RHI::Handle<RHI::Buffer> currentBuffer = m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
-
 			std::string profileName = std::format("Shadow Cascade {}", cascade);
 
 			RHI::BeginProfileEvent(profileName.c_str());
 			RHI::BindShader(m_ShadowMapShaders[cascade]);
 			RHI::BindConstants(2, 0, cascade);
 
-			RHI::DescriptorHandle sceneHandle[] =
-			{
-				RHI::GetBuffer(sceneRenderer->GetSceneInfoBuffer())->CBVHandle
-			};
-			RHI::BindTempDescriptorTable(0, sceneHandle, 1);
-
-			RHI::DescriptorHandle shadowDataHandle[] =
-			{
-				RHI::GetBuffer(currentBuffer)->CBVHandle
-			};
-			RHI::BindTempDescriptorTable(1, shadowDataHandle, 1);
+			RHI::BindTempConstantBuffer(0, sceneRenderer->SceneInfo);
+			RHI::BindTempConstantBuffer(1, m_ShadowData);
 
 			for (const Scene* scene : sceneRenderer->GetScenes())
 			{
@@ -123,9 +98,9 @@ namespace limbo::Gfx
 		ImGui::End();
 	}
 
-	RHI::Handle<RHI::Buffer> ShadowMapping::GetShadowDataBuffer() const
+	const ShadowData& ShadowMapping::GetShadowData() const
 	{
-		return m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
+		return m_ShadowData;
 	}
 
 	/*
@@ -218,8 +193,5 @@ namespace limbo::Gfx
 
 			lastSplitDist = cascadeSplits[cascade];
 		}
-
-		RHI::Handle<RHI::Buffer> currentBuffer = m_ShadowDataBuffer[RHI::Device::Ptr->GetCurrentFrameIndex()];
-		memcpy(RHI::GetMappedData(currentBuffer), &m_ShadowData, sizeof(ShadowData));
 	}
 }

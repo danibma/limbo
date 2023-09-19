@@ -100,7 +100,6 @@ namespace limbo::Gfx
 	private:
 		std::vector<Scene*>				m_Scenes;
 		RHI::AccelerationStructure		m_SceneAS;
-		RHI::Handle<RHI::Buffer>		m_SceneInfoBuffers[RHI::NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
 
 		RHI::Handle<RHI::Buffer>		m_ScenesMaterials;
 		RHI::Handle<RHI::Buffer>		m_SceneInstances;
@@ -173,8 +172,6 @@ namespace limbo::Gfx
 		void ClearScenes();
 		bool HasScenes() const;
 		const std::vector<Scene*>& GetScenes() const;
-
-		RHI::Handle<RHI::Buffer> GetSceneInfoBuffer() const;
 
 	private:
 		void LoadEnvironmentMap(const char* path);

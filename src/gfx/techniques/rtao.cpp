@@ -116,11 +116,7 @@ namespace limbo::Gfx
 			};
 			RHI::BindTempDescriptorTable(1, uavHandles, 1);
 
-			RHI::DescriptorHandle cbvHandles[] =
-			{
-				RHI::GetBuffer(sceneRenderer->GetSceneInfoBuffer())->CBVHandle
-			};
-			RHI::BindTempDescriptorTable(2, cbvHandles, 1); // todo: make a BindTempCBV
+			RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 
 			RHI::BindConstants(3, 0, sceneRenderer->Tweaks.SSAORadius);
 			RHI::BindConstants(3, 1, sceneRenderer->Tweaks.SSAOPower);

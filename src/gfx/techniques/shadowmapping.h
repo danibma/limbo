@@ -19,7 +19,6 @@ namespace limbo::Gfx
 	{
 		RHI::RootSignature*			m_CommonRS;
 		RHI::Handle<RHI::Shader>	m_ShadowMapShaders[SHADOWMAP_CASCADES];
-		RHI::Handle<RHI::Buffer>	m_ShadowDataBuffer[RHI::NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
 
 		ShadowData					m_ShadowData;
 
@@ -32,7 +31,7 @@ namespace limbo::Gfx
 		void Render(SceneRenderer* sceneRenderer);
 		void DrawDebugWindow();
 
-		RHI::Handle<RHI::Buffer> GetShadowDataBuffer() const;
+		const ShadowData& GetShadowData() const;
 
 	private:
 		void CreateLightMatrices(const FPSCamera* camera, float3 lightDirection);

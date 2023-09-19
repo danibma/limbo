@@ -21,7 +21,7 @@ namespace limbo::Gfx
 		m_SSAORS = new RHI::RootSignature("SSAO RS");
 		m_SSAORS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
 		m_SSAORS->AddRootConstants(0, 4);
-		m_SSAORS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_SSAORS->AddRootCBV(100);
 		m_SSAORS->Create();
 
 		m_BlurSSAORS = new RHI::RootSignature("Blur SSAO RS");
@@ -79,11 +79,7 @@ namespace limbo::Gfx
 			RHI::BindConstants(1, 2, RHI::GetTexture(positionsMap)->SRV());
 			RHI::BindConstants(1, 3, RHI::GetTexture(sceneDepthMap)->SRV());
 
-			RHI::DescriptorHandle cbvHandles[] =
-			{
-				RHI::GetBuffer(sceneRenderer->GetSceneInfoBuffer())->CBVHandle
-			};
-			RHI::BindTempDescriptorTable(2, cbvHandles, _countof(cbvHandles));
+			RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 
 			RHI::Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
 			RHI::EndProfileEvent("SSAO");

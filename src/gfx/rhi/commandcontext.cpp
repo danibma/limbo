@@ -7,6 +7,7 @@
 #include "rootsignature.h"
 #include "gfx/gfx.h"
 #include "device.h"
+#include "ringbufferallocator.h"
 
 namespace limbo::RHI
 {
@@ -271,6 +272,14 @@ namespace limbo::RHI
 			m_CommandList->SetComputeRoot32BitConstants(rootParameter, num32bitValues, data, offsetIn32bits);
 	}
 
+	void CommandContext::BindTempConstantBuffer(uint32 rootParameter, const void* data, uint64 dataSize)
+	{
+		RingBufferAllocation allocation;
+		RHI::GetTempBufferAllocator()->Allocate(Math::Align(dataSize, 256ull), allocation);
+		memcpy(allocation.MappedData, data, dataSize);
+		BindRootCBV(rootParameter, allocation.GPUAddress);
+	}
+
 	void CommandContext::BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress)
 	{
 		ResourceManager* rm = ResourceManager::Ptr;
@@ -280,6 +289,17 @@ namespace limbo::RHI
 			m_CommandList->SetGraphicsRootShaderResourceView(rootParameter, gpuVirtualAddress);
 		else
 			m_CommandList->SetComputeRootShaderResourceView(rootParameter, gpuVirtualAddress);
+	}
+
+	void CommandContext::BindRootCBV(uint32 rootParameter, uint64 gpuVirtualAddress)
+	{
+		ResourceManager* rm = ResourceManager::Ptr;
+		Shader* shader = rm->GetShader(m_BoundShader);
+
+		if (shader->Type == ShaderType::Graphics)
+			m_CommandList->SetGraphicsRootConstantBufferView(rootParameter, gpuVirtualAddress);
+		else
+			m_CommandList->SetComputeRootConstantBufferView(rootParameter, gpuVirtualAddress);
 	}
 
 	void CommandContext::InstallDrawState()

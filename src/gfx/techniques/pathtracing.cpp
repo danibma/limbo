@@ -85,11 +85,7 @@ namespace limbo::Gfx
 		RHI::BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 		RHI::BindConstants(1, 0, RHI::GetTexture(m_FinalTexture)->SRV());
 
-		RHI::DescriptorHandle cbvHandles[] =
-		{
-			RHI::GetBuffer(sceneRenderer->GetSceneInfoBuffer())->CBVHandle
-		};
-		RHI::BindTempDescriptorTable(2, cbvHandles, _countof(cbvHandles));
+		RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 		RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 		RHI::EndProfileEvent("Path Tracing");
 	}

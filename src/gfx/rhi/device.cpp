@@ -206,6 +206,7 @@ namespace limbo::RHI
 		DestroyShader(m_GenerateMipsShader);
 		delete m_GenerateMipsRS;
 
+		delete m_TempBufferAllocator;
 		delete m_UploadRingBuffer;
 		delete m_Swapchain;
 	}
@@ -340,7 +341,8 @@ namespace limbo::RHI
 			.Type = ShaderType::Compute
 		});
 
-		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256));
+		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256), "Upload Ring Buffer");
+		m_TempBufferAllocator = new RingBufferAllocator(Utils::ToMB(16), "Temp Buffers Ring Buffer");
 	}
 
 	DescriptorHandle Device::AllocatePersistent(DescriptorHeapType heapType)

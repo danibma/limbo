@@ -24,6 +24,7 @@ namespace limbo::RHI
 		uint64				Offset;
 		uint64				Size;
 		void*				MappedData;
+		uint64				GPUAddress;
 	};
 
 	/**
@@ -43,11 +44,13 @@ namespace limbo::RHI
 		uint64			m_CurrentOffset;
 		void*			m_MappedData;
 
+		std::string		m_Name;
+
 		CommandQueue*	m_Queue;
 		PreDeletedQueue	m_PreDeletedList;
 		
 	public:
-		RingBufferAllocator(uint64 size);
+		RingBufferAllocator(uint64 size, const char* name);
 		~RingBufferAllocator();
 
 		void Allocate(uint64 size, RingBufferAllocation& allocation);

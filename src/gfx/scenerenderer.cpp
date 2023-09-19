@@ -28,17 +28,6 @@ namespace limbo::Gfx
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 			EnvironmentMaps.emplace_back(entry.path());
 
-		for(uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
-		{
-			std::string debugName = std::format("SceneInfoBuffer[{}]", i);
-			m_SceneInfoBuffers[i] = RHI::CreateBuffer({
-				.DebugName = debugName.c_str(),
-				.ByteSize = sizeof(SceneInfo),
-				.Flags = RHI::BufferUsage::Upload | RHI::BufferUsage::Constant,
-			});
-			RHI::Map(m_SceneInfoBuffers[i]);
-		}
-
 		Core::JobSystem::Execute([this]()
 		{
 			m_SSAO = std::make_unique<SSAO>();
@@ -54,7 +43,7 @@ namespace limbo::Gfx
 		// Deferred shader
 		m_DeferredShadingRS = new RHI::RootSignature("Deferred Shading RS");
 		m_DeferredShadingRS->AddRootConstants(0, 1);
-		m_DeferredShadingRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_DeferredShadingRS->AddRootCBV(100);
 		m_DeferredShadingRS->Create();
 
 		m_DeferredShadingShader = RHI::CreateShader({
@@ -74,7 +63,7 @@ namespace limbo::Gfx
 
 		// Skybox
 		m_SkyboxRS = new RHI::RootSignature("Skybox RS");
-		m_SkyboxRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_SkyboxRS->AddRootCBV(100);
 		m_SkyboxRS->AddRootConstants(0, 1);
 		m_SkyboxRS->Create(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -95,8 +84,8 @@ namespace limbo::Gfx
 		// PBR
 		m_LightingRS = new RHI::RootSignature("Lighting RS");
 		m_LightingRS->AddRootConstants(0, 7);
-		m_LightingRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
-		m_LightingRS->AddDescriptorTable(101, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_LightingRS->AddRootCBV(100);
+		m_LightingRS->AddRootCBV(101);
 		m_LightingRS->AddRootConstants(1, 10);
 		m_LightingRS->Create();
 
@@ -145,9 +134,6 @@ namespace limbo::Gfx
 		DestroyShader(m_DeferredShadingShader);
 		DestroyShader(m_CompositeShader);
 
-		for (uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
-			DestroyBuffer(m_SceneInfoBuffers[i]);
-
 		DestroyBuffer(m_ScenesMaterials);
 		DestroyBuffer(m_SceneInstances);
 
@@ -166,11 +152,7 @@ namespace limbo::Gfx
 		RHI::BeginProfileEvent("Geometry Pass");
 		RHI::BindShader(m_DeferredShadingShader);
 
-		RHI::DescriptorHandle sceneHandle[] =
-		{
-			RHI::GetBuffer(GetSceneInfoBuffer())->CBVHandle
-		};
-		RHI::BindTempDescriptorTable(1, sceneHandle, 1);
+		RHI::BindTempConstantBuffer(1, SceneInfo);
 		for (Scene* scene : m_Scenes)
 		{
 			scene->IterateMeshes([&](const Mesh& mesh)
@@ -198,11 +180,7 @@ namespace limbo::Gfx
 		RHI::BeginProfileEvent("Render Skybox");
 		RHI::BindShader(m_SkyboxShader);
 
-		RHI::DescriptorHandle sceneHandle[] =
-		{
-			RHI::GetBuffer(GetSceneInfoBuffer())->CBVHandle
-		};
-		RHI::BindTempDescriptorTable(0, sceneHandle, 1);
+		RHI::BindTempConstantBuffer(0, SceneInfo);
 
 		RHI::BindConstants(1, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
 
@@ -220,17 +198,8 @@ namespace limbo::Gfx
 		RHI::BeginProfileEvent("Lighting");
 		RHI::BindShader(m_PBRShader);
 		
-		RHI::DescriptorHandle sceneHandle[] =
-		{
-			RHI::GetBuffer(GetSceneInfoBuffer())->CBVHandle
-		};
-		RHI::BindTempDescriptorTable(1, sceneHandle, 1);
-
-		RHI::DescriptorHandle shadowDataHandle[] =
-		{
-			RHI::GetBuffer(m_ShadowMapping->GetShadowDataBuffer())->CBVHandle
-		};
-		RHI::BindTempDescriptorTable(2, shadowDataHandle, 1);
+		RHI::BindTempConstantBuffer(1, SceneInfo);
+		RHI::BindTempConstantBuffer(2, m_ShadowMapping->GetShadowData());
 
 		RHI::BindConstants(0, 0, Tweaks.CurrentAOTechnique);
 
@@ -391,9 +360,6 @@ namespace limbo::Gfx
 		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRV();
 		SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
 		SceneInfo.FrameIndex++;
-
-		RHI::Handle<RHI::Buffer> currentBuffer = m_SceneInfoBuffers[RHI::Device::Ptr->GetCurrentFrameIndex()];
-		memcpy(RHI::GetMappedData(currentBuffer), &SceneInfo, sizeof(SceneInfo));
 	}
 
 	void SceneRenderer::ClearScenes()
@@ -411,11 +377,6 @@ namespace limbo::Gfx
 	const std::vector<Scene*>& SceneRenderer::GetScenes() const
 	{
 		return m_Scenes;
-	}
-
-	RHI::Handle<RHI::Buffer> SceneRenderer::GetSceneInfoBuffer() const
-	{
-		return m_SceneInfoBuffers[RHI::Device::Ptr->GetCurrentFrameIndex()];
 	}
 
 	void SceneRenderer::LoadEnvironmentMap(const char* path)

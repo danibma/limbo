@@ -43,6 +43,7 @@ namespace limbo::RHI
 	class Device;
 	class CommandQueue;
 	class DescriptorHeap;
+	class RingBufferAllocator;
 	class AccelerationStructure;
 	class CommandContext
 	{
@@ -95,7 +96,9 @@ namespace limbo::RHI
 		void BindShader(Handle<Shader> shader);
 		void BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count);
 		void BindConstants(uint32 rootParameter, uint32 num32bitValues, uint32 offsetIn32bits, const void* data);
+		void BindTempConstantBuffer(uint32 rootParameter, const void* data, uint64 dataSize);
 		void BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress);
+		void BindRootCBV(uint32 rootParameter, uint64 gpuVirtualAddress);
 
 		void Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
 		void DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);

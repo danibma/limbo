@@ -50,6 +50,7 @@ namespace limbo::RHI
 		Fence*								m_PresentFence;
 
 		RingBufferAllocator*				m_UploadRingBuffer;
+		RingBufferAllocator*				m_TempBufferAllocator;
 
 		CD3DX12FeatureSupport				m_FeatureSupport;
 
@@ -114,18 +115,17 @@ namespace limbo::RHI
 			return m_UploadRingBuffer;
 		}
 
+		RingBufferAllocator* GetTempBufferAllocator() const
+		{
+			return m_TempBufferAllocator;
+		}
+
 		Handle<Texture> GetCurrentBackbuffer() const;
 		Handle<Texture> GetCurrentDepthBackbuffer() const;
 		Format GetSwapchainFormat();
 		Format GetSwapchainDepthFormat();
 
 		bool CanTakeGPUCapture();
-
-		// D3D12 specific
-		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
-		CommandContext* GetCommandContext(ContextType type) const { return m_CommandContexts.at((int)type); }
-		CommandQueue* GetCommandQueue(ContextType type) const { return m_CommandQueues.at((int)type); }
-		Fence* GetPresentFence() const { return m_PresentFence; }
 
 		DescriptorHandle AllocatePersistent(DescriptorHeapType heapType);
 		DescriptorHandle AllocateTemp(DescriptorHeapType heapType);
@@ -140,6 +140,12 @@ namespace limbo::RHI
 		void MarkReloadShaders();
 
 		void GenerateMipLevels(Handle<Texture> texture);
+
+		// D3D12 specific
+		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
+		CommandContext* GetCommandContext(ContextType type) const { return m_CommandContexts.at((int)type); }
+		CommandQueue* GetCommandQueue(ContextType type) const { return m_CommandQueues.at((int)type); }
+		Fence* GetPresentFence() const { return m_PresentFence; }
 
 	private:
 		void InitResources();
@@ -164,6 +170,11 @@ namespace limbo::RHI
 	FORCEINLINE RingBufferAllocator* GetRingBufferAllocator()
 	{
 		return Device::Ptr->GetRingBufferAllocator();
+	}
+
+	FORCEINLINE RingBufferAllocator* GetTempBufferAllocator()
+	{
+		return Device::Ptr->GetTempBufferAllocator();
 	}
 
 	FORCEINLINE CommandContext* GetCommandContext(ContextType type = ContextType::Direct)
@@ -296,9 +307,20 @@ namespace limbo::RHI
 		GetCommandContext()->BindDescriptorTable(rootParameter, handles, count);
 	}
 
+	template<typename T>
+	FORCEINLINE void BindTempConstantBuffer(uint32 rootParameter, const T& data)
+	{
+		GetCommandContext()->BindTempConstantBuffer(rootParameter, &data, sizeof(T));
+	}
+
 	FORCEINLINE void BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress)
 	{
 		GetCommandContext()->BindRootSRV(rootParameter, gpuVirtualAddress);
+	}
+
+	FORCEINLINE void BindRootCBV(uint32 rootParameter, uint64 gpuVirtualAddress)
+	{
+		GetCommandContext()->BindRootCBV(rootParameter, gpuVirtualAddress);
 	}
 
 	template<typename T>
