@@ -1,7 +1,7 @@
 ﻿#include "bindings.hlsli"
 
-uint instanceID;
 uint cascadeIndex;
+uint instanceID;
 
 float4 VSMain(uint vertexID : SV_VertexID) : SV_Position
 {

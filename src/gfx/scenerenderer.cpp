@@ -517,6 +517,7 @@ namespace limbo::Gfx
 			m_TempRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
 			m_TempRS->AddRootConstants(0, 2);
 			m_TempRS->AddRootConstants(1, 1);
+			m_TempRS->AddRootConstants(2, 1);
 			m_TempRS->Create();
 
 			RHI::BeginEvent("PreFilterEnvMap");
@@ -553,7 +554,7 @@ namespace limbo::Gfx
 					RHI::GetTexture(m_PrefilterMap)->UAVHandle[level]
 				};
 				RHI::BindTempDescriptorTable(0, uavTexture, 1);
-				RHI::BindConstants(1, 1, level * deltaRoughness);
+				RHI::BindConstants(2, 0, level * deltaRoughness);
 				RHI::Dispatch(numGroups, numGroups, 6);
 			}
 
