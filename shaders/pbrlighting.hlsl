@@ -14,10 +14,9 @@ QuadResult VSMain(uint vertexID : SV_VertexID) { VS_DRAW_QUAD(vertexID); }
 // Light info
 cbuffer Random : register(b0)
 {
+    uint bEnableAO;
     float3 lightPos;
     float3 lightColor;
-
-    uint bEnableAO;
 }
 
 // GBuffer textures

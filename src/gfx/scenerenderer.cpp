@@ -232,11 +232,12 @@ namespace limbo::Gfx
 		};
 		RHI::BindTempDescriptorTable(2, shadowDataHandle, 1);
 
-		// PBR scene info
-		RHI::BindConstants(0, 0, Light.Position);
-		RHI::BindConstants(0, 3, Light.Color);
+		RHI::BindConstants(0, 0, Tweaks.CurrentAOTechnique);
 
-		RHI::BindConstants(0, 6, Tweaks.CurrentAOTechnique);
+		// PBR scene info
+		RHI::BindConstants(0, 1, Light.Position);
+		RHI::BindConstants(0, 4, Light.Color);
+
 
 		// Bind deferred shading render targets
 		RHI::BindConstants(3, 0, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 0))->SRV());
