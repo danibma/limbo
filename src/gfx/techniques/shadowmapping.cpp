@@ -17,6 +17,7 @@ namespace limbo::Gfx
 		8196,
 		4096,
 		2048,
+		1024,
 	};
 
 	ShadowMapping::ShadowMapping()

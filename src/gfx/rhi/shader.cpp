@@ -424,7 +424,6 @@ namespace limbo::RHI
 	void Shader::ReloadShader()
 	{
 		PipelineState.Reset();
-		RootSignature->Reset();
 
 		if (Type == ShaderType::Compute)
 			CreateComputePipeline(Device::Ptr->GetDevice(), m_Spec);
