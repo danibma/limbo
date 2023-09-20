@@ -80,6 +80,8 @@ namespace limbo::RHI
 			}
 		}
 
+		check(!m_FreeTemporary.empty());
+
 		uint32 descriptor = m_FreeTemporary.front();
 		m_FreeTemporary.pop_front();
 		return descriptor;
