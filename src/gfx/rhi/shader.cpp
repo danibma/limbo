@@ -14,6 +14,7 @@
 #include <array>
 
 #include <d3d12/d3dx12/d3dx12.h>
+#include <glm/gtc/type_ptr.inl>
 
 namespace limbo::RHI
 {
@@ -46,10 +47,11 @@ namespace limbo::RHI
 	Shader::Shader(const ShaderSpec& spec)
 		: m_Name(spec.ProgramName), m_Spec(spec), RTSize(spec.RTSize)
 	{
+		RootSignature = spec.RootSignature;
+		check(RootSignature);
+
 		Device* device = Device::Ptr;
 		ID3D12Device5* d3ddevice = device->GetDevice();
-
-		m_RootSignature = new RootSignature(m_Name + " RS");
 
 		Type = spec.Type;
 
@@ -75,98 +77,14 @@ namespace limbo::RHI
 			DestroyTexture(DepthTarget.Texture);
 
 		Device::Ptr->ReloadShaders.Remove(m_ReloadShaderDelHandle);
-
-		delete m_RootSignature;
 	}
 
-	void Shader::SetRootParameters(ID3D12GraphicsCommandList* cmd)
+	void Shader::Bind(ID3D12GraphicsCommandList* cmd)
 	{
 		if (Type == ShaderType::Graphics)
-			cmd->SetGraphicsRootSignature(m_RootSignature->Get());
+			cmd->SetGraphicsRootSignature(RootSignature->Get());
 		else // Compute and Ray Tracing
-			cmd->SetComputeRootSignature(m_RootSignature->Get());
-
-		m_RootSignature->SetRootParameters(Type, cmd);
-	}
-
-	void Shader::SetConstant(const char* parameterName, const void* data)
-	{
-		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
-		if (!parameter.IsValid()) return;
-		parameter.Data = data;
-	}
-
-	void Shader::SetTexture(const char* parameterName, Handle<Texture> texture, uint32 mipLevel)
-	{
-		uint32 level = mipLevel == ~0 ? 0 : mipLevel;
-		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
-		if (!parameter.IsValid()) return;
-
-		Texture* t = ResourceManager::Ptr->GetTexture(texture);
-		FAILIF(!t);
-
-		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-		if (parameter.Type == ShaderParameterType::UAV)
-		{
-			FAILIF(t->BasicHandle[level].GPUHandle.ptr == 0); // handle was not created in a shader visible heap
-			parameter.Descriptor = t->BasicHandle[level].GPUHandle;
-		}
-		else if (parameter.Type == ShaderParameterType::SRV)
-		{
-			if (mipLevel != ~0 && mipLevel > 0)
-			{
-				DescriptorHandle srvHandle = Device::Ptr->AllocateTempHandle(DescriptorHeapType::SRV);
-				Device::Ptr->CreateSRV(t, srvHandle, level);
-				parameter.Descriptor = srvHandle.GPUHandle;
-			}
-			else
-			{
-				FAILIF(t->SRVHandle.GPUHandle.ptr == 0); // handle was not created in a shader visible heap
-				parameter.Descriptor = t->SRVHandle.GPUHandle;
-			}
-			newState |= D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-		}
-		else if (parameter.Type == ShaderParameterType::Constants) // bindless
-		{
-			parameter.Data = &t->SRVHandle.Index;
-		}
-		else
-		{
-			ensure(false);
-		}
-
-		GetCommandContext()->InsertResourceBarrier(t, newState, mipLevel);
-	}
-
-	void Shader::SetBuffer(const char* parameterName, Handle<Buffer> buffer)
-	{
-		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
-		if (!parameter.IsValid()) return;
-
-		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
-		FAILIF(!b);
-
-		D3D12_RESOURCE_STATES newState = D3D12_RESOURCE_STATE_COMMON;
-		if (parameter.Type == ShaderParameterType::UAV)
-			newState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-		else if (parameter.Type == ShaderParameterType::SRV)
-			newState = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
-		else if (parameter.Type == ShaderParameterType::CBV)
-			newState = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-
-		GetCommandContext()->InsertResourceBarrier(b, newState);
-
-		if (parameter.Type == ShaderParameterType::Constants) // bindless
-			parameter.Data = &b->BasicHandle.Index;
-		else
-			parameter.Descriptor = b->BasicHandle.GPUHandle;
-	}
-
-	void Shader::SetAccelerationStructure(const char* parameterName, AccelerationStructure* accelerationStructure)
-	{
-		ShaderParameterInfo& parameter = m_RootSignature->GetParameter(parameterName);
-		if (!parameter.IsValid()) return;
-		parameter.Descriptor = accelerationStructure->GetDescriptor();
+			cmd->SetComputeRootSignature(RootSignature->Get());
 	}
 
 	void Shader::CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec)
@@ -178,15 +96,13 @@ namespace limbo::RHI
 
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
 
-		m_RootSignature->CreateRootSignature(device, rootSignatureFlags, &cs, 1);
-
 		D3D12_SHADER_BYTECODE shaderByteCode = {
 			.pShaderBytecode = cs.Bytecode->GetBufferPointer(),
 			.BytecodeLength = cs.Bytecode->GetBufferSize()
 		};
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = m_RootSignature->Get(),
+			.pRootSignature = RootSignature->Get(),
 			.CS = shaderByteCode,
 			.NodeMask = 0,
 			.CachedPSO = nullptr,
@@ -215,10 +131,6 @@ namespace limbo::RHI
 		SC::Kernel* libsKernels = stream.ContentData.Allocate<SC::Kernel>(numLibs);
 		for (uint32 i = 0; i < numLibs; ++i)
 			FAILIF(!SC::Compile(libsKernels[i], spec.Libs[i].LibName, "", SC::KernelType::Lib));
-
-		// Create the global root signature
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
-		m_RootSignature->CreateRootSignature(device, rootSignatureFlags, libsKernels, numLibs);
 
 		for (uint32 i = 0; i < numLibs; ++i)
 		{
@@ -254,7 +166,7 @@ namespace limbo::RHI
 		};
 		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &pipelineConfig);
 
-		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = m_RootSignature->Get() };
+		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RootSignature->Get() };
 		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
 
 		D3D12_STATE_OBJECT_DESC desc = {
@@ -282,7 +194,7 @@ namespace limbo::RHI
 				.Flags = TextureUsage::RenderTarget | TextureUsage::ShaderResource,
 				.ClearValue = {
 					.Format = D3DFormat(spec.RTFormats[index].RTFormat),
-					.Color = { 0.0f, 0.0f, 0.0f, 0.0f }
+					.Color = *glm::value_ptr(spec.ClearColor.RTClearColor)
 				},
 				.Format = spec.RTFormats[index].RTFormat,
 				.Type = TextureType::Texture2D,
@@ -361,7 +273,7 @@ namespace limbo::RHI
 							.ClearValue = {
 								.Format = D3DFormat(spec.DepthFormat.RTFormat),
 								.DepthStencil = {
-									.Depth = 1.0f,
+									.Depth = spec.ClearColor.DepthClearValue,
 									.Stencil = 0
 								}
 							},
@@ -385,14 +297,6 @@ namespace limbo::RHI
 		SC::Kernel ps;
 		FAILIF(!SC::Compile(ps, spec.ProgramName, spec.PSEntryPoint, SC::KernelType::Pixel));
 
-		InputLayout inputLayout;
-		CreateInputLayout(vs, inputLayout);
-
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
-
-		SC::Kernel kernels[2] = { vs, ps };
-		m_RootSignature->CreateRootSignature(device, rootSignatureFlags, kernels, 2);
-
 		D3D12_SHADER_BYTECODE vsBytecode = {
 			.pShaderBytecode = vs.Bytecode->GetBufferPointer(),
 			.BytecodeLength = vs.Bytecode->GetBufferSize()
@@ -412,17 +316,17 @@ namespace limbo::RHI
 		blendState.RenderTarget[0] = GetDefaultEnabledBlendDesc();
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = m_RootSignature->Get(),
+			.pRootSignature = RootSignature->Get(),
 			.VS = vsBytecode,
 			.PS = psBytecode,
 			.StreamOutput = nullptr,
 			.BlendState = blendState,
 			.SampleMask = 0xFFFFFFFF,
 			.RasterizerState = rasterizerDesc,
-			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
+			.DepthStencilState = GetDefaultDepthStencilDesc(),
 			.InputLayout = {
-				inputLayout.data(),
-				(uint32)inputLayout.size(),
+				spec.InputLayout.data(),
+				(uint32)spec.InputLayout.size(),
 			},
 			.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
 			.PrimitiveTopologyType = spec.Topology,
@@ -498,62 +402,20 @@ namespace limbo::RHI
 		};
 	}
 
-	void Shader::CreateInputLayout(const SC::Kernel& vs, InputLayout& outInputLayout)
+	D3D12_DEPTH_STENCIL_DESC Shader::GetDefaultDepthStencilDesc()
 	{
-		ID3D12ShaderReflection* reflection = vs.Reflection.Get();
+		constexpr D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
 
-		D3D12_SHADER_DESC shaderDesc;
-		reflection->GetDesc(&shaderDesc);
-
-		// Input layout
-		outInputLayout.resize(shaderDesc.InputParameters);
-		for (uint32 i = 0; i < shaderDesc.InputParameters; ++i)
-		{
-			D3D12_SIGNATURE_PARAMETER_DESC desc;
-			reflection->GetInputParameterDesc(i, &desc);
-
-			uint32 componentCount = 0;
-			while (desc.Mask)
-			{
-				++componentCount;
-				desc.Mask >>= 1;
-			}
-
-			DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
-			switch (desc.ComponentType)
-			{
-			case D3D_REGISTER_COMPONENT_UINT32:
-				format = (componentCount == 1 ? DXGI_FORMAT_R32_UINT :
-					componentCount == 2 ? DXGI_FORMAT_R32G32_UINT :
-					componentCount == 3 ? DXGI_FORMAT_R32G32B32_UINT :
-					DXGI_FORMAT_R32G32B32A32_UINT);
-				break;
-			case D3D_REGISTER_COMPONENT_SINT32:
-				format = (componentCount == 1 ? DXGI_FORMAT_R32_SINT :
-					componentCount == 2 ? DXGI_FORMAT_R32G32_SINT :
-					componentCount == 3 ? DXGI_FORMAT_R32G32B32_SINT :
-					DXGI_FORMAT_R32G32B32A32_SINT);
-				break;
-			case D3D_REGISTER_COMPONENT_FLOAT32:
-				format = (componentCount == 1 ? DXGI_FORMAT_R32_FLOAT :
-					componentCount == 2 ? DXGI_FORMAT_R32G32_FLOAT :
-					componentCount == 3 ? DXGI_FORMAT_R32G32B32_FLOAT :
-					DXGI_FORMAT_R32G32B32A32_FLOAT);
-				break;
-			default:
-				break;  // D3D_REGISTER_COMPONENT_UNKNOWN
-			}
-
-			outInputLayout[i] = {
-				.SemanticName = desc.SemanticName,
-				.SemanticIndex = desc.SemanticIndex,
-				.Format = format,
-				.InputSlot = 0,
-				.AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT,
-				.InputSlotClass = D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA,
-				.InstanceDataStepRate = 0
-			};
-		}
+		return {
+			.DepthEnable = TRUE,
+			.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+			.DepthFunc = m_Spec.DepthFunc,
+			.StencilEnable = FALSE,
+			.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+			.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+			.FrontFace = defaultStencilOp,
+			.BackFace = defaultStencilOp,
+		};
 	}
 
 	void Shader::ResizeRenderTargets(uint32 width, uint32 height)
@@ -579,7 +441,6 @@ namespace limbo::RHI
 	void Shader::ReloadShader()
 	{
 		PipelineState.Reset();
-		m_RootSignature->Reset();
 
 		if (Type == ShaderType::Compute)
 			CreateComputePipeline(Device::Ptr->GetDevice(), m_Spec);

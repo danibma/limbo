@@ -4,12 +4,20 @@
 // Epic's Real Shading in Unreal Engine 4 - https://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_notes_v2.pdf
 // PBR by Michal Siejak - https://github.com/Nadrin/PBR
 
-TextureCube g_EnvironmentCubemap;
+cbuffer EnvironmentCubemap : register(b0)
+{
+	uint EnvironmentCubemap;
+};
+
 
 //
 // Equirectangular to cubemap
 //
-Texture2D g_EnvironmentEquirectangular : register(t0);
+cbuffer EnvironmentEquirectangular : register(b1)
+{
+    uint EnvironmentEquirectangular;
+};
+
 RWTexture2DArray<float4> g_OutEnvironmentCubemap : register(u0);
 
 [numthreads(8, 8, 1)]
@@ -28,7 +36,7 @@ void EquirectToCubemap(uint3 ThreadID : SV_DispatchThreadID)
     theta /= PI;
 
 	// Sample equirectangular texture.
-    float4 color = g_EnvironmentEquirectangular.SampleLevel(SLinearWrap, float2(phi, theta), 0);
+    float4 color = SampleLevel2D(EnvironmentEquirectangular, SLinearWrap, float2(phi, theta), 0);
 
 	// Write out color to output cubemap.
     g_OutEnvironmentCubemap[ThreadID] = color;
@@ -58,7 +66,7 @@ void DrawIrradianceMap(uint3 threadID : SV_DispatchThreadID)
         float cosTheta = saturate(dot(Li, N));
 
 		// PIs here cancel out because of division by pdf.
-        irradiance += 2.0 * g_EnvironmentCubemap.SampleLevel(SLinearClamp, Li, 0).rgb * cosTheta;
+        irradiance += 2.0 * SampleLevelCube(EnvironmentCubemap, SLinearClamp, Li, 0).rgb * cosTheta;
     }
     irradiance /= float(NumSamples);
 
@@ -100,7 +108,7 @@ void PreFilterEnvMap(uint3 ThreadID : SV_DispatchThreadID)
         float NdotL = saturate(dot(N, L));
         if (NdotL > 0.0)
         {
-            color  += g_EnvironmentCubemap.SampleLevel(SLinearClamp, L, 0).rgb * NdotL;
+            color += SampleLevelCube(EnvironmentCubemap, SLinearClamp, L, 0).rgb * NdotL;
             weight += NdotL;
         }
     }

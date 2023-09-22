@@ -108,7 +108,7 @@ namespace limbo::RHI
 	uint64 ResourceManager::GetTextureID(Handle<Texture> texture)
 	{
 		Texture* t = GetTexture(texture);
-		return t->SRVHandle.GPUHandle.ptr;
+		return t->m_SRVHandle.GPUHandle.ptr;
 	}
 
 	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer, bool bImmediate)

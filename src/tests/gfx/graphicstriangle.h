@@ -63,7 +63,7 @@ namespace limbo::Tests::Gfx
 			float color[] = { 0.5f * cosf(time) + 0.5f,
 							  0.5f * sinf(time) + 0.5f,
 							  1.0f };
-			limbo::RHI::SetParameter(triangleShader, "viewProj", camera.ViewProj);
+			limbo::RHI::BindAccelerationStructure(triangleShader, "viewProj", camera.ViewProj);
 			limbo::RHI::SetParameter(triangleShader, "model", float4x4(1.0f));
 			limbo::RHI::SetParameter(triangleShader, "color", color);
 			limbo::RHI::BindShader(triangleShader);

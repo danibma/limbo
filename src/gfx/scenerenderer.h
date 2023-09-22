@@ -10,6 +10,7 @@
 
 namespace limbo::RHI
 {
+	class RootSignature;
 	class Texture;
 	class Buffer;
 	class Shader;
@@ -99,7 +100,6 @@ namespace limbo::Gfx
 	private:
 		std::vector<Scene*>				m_Scenes;
 		RHI::AccelerationStructure		m_SceneAS;
-		RHI::Handle<RHI::Buffer>		m_SceneInfoBuffers[RHI::NUM_BACK_BUFFERS]; // todo: this, along with the SceneInfo buffer should be temp allocated
 
 		RHI::Handle<RHI::Buffer>		m_ScenesMaterials;
 		RHI::Handle<RHI::Buffer>		m_SceneInstances;
@@ -107,10 +107,12 @@ namespace limbo::Gfx
 		RHI::Handle<RHI::Texture>		m_SceneTexture;
 
 		// Skybox
+		RHI::RootSignature*				m_SkyboxRS;
 		RHI::Handle<RHI::Shader>		m_SkyboxShader;
 		Scene*							m_SkyboxCube;
 
 		// Deferred shading
+		RHI::RootSignature*				m_DeferredShadingRS;
 		RHI::Handle<RHI::Shader>		m_DeferredShadingShader;
 
 		// IBL stuff
@@ -120,9 +122,11 @@ namespace limbo::Gfx
 		RHI::Handle<RHI::Texture>		m_BRDFLUTMap;
 
 		// PBR
+		RHI::RootSignature*				m_LightingRS;
 		RHI::Handle<RHI::Shader>		m_PBRShader;
 
 		// Scene Composite
+		RHI::RootSignature*				m_CompositeRS;
 		RHI::Handle<RHI::Shader>		m_CompositeShader;
 
 		// Techniques
@@ -168,8 +172,6 @@ namespace limbo::Gfx
 		void ClearScenes();
 		bool HasScenes() const;
 		const std::vector<Scene*>& GetScenes() const;
-
-		void BindSceneInfo(RHI::Handle<RHI::Shader> shaderToBind);
 
 	private:
 		void LoadEnvironmentMap(const char* path);

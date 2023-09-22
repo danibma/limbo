@@ -4,6 +4,7 @@
 
 namespace limbo::RHI
 {
+	class RootSignature;
 	class Texture;
 	class Shader;
 }
@@ -13,7 +14,9 @@ namespace limbo::Gfx
 	class SceneRenderer;
 	class SSAO
 	{
-		// SSAO
+		RHI::RootSignature*					m_SSAORS;
+		RHI::RootSignature*					m_BlurSSAORS;
+
 		RHI::Handle<RHI::Shader>			m_SSAOShader;
 		RHI::Handle<RHI::Texture>			m_UnblurredSSAOTexture;
 		RHI::Handle<RHI::Shader>			m_BlurSSAOShader;

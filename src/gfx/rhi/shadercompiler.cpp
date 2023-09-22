@@ -96,25 +96,6 @@ namespace limbo::RHI::SC
             return false;
         }
 
-        // Get shader reflection data.
-        ComPtr<IDxcBlob> reflectionBlob;
-        DX_CHECK(compileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&reflectionBlob), nullptr));
-
-        const DxcBuffer reflectionBuffer = {
-            .Ptr = reflectionBlob->GetBufferPointer(),
-            .Size = reflectionBlob->GetBufferSize(),
-            .Encoding = 0,
-        };
-
-        if (kernel == KernelType::Lib)
-        {
-            DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.LibReflection)));
-        }
-        else
-        {
-            DX_CHECK(dxcUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&result.Reflection)));
-        }
-
         // Get shader blob
         DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&result.Bytecode), nullptr));
 

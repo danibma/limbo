@@ -12,30 +12,35 @@
 QuadResult VSMain(uint vertexID : SV_VertexID) { VS_DRAW_QUAD(vertexID); }
 
 // Light info
-float3 lightPos;
-float3 lightColor;
+cbuffer Random : register(b0)
+{
+    uint bEnableAO;
+    float3 lightPos;
+    float3 lightColor;
+}
 
 // GBuffer textures
-Texture2D g_PixelPosition;
-Texture2D g_WorldPosition;
-Texture2D g_Albedo;
-Texture2D g_Normal;
-Texture2D g_RoughnessMetallicAO;
-Texture2D g_Emissive;
-Texture2D g_AmbientOcclusion;
+cbuffer Textures : register(b1)
+{
+    uint PixelPosition;
+    uint WorldPosition;
+    uint Albedo;
+    uint Normal;
+    uint RoughnessMetallicAO;
+    uint Emissive;
+    uint AmbientOcclusion;
 
-// IBL Textures
-TextureCube g_IrradianceMap;
-TextureCube g_PrefilterMap;
-Texture2D   g_LUT;
-
-uint bEnableAO;
+	// IBL Textures
+    uint IrradianceMap;
+    uint PrefilterMap;
+    uint LUT;
+}
 
 #define SHADOW_AMBIENT 0.1f
 
 float CalculateShadow(float4 shadowCoord, float2 off, uint cascadeIndex)
 {
-    float shadowBias = 0.001f;
+    float shadowBias = 0.005f;
     shadowCoord.y = -shadowCoord.y;
 
     float shadow = 1.0;
@@ -75,18 +80,18 @@ float ShadowPCF(float4 sc, uint cascadeIndex)
 float4 PSMain(QuadResult quad) : SV_Target
 {
 	// gbuffer values
-    float3 pixelPos              = g_PixelPosition.Sample(SLinearClamp, quad.UV).rgb;
-    float3 worldPos             = g_WorldPosition.Sample(SLinearClamp, quad.UV).rgb;
-    float3 albedo               = g_Albedo.Sample(SLinearClamp, quad.UV).rgb;
-    float3 normal               = g_Normal.Sample(SLinearClamp, quad.UV).rgb;
-    float3 emissive             = g_Emissive.Sample(SLinearClamp, quad.UV).rgb;
-    float alpha                 = g_Albedo.Sample(SLinearClamp, quad.UV).a;
-    float3 roughnessMetallicAO  = g_RoughnessMetallicAO.Sample(SLinearClamp, quad.UV).rgb;
+    float3 pixelPos             = Sample2D(PixelPosition, SLinearClamp, quad.UV).rgb;
+    float3 worldPos             = Sample2D(WorldPosition, SLinearClamp, quad.UV).rgb;
+    float3 albedo               = Sample2D(Albedo, SLinearClamp, quad.UV).rgb;
+    float3 normal               = Sample2D(Normal, SLinearClamp, quad.UV).rgb;
+    float3 emissive             = Sample2D(Emissive, SLinearClamp, quad.UV).rgb;
+    float alpha                 = Sample2D(Albedo, SLinearClamp, quad.UV).a;
+    float3 roughnessMetallicAO  = Sample2D(RoughnessMetallicAO, SLinearClamp, quad.UV).rgb;
     float roughness             = roughnessMetallicAO.x;
     float metallic              = roughnessMetallicAO.y;
     float ao                    = roughnessMetallicAO.z;
     if (bEnableAO > 0)
-        ao *= g_AmbientOcclusion.Sample(SLinearClamp, quad.UV).r;
+        ao *= Sample2D(AmbientOcclusion, SLinearClamp, quad.UV).r;
 
     if (alpha == 0.0f)
         discard;
@@ -129,7 +134,7 @@ float4 PSMain(QuadResult quad) : SV_Target
         directLighting += DefaultBRDF(V, N, L, material) * radiance;
     }
 
-    float3 indirectLighting = CalculateIBL(N, V, material, g_IrradianceMap, g_PrefilterMap, g_LUT);
+    float3 indirectLighting = CalculateIBL(N, V, material, IrradianceMap, PrefilterMap, LUT);
 
     float shadow = 1.0f;
 

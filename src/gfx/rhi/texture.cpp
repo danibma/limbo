@@ -109,7 +109,7 @@ namespace limbo::RHI
 			.Width = (uint32)width,
 			.Height = (uint32)height,
 			.DebugName = debugName,
-			.Flags = TextureUsage::ShaderResource,
+			.Flags = TextureUsage::ShaderResource | TextureUsage::UnorderedAccess,
 			.Format = format,
 			.Type = TextureType::Texture2D,
 			.InitialData = data,
@@ -128,12 +128,12 @@ namespace limbo::RHI
 
 	void Texture::CreateUAV(uint8 mipLevel)
 	{
-		Device::Ptr->CreateUAV(this, BasicHandle[mipLevel], mipLevel);
+		Device::Ptr->CreateUAV(this, UAVHandle[mipLevel], mipLevel);
 	}
 
 	void Texture::CreateSRV()
 	{
-		Device::Ptr->CreateSRV(this, SRVHandle);
+		Device::Ptr->CreateSRV(this, m_SRVHandle);
 	}
 
 	void Texture::CreateRTV()
@@ -165,7 +165,7 @@ namespace limbo::RHI
 			desc.Texture3D.WSize = -1;
 		}
 
-		Device::Ptr->GetDevice()->CreateRenderTargetView(Resource.Get(), &desc, BasicHandle[0].CpuHandle);
+		Device::Ptr->GetDevice()->CreateRenderTargetView(Resource.Get(), &desc, UAVHandle[0].CpuHandle);
 	}
 
 	void Texture::CreateDSV()
@@ -191,7 +191,7 @@ namespace limbo::RHI
 			};
 		}
 
-		Device::Ptr->GetDevice()->CreateDepthStencilView(Resource.Get(), &desc, BasicHandle[0].CpuHandle);
+		Device::Ptr->GetDevice()->CreateDepthStencilView(Resource.Get(), &desc, UAVHandle[0].CpuHandle);
 	}
 
 	void Texture::InitResource(const TextureSpec& spec)
@@ -201,33 +201,32 @@ namespace limbo::RHI
 
 		Device* device = Device::Ptr;
 
-		DXGI_FORMAT srvformat = D3DFormat(spec.Format);
 		if (EnumHasAllFlags(spec.Flags, TextureUsage::RenderTarget))
 		{
-			if (BasicHandle[0].CpuHandle.ptr == 0)
-				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::RTV);
+			if (UAVHandle[0].CpuHandle.ptr == 0)
+				UAVHandle[0] = device->AllocatePersistent(DescriptorHeapType::RTV);
 			CreateRTV();
 		}
 		else if (EnumHasAllFlags(spec.Flags, TextureUsage::DepthStencil))
 		{
-			if (BasicHandle[0].CpuHandle.ptr == 0)
-				BasicHandle[0] = device->AllocateHandle(DescriptorHeapType::DSV);
+			if (UAVHandle[0].CpuHandle.ptr == 0)
+				UAVHandle[0] = device->AllocatePersistent(DescriptorHeapType::DSV);
 			CreateDSV();
 		}
 		else if (EnumHasAllFlags(spec.Flags, TextureUsage::UnorderedAccess))
 		{
 			for (uint8 i = 0; i < spec.MipLevels; ++i)
 			{
-				if (BasicHandle[i].CpuHandle.ptr == 0)
-					BasicHandle[i] = device->AllocateHandle(DescriptorHeapType::SRV);
+				if (UAVHandle[i].CpuHandle.ptr == 0)
+					UAVHandle[i] = device->AllocatePersistent(DescriptorHeapType::UAV);
 				CreateUAV(i);
 			}
 		}
 
 		if (EnumHasAllFlags(spec.Flags, TextureUsage::ShaderResource))
 		{
-			if (SRVHandle.CpuHandle.ptr == 0)
-				SRVHandle = device->AllocateHandle(DescriptorHeapType::SRV);
+			if (m_SRVHandle.CpuHandle.ptr == 0)
+				m_SRVHandle = device->AllocatePersistent(DescriptorHeapType::SRV);
 			CreateSRV();
 		}
 
@@ -260,9 +259,9 @@ namespace limbo::RHI
 
 	Texture::~Texture()
 	{
-		Device::Ptr->FreeHandle(SRVHandle);
+		Device::Ptr->FreeHandle(m_SRVHandle);
 		for (uint8 i = 0; i < Spec.MipLevels; ++i)
-			Device::Ptr->FreeHandle(BasicHandle[i]);
+			Device::Ptr->FreeHandle(UAVHandle[i]);
 	}
 
 	void Texture::ReloadSize(uint32 width, uint32 height)

@@ -6,10 +6,10 @@
 
 namespace limbo::RHI
 {
-	RingBufferAllocator::RingBufferAllocator(uint64 size)
-		: m_TotalSize(size), m_CurrentOffset(0)
+	RingBufferAllocator::RingBufferAllocator(uint64 size, const char* name)
+		: m_TotalSize(size), m_CurrentOffset(0), m_Name(name)
 	{
-		m_Buffer		= CreateBuffer({ .DebugName = "Ring Buffer Allocator", .ByteSize = size, .Flags = BufferUsage::Upload });
+		m_Buffer		= CreateBuffer({ .DebugName = m_Name.c_str(), .ByteSize = size, .Flags = BufferUsage::Upload });
 		Map(m_Buffer);
 		m_MappedData	= GetMappedData(m_Buffer);
 
@@ -61,7 +61,7 @@ namespace limbo::RHI
 				PreDeletedAllocation& deleted = m_PreDeletedList.front();
 				if (!m_Queue->GetFence()->IsComplete(deleted.FenceValue))
 				{
-					LB_WARN("Upload ring buffer allocation requested but allocator is full. Waiting for an allocation to be freed.");
+					LB_WARN("'%s' allocation requested but allocator is full. Waiting for an allocation to be freed.", m_Name.c_str());
 					m_Queue->GetFence()->CpuWait(deleted.FenceValue);
 					Allocate(size, allocation);
 					return;
@@ -78,6 +78,13 @@ namespace limbo::RHI
 		allocation.Offset		= offset;
 		allocation.Size			= size;
 		allocation.MappedData	= (uint8*)m_MappedData + offset;
+		allocation.GPUAddress	= allocation.Buffer->Resource->GetGPUVirtualAddress() + offset;
+	}
+
+	void RingBufferAllocator::AllocateTemp(uint64 size, RingBufferAllocation& allocation)
+	{
+		Allocate(size, allocation);
+		Free(allocation);
 	}
 
 	void RingBufferAllocator::Free(RingBufferAllocation& allocation)

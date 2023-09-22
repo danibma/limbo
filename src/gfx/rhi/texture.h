@@ -17,7 +17,6 @@ namespace limbo::RHI
 
 	struct TextureSpec
 	{
-	public:
 		uint32					Width;
 		uint32					Height;
 		uint16					MipLevels = 1;
@@ -31,11 +30,14 @@ namespace limbo::RHI
 
 	class Texture
 	{
+		friend class ResourceManager;
+
+		DescriptorHandle			m_SRVHandle;
+
 	public:
 		ComPtr<ID3D12Resource>		Resource;
 		D3D12_RESOURCE_STATES		InitialState;
-		DescriptorHandle			BasicHandle[D3D12_REQ_MIP_LEVELS];
-		DescriptorHandle			SRVHandle;
+		DescriptorHandle			UAVHandle[D3D12_REQ_MIP_LEVELS];
 		TextureSpec					Spec;
 		bool						bResetState;
 
@@ -54,6 +56,8 @@ namespace limbo::RHI
 		void CreateSRV();
 		void CreateRTV();
 		void CreateDSV();
+
+		uint32 SRV() { return m_SRVHandle.Index; }
 
 		void CreateResource(const TextureSpec& spec);
 		void InitResource(const TextureSpec& spec);

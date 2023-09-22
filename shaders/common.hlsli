@@ -55,10 +55,12 @@ float3 ReconstructPosition(in float2 uv, in float z, in float4x4 inverseProjecti
     return position_v.xyz / position_v.w;
 }
 
-float3 NormalFromDepth(in uint2 threadID, in Texture2D<float> depthTexture, in float4x4 inverseProjection)
+float3 NormalFromDepth(in uint2 threadID, in uint depthTextureIndex, in float4x4 inverseProjection)
 {
     // Improved normal reconstruction from depth by János Turánszki - https://wickedengine.net/2019/09/22/improved-normal-reconstruction-from-depth/
     // This is the basic version, which means it can contain flat normals, it's most noticeable in edges
+
+    Texture2D<float> depthTexture = GetTexture<float>(depthTextureIndex);
 
     float width, height, depth;
     depthTexture.GetDimensions(0, width, height, depth);

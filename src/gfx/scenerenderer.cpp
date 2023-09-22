@@ -8,6 +8,7 @@
 #include "uirenderer.h"
 #include "core/jobsystem.h"
 #include "rhi/device.h"
+#include "rhi/rootsignature.h"
 #include "techniques/pathtracing.h"
 #include "techniques/rtao.h"
 #include "techniques/shadowmapping.h"
@@ -27,17 +28,6 @@ namespace limbo::Gfx
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 			EnvironmentMaps.emplace_back(entry.path());
 
-		for(uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
-		{
-			std::string debugName = std::format("SceneInfoBuffer[{}]", i);
-			m_SceneInfoBuffers[i] = RHI::CreateBuffer({
-				.DebugName = debugName.c_str(),
-				.ByteSize = sizeof(SceneInfo),
-				.Flags = RHI::BufferUsage::Upload | RHI::BufferUsage::Constant,
-			});
-			RHI::Map(m_SceneInfoBuffers[i]);
-		}
-
 		Core::JobSystem::Execute([this]()
 		{
 			m_SSAO = std::make_unique<SSAO>();
@@ -51,8 +41,14 @@ namespace limbo::Gfx
 		LoadNewScene("assets/models/Sponza/Sponza.gltf");
 
 		// Deferred shader
+		m_DeferredShadingRS = new RHI::RootSignature("Deferred Shading RS");
+		m_DeferredShadingRS->AddRootConstants(0, 1);
+		m_DeferredShadingRS->AddRootCBV(100);
+		m_DeferredShadingRS->Create();
+
 		m_DeferredShadingShader = RHI::CreateShader({
 			.ProgramName = "deferredshading",
+			.RootSignature = m_DeferredShadingRS,
 			.RTFormats = {
 				{ RHI::Format::RGBA16_SFLOAT, "PixelPosition"},
 				{ RHI::Format::RGBA16_SFLOAT, "WorldPosition"},
@@ -62,13 +58,26 @@ namespace limbo::Gfx
 				{ RHI::Format::RGBA16_SFLOAT, "Emissive" },
 			},
 			.DepthFormat = { RHI::Format::D32_SFLOAT },
+			.ClearColor = {
+				.DepthClearValue = 0.0f
+			},
+			.DepthFunc = D3D12_COMPARISON_FUNC_GREATER,
 			.Type = RHI::ShaderType::Graphics
 		});
 
 		// Skybox
+		m_SkyboxRS = new RHI::RootSignature("Skybox RS");
+		m_SkyboxRS->AddRootCBV(100);
+		m_SkyboxRS->AddRootConstants(0, 1);
+		m_SkyboxRS->Create(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+
 		m_SkyboxCube = Scene::Load("assets/models/skybox.glb");
 		m_SkyboxShader = RHI::CreateShader({
 			.ProgramName = "sky",
+			.InputLayout = {
+				{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT }
+			},
+			.RootSignature = m_SkyboxRS,
 			.RTFormats = {
 				{ RHI::Format::RGBA16_SFLOAT, "PBR RT" }
 			},
@@ -77,8 +86,16 @@ namespace limbo::Gfx
 		});
 
 		// PBR
+		m_LightingRS = new RHI::RootSignature("Lighting RS");
+		m_LightingRS->AddRootConstants(0, 7);
+		m_LightingRS->AddRootCBV(100);
+		m_LightingRS->AddRootCBV(101);
+		m_LightingRS->AddRootConstants(1, 10);
+		m_LightingRS->Create();
+
 		m_PBRShader = RHI::CreateShader({
 			.ProgramName = "pbrlighting",
+			.RootSignature = m_LightingRS,
 			.RTFormats = {
 				{
 					.RTFormat = RHI::Format::RGBA16_SFLOAT,
@@ -95,8 +112,14 @@ namespace limbo::Gfx
 		});
 
 		// Composite shader
+		m_CompositeRS = new RHI::RootSignature("Composite RS");
+		m_CompositeRS->AddRootConstants(0, 2);
+		m_CompositeRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
+		m_CompositeRS->Create();
+
 		m_CompositeShader = RHI::CreateShader({
 			.ProgramName = "scenecomposite",
+			.RootSignature = m_CompositeRS,
 			.Type = RHI::ShaderType::Graphics
 		});
 
@@ -115,27 +138,30 @@ namespace limbo::Gfx
 		DestroyShader(m_DeferredShadingShader);
 		DestroyShader(m_CompositeShader);
 
-		for (uint8 i = 0; i < RHI::NUM_BACK_BUFFERS; ++i)
-			DestroyBuffer(m_SceneInfoBuffers[i]);
-
 		DestroyBuffer(m_ScenesMaterials);
 		DestroyBuffer(m_SceneInstances);
 
 		DestroyScene(m_SkyboxCube);
 		for (Scene* scene : m_Scenes)
 			DestroyScene(scene);
+
+		delete m_DeferredShadingRS;
+		delete m_SkyboxRS;
+		delete m_LightingRS;
+		delete m_CompositeRS;
 	}
 
 	void SceneRenderer::RenderGeometryPass()
 	{
 		RHI::BeginProfileEvent("Geometry Pass");
 		RHI::BindShader(m_DeferredShadingShader);
-		BindSceneInfo(m_DeferredShadingShader);
+
+		RHI::BindTempConstantBuffer(1, SceneInfo);
 		for (Scene* scene : m_Scenes)
 		{
 			scene->IterateMeshes([&](const Mesh& mesh)
 			{
-				RHI::SetParameter(m_DeferredShadingShader, "instanceID", mesh.InstanceID);
+				RHI::BindConstants(0, 0, mesh.InstanceID);
 
 				RHI::BindIndexBufferView(mesh.IndicesLocation);
 				RHI::DrawIndexed((uint32)mesh.IndexCount);
@@ -157,8 +183,11 @@ namespace limbo::Gfx
 	{
 		RHI::BeginProfileEvent("Render Skybox");
 		RHI::BindShader(m_SkyboxShader);
-		BindSceneInfo(m_SkyboxShader);
-		RHI::SetParameter(m_SkyboxShader, "g_EnvironmentCube", m_EnvironmentCubemap);
+
+		RHI::BindTempConstantBuffer(0, SceneInfo);
+
+		RHI::BindConstants(1, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
+
 		m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
 		{
 			RHI::BindVertexBufferView(mesh.PositionsLocation);
@@ -172,29 +201,32 @@ namespace limbo::Gfx
 	{
 		RHI::BeginProfileEvent("Lighting");
 		RHI::BindShader(m_PBRShader);
-		BindSceneInfo(m_PBRShader);
-		RHI::SetParameter(m_PBRShader, "bEnableAO", Tweaks.CurrentAOTechnique);
-		m_ShadowMapping->BindShadowMap(m_PBRShader);
+		
+		RHI::BindTempConstantBuffer(1, SceneInfo);
+		RHI::BindTempConstantBuffer(2, m_ShadowMapping->GetShadowData());
+
+		RHI::BindConstants(0, 0, Tweaks.CurrentAOTechnique);
+
 		// PBR scene info
-		RHI::SetParameter(m_PBRShader, "lightPos", Light.Position);
-		RHI::SetParameter(m_PBRShader, "lightColor", Light.Color);
+		RHI::BindConstants(0, 1, Light.Position);
+		RHI::BindConstants(0, 4, Light.Color);
+
+
 		// Bind deferred shading render targets
-		RHI::SetParameter(m_PBRShader, "g_PixelPosition", m_DeferredShadingShader, 0);
-		RHI::SetParameter(m_PBRShader, "g_WorldPosition", m_DeferredShadingShader, 1);
-		RHI::SetParameter(m_PBRShader, "g_Albedo", m_DeferredShadingShader, 2);
-		RHI::SetParameter(m_PBRShader, "g_Normal", m_DeferredShadingShader, 3);
-		RHI::SetParameter(m_PBRShader, "g_RoughnessMetallicAO", m_DeferredShadingShader, 4);
-		RHI::SetParameter(m_PBRShader, "g_Emissive", m_DeferredShadingShader, 5);
-
+		RHI::BindConstants(3, 0, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 0))->SRV());
+		RHI::BindConstants(3, 1, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 1))->SRV());
+		RHI::BindConstants(3, 2, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 2))->SRV());
+		RHI::BindConstants(3, 3, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 3))->SRV());
+		RHI::BindConstants(3, 4, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 4))->SRV());
+		RHI::BindConstants(3, 5, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 5))->SRV());
 		if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
-			RHI::SetParameter(m_PBRShader, "g_AmbientOcclusion", m_RTAO->GetFinalTexture());
+			RHI::BindConstants(3, 6, RHI::GetTexture(m_RTAO->GetFinalTexture())->SRV());
 		else
-			RHI::SetParameter(m_PBRShader, "g_AmbientOcclusion", m_SSAO->GetBlurredTexture());
+			RHI::BindConstants(3, 6, RHI::GetTexture(m_SSAO->GetBlurredTexture())->SRV());
+		RHI::BindConstants(3, 7, RHI::GetTexture(m_IrradianceMap)->SRV());
+		RHI::BindConstants(3, 8, RHI::GetTexture(m_PrefilterMap)->SRV());
+		RHI::BindConstants(3, 9, RHI::GetTexture(m_BRDFLUTMap)->SRV());
 
-		// Bind irradiance map
-		RHI::SetParameter(m_PBRShader, "g_IrradianceMap", m_IrradianceMap);
-		RHI::SetParameter(m_PBRShader, "g_PrefilterMap", m_PrefilterMap);
-		RHI::SetParameter(m_PBRShader, "g_LUT", m_BRDFLUTMap);
 		RHI::Draw(6);
 		RHI::EndProfileEvent("Lighting");
 	}
@@ -203,8 +235,10 @@ namespace limbo::Gfx
 	{
 		RHI::BeginProfileEvent("Scene Composite");
 		RHI::BindShader(m_CompositeShader);
-		RHI::SetParameter(m_CompositeShader, "g_TonemapMode", Tweaks.CurrentTonemap);
-		RHI::SetParameter(m_CompositeShader, "g_sceneTexture", m_SceneTexture);
+		RHI::BindConstants(0, 0, Tweaks.CurrentTonemap);
+
+		RHI::BindConstants(0, 1, RHI::GetTexture(m_SceneTexture)->SRV());
+
 		RHI::Draw(6);
 		RHI::EndProfileEvent("Scene Composite");
 	}
@@ -299,7 +333,7 @@ namespace limbo::Gfx
 				instance.NormalsOffset   = mesh.NormalsLocation.Offset;
 				instance.TexCoordsOffset = mesh.TexCoordsLocation.Offset;
 				instance.IndicesOffset	 = mesh.IndicesLocation.Offset;
-				instance.BufferIndex	 = scene->GetGeometryBuffer()->BasicHandle.Index;
+				instance.BufferIndex	 = scene->GetGeometryBuffer()->CBVHandle.Index;
 				instanceID++;
 			});
 
@@ -309,8 +343,8 @@ namespace limbo::Gfx
 		uploadArrayToGPU(m_ScenesMaterials, materials, "ScenesMaterials");
 		uploadArrayToGPU(m_SceneInstances,  instances, "SceneInstances");
 
-		SceneInfo.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->BasicHandle.Index;
-		SceneInfo.InstancesBufferIndex = GetBuffer(m_SceneInstances)->BasicHandle.Index;
+		SceneInfo.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->CBVHandle.Index;
+		SceneInfo.InstancesBufferIndex = GetBuffer(m_SceneInstances)->CBVHandle.Index;
 	}
 
 	void SceneRenderer::UpdateSceneInfo()
@@ -323,16 +357,13 @@ namespace limbo::Gfx
 
 		SceneInfo.View					= Camera.View;
 		SceneInfo.InvView				= glm::inverse(Camera.View);
-		SceneInfo.Projection			= Camera.Proj;
-		SceneInfo.InvProjection			= glm::inverse(Camera.Proj);
-		SceneInfo.ViewProjection		= Camera.ViewProj;
+		SceneInfo.Projection			= Camera.RevProj;
+		SceneInfo.InvProjection			= glm::inverse(Camera.RevProj);
+		SceneInfo.ViewProjection		= Camera.ViewRevProj;
 		SceneInfo.CameraPos				= Camera.Eye;
-		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRVHandle.Index;
+		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRV();
 		SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
 		SceneInfo.FrameIndex++;
-
-		RHI::Handle<RHI::Buffer> currentBuffer = m_SceneInfoBuffers[RHI::Device::Ptr->GetCurrentFrameIndex()];
-		memcpy(RHI::GetMappedData(currentBuffer), &SceneInfo, sizeof(SceneInfo));
 	}
 
 	void SceneRenderer::ClearScenes()
@@ -350,12 +381,6 @@ namespace limbo::Gfx
 	const std::vector<Scene*>& SceneRenderer::GetScenes() const
 	{
 		return m_Scenes;
-	}
-
-	void SceneRenderer::BindSceneInfo(RHI::Handle<RHI::Shader> shaderToBind)
-	{
-		RHI::Handle<RHI::Buffer> currentBuffer = m_SceneInfoBuffers[RHI::Device::Ptr->GetCurrentFrameIndex()];
-		SetParameter(shaderToBind, "GSceneInfo", currentBuffer);
 	}
 
 	void SceneRenderer::LoadEnvironmentMap(const char* path)
@@ -381,17 +406,30 @@ namespace limbo::Gfx
 
 		// transform an equirectangular map into a cubemap
 		{
+			std::unique_ptr<RHI::RootSignature> m_TempRS = std::make_unique<RHI::RootSignature>("EquirectToCubemap Temp RS");
+			m_TempRS->AddRootConstants(0, 1);
+			m_TempRS->AddRootConstants(1, 1);
+			m_TempRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+			m_TempRS->Create();
+
 			RHI::BeginEvent("EquirectToCubemap");
 			RHI::Handle<RHI::Texture> equirectangularTexture = RHI::CreateTextureFromFile(path, "Equirectangular Texture");
 			RHI::Handle<RHI::Shader> equirectToCubemap = RHI::CreateShader({
 				.ProgramName = "ibl",
 				.CsEntryPoint = "EquirectToCubemap",
+				.RootSignature = m_TempRS.get(),
 				.Type = RHI::ShaderType::Compute
 			});
 
 			RHI::BindShader(equirectToCubemap);
-			RHI::SetParameter(equirectToCubemap, "g_EnvironmentEquirectangular", equirectangularTexture);
-			RHI::SetParameter(equirectToCubemap, "g_OutEnvironmentCubemap", m_EnvironmentCubemap);
+
+			RHI::BindConstants(1, 0, RHI::GetTexture(equirectangularTexture)->SRV());
+
+			RHI::DescriptorHandle uavTexture[] =
+			{
+				RHI::GetTexture(m_EnvironmentCubemap)->UAVHandle[0]
+			};
+			RHI::BindTempDescriptorTable(2, uavTexture, 1);
 			RHI::Dispatch(equirectangularTextureSize.x / 8, equirectangularTextureSize.y / 8, 6);
 
 			RHI::DestroyShader(equirectToCubemap);
@@ -401,6 +439,12 @@ namespace limbo::Gfx
 
 		// irradiance map
 		{
+			std::unique_ptr<RHI::RootSignature> m_TempRS = std::make_unique<RHI::RootSignature>("DrawIrradianceMap Temp RS");
+			m_TempRS->AddRootConstants(0, 1);
+			m_TempRS->AddRootConstants(1, 1);
+			m_TempRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+			m_TempRS->Create();
+
 			RHI::BeginEvent("DrawIrradianceMap");
 			uint2 irradianceSize = { 32, 32 };
 			m_IrradianceMap = RHI::CreateTexture({
@@ -415,12 +459,18 @@ namespace limbo::Gfx
 			RHI::Handle<RHI::Shader> irradianceShader = RHI::CreateShader({
 				.ProgramName = "ibl",
 				.CsEntryPoint = "DrawIrradianceMap",
+				.RootSignature = m_TempRS.get(),
 				.Type = RHI::ShaderType::Compute
 			});
 
 			RHI::BindShader(irradianceShader);
-			RHI::SetParameter(irradianceShader, "g_EnvironmentCubemap", m_EnvironmentCubemap);
-			RHI::SetParameter(irradianceShader, "g_IrradianceMap", m_IrradianceMap);
+			RHI::BindConstants(0, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
+
+			RHI::DescriptorHandle uavTexture[] =
+			{
+				RHI::GetTexture(m_IrradianceMap)->UAVHandle[0]
+			};
+			RHI::BindTempDescriptorTable(2, uavTexture, 1);
 			RHI::Dispatch(irradianceSize.x / 8, irradianceSize.y / 8, 6);
 
 			RHI::DestroyShader(irradianceShader);
@@ -429,6 +479,13 @@ namespace limbo::Gfx
 
 		// Pre filter env map
 		{
+			std::unique_ptr<RHI::RootSignature> m_TempRS = std::make_unique<RHI::RootSignature>("PreFilterEnvMap Temp RS");
+			m_TempRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+			m_TempRS->AddRootConstants(0, 2);
+			m_TempRS->AddRootConstants(1, 1);
+			m_TempRS->AddRootConstants(2, 1);
+			m_TempRS->Create();
+
 			RHI::BeginEvent("PreFilterEnvMap");
 			uint2 prefilterSize = { 128, 128 };
 			uint16 prefilterMipLevels = 5;
@@ -446,19 +503,24 @@ namespace limbo::Gfx
 			RHI::Handle<RHI::Shader> prefilterShader = RHI::CreateShader({
 				.ProgramName = "ibl",
 				.CsEntryPoint = "PreFilterEnvMap",
+				.RootSignature = m_TempRS.get(),
 				.Type = RHI::ShaderType::Compute
 			});
 
 			RHI::BindShader(prefilterShader);
-			RHI::SetParameter(prefilterShader, "g_EnvironmentCubemap", m_EnvironmentCubemap);
+			RHI::BindConstants(1, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
 
 			const float deltaRoughness = 1.0f / glm::max(float(prefilterMipLevels - 1), 1.0f);
 			for (uint32_t level = 0, size = prefilterSize.x; level < prefilterMipLevels; ++level, size /= 2)
 			{
 				const uint32_t numGroups = glm::max<uint32_t>(1, size / 8);
 
-				RHI::SetParameter(prefilterShader, "g_PreFilteredMap", m_PrefilterMap, level);
-				RHI::SetParameter(prefilterShader, "roughness", level * deltaRoughness);
+				RHI::DescriptorHandle uavTexture[] =
+				{
+					RHI::GetTexture(m_PrefilterMap)->UAVHandle[level]
+				};
+				RHI::BindTempDescriptorTable(0, uavTexture, 1);
+				RHI::BindConstants(2, 0, level * deltaRoughness);
 				RHI::Dispatch(numGroups, numGroups, 6);
 			}
 
@@ -468,6 +530,10 @@ namespace limbo::Gfx
 
 		// Compute BRDF LUT map
 		{
+			std::unique_ptr<RHI::RootSignature> m_TempRS = std::make_unique<RHI::RootSignature>("ComputeBRDFLUT Temp RS");
+			m_TempRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+			m_TempRS->Create();
+
 			RHI::BeginEvent("ComputeBRDFLUT");
 			uint2 brdfLUTMapSize = { 512, 512 };
 			m_BRDFLUTMap = RHI::CreateTexture({
@@ -482,10 +548,15 @@ namespace limbo::Gfx
 			RHI::Handle<RHI::Shader> brdfLUTShader = RHI::CreateShader({
 				.ProgramName = "ibl",
 				.CsEntryPoint = "ComputeBRDFLUT",
+				.RootSignature = m_TempRS.get(),
 				.Type = RHI::ShaderType::Compute
 			});
 			RHI::BindShader(brdfLUTShader);
-			RHI::SetParameter(brdfLUTShader, "LUT", m_BRDFLUTMap);
+			RHI::DescriptorHandle uavTexture[] =
+			{
+				RHI::GetTexture(m_BRDFLUTMap)->UAVHandle[0]
+			};
+			RHI::BindTempDescriptorTable(0, uavTexture, 1);
 			RHI::Dispatch(brdfLUTMapSize.x / 8, brdfLUTMapSize.y / 8, 6);
 
 			RHI::DestroyShader(brdfLUTShader);

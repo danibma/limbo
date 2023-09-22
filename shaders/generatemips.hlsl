@@ -1,10 +1,10 @@
 ﻿#include "common.hlsli"
 
-Texture2D<float4>	PreviousMip;
 RWTexture2D<float4> OutputMip;
 
 float2 TexelSize; // 1.0 / destination dimension
 uint bIsRGB;
+uint previousMip;
 
 [numthreads(8, 8, 1)]
 void GenerateMip(uint2 threadID : SV_DispatchThreadID)
@@ -14,9 +14,11 @@ void GenerateMip(uint2 threadID : SV_DispatchThreadID)
     float2 texcoords = TexelSize * (threadID + 0.5);
 
 	//The samplers linear interpolation will mix the four pixel values to the new pixels color
-    float4 color = PreviousMip.SampleLevel(SLinearClamp, texcoords, 0);
+    Texture2D previousMipTexture = GetTexture(previousMip);
 
-    float4 alpha = PreviousMip.GatherAlpha(SLinearClamp, texcoords, 0);
+    float4 color = previousMipTexture.SampleLevel(SLinearClamp, texcoords, 0);
+
+    float4 alpha = previousMipTexture.GatherAlpha(SLinearClamp, texcoords, 0);
     color.a = max(alpha.r, max(alpha.g, max(alpha.b, alpha.a)));
 
     if (bIsRGB == 1)

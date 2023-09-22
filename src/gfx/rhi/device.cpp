@@ -13,6 +13,7 @@
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 
+#include "rootsignature.h"
 
 
 unsigned int DelegateHandle::CURRENT_ID = 0;
@@ -120,9 +121,11 @@ namespace limbo::RHI
 		}
 #endif
 
-		m_GlobalHeap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV,    8196, true);
-		m_Rtvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV,     128);
-		m_Dsvheap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV,      64);
+		m_GlobalHeap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV, 4098, 4098, true);
+		m_UAVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::UAV, 2046,    0);
+		m_CBVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::CBV,  128,    0);
+		m_RTVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV,  128,    0);
+		m_DSVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV,   64,    0);
 
 		for (int i = 0; i < (int)ContextType::MAX; ++i)
 		{
@@ -152,7 +155,7 @@ namespace limbo::RHI
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.ItemInnerSpacing = ImVec2(10.0f, 0.0f);
 
-			DescriptorHandle imguiDescriptor = m_GlobalHeap->AllocateHandle();
+			DescriptorHandle imguiDescriptor = m_GlobalHeap->AllocatePersistent();
 
 			ImGui_ImplGlfw_InitForOther(window->GetGlfwHandle(), true);
 			ImGui_ImplDX12_Init(m_Device.Get(), NUM_BACK_BUFFERS, D3DFormat(m_Swapchain->GetFormat()),
@@ -171,8 +174,8 @@ namespace limbo::RHI
 		delete m_PresentFence;
 
 		delete m_GlobalHeap;
-		delete m_Rtvheap;
-		delete m_Dsvheap;
+		delete m_RTVHeap;
+		delete m_DSVHeap;
 
 		if (m_Flags & Gfx::GfxDeviceFlag::EnableImgui)
 		{
@@ -201,7 +204,9 @@ namespace limbo::RHI
 	void Device::DestroyResources()
 	{
 		DestroyShader(m_GenerateMipsShader);
+		delete m_GenerateMipsRS;
 
+		delete m_TempBufferAllocator;
 		delete m_UploadRingBuffer;
 		delete m_Swapchain;
 	}
@@ -324,41 +329,58 @@ namespace limbo::RHI
 
 		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
 
+		m_GenerateMipsRS = new RootSignature("Generate Mips RS");
+		m_GenerateMipsRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+		m_GenerateMipsRS->AddRootConstants(0, 4);
+		m_GenerateMipsRS->Create();
+
 		m_GenerateMipsShader = CreateShader({
 			.ProgramName = "generatemips",
 			.CsEntryPoint = "GenerateMip",
+			.RootSignature = m_GenerateMipsRS,
 			.Type = ShaderType::Compute
 		});
 
-		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256));
+		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256), "Upload Ring Buffer");
+		m_TempBufferAllocator = new RingBufferAllocator(Utils::ToMB(4), "Temp Buffers Ring Buffer");
 	}
 
-	DescriptorHandle Device::AllocateHandle(DescriptorHeapType heapType)
+	DescriptorHandle Device::AllocatePersistent(DescriptorHeapType heapType)
 	{
 		switch (heapType)
 		{
 		case DescriptorHeapType::SRV:
-			return m_GlobalHeap->AllocateHandle();
+			return m_GlobalHeap->AllocatePersistent();
 		case DescriptorHeapType::RTV:
-			return m_Rtvheap->AllocateHandle();
+			return m_RTVHeap->AllocatePersistent();
 		case DescriptorHeapType::DSV:
-			return m_Dsvheap->AllocateHandle();
-		default: 
+			return m_DSVHeap->AllocatePersistent();
+		case DescriptorHeapType::UAV:
+			return m_UAVHeap->AllocatePersistent();
+		case DescriptorHeapType::CBV:
+			return m_CBVHeap->AllocatePersistent();
+		default:
+			ensure(false);
 			return DescriptorHandle();
 		}
 	}
 
-	DescriptorHandle Device::AllocateTempHandle(DescriptorHeapType heapType)
+	DescriptorHandle Device::AllocateTemp(DescriptorHeapType heapType)
 	{
 		switch (heapType)
 		{
 		case DescriptorHeapType::SRV:
-			return m_GlobalHeap->AllocateTempHandle();
+			return m_GlobalHeap->AllocateTemp();
 		case DescriptorHeapType::RTV:
-			return m_Rtvheap->AllocateTempHandle();
+			return m_RTVHeap->AllocateTemp();
 		case DescriptorHeapType::DSV:
-			return m_Dsvheap->AllocateTempHandle();
+			return m_DSVHeap->AllocateTemp();
+		case DescriptorHeapType::UAV:
+			return m_UAVHeap->AllocateTemp();
+		case DescriptorHeapType::CBV:
+			return m_CBVHeap->AllocateTemp();
 		default:
+			ensure(false);
 			return DescriptorHandle();
 		}
 	}
@@ -368,11 +390,15 @@ namespace limbo::RHI
 		switch (handle.OwnerHeapType)
 		{
 		case DescriptorHeapType::SRV:
-			m_GlobalHeap->FreeHandle(handle);
+			m_GlobalHeap->FreePersistent(handle);
 		case DescriptorHeapType::RTV:
-			m_Rtvheap->FreeHandle(handle);
+			m_RTVHeap->FreePersistent(handle);
 		case DescriptorHeapType::DSV:
-			m_Dsvheap->FreeHandle(handle);
+			m_DSVHeap->FreePersistent(handle);
+		case DescriptorHeapType::UAV:
+			m_UAVHeap->FreePersistent(handle);
+		case DescriptorHeapType::CBV:
+			m_CBVHeap->FreePersistent(handle);
 		}
 	}
 
@@ -552,10 +578,16 @@ namespace limbo::RHI
 			outputMipSize.y >>= i;
 			float2 texelSize = { 1.0f / outputMipSize.x, 1.0f / outputMipSize.y };
 
-			SetParameter(m_GenerateMipsShader, "bIsRGB", bIsRGB ? 1 : 0);
-			SetParameter(m_GenerateMipsShader, "TexelSize", texelSize);
-			SetParameter(m_GenerateMipsShader, "PreviousMip", texture, i - 1);
-			SetParameter(m_GenerateMipsShader, "OutputMip", texture, i);
+			BindConstants(1, 0, texelSize);
+			BindConstants(1, 2, bIsRGB ? 1 : 0);
+
+			Texture* pBaseTexture = GetTexture(texture);
+			DescriptorHandle srvHandles = m_GlobalHeap->AllocateTemp();
+			CreateSRV(pBaseTexture, srvHandles, i - 1);
+			BindConstants(1, 3, srvHandles.Index);
+
+			DescriptorHandle uavHandles[] = { GetTexture(texture)->UAVHandle[i] };
+			BindTempDescriptorTable(0, uavHandles, 1);
 			Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
 			GetCommandContext(ContextType::Direct)->InsertUAVBarrier(t);
 		}

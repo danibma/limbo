@@ -249,7 +249,7 @@ namespace limbo::Gfx
 
 		RHI::Texture* t = RHI::ResourceManager::Ptr->GetTexture(texture);
 		FAILIF(!t, -1);
-		return t->SRVHandle.Index;
+		return t->SRV();
 	}
 
 	void Scene::ProcessMesh(const cgltf_node* node, const cgltf_mesh* mesh, const cgltf_primitive* primitive)

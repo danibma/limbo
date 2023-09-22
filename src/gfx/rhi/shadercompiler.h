@@ -190,8 +190,6 @@ namespace limbo::RHI::SC
 	struct Kernel
 	{
 		ComPtr<IDxcBlob>				Bytecode;
-		ComPtr<ID3D12ShaderReflection>  Reflection;
-		ComPtr<ID3D12LibraryReflection> LibReflection;
 	};
 
 	enum class KernelType : uint8

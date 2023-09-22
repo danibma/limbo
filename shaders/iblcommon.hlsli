@@ -91,11 +91,10 @@ float3 GetSamplingVector(uint3 ThreadID, float OutputWidth, float OutputHeight)
 }
 
 // Returns number of mipmap levels for specular IBL environment map.
-uint QueryTextureLevels(TextureCube tex)
+uint QueryTextureLevels(uint tex)
 {
-    uint width, height, levels;
-    tex.GetDimensions(0, width, height, levels);
-    return levels;
+    float3 dimensions = GetDimensionsCube(tex);
+    return uint(dimensions.z);
 }
 
 // Fresnel Schlick taking count of roughness, by Sébastien Lagarde - https://seblagarde.wordpress.com/2011/08/17/hello-world/
@@ -119,31 +118,31 @@ float ComputeSpecOcclusion(float NdotV, float AO, float roughness)
 // IBL Calculation
 //
 
-float3 Diffuse_IBL(in MaterialProperties material, in float3 F, in float3 N, TextureCube IrradianceMap)
+float3 Diffuse_IBL(in MaterialProperties material, in float3 F, in float3 N, uint IrradianceMap)
 {
 	// Get diffuse contribution factor (as with direct lighting).
     float3 kD = (1.0f - F) * (1.0f - material.Metallic * (1.0f - material.Roughness));
   
-    float3 irradiance = IrradianceMap.SampleLevel(SLinearClamp, N, 0).rgb;
+    float3 irradiance = SampleLevelCube(IrradianceMap, SLinearClamp, N, 0).rgb;
     return kD * irradiance * material.BaseColor * material.AO;
 }
 
-float3 Specular_IBL(in MaterialProperties material, float3 F, float3 N, float3 V, float NdotV, TextureCube PrefilterEnvMap, Texture2D BRDFLUT)
+float3 Specular_IBL(in MaterialProperties material, float3 F, float3 N, float3 V, float NdotV, uint PrefilterEnvMap, uint BRDFLUT)
 {
 	// Specular reflection vector.
     float3 R = 2.0 * NdotV * N - V;
 
     float specularLevels = QueryTextureLevels(PrefilterEnvMap);
-    float3 prefilteredColor = PrefilterEnvMap.SampleLevel(SLinearClamp, R, material.Roughness * specularLevels).rgb;
+    float3 prefilteredColor = SampleLevelCube(PrefilterEnvMap, SLinearClamp, R, material.Roughness * specularLevels).rgb;
 
     // Split-sum approximation factors for Cook-Torrance specular BRDF.
-    float2 envBRDF = BRDFLUT.Sample(SLinearClamp, float2(NdotV, material.Roughness)).rg;
+    float2 envBRDF = Sample2D(BRDFLUT, SLinearClamp, float2(NdotV, material.Roughness)).rg;
 
     // Total specular IBL contribution.
     return prefilteredColor * (F * envBRDF.x + envBRDF.y) * ComputeSpecOcclusion(NdotV, material.AO, material.Roughness);
 }
 
-float3 CalculateIBL(float3 N, float3 V, in MaterialProperties material, TextureCube IrradianceMap, TextureCube PrefilterEnvMap, Texture2D BRDFLUT)
+float3 CalculateIBL(float3 N, float3 V, in MaterialProperties material, uint IrradianceMap, uint PrefilterEnvMap, uint BRDFLUT)
 {
     // Preserve specular highlight
     material.Roughness = max(0.05, material.Roughness);

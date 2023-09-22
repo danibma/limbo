@@ -4,6 +4,7 @@
 #include "gfx/scenerenderer.h"
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"
+#include "gfx/rhi/rootsignature.h"
 
 namespace limbo::Gfx
 {
@@ -29,8 +30,16 @@ namespace limbo::Gfx
 			.Type = RHI::TextureType::Texture2D,
 		});
 
+		m_CommonRS = new RHI::RootSignature("RTAO Common RS");
+		m_CommonRS->AddRootSRV(0);
+		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+		m_CommonRS->AddRootCBV(100);
+		m_CommonRS->AddRootConstants(0, 5);
+		m_CommonRS->Create();
+
 		m_RTAOShader = RHI::CreateShader({
 			.ProgramName = "RTAO",
+			.RootSignature = m_CommonRS,
 			.Libs = {
 				{
 					.LibName = "raytracing/rtao",
@@ -61,6 +70,7 @@ namespace limbo::Gfx
 		m_DenoiseRTAOShader = RHI::CreateShader({
 			.ProgramName = "raytracing/rtaoaccumulate",
 			.CsEntryPoint = "RTAOAccumulate",
+			.RootSignature = m_CommonRS,
 			.Type = RHI::ShaderType::Compute
 		});
 	}
@@ -77,6 +87,8 @@ namespace limbo::Gfx
 			DestroyTexture(m_NoisedTexture);
 		if (m_PreviousFrame.IsValid())
 			DestroyTexture(m_PreviousFrame);
+
+		delete m_CommonRS;
 	}
 
 	void RTAO::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> normalsMap)
@@ -87,33 +99,50 @@ namespace limbo::Gfx
 			PreparePreviousFrameTexture();
 		}
 
-		RHI::BeginProfileEvent("RTAO");
-		RHI::BindShader(m_RTAOShader);
+		{
+			RHI::BeginProfileEvent("RTAO");
+			RHI::BindShader(m_RTAOShader);
 
-		RHI::ShaderBindingTable SBT(m_RTAOShader);
-		SBT.BindRayGen(L"RTAORayGen");
-		SBT.BindMissShader(L"RTAOMiss");
-		SBT.BindHitGroup(L"RTAOHitGroup");
+			RHI::ShaderBindingTable SBT(m_RTAOShader);
+			SBT.BindRayGen(L"RTAORayGen");
+			SBT.BindMissShader(L"RTAOMiss");
+			SBT.BindHitGroup(L"RTAOHitGroup");
 
-		sceneRenderer->BindSceneInfo(m_RTAOShader);
-		RHI::SetParameter(m_RTAOShader, "SceneAS", sceneAS);
-		RHI::SetParameter(m_RTAOShader, "radius", sceneRenderer->Tweaks.SSAORadius);
-		RHI::SetParameter(m_RTAOShader, "power", sceneRenderer->Tweaks.SSAOPower);
-		RHI::SetParameter(m_RTAOShader, "samples", sceneRenderer->Tweaks.RTAOSamples);
-		RHI::SetParameter(m_RTAOShader, "g_Positions", positionsMap);
-		RHI::SetParameter(m_RTAOShader, "g_Normals", normalsMap);
-		RHI::SetParameter(m_RTAOShader, "g_Output", m_NoisedTexture);
-		RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
-		RHI::EndProfileEvent("RTAO");
+			RHI::BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 
-		RHI::BeginProfileEvent("RTAO Denoise");
-		RHI::BindShader(m_DenoiseRTAOShader);
-		RHI::SetParameter(m_DenoiseRTAOShader, "accumCount", m_AccumCount);
-		RHI::SetParameter(m_DenoiseRTAOShader, "g_PreviousRTAOImage", m_PreviousFrame);
-		RHI::SetParameter(m_DenoiseRTAOShader, "g_CurrentRTAOImage", m_NoisedTexture);
-		RHI::SetParameter(m_DenoiseRTAOShader, "g_DenoisedRTAOImage", m_FinalTexture);
-		RHI::Dispatch(RHI::GetBackbufferWidth() / 8, RHI::GetBackbufferHeight() / 8, 1);
-		RHI::EndProfileEvent("RTAO Denoise");
+			RHI::DescriptorHandle uavHandles[] =
+			{
+				RHI::GetTexture(m_NoisedTexture)->UAVHandle[0]
+			};
+			RHI::BindTempDescriptorTable(1, uavHandles, 1);
+
+			RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
+
+			RHI::BindConstants(3, 0, sceneRenderer->Tweaks.SSAORadius);
+			RHI::BindConstants(3, 1, sceneRenderer->Tweaks.SSAOPower);
+			RHI::BindConstants(3, 2, sceneRenderer->Tweaks.RTAOSamples);
+			RHI::BindConstants(3, 3, RHI::GetTexture(positionsMap)->SRV());
+			RHI::BindConstants(3, 4, RHI::GetTexture(normalsMap)->SRV());
+			RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+			RHI::EndProfileEvent("RTAO");
+		}
+
+		{
+			RHI::BeginProfileEvent("RTAO Denoise");
+			RHI::BindShader(m_DenoiseRTAOShader);
+
+			RHI::DescriptorHandle uavHandles[] =
+			{
+				RHI::GetTexture(m_FinalTexture)->UAVHandle[0],
+			};
+			RHI::BindTempDescriptorTable(1, uavHandles, _countof(uavHandles));
+
+			RHI::BindConstants(3, 0, m_AccumCount);
+			RHI::BindConstants(3, 1, RHI::GetTexture(m_PreviousFrame)->SRV());
+			RHI::BindConstants(3, 2, RHI::GetTexture(m_NoisedTexture)->SRV());
+			RHI::Dispatch(RHI::GetBackbufferWidth() / 8, RHI::GetBackbufferHeight() / 8, 1);
+			RHI::EndProfileEvent("RTAO Denoise");
+		}
 
 		++m_AccumCount;
 

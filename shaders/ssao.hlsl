@@ -2,12 +2,10 @@
 
 // SSAO technique based on https://john-chapman-graphics.blogspot.com/2013/01/ssao-tutorial.html
 
-Texture2D g_Positions;
-Texture2D g_Normals;
-Texture2D<float> g_SceneDepth;
-
 float radius;
 float power;
+uint positionsMap;
+uint sceneDepth;
 
 #define KERNEL_SIZE 16
 
@@ -21,8 +19,8 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
     float2 targetDimensions = float2(width, height);
     float2 uv = (threadID + 0.5f) / targetDimensions;
 
-    float3 pixelPos = g_Positions.SampleLevel(SLinearWrap, uv, 0).rgb;
-    float3 normal = NormalFromDepth(threadID, g_SceneDepth, GSceneInfo.InvProjection);
+    float3 pixelPos = SampleLevel2D(positionsMap, SLinearWrap, uv, 0).rgb;
+    float3 normal = NormalFromDepth(threadID, sceneDepth, GSceneInfo.InvProjection);
 
     uint seed = RandomSeed(threadID, targetDimensions, GSceneInfo.FrameIndex);
     float3 randomVec = float3(Random01(seed), Random01(seed), Random01(seed)) * 2.0f - 1.0f;
@@ -54,7 +52,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
 
         if (all(offset.xy >= 0) && all(offset.xy <= 1))
         {
-            float sampleDepth = g_Positions.SampleLevel(SLinearWrap, offset.xy, 0).z;
+            float sampleDepth = SampleLevel2D(positionsMap, SLinearWrap, offset.xy, 0).z;
 
             float rangeCheck = smoothstep(0.0, 1.0, radius / abs(pixelPos.z - sampleDepth));
             occlusion += (sampleDepth >= samplePos.z + bias) * rangeCheck;
@@ -64,7 +62,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
     g_UnblurredSSAOTexture[threadID] = pow(occlusion, power);
 }
 
-Texture2D<float4>   g_SSAOTexture;
+uint SSAOTextureIndex;
 RWTexture2D<float4> g_BlurredSSAOTexture;
 
 [numthreads(16, 16, 1)]
@@ -72,8 +70,10 @@ void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
 {
     int blurSize = 2;
 
+    Texture2D SSAOTexture = GetTexture(SSAOTextureIndex);
+
     float width, height, depth;
-    g_SSAOTexture.GetDimensions(0, width, height, depth);
+    SSAOTexture.GetDimensions(0, width, height, depth);
 
     float2 UVs = float2(threadID.x / width, threadID.y / height);
 
@@ -84,7 +84,7 @@ void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
         for (int y = -blurSize; y < blurSize; ++y)
         {
             float2 offset = float2(float(x), float(y)) * texelSize;
-            result += g_SSAOTexture.SampleLevel(SLinearWrap, UVs + offset, 0).r;
+            result += SSAOTexture.SampleLevel(SLinearWrap, UVs + offset, 0).r;
         }
     }
     g_BlurredSSAOTexture[threadID] = result / (4.0 * 4.0);

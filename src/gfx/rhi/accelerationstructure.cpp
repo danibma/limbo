@@ -144,8 +144,8 @@ namespace limbo::RHI
 		EndProfileEvent("Build Acceleration Structure");
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE AccelerationStructure::GetDescriptor() const
+	Buffer* AccelerationStructure::GetTLASBuffer() const
 	{
-		return GetBuffer(m_TLAS)->BasicHandle.GPUHandle;
+		return GetBuffer(m_TLAS);
 	}
 }

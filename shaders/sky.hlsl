@@ -25,11 +25,11 @@ SkyboxVertexOutput VSMain(float3 pos : Position)
 //
 // Pixel Shader
 //
-TextureCube g_EnvironmentCube;
+uint EnvironmentCube;
 
 float4 PSMain(SkyboxVertexOutput vertex) : SV_Target
 {
-    float3 color = g_EnvironmentCube.SampleLevel(SLinearWrap, vertex.local_position.xyz, 0).xyz;
+    float3 color = SampleLevelCube(EnvironmentCube, SLinearWrap, vertex.local_position.xyz, 0).xyz;
 
     return float4(color, 1.0);
 }

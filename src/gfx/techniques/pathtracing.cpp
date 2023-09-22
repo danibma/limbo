@@ -4,6 +4,7 @@
 #include "gfx/scenerenderer.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/device.h"
+#include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/shaderbindingtable.h"
 
 namespace limbo::Gfx
@@ -19,8 +20,15 @@ namespace limbo::Gfx
 			.Type = RHI::TextureType::Texture2D,
 		});
 
+		m_CommonRS = new RHI::RootSignature("PT Common RS");
+		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
+		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
+		m_CommonRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_CommonRS->Create();
+
 		m_RTShader = RHI::CreateShader({
 			.ProgramName = "Path Tracer",
+			.RootSignature = m_CommonRS,
 			.Libs = {
 				{
 					.LibName = "raytracing/pathtracer",
@@ -60,6 +68,8 @@ namespace limbo::Gfx
 			DestroyTexture(m_FinalTexture);
 		if (m_RTShader.IsValid())
 			DestroyShader(m_RTShader);
+
+		delete m_CommonRS;
 	}
 
 	void PathTracing::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
@@ -72,9 +82,10 @@ namespace limbo::Gfx
 		SBT.BindMissShader(L"MaterialMiss");
 		SBT.BindHitGroup(L"MaterialHitGroup");
 
-		sceneRenderer->BindSceneInfo(m_RTShader);
-		RHI::SetParameter(m_RTShader, "Scene", sceneAS);
-		RHI::SetParameter(m_RTShader, "RenderTarget", m_FinalTexture);
+		RHI::BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
+		RHI::BindConstants(1, 0, RHI::GetTexture(m_FinalTexture)->SRV());
+
+		RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 		RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 		RHI::EndProfileEvent("Path Tracing");
 	}

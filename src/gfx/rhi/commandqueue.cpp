@@ -98,11 +98,14 @@ namespace limbo::RHI
 	ID3D12CommandAllocator* CommandQueue::RequestAllocator()
 	{
 		ID3D12CommandAllocator* allocator = nullptr;
-		if (ensure(m_Fence->IsComplete(m_AllocatorPool.front().second)))
+		if (!m_Fence->IsComplete(m_AllocatorPool.front().second))
 		{
-			allocator = m_AllocatorPool.front().first;
-			m_AllocatorPool.pop();
+			LB_WARN("%s: No Command Allocator available, waiting...", CmdListTypeToStr(m_Type).data());
+			m_Fence->CpuWait(m_AllocatorPool.front().second);
 		}
+
+		allocator = m_AllocatorPool.front().first;
+		m_AllocatorPool.pop();
 		allocator->Reset();
 		return allocator;
 	}
