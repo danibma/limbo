@@ -28,6 +28,12 @@ namespace limbo::RHI
 			bool IsValid() const { return RTFormat != Format::UNKNOWN; }
 		};
 
+		struct ClearColor
+		{
+			float4 RTClearColor = float4(0.0f);
+			float DepthClearValue = 1.0f;
+		};
+
 		struct RaytracingLib
 		{
 			const char*						LibName;
@@ -47,9 +53,11 @@ namespace limbo::RHI
 		uint2							RTSize = { 0, 0 }; // If the RTFormats have RTTexture set, this does nothing
 		RenderTargetDesc				RTFormats[8];
 		RenderTargetDesc				DepthFormat = { Format::UNKNOWN };
+		ClearColor						ClearColor;
 
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		D3D12_CULL_MODE					CullMode = D3D12_CULL_MODE_BACK;
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE	Topology  = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		D3D12_CULL_MODE					CullMode  = D3D12_CULL_MODE_BACK;
+		D3D12_COMPARISON_FUNC			DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 
 		bool							DepthClip = true;
 
@@ -99,6 +107,8 @@ namespace limbo::RHI
 
 		void ResizeRenderTargets(uint32 width, uint32 height);
 		void ReloadShader();
+		float4 GetRTClearColor() const { return m_Spec.ClearColor.RTClearColor; }
+		float  GetDepthClearValue() const { return m_Spec.ClearColor.DepthClearValue; }
 
 	private:
 		void CreateComputePipeline(ID3D12Device* device, const ShaderSpec& spec);
@@ -108,5 +118,6 @@ namespace limbo::RHI
 
 		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultBlendDesc();
 		D3D12_RENDER_TARGET_BLEND_DESC GetDefaultEnabledBlendDesc();
+		D3D12_DEPTH_STENCIL_DESC GetDefaultDepthStencilDesc();
 	};
 }

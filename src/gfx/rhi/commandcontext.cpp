@@ -1,6 +1,8 @@
 ﻿#include "stdafx.h"
 #include "commandcontext.h"
 
+#include <glm/gtc/type_ptr.inl>
+
 #include "accelerationstructure.h"
 #include "commandqueue.h"
 #include "descriptorheap.h"
@@ -192,10 +194,9 @@ namespace limbo::RHI
 					FAILIF(!depthBackbuffer);
 					dsvhandle = &depthBackbuffer->UAVHandle[0].CpuHandle;
 					if (pBoundShader->DepthTarget.LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearDepthStencilView(depthBackbuffer->UAVHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+						m_CommandList->ClearDepthStencilView(depthBackbuffer->UAVHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, pBoundShader->GetDepthClearValue(), 0, 0, nullptr);
 				}
 
-				constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 				D3D12_CPU_DESCRIPTOR_HANDLE rtHandles[8];
 				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
 				{
@@ -203,7 +204,7 @@ namespace limbo::RHI
 					FAILIF(!rt);
 
 					if (pBoundShader->RenderTargets[i].LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearRenderTargetView(rt->UAVHandle[0].CpuHandle, clearColor, 0, nullptr);
+						m_CommandList->ClearRenderTargetView(rt->UAVHandle[0].CpuHandle, glm::value_ptr(pBoundShader->GetRTClearColor()), 0, nullptr);
 
 					rtHandles[i] = rt->UAVHandle[0].CpuHandle;
 				}

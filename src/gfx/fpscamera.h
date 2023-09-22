@@ -24,14 +24,16 @@ namespace limbo::Gfx
 		float		CameraSpeed = 0.5f;
 
 		float4x4	View;
+
+		// Normal projection matrix
 		float4x4	Proj;
 		float4x4	ViewProj;
 
-		float4x4	CascadeProjections[SHADOWMAP_CASCADES];
+		// Reversed Z projection matrix
+		float4x4	RevProj;
+		float4x4	ViewRevProj;
 
-		float4x4	PrevView;
-		float4x4	PrevProj;
-		float4x4	PrevViewProj;
+		float4x4	CascadeProjections[SHADOWMAP_CASCADES];
 
 		void OnResize(uint32 width, uint32 height);
 	};

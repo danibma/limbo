@@ -58,6 +58,10 @@ namespace limbo::Gfx
 				{ RHI::Format::RGBA16_SFLOAT, "Emissive" },
 			},
 			.DepthFormat = { RHI::Format::D32_SFLOAT },
+			.ClearColor = {
+				.DepthClearValue = 0.0f
+			},
+			.DepthFunc = D3D12_COMPARISON_FUNC_GREATER,
 			.Type = RHI::ShaderType::Graphics
 		});
 
@@ -353,9 +357,9 @@ namespace limbo::Gfx
 
 		SceneInfo.View					= Camera.View;
 		SceneInfo.InvView				= glm::inverse(Camera.View);
-		SceneInfo.Projection			= Camera.Proj;
-		SceneInfo.InvProjection			= glm::inverse(Camera.Proj);
-		SceneInfo.ViewProjection		= Camera.ViewProj;
+		SceneInfo.Projection			= Camera.RevProj;
+		SceneInfo.InvProjection			= glm::inverse(Camera.RevProj);
+		SceneInfo.ViewProjection		= Camera.ViewRevProj;
 		SceneInfo.CameraPos				= Camera.Eye;
 		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRV();
 		SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;

@@ -14,6 +14,7 @@
 #include <array>
 
 #include <d3d12/d3dx12/d3dx12.h>
+#include <glm/gtc/type_ptr.inl>
 
 namespace limbo::RHI
 {
@@ -193,7 +194,7 @@ namespace limbo::RHI
 				.Flags = TextureUsage::RenderTarget | TextureUsage::ShaderResource,
 				.ClearValue = {
 					.Format = D3DFormat(spec.RTFormats[index].RTFormat),
-					.Color = { 0.0f, 0.0f, 0.0f, 0.0f }
+					.Color = *glm::value_ptr(spec.ClearColor.RTClearColor)
 				},
 				.Format = spec.RTFormats[index].RTFormat,
 				.Type = TextureType::Texture2D,
@@ -272,7 +273,7 @@ namespace limbo::RHI
 							.ClearValue = {
 								.Format = D3DFormat(spec.DepthFormat.RTFormat),
 								.DepthStencil = {
-									.Depth = 1.0f,
+									.Depth = spec.ClearColor.DepthClearValue,
 									.Stencil = 0
 								}
 							},
@@ -322,7 +323,7 @@ namespace limbo::RHI
 			.BlendState = blendState,
 			.SampleMask = 0xFFFFFFFF,
 			.RasterizerState = rasterizerDesc,
-			.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT),
+			.DepthStencilState = GetDefaultDepthStencilDesc(),
 			.InputLayout = {
 				spec.InputLayout.data(),
 				(uint32)spec.InputLayout.size(),
@@ -398,6 +399,22 @@ namespace limbo::RHI
 			.BlendOpAlpha = D3D12_BLEND_OP_ADD,
 			.LogicOp = D3D12_LOGIC_OP_NOOP,
 			.RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL
+		};
+	}
+
+	D3D12_DEPTH_STENCIL_DESC Shader::GetDefaultDepthStencilDesc()
+	{
+		constexpr D3D12_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+
+		return {
+			.DepthEnable = TRUE,
+			.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL,
+			.DepthFunc = m_Spec.DepthFunc,
+			.StencilEnable = FALSE,
+			.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK,
+			.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK,
+			.FrontFace = defaultStencilOp,
+			.BackFace = defaultStencilOp,
 		};
 	}
 

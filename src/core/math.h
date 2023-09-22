@@ -53,5 +53,16 @@ namespace limbo::Math
 	{
 		return first <= second ? first : second;
 	}
+
+	// https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/
+	inline float4x4 InfReversedProj_RH(float fovY_radians, float aspectRatio, float zNear)
+	{
+		float f = 1.0f / tan(fovY_radians / 2.0f);
+		return float4x4(
+			f / aspectRatio, 0.0f, 0.0f, 0.0f,
+			0.0f, f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, -1.0f,
+			0.0f, 0.0f, zNear, 0.0f);
+	}
 }
 

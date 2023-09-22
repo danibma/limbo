@@ -12,7 +12,8 @@ namespace limbo::Gfx
 		// Update projection aspect ratio
 		const float aspectRatio = (float)width / (float)height;
 
-		Proj = glm::perspective(glm::radians(FOV), aspectRatio, NearZ, FarZ);
+		Proj    = glm::perspective(glm::radians(FOV), aspectRatio, NearZ, FarZ);
+		RevProj = Math::InfReversedProj_RH(glm::radians(FOV), aspectRatio, NearZ);
 
 		// update shadow map cascade projections
 		CascadeProjections[0] = glm::perspective(glm::radians(FOV), aspectRatio, NearZ , 30.0f);
@@ -33,7 +34,9 @@ namespace limbo::Gfx
 
 		fpsCamera.View = glm::lookAt(eye, center, fpsCamera.Up);
 		fpsCamera.Proj = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, fpsCamera.NearZ, fpsCamera.FarZ);
+		fpsCamera.RevProj = Math::InfReversedProj_RH(glm::radians(fpsCamera.FOV), aspectRatio, fpsCamera.NearZ);
 		fpsCamera.ViewProj = fpsCamera.Proj * fpsCamera.View;
+		fpsCamera.ViewRevProj = fpsCamera.RevProj * fpsCamera.View;
 
 		// Create shadow map cascade projections
 		fpsCamera.CascadeProjections[0] = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, fpsCamera.NearZ, 30.0f);
@@ -41,19 +44,11 @@ namespace limbo::Gfx
 		fpsCamera.CascadeProjections[2] = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 80.0f			, 400.0f);
 		fpsCamera.CascadeProjections[3] = glm::perspective(glm::radians(fpsCamera.FOV), aspectRatio, 400.0f			, fpsCamera.FarZ);
 
-		fpsCamera.PrevView		= fpsCamera.View;
-		fpsCamera.PrevProj		= fpsCamera.Proj;
-		fpsCamera.PrevViewProj	= fpsCamera.ViewProj;
-
 		return fpsCamera;
 	}
 
 	void UpdateCamera(Core::Window* window, FPSCamera& fpsCamera, float deltaTime)
 	{
-		// Update camera history
-		fpsCamera.PrevView = fpsCamera.View;
-		fpsCamera.PrevProj = fpsCamera.Proj;
-
 		fpsCamera.CameraSpeed += Input::GetScrollY(window) / 10.0f;
 		if (fpsCamera.CameraSpeed <= 0.0f) fpsCamera.CameraSpeed = 0.1f;
 
@@ -97,8 +92,8 @@ namespace limbo::Gfx
 		fpsCamera.View = glm::lookAt(fpsCamera.Eye, fpsCamera.Eye + fpsCamera.Center, fpsCamera.Up);
 
 		// Update view projection matrix
+		fpsCamera.ViewRevProj = fpsCamera.RevProj * fpsCamera.View;
 		fpsCamera.ViewProj = fpsCamera.Proj * fpsCamera.View;
-		fpsCamera.PrevViewProj = fpsCamera.PrevProj * fpsCamera.PrevView;
 	}
 
 }
