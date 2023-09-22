@@ -33,7 +33,7 @@ namespace limbo::Gfx
 		m_CommonRS = new RHI::RootSignature("RTAO Common RS");
 		m_CommonRS->AddRootSRV(0);
 		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-		m_CommonRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_CommonRS->AddRootCBV(100);
 		m_CommonRS->AddRootConstants(0, 5);
 		m_CommonRS->Create();
 
