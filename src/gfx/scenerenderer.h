@@ -10,10 +10,11 @@
 
 namespace limbo::RHI
 {
+	struct Shader;
 	class RootSignature;
+	class PipelineStateObject;
 	class Texture;
 	class Buffer;
-	class Shader;
 }
 
 namespace limbo::Gfx
@@ -106,14 +107,20 @@ namespace limbo::Gfx
 
 		RHI::Handle<RHI::Texture>		m_SceneTexture;
 
+		RHI::Handle<RHI::Shader>		m_QuadShaderVS;
+
 		// Skybox
 		RHI::RootSignature*				m_SkyboxRS;
-		RHI::Handle<RHI::Shader>		m_SkyboxShader;
+		RHI::Handle<RHI::Shader>		m_SkyboxShaderVS;
+		RHI::Handle<RHI::Shader>		m_SkyboxShaderPS;
+		RHI::PipelineStateObject*		m_SkyboxPSO;
 		Scene*							m_SkyboxCube;
 
 		// Deferred shading
 		RHI::RootSignature*				m_DeferredShadingRS;
-		RHI::Handle<RHI::Shader>		m_DeferredShadingShader;
+		RHI::Handle<RHI::Shader>		m_DeferredShadingShaderVS;
+		RHI::Handle<RHI::Shader>		m_DeferredShadingShaderPS;
+		RHI::PipelineStateObject*		m_DeferredShadingPSO;
 
 		// IBL stuff
 		RHI::Handle<RHI::Texture>		m_EnvironmentCubemap;
@@ -123,11 +130,13 @@ namespace limbo::Gfx
 
 		// PBR
 		RHI::RootSignature*				m_LightingRS;
-		RHI::Handle<RHI::Shader>		m_PBRShader;
+		RHI::Handle<RHI::Shader>		m_PBRShaderPS;
+		RHI::PipelineStateObject*		m_PBRPSO;
 
 		// Scene Composite
 		RHI::RootSignature*				m_CompositeRS;
-		RHI::Handle<RHI::Shader>		m_CompositeShader;
+		RHI::Handle<RHI::Shader>		m_CompositeShaderPS;
+		RHI::PipelineStateObject*		m_CompositePSO;
 
 		// Techniques
 		std::unique_ptr<SSAO>			m_SSAO;

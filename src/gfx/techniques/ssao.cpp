@@ -5,6 +5,8 @@
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/rootsignature.h"
+#include "gfx/rhi/pipelinestateobject.h"
+#include "gfx/rhi/shadercompiler.h"
 
 namespace limbo::Gfx
 {
@@ -29,12 +31,15 @@ namespace limbo::Gfx
 		m_BlurSSAORS->AddRootConstants(0, 5);
 		m_BlurSSAORS->Create();
 
-		m_SSAOShader = RHI::CreateShader({
-			.ProgramName = "ssao",
-			.CsEntryPoint = "ComputeSSAO",
-			.RootSignature = m_SSAORS,
-			.Type = RHI::ShaderType::Compute
-		});
+		m_SSAOShader = RHI::CreateShader("ssao.hlsl", "ComputeSSAO", RHI::ShaderType::Compute);
+		RHI::SC::Compile(m_SSAOShader);
+		{
+			RHI::PipelineStateInitializer psoInit = {};
+			psoInit.SetRootSignature(m_SSAORS);
+			psoInit.SetComputeShader(m_SSAOShader);
+			psoInit.SetName("SSAO PSO");
+			m_SSAOPSO = new RHI::PipelineStateObject(psoInit);
+		}
 
 		m_BlurredSSAOTexture = RHI::CreateTexture({
 			.Width = RHI::GetBackbufferWidth(),
@@ -43,12 +48,15 @@ namespace limbo::Gfx
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
 			.Format = RHI::Format::R8_UNORM,
 		});
-		m_BlurSSAOShader = RHI::CreateShader({
-			.ProgramName = "ssao",
-			.CsEntryPoint = "BlurSSAO",
-			.RootSignature = m_BlurSSAORS,
-			.Type = RHI::ShaderType::Compute
-		});
+		m_BlurSSAOShader = RHI::CreateShader("ssao.hlsl", "BlurSSAO", RHI::ShaderType::Compute);
+		RHI::SC::Compile(m_BlurSSAOShader);
+		{
+			RHI::PipelineStateInitializer psoInit = {};
+			psoInit.SetRootSignature(m_BlurSSAORS);
+			psoInit.SetComputeShader(m_BlurSSAOShader);
+			psoInit.SetName("SSAO PSO");
+			m_BlurSSAOPSO = new RHI::PipelineStateObject(psoInit);
+		}
 	}
 
 	SSAO::~SSAO()
@@ -59,14 +67,17 @@ namespace limbo::Gfx
 		RHI::DestroyShader(m_BlurSSAOShader);
 
 		delete m_SSAORS;
+		delete m_SSAOPSO;
 		delete m_BlurSSAORS;
+		delete m_BlurSSAOPSO;
+		
 	}
 
 	void SSAO::Render(SceneRenderer* sceneRenderer, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> sceneDepthMap)
 	{
 		{
 			RHI::BeginProfileEvent("SSAO");
-			RHI::BindShader(m_SSAOShader);
+			RHI::SetPipelineState(m_SSAOPSO);
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
@@ -87,7 +98,7 @@ namespace limbo::Gfx
 
 		{
 			RHI::BeginProfileEvent("SSAO Blur Texture");
-			RHI::BindShader(m_BlurSSAOShader);
+			RHI::SetPipelineState(m_BlurSSAOPSO);
 
 			RHI::DescriptorHandle uavHandles[] =
 			{

@@ -10,6 +10,7 @@
 #include "gfx/gfx.h"
 #include "device.h"
 #include "ringbufferallocator.h"
+#include "pipelinestateobject.h"
 
 namespace limbo::RHI
 {
@@ -112,7 +113,24 @@ namespace limbo::RHI
 		m_CommandList->CopyBufferRegion(dst->Resource.Get(), dstOffset, src->Resource.Get(), srcOffset, numBytes);
 	}
 
-	void CommandContext::BindVertexBuffer(Handle<Buffer> buffer)
+	void CommandContext::ClearRenderTarget(Handle<Texture> renderTarget, float4 color)
+	{
+		Texture* rt = GetTexture(renderTarget);
+		m_CommandList->ClearRenderTargetView(rt->UAVHandle[0].CpuHandle, glm::value_ptr(color), 0, nullptr);
+	}
+
+	void CommandContext::ClearDepthTarget(Handle<Texture> depthTarget, float depth, uint8 stencil)
+	{
+		Texture* dt = GetTexture(depthTarget);
+
+		D3D12_CLEAR_FLAGS flags = D3D12_CLEAR_FLAG_DEPTH;
+		if (stencil > 0)
+			flags |= D3D12_CLEAR_FLAG_STENCIL;
+
+		m_CommandList->ClearDepthStencilView(dt->UAVHandle[0].CpuHandle, flags, depth, stencil, 0, nullptr);
+	}
+
+	void CommandContext::SetVertexBuffer(Handle<Buffer> buffer)
 	{
 		ResourceManager* rm = ResourceManager::Ptr;
 		Buffer* vb = rm->GetBuffer(buffer);
@@ -126,7 +144,7 @@ namespace limbo::RHI
 		m_CommandList->IASetVertexBuffers(0, 1, &vbView);
 	}
 
-	void CommandContext::BindIndexBuffer(Handle<Buffer> buffer)
+	void CommandContext::SetIndexBuffer(Handle<Buffer> buffer)
 	{
 		ResourceManager* rm = ResourceManager::Ptr;
 		Buffer* ib = rm->GetBuffer(buffer);
@@ -141,7 +159,7 @@ namespace limbo::RHI
 		m_CommandList->IASetIndexBuffer(&ibView);
 	}
 
-	void CommandContext::BindVertexBufferView(VertexBufferView view)
+	void CommandContext::SetVertexBufferView(VertexBufferView view)
 	{
 		D3D12_VERTEX_BUFFER_VIEW vbView = {
 			.BufferLocation = view.BufferLocation,
@@ -151,7 +169,7 @@ namespace limbo::RHI
 		m_CommandList->IASetVertexBuffers(0, 1, &vbView);
 	}
 
-	void CommandContext::BindIndexBufferView(IndexBufferView view)
+	void CommandContext::SetIndexBufferView(IndexBufferView view)
 	{
 		D3D12_INDEX_BUFFER_VIEW ibView = {
 			.BufferLocation = view.BufferLocation,
@@ -162,77 +180,67 @@ namespace limbo::RHI
 		m_CommandList->IASetIndexBuffer(&ibView);
 	}
 
-	void CommandContext::BindShader(Handle<Shader> shader)
+	void CommandContext::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology)
 	{
-		m_BoundShader = shader;
+		m_CommandList->IASetPrimitiveTopology(topology);
+	}
 
-		ResourceManager* rm = ResourceManager::Ptr;
-		Shader* pBoundShader = rm->GetShader(m_BoundShader);
+	void CommandContext::SetViewport(uint32 width, uint32 height, float topLeft, float topRight, float minDepth, float maxDepth)
+	{
+		D3D12_VIEWPORT viewport = {
+			.TopLeftX = topLeft,
+			.TopLeftY = topRight,
+			.Width = (float)width,
+			.Height = (float)height,
+			.MinDepth = minDepth,
+			.MaxDepth = maxDepth
+		};
 
-		if (pBoundShader->Type == ShaderType::Graphics)
+		D3D12_RECT scissor = {
+			.left = (int)topLeft,
+			.top = (int)topRight,
+			.right = (int)width,
+			.bottom = (int)height
+		};
+
+		m_CommandList->RSSetViewports(1, &viewport);
+		m_CommandList->RSSetScissorRects(1, &scissor);
+	}
+
+	void CommandContext::SetRenderTargets(Span<Handle<Texture>> renderTargets, Handle<Texture> depthTarget)
+	{
+		check(renderTargets.GetSize() > 0);
+
+		D3D12_CPU_DESCRIPTOR_HANDLE* depthDescriptor = nullptr;
+		if (depthTarget.IsValid())
 		{
-			int32 width = pBoundShader->RTSize.x > 0 ? pBoundShader->RTSize.x : GetBackbufferWidth();
-			int32 height = pBoundShader->RTSize.y > 0 ? pBoundShader->RTSize.y : GetBackbufferHeight();
-			if (pBoundShader->UseSwapchainRT)
-			{
-				BindSwapchainRenderTargets();
-			}
-			else
-			{
-				// first transition the render targets to the correct resource state
-				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
-					InsertResourceBarrier(GetTexture(pBoundShader->RenderTargets[i].Texture), D3D12_RESOURCE_STATE_RENDER_TARGET);
-				if (pBoundShader->DepthTarget.Texture.IsValid())
-					InsertResourceBarrier(GetTexture(pBoundShader->DepthTarget.Texture), D3D12_RESOURCE_STATE_DEPTH_WRITE);
-				SubmitResourceBarriers();
-
-				D3D12_CPU_DESCRIPTOR_HANDLE* dsvhandle = nullptr;
-
-				if (pBoundShader->DepthTarget.Texture.IsValid())
-				{
-					Texture* depthBackbuffer = rm->GetTexture(pBoundShader->DepthTarget.Texture);
-					FAILIF(!depthBackbuffer);
-					dsvhandle = &depthBackbuffer->UAVHandle[0].CpuHandle;
-					if (pBoundShader->DepthTarget.LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearDepthStencilView(depthBackbuffer->UAVHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, pBoundShader->GetDepthClearValue(), 0, 0, nullptr);
-				}
-
-				D3D12_CPU_DESCRIPTOR_HANDLE rtHandles[8];
-				for (uint8 i = 0; i < pBoundShader->RTCount; ++i)
-				{
-					Texture* rt = rm->GetTexture(pBoundShader->RenderTargets[i].Texture);
-					FAILIF(!rt);
-
-					if (pBoundShader->RenderTargets[i].LoadRenderPassOp == RenderPassOp::Clear)
-						m_CommandList->ClearRenderTargetView(rt->UAVHandle[0].CpuHandle, glm::value_ptr(pBoundShader->GetRTClearColor()), 0, nullptr);
-
-					rtHandles[i] = rt->UAVHandle[0].CpuHandle;
-				}
-
-				m_CommandList->OMSetRenderTargets(pBoundShader->RTCount, rtHandles, false, dsvhandle);
-			}
-
-			D3D12_VIEWPORT viewport = {
-				.TopLeftX = 0,
-				.TopLeftY = 0,
-				.Width = (float)width,
-				.Height = (float)height,
-				.MinDepth = 0.0f,
-				.MaxDepth = 1.0f
-			};
-
-			D3D12_RECT scissor = {
-				.left = 0,
-				.top = 0,
-				.right = width,
-				.bottom = height
-			};
-
-			m_CommandList->RSSetViewports(1, &viewport);
-			m_CommandList->RSSetScissorRects(1, &scissor);
+			Texture* pDepthTarget = GetTexture(depthTarget);
+			depthDescriptor = &pDepthTarget->UAVHandle[0].CpuHandle;
 		}
 
-		pBoundShader->Bind(m_CommandList.Get());
+		TStaticArray<D3D12_CPU_DESCRIPTOR_HANDLE, MAX_RENDER_TARGETS> renderTargetDescriptors;
+		for (uint32 i = 0; i < renderTargets.GetSize(); ++i)
+		{
+			Texture* pRenderTarget = GetTexture(renderTargets[0]);
+			renderTargetDescriptors[i] = pRenderTarget->UAVHandle[0].CpuHandle;
+		}
+
+		m_CommandList->OMSetRenderTargets(renderTargets.GetSize(), renderTargetDescriptors.GetData(), false, depthDescriptor);
+	}
+
+	void CommandContext::SetPipelineState(PipelineStateObject* pso)
+	{
+		m_BoundPSO = pso;
+
+		if (!pso->IsRaytracing())
+			m_CommandList->SetPipelineState(pso->GetPipelineState());
+		else
+			m_CommandList->SetPipelineState1(pso->GetStateObject());
+
+		if (!pso->IsCompute())
+			m_CommandList->SetGraphicsRootSignature(pso->GetRootSignature()->Get());
+		else
+			m_CommandList->SetComputeRootSignature(pso->GetRootSignature()->Get());
 	}
 
 	void CommandContext::BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)
@@ -253,10 +261,7 @@ namespace limbo::RHI
 		uint32 destRanges[1] = { count };
 		Device::Ptr->GetDevice()->CopyDescriptors(1, &tempAlloc.CpuHandle, destRanges, count, srcDescriptors, DescriptorCopyRanges, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		ResourceManager* rm = ResourceManager::Ptr;
-		Shader* shader = rm->GetShader(m_BoundShader);
-
-		if (shader->Type == ShaderType::Graphics)
+		if (!m_BoundPSO->IsCompute())
 			m_CommandList->SetGraphicsRootDescriptorTable(rootParameter, tempAlloc.GPUHandle);
 		else
 			m_CommandList->SetComputeRootDescriptorTable(rootParameter, tempAlloc.GPUHandle);
@@ -264,10 +269,7 @@ namespace limbo::RHI
 
 	void CommandContext::BindConstants(uint32 rootParameter, uint32 num32bitValues, uint32 offsetIn32bits, const void* data)
 	{
-		ResourceManager* rm = ResourceManager::Ptr;
-		Shader* shader = rm->GetShader(m_BoundShader);
-
-		if (shader->Type == ShaderType::Graphics)
+		if (!m_BoundPSO->IsCompute())
 			m_CommandList->SetGraphicsRoot32BitConstants(rootParameter, num32bitValues, data, offsetIn32bits);
 		else
 			m_CommandList->SetComputeRoot32BitConstants(rootParameter, num32bitValues, data, offsetIn32bits);
@@ -283,10 +285,7 @@ namespace limbo::RHI
 
 	void CommandContext::BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress)
 	{
-		ResourceManager* rm = ResourceManager::Ptr;
-		Shader* shader = rm->GetShader(m_BoundShader);
-
-		if (shader->Type == ShaderType::Graphics)
+		if (!m_BoundPSO->IsCompute())
 			m_CommandList->SetGraphicsRootShaderResourceView(rootParameter, gpuVirtualAddress);
 		else
 			m_CommandList->SetComputeRootShaderResourceView(rootParameter, gpuVirtualAddress);
@@ -294,33 +293,10 @@ namespace limbo::RHI
 
 	void CommandContext::BindRootCBV(uint32 rootParameter, uint64 gpuVirtualAddress)
 	{
-		ResourceManager* rm = ResourceManager::Ptr;
-		Shader* shader = rm->GetShader(m_BoundShader);
-
-		if (shader->Type == ShaderType::Graphics)
+		if (!m_BoundPSO->IsCompute())
 			m_CommandList->SetGraphicsRootConstantBufferView(rootParameter, gpuVirtualAddress);
 		else
 			m_CommandList->SetComputeRootConstantBufferView(rootParameter, gpuVirtualAddress);
-	}
-
-	void CommandContext::InstallDrawState()
-	{
-		SubmitResourceBarriers();
-
-		ResourceManager* rm = ResourceManager::Ptr;
-		Shader* shader = rm->GetShader(m_BoundShader);
-
-		if (shader->Type == ShaderType::Graphics)
-			m_CommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-		if (shader->Type != ShaderType::RayTracing)
-		{
-			m_CommandList->SetPipelineState(shader->PipelineState.Get());
-		}
-		else
-		{
-			m_CommandList->SetPipelineState1(shader->StateObject.Get());
-		}
 	}
 
 	bool CommandContext::IsTransitionAllowed(D3D12_RESOURCE_STATES state)
@@ -347,31 +323,6 @@ namespace limbo::RHI
 			return (state & VALID_COPY_QUEUE_RESOURCE_STATES) == state;
 		}
 		return true;
-	}
-
-	void CommandContext::BindSwapchainRenderTargets()
-	{
-		ResourceManager* rm = ResourceManager::Ptr;
-		Shader* shader = rm->GetShader(m_BoundShader);
-		if (!shader->UseSwapchainRT)
-			return;
-
-		Handle<Texture> backBufferHandle = Device::Ptr->GetCurrentBackbuffer();
-		Texture* backbuffer = rm->GetTexture(backBufferHandle);
-		FAILIF(!backbuffer);
-
-		Handle<Texture> depthBackBufferHandle = Device::Ptr->GetCurrentDepthBackbuffer();
-		Texture* depthBackbuffer = rm->GetTexture(depthBackBufferHandle);
-		FAILIF(!depthBackbuffer);
-
-		m_CommandList->OMSetRenderTargets(1, &backbuffer->UAVHandle[0].CpuHandle, false, &depthBackbuffer->UAVHandle[0].CpuHandle);
-
-		InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET);
-		SubmitResourceBarriers();
-
-		constexpr float clearColor[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		m_CommandList->ClearDepthStencilView(depthBackbuffer->UAVHandle[0].CpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-		m_CommandList->ClearRenderTargetView(backbuffer->UAVHandle[0].CpuHandle, clearColor, 0, nullptr);
 	}
 
 	void CommandContext::Reset()
@@ -405,19 +356,19 @@ namespace limbo::RHI
 
 	void CommandContext::Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
 	{
-		InstallDrawState();
+		SubmitResourceBarriers();
 		m_CommandList->DrawInstanced(vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 
 	void CommandContext::DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance)
 	{
-		InstallDrawState();
+		SubmitResourceBarriers();
 		m_CommandList->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
 	void CommandContext::DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth)
 	{
-		InstallDrawState();
+		SubmitResourceBarriers();
 
 		D3D12_DISPATCH_RAYS_DESC desc;
 		sbt.Commit(desc, width, height, depth);
@@ -426,7 +377,7 @@ namespace limbo::RHI
 
 	void CommandContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
-		InstallDrawState();
+		SubmitResourceBarriers();
 		m_CommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
 	}
 

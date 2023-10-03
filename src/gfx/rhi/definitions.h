@@ -10,6 +10,7 @@ using namespace Microsoft::WRL;
 namespace limbo::RHI
 {
 	constexpr uint8	NUM_BACK_BUFFERS = 3;
+	constexpr uint8 MAX_RENDER_TARGETS = 8;
 
 	enum class ContextType : uint8
 	{
@@ -20,28 +21,20 @@ namespace limbo::RHI
 		MAX
 	};
 
+	enum class ShaderType : uint8
+	{
+		Compute,
+		Vertex,
+		Pixel,
+		Lib
+	};
+
 	enum class TextureType : uint8
 	{
 		Texture1D,
 		Texture2D,
 		Texture3D,
 		TextureCube
-	};
-
-	enum class ShaderType : uint8
-	{
-		Graphics,
-		Compute,
-		RayTracing,
-	};
-
-	enum class ShaderParameterType : uint8
-	{
-		SRV = 0,
-		UAV,
-		CBV,
-		Constants,
-		MAX
 	};
 
 	enum class RenderPassOp : uint8
@@ -86,19 +79,6 @@ namespace limbo::RHI
 		//Surface
 		BGRA8_UNORM
 	};
-
-	inline std::string_view ShaderParameterTypeToStr(ShaderParameterType type)
-	{
-		switch (type)
-		{
-		case ShaderParameterType::SRV: return "SRV";
-		case ShaderParameterType::UAV: return "UAV";
-		case ShaderParameterType::CBV: return "CBV";
-		case ShaderParameterType::Constants: return "Constants";
-		case ShaderParameterType::MAX:
-		default: return "";
-		}
-	}
 
 	inline std::string_view CmdListTypeToStr(ContextType type)
 	{

@@ -4,9 +4,10 @@
 
 namespace limbo::RHI
 {
+	struct Shader;
 	class RootSignature;
+	class PipelineStateObject;
 	class Texture;
-	class Shader;
 }
 
 namespace limbo::Gfx
@@ -18,8 +19,10 @@ namespace limbo::Gfx
 		RHI::RootSignature*					m_BlurSSAORS;
 
 		RHI::Handle<RHI::Shader>			m_SSAOShader;
+		RHI::PipelineStateObject*			m_SSAOPSO;
 		RHI::Handle<RHI::Texture>			m_UnblurredSSAOTexture;
 		RHI::Handle<RHI::Shader>			m_BlurSSAOShader;
+		RHI::PipelineStateObject*			m_BlurSSAOPSO;
 		RHI::Handle<RHI::Texture>			m_BlurredSSAOTexture;
 
 	public:

@@ -2,33 +2,6 @@
 
 namespace limbo::RHI
 {
-	namespace SC { struct Kernel; }
-
-	struct ShaderParameterInfo
-	{
-		ShaderParameterType	Type;
-		uint32				RPIndex;
-
-		union
-		{
-			// 16 bytes
-			struct
-			{
-				const void* Data;
-				uint32		 NumValues; // Num32BitValuesToSet
-				uint32		 Offset;    // DestOffsetIn32BitValues
-			};
-
-			// 8 bytes
-			struct
-			{
-				D3D12_GPU_DESCRIPTOR_HANDLE Descriptor;
-			};
-		};
-
-		bool IsValid() { return Type != ShaderParameterType::MAX; }
-	};
-
 	class RootSignature
 	{
 	private:
@@ -41,7 +14,6 @@ namespace limbo::RHI
 		static constexpr uint8 ROOT_PARAMETER_NUM = 8;
 
 	private:
-		using TParameterMap = std::unordered_map<uint32, ShaderParameterInfo>;
 		using TRootParameterMap = std::array<RootParameter, ROOT_PARAMETER_NUM>;
 
 		std::string							m_Name;

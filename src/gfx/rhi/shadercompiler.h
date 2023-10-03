@@ -1,9 +1,9 @@
 ﻿#pragma once
 
 #include "core/core.h"
-
-#include <dxcapi.h>
-#include <d3d12shader.h>
+#include "definitions.h"
+#include "resourcepool.h"
+#include "shader.h"
 
 namespace limbo::RHI::SC
 {
@@ -187,19 +187,6 @@ namespace limbo::RHI::SC
 		  -W[no-]<warning> Enable/Disable the specified warning
 	*/
 
-	struct Kernel
-	{
-		ComPtr<IDxcBlob>				Bytecode;
-	};
-
-	enum class KernelType : uint8
-	{
-		Compute,
-		Vertex,
-		Pixel,
-		Lib
-	};
-
-	bool Compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel);
+	bool Compile(Handle<Shader> shader);
 }
 

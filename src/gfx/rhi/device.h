@@ -6,6 +6,7 @@
 #include "commandcontext.h"
 #include "shaderbindingtable.h"
 #include "gfx/profiler.h"
+#include "core/array.h"
 
 namespace limbo::Core
 {
@@ -16,16 +17,17 @@ namespace limbo::RHI
 {
 	enum class DescriptorHeapType : uint8;
 	class RingBufferAllocator;
+	class PipelineStateObject;
 	struct DescriptorHandle;
 	class DescriptorHeap;
 	class RootSignature;
 	class CommandQueue;
 	struct WindowInfo;
 	struct DrawInfo;
+	struct Shader;
 	class Swapchain;
 	class Buffer;
 	class Texture;
-	class Shader;
 	class Fence;
 
 	typedef uint8 GfxDeviceFlags;
@@ -75,6 +77,7 @@ namespace limbo::RHI
 
 		RootSignature*						m_GenerateMipsRS;
 		Handle<Shader>						m_GenerateMipsShader;
+		PipelineStateObject*				m_GenerateMipsPSO;
 
 	public:
 		static Device* Ptr;
@@ -197,6 +200,16 @@ namespace limbo::RHI
 		return Device::Ptr->GetSwapchainFormat();
 	}
 
+	FORCEINLINE Handle<Texture> GetCurrentBackbuffer()
+	{
+		return Device::Ptr->GetCurrentBackbuffer();
+	}
+
+	FORCEINLINE Handle<Texture> GetCurrentDepthBackbuffer()
+	{
+		return Device::Ptr->GetCurrentDepthBackbuffer();
+	}
+
 	FORCEINLINE uint32 GetBackbufferWidth()
 	{
 		return Device::Ptr->GetBackbufferWidth();
@@ -277,29 +290,44 @@ namespace limbo::RHI
 		GetCommandContext()->EndEvent();
 	}
 
-	FORCEINLINE void BindVertexBuffer(Handle<Buffer> buffer)
+	FORCEINLINE void SetVertexBuffer(Handle<Buffer> buffer)
 	{
-		GetCommandContext()->BindVertexBuffer(buffer);
+		GetCommandContext()->SetVertexBuffer(buffer);
 	}
 
-	FORCEINLINE void BindIndexBuffer(Handle<Buffer> buffer)
+	FORCEINLINE void SetIndexBuffer(Handle<Buffer> buffer)
 	{
-		GetCommandContext()->BindIndexBuffer(buffer);
+		GetCommandContext()->SetIndexBuffer(buffer);
 	}
 
-	FORCEINLINE void BindVertexBufferView(VertexBufferView view)
+	FORCEINLINE void SetVertexBufferView(VertexBufferView view)
 	{
-		GetCommandContext()->BindVertexBufferView(view);
+		GetCommandContext()->SetVertexBufferView(view);
 	}
 
-	FORCEINLINE void BindIndexBufferView(IndexBufferView view)
+	FORCEINLINE void SetIndexBufferView(IndexBufferView view)
 	{
-		GetCommandContext()->BindIndexBufferView(view);
+		GetCommandContext()->SetIndexBufferView(view);
 	}
 
-	FORCEINLINE void BindShader(Handle<Shader> shader)
+	FORCEINLINE void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
 	{
-		GetCommandContext()->BindShader(shader);
+		GetCommandContext()->SetPrimitiveTopology(topology);
+	}
+
+	FORCEINLINE void SetViewport(uint32 width, uint32 height, float topLeft = 0.0f, float topRight = 0.0f, float minDepth = 0.0f, float maxDepth = 1.0f)
+	{
+		GetCommandContext()->SetViewport(width, height, topLeft, topRight, minDepth, maxDepth);
+	}
+
+	FORCEINLINE void SetPipelineState(PipelineStateObject* pso)
+	{
+		GetCommandContext()->SetPipelineState(pso);
+	}
+
+	FORCEINLINE void SetRenderTargets(Span<Handle<Texture>> renderTargets, Handle<Texture> depthTarget = Handle<Texture>())
+	{
+		GetCommandContext()->SetRenderTargets(renderTargets, depthTarget);
 	}
 
 	FORCEINLINE void BindTempDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)

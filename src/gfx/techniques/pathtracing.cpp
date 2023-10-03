@@ -6,6 +6,8 @@
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/shaderbindingtable.h"
+#include "gfx/rhi/pipelinestateobject.h"
+#include "gfx/rhi/shadercompiler.h"
 
 namespace limbo::Gfx
 {
@@ -26,58 +28,50 @@ namespace limbo::Gfx
 		m_CommonRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
 		m_CommonRS->Create();
 
-		m_RTShader = RHI::CreateShader({
-			.ProgramName = "Path Tracer",
-			.RootSignature = m_CommonRS,
-			.Libs = {
-				{
-					.LibName = "raytracing/pathtracer",
-					.Exports = {
-						{ .Name = L"RayGen" },
-					}
-				},
-				// Material Lib
-				{
-					.LibName = "raytracing/materiallib",
-					.HitGroupsDescriptions = {
-						{
-							.HitGroupExport = L"MaterialHitGroup",
-							.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES,
-							.AnyHitShaderImport = L"MaterialAnyHit",
-							.ClosestHitShaderImport = L"MaterialClosestHit",
-						}
-					},
-					.Exports = {
-						{ .Name = L"MaterialAnyHit" },
-						{ .Name = L"MaterialClosestHit" },
-						{ .Name = L"MaterialMiss" }
-					},
-				},
-			},
-			.ShaderConfig = {
-				.MaxPayloadSizeInBytes = sizeof(float) + sizeof(uint) + sizeof(uint) + sizeof(float2) + sizeof(uint), // MaterialPayload
-				.MaxAttributeSizeInBytes = sizeof(float2) // float2 barycentrics
-			},
-			.Type = RHI::ShaderType::RayTracing,
-		});
+		m_PathTracerLib = RHI::CreateShader("raytracing/pathtracer.hlsl", "", RHI::ShaderType::Lib);
+		RHI::SC::Compile(m_PathTracerLib);
+		m_MaterialLib = RHI::CreateShader("raytracing/materiallib.hlsl", "", RHI::ShaderType::Lib);
+		RHI::SC::Compile(m_MaterialLib);
+
+		{
+
+			RHI::RaytracingPipelineStateInitializer psoInit = {};
+			psoInit.SetGlobalRootSignature(m_CommonRS);
+			psoInit.SetName("Path Tracer PSO");
+			psoInit.SetShaderConfig(sizeof(MaterialRayTracingPayload), sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
+
+			RHI::RaytracingLibDesc pathTracerDesc = {};
+			pathTracerDesc.AddExport(L"RayGen");
+			psoInit.AddLib(m_PathTracerLib, pathTracerDesc);
+
+			RHI::RaytracingLibDesc materialDesc = {};
+			materialDesc.AddExport(L"MaterialAnyHit");
+			materialDesc.AddExport(L"MaterialClosestHit");
+			materialDesc.AddExport(L"MaterialMiss");
+			materialDesc.AddHitGroup(L"MaterialHitGroup", L"MaterialAnyHit", L"MaterialClosestHit");
+			psoInit.AddLib(m_MaterialLib, materialDesc);
+
+			m_PSO = new RHI::PipelineStateObject(psoInit);
+		}
 	}
 
 	PathTracing::~PathTracing()
 	{
 		if (m_FinalTexture.IsValid())
 			DestroyTexture(m_FinalTexture);
-		if (m_RTShader.IsValid())
-			DestroyShader(m_RTShader);
+		if (m_PathTracerLib.IsValid())
+			DestroyShader(m_PathTracerLib);
 
 		delete m_CommonRS;
+		delete m_PSO;
 	}
 
 	void PathTracing::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
 	{
 		RHI::BeginProfileEvent("Path Tracing");
-		RHI::BindShader(m_RTShader);
+		RHI::SetPipelineState(m_PSO);
 
-		RHI::ShaderBindingTable SBT(m_RTShader);
+		RHI::ShaderBindingTable SBT(m_PSO);
 		SBT.BindRayGen(L"RayGen");
 		SBT.BindMissShader(L"MaterialMiss");
 		SBT.BindHitGroup(L"MaterialHitGroup");

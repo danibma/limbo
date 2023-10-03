@@ -5,6 +5,8 @@
 #include "swapchain.h"
 #include "descriptorheap.h"
 #include "ringbufferallocator.h"
+#include "rootsignature.h"
+#include "shadercompiler.h"
 #include "core/window.h"
 #include "gfx/gfx.h"
 
@@ -12,9 +14,7 @@
 
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
-
-#include "rootsignature.h"
-
+#include "pipelinestateobject.h"
 
 unsigned int DelegateHandle::CURRENT_ID = 0;
 
@@ -205,6 +205,7 @@ namespace limbo::RHI
 	{
 		DestroyShader(m_GenerateMipsShader);
 		delete m_GenerateMipsRS;
+		delete m_GenerateMipsPSO;
 
 		delete m_TempBufferAllocator;
 		delete m_UploadRingBuffer;
@@ -334,12 +335,16 @@ namespace limbo::RHI
 		m_GenerateMipsRS->AddRootConstants(0, 4);
 		m_GenerateMipsRS->Create();
 
-		m_GenerateMipsShader = CreateShader({
-			.ProgramName = "generatemips",
-			.CsEntryPoint = "GenerateMip",
-			.RootSignature = m_GenerateMipsRS,
-			.Type = ShaderType::Compute
-		});
+		m_GenerateMipsShader = CreateShader("generatemips.hlsl", "GenerateMip", ShaderType::Compute);
+		SC::Compile(m_GenerateMipsShader);
+
+		{
+			PipelineStateInitializer psoInit = {};
+			psoInit.SetComputeShader(m_GenerateMipsShader);
+			psoInit.SetName("Generate Mips PSO");
+			psoInit.SetRootSignature(m_GenerateMipsRS);
+			m_GenerateMipsPSO = new PipelineStateObject(psoInit);
+		}
 
 		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256), "Upload Ring Buffer");
 		m_TempBufferAllocator = new RingBufferAllocator(Utils::ToMB(4), "Temp Buffers Ring Buffer");
@@ -570,7 +575,7 @@ namespace limbo::RHI
 
 		bool bIsRGB = t->Spec.Format == Format::RGBA8_UNORM_SRGB;
 
-		BindShader(m_GenerateMipsShader);
+		SetPipelineState(m_GenerateMipsPSO);
 		for (uint16 i = 1; i < t->Spec.MipLevels; ++i)
 		{
 			uint2 outputMipSize = { t->Spec.Width , t->Spec.Height };

@@ -13,6 +13,7 @@
 #include "techniques/rtao.h"
 #include "techniques/shadowmapping.h"
 #include "techniques/ssao.h"
+#include "rhi/pipelinestateobject.h"
 
 namespace limbo::Gfx
 {
@@ -46,24 +47,8 @@ namespace limbo::Gfx
 		m_DeferredShadingRS->AddRootCBV(100);
 		m_DeferredShadingRS->Create();
 
-		m_DeferredShadingShader = RHI::CreateShader({
-			.ProgramName = "deferredshading",
-			.RootSignature = m_DeferredShadingRS,
-			.RTFormats = {
-				{ RHI::Format::RGBA16_SFLOAT, "PixelPosition"},
-				{ RHI::Format::RGBA16_SFLOAT, "WorldPosition"},
-				{ RHI::Format::RGBA16_SFLOAT, "Albedo"},
-				{ RHI::Format::RGBA16_SFLOAT, "Normal" },
-				{ RHI::Format::RGBA16_SFLOAT, "RoughnessMetallicAO" },
-				{ RHI::Format::RGBA16_SFLOAT, "Emissive" },
-			},
-			.DepthFormat = { RHI::Format::D32_SFLOAT },
-			.ClearColor = {
-				.DepthClearValue = 0.0f
-			},
-			.DepthFunc = D3D12_COMPARISON_FUNC_GREATER,
-			.Type = RHI::ShaderType::Graphics
-		});
+		m_DeferredShadingShaderVS = RHI::CreateShader("deferredshading.hlsl", "VSMain", RHI::ShaderType::Vertex);
+		m_DeferredShadingShaderPS = RHI::CreateShader("deferredshading.hlsl", "PSMain", RHI::ShaderType::Pixel);
 
 		// Skybox
 		m_SkyboxRS = new RHI::RootSignature("Skybox RS");
@@ -72,18 +57,10 @@ namespace limbo::Gfx
 		m_SkyboxRS->Create(D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
 		m_SkyboxCube = Scene::Load("assets/models/skybox.glb");
-		m_SkyboxShader = RHI::CreateShader({
-			.ProgramName = "sky",
-			.InputLayout = {
-				{ "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT }
-			},
-			.RootSignature = m_SkyboxRS,
-			.RTFormats = {
-				{ RHI::Format::RGBA16_SFLOAT, "PBR RT" }
-			},
-			.DepthFormat = { RHI::Format::D32_SFLOAT, "PBR Depth" },
-			.Type = RHI::ShaderType::Graphics
-		});
+		m_SkyboxShaderVS = RHI::CreateShader("sky.hlsl", "VSMain", RHI::ShaderType::Vertex);
+		m_SkyboxShaderPS = RHI::CreateShader("sky.hlsl", "PSMain", RHI::ShaderType::Pixel);
+
+		m_QuadShaderVS = RHI::CreateShader("quad.hlsl", "VSMain", RHI::ShaderType::Vertex);
 
 		// PBR
 		m_LightingRS = new RHI::RootSignature("Lighting RS");
@@ -93,23 +70,7 @@ namespace limbo::Gfx
 		m_LightingRS->AddRootConstants(1, 10);
 		m_LightingRS->Create();
 
-		m_PBRShader = RHI::CreateShader({
-			.ProgramName = "pbrlighting",
-			.RootSignature = m_LightingRS,
-			.RTFormats = {
-				{
-					.RTFormat = RHI::Format::RGBA16_SFLOAT,
-					.RTTexture = RHI::GetShaderRT(m_SkyboxShader, 0),
-					.LoadRenderPassOp = RHI::RenderPassOp::Load
-				}
-			},
-			.DepthFormat = {
-				.RTFormat = RHI::Format::D32_SFLOAT,
-				.RTTexture = RHI::GetShaderDepthTarget(m_SkyboxShader),
-				.LoadRenderPassOp = RHI::RenderPassOp::Load
-			},
-			.Type = RHI::ShaderType::Graphics
-		});
+		m_PBRShaderPS = RHI::CreateShader("pbrlighting.hlsl", "PSMain", RHI::ShaderType::Pixel);
 
 		// Composite shader
 		m_CompositeRS = new RHI::RootSignature("Composite RS");
@@ -117,11 +78,7 @@ namespace limbo::Gfx
 		m_CompositeRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
 		m_CompositeRS->Create();
 
-		m_CompositeShader = RHI::CreateShader({
-			.ProgramName = "scenecomposite",
-			.RootSignature = m_CompositeRS,
-			.Type = RHI::ShaderType::Graphics
-		});
+		m_CompositeShaderPS = RHI::CreateShader("scenecomposite.hlsl", "PSMain", RHI::ShaderType::Pixel);
 
 		Core::JobSystem::WaitIdle();
 	}
@@ -133,10 +90,12 @@ namespace limbo::Gfx
 		DestroyTexture(m_PrefilterMap);
 		DestroyTexture(m_BRDFLUTMap);
 
-		DestroyShader(m_PBRShader);
-		DestroyShader(m_SkyboxShader);
-		DestroyShader(m_DeferredShadingShader);
-		DestroyShader(m_CompositeShader);
+		DestroyShader(m_PBRShaderPS);
+		DestroyShader(m_SkyboxShaderVS);
+		DestroyShader(m_SkyboxShaderPS);
+		DestroyShader(m_DeferredShadingShaderVS);
+		DestroyShader(m_DeferredShadingShaderPS);
+		DestroyShader(m_CompositeShaderPS);
 
 		DestroyBuffer(m_ScenesMaterials);
 		DestroyBuffer(m_SceneInstances);
@@ -149,12 +108,17 @@ namespace limbo::Gfx
 		delete m_SkyboxRS;
 		delete m_LightingRS;
 		delete m_CompositeRS;
+
+		delete m_SkyboxPSO;
+		delete m_DeferredShadingPSO;
+		delete m_PBRPSO;
+		delete m_CompositePSO;
 	}
 
 	void SceneRenderer::RenderGeometryPass()
 	{
 		RHI::BeginProfileEvent("Geometry Pass");
-		RHI::BindShader(m_DeferredShadingShader);
+		RHI::SetPipelineState(m_DeferredShadingPSO);
 
 		RHI::BindTempConstantBuffer(1, SceneInfo);
 		for (Scene* scene : m_Scenes)
@@ -163,7 +127,7 @@ namespace limbo::Gfx
 			{
 				RHI::BindConstants(0, 0, mesh.InstanceID);
 
-				RHI::BindIndexBufferView(mesh.IndicesLocation);
+				RHI::SetIndexBufferView(mesh.IndicesLocation);
 				RHI::DrawIndexed((uint32)mesh.IndexCount);
 			});
 		}
@@ -173,16 +137,18 @@ namespace limbo::Gfx
 	void SceneRenderer::RenderAmbientOcclusionPass()
 	{
 		PROFILE_SCOPE(RHI::GetCommandContext(RHI::ContextType::Direct), "Ambient Occlusion");
+#if TODO
 		if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
 			m_SSAO->Render(this, GetShaderRT(m_DeferredShadingShader, 0), GetShaderDepthTarget(m_DeferredShadingShader));
 		else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
 			m_RTAO->Render(this, &m_SceneAS, GetShaderRT(m_DeferredShadingShader, 1), GetShaderRT(m_DeferredShadingShader, 3));
+#endif
 	}
 
 	void SceneRenderer::RenderSkybox()
 	{
 		RHI::BeginProfileEvent("Render Skybox");
-		RHI::BindShader(m_SkyboxShader);
+		RHI::SetPipelineState(m_SkyboxPSO);
 
 		RHI::BindTempConstantBuffer(0, SceneInfo);
 
@@ -190,8 +156,8 @@ namespace limbo::Gfx
 
 		m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
 		{
-			RHI::BindVertexBufferView(mesh.PositionsLocation);
-			RHI::BindIndexBufferView(mesh.IndicesLocation);
+			RHI::SetVertexBufferView(mesh.PositionsLocation);
+			RHI::SetIndexBufferView(mesh.IndicesLocation);
 			RHI::DrawIndexed((uint32)mesh.IndexCount);
 		});
 		RHI::EndProfileEvent("Render Skybox");
@@ -200,7 +166,7 @@ namespace limbo::Gfx
 	void SceneRenderer::RenderLightingPass()
 	{
 		RHI::BeginProfileEvent("Lighting");
-		RHI::BindShader(m_PBRShader);
+		RHI::SetPipelineState(m_PBRPSO);
 		
 		RHI::BindTempConstantBuffer(1, SceneInfo);
 		RHI::BindTempConstantBuffer(2, m_ShadowMapping->GetShadowData());
@@ -213,12 +179,14 @@ namespace limbo::Gfx
 
 
 		// Bind deferred shading render targets
+#if TODO
 		RHI::BindConstants(3, 0, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 0))->SRV());
 		RHI::BindConstants(3, 1, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 1))->SRV());
 		RHI::BindConstants(3, 2, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 2))->SRV());
 		RHI::BindConstants(3, 3, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 3))->SRV());
 		RHI::BindConstants(3, 4, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 4))->SRV());
 		RHI::BindConstants(3, 5, RHI::GetTexture(GetShaderRT(m_DeferredShadingShader, 5))->SRV());
+#endif
 		if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
 			RHI::BindConstants(3, 6, RHI::GetTexture(m_RTAO->GetFinalTexture())->SRV());
 		else
@@ -234,7 +202,7 @@ namespace limbo::Gfx
 	void SceneRenderer::RenderSceneCompositePass()
 	{
 		RHI::BeginProfileEvent("Scene Composite");
-		RHI::BindShader(m_CompositeShader);
+		RHI::SetPipelineState(m_CompositePSO);
 		RHI::BindConstants(0, 0, Tweaks.CurrentTonemap);
 
 		RHI::BindConstants(0, 1, RHI::GetTexture(m_SceneTexture)->SRV());
@@ -270,8 +238,9 @@ namespace limbo::Gfx
 			RenderSkybox();
 
 			RenderLightingPass();
-
+#if TODO
 			m_SceneTexture = GetShaderRT(m_PBRShader, 0);
+#endif
 		}
 		else if (Tweaks.CurrentRenderPath == (int)RenderPath::PathTracing)
 		{
@@ -414,14 +383,12 @@ namespace limbo::Gfx
 
 			RHI::BeginEvent("EquirectToCubemap");
 			RHI::Handle<RHI::Texture> equirectangularTexture = RHI::CreateTextureFromFile(path, "Equirectangular Texture");
-			RHI::Handle<RHI::Shader> equirectToCubemap = RHI::CreateShader({
-				.ProgramName = "ibl",
-				.CsEntryPoint = "EquirectToCubemap",
-				.RootSignature = m_TempRS.get(),
-				.Type = RHI::ShaderType::Compute
-			});
+			RHI::Handle<RHI::Shader> equirectToCubemap = RHI::CreateShader("ibl.hlsl", "EquirectToCubemap", RHI::ShaderType::Compute);
 
-			RHI::BindShader(equirectToCubemap);
+			RHI::PipelineStateInitializer psoInit = {};
+			RHI::PipelineStateObject* tempPSO = new RHI::PipelineStateObject(psoInit);
+
+			RHI::SetPipelineState(tempPSO);
 
 			RHI::BindConstants(1, 0, RHI::GetTexture(equirectangularTexture)->SRV());
 
@@ -435,6 +402,8 @@ namespace limbo::Gfx
 			RHI::DestroyShader(equirectToCubemap);
 			RHI::DestroyTexture(equirectangularTexture);
 			RHI::EndEvent();
+
+			delete tempPSO;
 		}
 
 		// irradiance map
@@ -456,14 +425,12 @@ namespace limbo::Gfx
 				.Type = RHI::TextureType::TextureCube,
 			});
 
-			RHI::Handle<RHI::Shader> irradianceShader = RHI::CreateShader({
-				.ProgramName = "ibl",
-				.CsEntryPoint = "DrawIrradianceMap",
-				.RootSignature = m_TempRS.get(),
-				.Type = RHI::ShaderType::Compute
-			});
+			RHI::Handle<RHI::Shader> irradianceShader = RHI::CreateShader("ibl.hlsl", "DrawIrradianceMap", RHI::ShaderType::Compute);
 
-			RHI::BindShader(irradianceShader);
+			RHI::PipelineStateInitializer psoInit = {};
+			RHI::PipelineStateObject* tempPSO = new RHI::PipelineStateObject(psoInit);
+
+			RHI::SetPipelineState(tempPSO);
 			RHI::BindConstants(0, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
 
 			RHI::DescriptorHandle uavTexture[] =
@@ -475,6 +442,8 @@ namespace limbo::Gfx
 
 			RHI::DestroyShader(irradianceShader);
 			RHI::EndEvent();
+
+			delete tempPSO;
 		}
 
 		// Pre filter env map
@@ -500,14 +469,12 @@ namespace limbo::Gfx
 				.Type = RHI::TextureType::TextureCube,
 			});
 
-			RHI::Handle<RHI::Shader> prefilterShader = RHI::CreateShader({
-				.ProgramName = "ibl",
-				.CsEntryPoint = "PreFilterEnvMap",
-				.RootSignature = m_TempRS.get(),
-				.Type = RHI::ShaderType::Compute
-			});
+			RHI::Handle<RHI::Shader> prefilterShader = RHI::CreateShader("ibl.hlsl", "PreFilterEnvMap", RHI::ShaderType::Compute);
 
-			RHI::BindShader(prefilterShader);
+			RHI::PipelineStateInitializer psoInit = {};
+			RHI::PipelineStateObject* tempPSO = new RHI::PipelineStateObject(psoInit);
+
+			RHI::SetPipelineState(tempPSO);
 			RHI::BindConstants(1, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
 
 			const float deltaRoughness = 1.0f / glm::max(float(prefilterMipLevels - 1), 1.0f);
@@ -526,6 +493,8 @@ namespace limbo::Gfx
 
 			RHI::DestroyShader(prefilterShader);
 			RHI::EndEvent();
+
+			delete tempPSO;
 		}
 
 		// Compute BRDF LUT map
@@ -545,13 +514,12 @@ namespace limbo::Gfx
 				.Type = RHI::TextureType::Texture2D,
 			});
 
-			RHI::Handle<RHI::Shader> brdfLUTShader = RHI::CreateShader({
-				.ProgramName = "ibl",
-				.CsEntryPoint = "ComputeBRDFLUT",
-				.RootSignature = m_TempRS.get(),
-				.Type = RHI::ShaderType::Compute
-			});
-			RHI::BindShader(brdfLUTShader);
+			RHI::Handle<RHI::Shader> brdfLUTShader = RHI::CreateShader("ibl.hlsl", "ComputeBRDFLUT", RHI::ShaderType::Compute);
+
+			RHI::PipelineStateInitializer psoInit = {};
+			RHI::PipelineStateObject* tempPSO = new RHI::PipelineStateObject(psoInit);
+
+			RHI::SetPipelineState(tempPSO);
 			RHI::DescriptorHandle uavTexture[] =
 			{
 				RHI::GetTexture(m_BRDFLUTMap)->UAVHandle[0]
@@ -561,6 +529,7 @@ namespace limbo::Gfx
 
 			RHI::DestroyShader(brdfLUTShader);
 			RHI::EndEvent();
+			delete tempPSO;
 		}
 	}
 }

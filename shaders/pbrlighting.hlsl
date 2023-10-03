@@ -1,5 +1,4 @@
-﻿#include "quad.hlsli"
-#include "iblcommon.hlsli"
+﻿#include "iblcommon.hlsli"
 #include "brdf.hlsli"
 
 /*
@@ -8,8 +7,6 @@
 
     Alongside the references linked in those files, https://learnopengl.com/ PBR section was a huge help as well.
 */
-
-QuadResult VSMain(uint vertexID : SV_VertexID) { VS_DRAW_QUAD(vertexID); }
 
 // Light info
 cbuffer Random : register(b0)

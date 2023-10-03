@@ -4,9 +4,10 @@
 
 namespace limbo::RHI
 {
+	struct Shader;
 	class RootSignature;
+	class PipelineStateObject;
 	class Texture;
-	class Shader;
 	class Buffer;
 }
 
@@ -18,7 +19,9 @@ namespace limbo::Gfx
 	class ShadowMapping
 	{
 		RHI::RootSignature*			m_CommonRS;
-		RHI::Handle<RHI::Shader>	m_ShadowMapShaders[SHADOWMAP_CASCADES];
+		RHI::Handle<RHI::Shader>	m_ShadowMapVS;
+		RHI::Handle<RHI::Shader>	m_ShadowMapPS;
+		RHI::PipelineStateObject*	m_PSO;
 
 		ShadowData					m_ShadowData;
 

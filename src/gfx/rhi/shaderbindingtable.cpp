@@ -1,16 +1,14 @@
 ﻿#include "stdafx.h"
 #include "shaderbindingtable.h"
-
 #include "resourcemanager.h"
 #include "shader.h"
+#include "pipelinestateobject.h"
 
 namespace limbo::RHI
 {
-	ShaderBindingTable::ShaderBindingTable(Handle<Shader> shader)
+	ShaderBindingTable::ShaderBindingTable(PipelineStateObject* pso)
 	{
-		Shader* s = ResourceManager::Ptr->GetShader(shader);
-		FAILIF(!s);
-		m_StateObject = s->StateObject.Get();
+		m_StateObject = pso->GetStateObject();
 	}
 
 	void ShaderBindingTable::BindRayGen(const wchar_t* name)

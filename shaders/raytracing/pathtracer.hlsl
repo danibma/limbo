@@ -48,7 +48,7 @@ void RayGen()
     const int bounces = 5;
     for (int i = 0; i < bounces; ++i)
     {
-        MaterialPayload payload = TraceMaterialRay(Scene, ray, RAY_FLAG_FORCE_OPAQUE);
+        MaterialRayTracingPayload payload = TraceMaterialRay(Scene, ray, RAY_FLAG_FORCE_OPAQUE);
 
         if (payload.IsHit() <= 0)
         {

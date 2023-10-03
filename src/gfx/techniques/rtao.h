@@ -4,10 +4,11 @@
 
 namespace limbo::RHI
 {
+	class PipelineStateObject;
 	class AccelerationStructure;
 	class RootSignature;
 	class Texture;
-	class Shader;
+	struct Shader;
 }
 
 namespace limbo::Gfx
@@ -18,7 +19,9 @@ namespace limbo::Gfx
 		RHI::RootSignature*			m_CommonRS;
 
 		RHI::Handle<RHI::Shader>	m_RTAOShader;
+		RHI::PipelineStateObject*	m_RTAOPSO;
 		RHI::Handle<RHI::Shader>	m_DenoiseRTAOShader;
+		RHI::PipelineStateObject*	m_RTAODenoisePSO;
 		RHI::Handle<RHI::Texture>	m_NoisedTexture;
 		RHI::Handle<RHI::Texture>	m_FinalTexture;
 		RHI::Handle<RHI::Texture>	m_PreviousFrame;

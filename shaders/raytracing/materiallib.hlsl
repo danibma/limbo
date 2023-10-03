@@ -1,7 +1,7 @@
 ﻿#include "raytracingcommon.hlsli"
 
 [shader("closesthit")]
-void MaterialClosestHit(inout MaterialPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+void MaterialClosestHit(inout MaterialRayTracingPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
 	payload.PrimitiveID		= PrimitiveIndex();
     payload.InstanceID		= InstanceIndex();
@@ -10,13 +10,13 @@ void MaterialClosestHit(inout MaterialPayload payload, in BuiltInTriangleInterse
 }
 
 [shader("miss")]
-void MaterialMiss(inout MaterialPayload payload)
+void MaterialMiss(inout MaterialRayTracingPayload payload)
 {
-	payload = (MaterialPayload)0;
+	payload = (MaterialRayTracingPayload)0;
 }
 
 [shader("anyhit")]
-void MaterialAnyHit(inout MaterialPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+void MaterialAnyHit(inout MaterialRayTracingPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
 	if (!AnyHitAlphaTest(attr.barycentrics)) IgnoreHit();
 }

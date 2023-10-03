@@ -5,9 +5,10 @@
 
 namespace limbo::RHI
 {
+	struct Shader;
 	class RootSignature;
+	class PipelineStateObject;
 	class Texture;
-	class Shader;
 }
 
 namespace limbo::Gfx
@@ -18,7 +19,9 @@ namespace limbo::Gfx
 	private:
 		RHI::RootSignature*				m_CommonRS;
 		RHI::Handle<RHI::Texture>		m_FinalTexture;
-		RHI::Handle<RHI::Shader>		m_RTShader;
+		RHI::Handle<RHI::Shader>		m_PathTracerLib;
+		RHI::Handle<RHI::Shader>		m_MaterialLib;
+		RHI::PipelineStateObject*		m_PSO;
 
 	public:
 		explicit PathTracing();

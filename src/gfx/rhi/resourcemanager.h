@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "resourcemanager.h"
+#include "resourcepool.h"
 #include "buffer.h"
 #include "shader.h"
 #include "texture.h"
@@ -32,7 +32,7 @@ namespace limbo::RHI
 		virtual ~ResourceManager();
 
 		Handle<Buffer> CreateBuffer(const BufferSpec& spec);
-		Handle<Shader> CreateShader(const ShaderSpec& spec);
+		Handle<Shader> CreateShader(const char* file, const char* entryPoint, ShaderType type);
 		Handle<Texture> CreateTextureFromFile(const char* path, const char* debugName);
 		Handle<Texture> CreateTexture(const TextureSpec& spec);
 		Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
@@ -71,9 +71,9 @@ namespace limbo::RHI
 		return ResourceManager::Ptr->CreateBuffer(spec);
 	}
 
-	inline Handle<Shader> CreateShader(const ShaderSpec& spec)
+	inline Handle<Shader> CreateShader(const char* file, const char* entryPoint, ShaderType type)
 	{
-		return ResourceManager::Ptr->CreateShader(spec);
+		return ResourceManager::Ptr->CreateShader(file, entryPoint, type);
 	}
 
 	inline Handle<Texture> CreateTextureFromFile(const char* path, const char* debugName)
@@ -107,27 +107,6 @@ namespace limbo::RHI
 	{
 		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyTexture(handle, bImmediate);
-	}
-
-	inline Handle<Texture> GetShaderRT(Handle<Shader> shader, uint8 rtIndex)
-	{
-		Shader* renderTargetShader = ResourceManager::Ptr->GetShader(shader);
-		ensure(renderTargetShader);
-
-		if (rtIndex >= renderTargetShader->RTCount)
-		{
-			LB_WARN("Failed to get render target index '%d'!", rtIndex);
-			return Handle<Texture>();
-		}
-
-		return renderTargetShader->RenderTargets[rtIndex].Texture;
-	}
-
-	inline Handle<Texture> GetShaderDepthTarget(Handle<Shader> shader)
-	{
-		Shader* renderTargetShader = ResourceManager::Ptr->GetShader(shader);
-		ensure(renderTargetShader);
-		return renderTargetShader->DepthTarget.Texture;
 	}
 
 	inline Buffer* GetBuffer(Handle<Buffer> buffer)
@@ -174,15 +153,5 @@ namespace limbo::RHI
 	inline uint64 GetTextureID(Handle<Texture> texture)
 	{
 		return ResourceManager::Ptr->GetTextureID(texture);
-	}
-
-	inline uint64 GetShaderRTTextureID(Handle<Shader> shader, uint8 rtIndex)
-	{
-		return ResourceManager::Ptr->GetTextureID(GetShaderRT(shader, rtIndex));
-	}
-
-	inline uint64 GetShaderDTTextureID(Handle<Shader> shader)
-	{
-		return ResourceManager::Ptr->GetTextureID(GetShaderDepthTarget(shader));
 	}
 }

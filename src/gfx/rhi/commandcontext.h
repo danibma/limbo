@@ -3,6 +3,7 @@
 #include "resourcepool.h"
 #include "resourcemanager.h"
 #include "shaderbindingtable.h"
+#include "core/array.h"
 
 namespace limbo::RHI
 {
@@ -43,6 +44,7 @@ namespace limbo::RHI
 	class Device;
 	class CommandQueue;
 	class DescriptorHeap;
+	class PipelineStateObject;
 	class RingBufferAllocator;
 	class AccelerationStructure;
 	class CommandContext
@@ -68,7 +70,7 @@ namespace limbo::RHI
 		ResourceStatesMap					m_ResourceStates;
 		std::vector<D3D12_RESOURCE_BARRIER> m_ResourceBarriers;
 
-		Handle<Shader>						m_BoundShader;
+		PipelineStateObject*				m_BoundPSO;
 
 	public:
 		CommandContext(CommandQueue* queue, ContextType type, ID3D12Device5* device, DescriptorHeap* globalHeap);
@@ -89,11 +91,18 @@ namespace limbo::RHI
 		void EndEvent();
 		void ScopedEvent(const char* name, uint64 color = 0);
 
-		void BindVertexBuffer(Handle<Buffer> buffer);
-		void BindIndexBuffer(Handle<Buffer> buffer);
-		void BindVertexBufferView(VertexBufferView view);
-		void BindIndexBufferView(IndexBufferView view);
-		void BindShader(Handle<Shader> shader);
+		void ClearRenderTarget(Handle<Texture> renderTarget, float4 color = float4(0.0f));
+		void ClearDepthTarget(Handle<Texture> depthTarget, float depth = 1.0f, uint8 stencil = 0);
+
+		void SetVertexBuffer(Handle<Buffer> buffer);
+		void SetIndexBuffer(Handle<Buffer> buffer);
+		void SetVertexBufferView(VertexBufferView view);
+		void SetIndexBufferView(IndexBufferView view);
+		void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		void SetViewport(uint32 width, uint32 height, float topLeft = 0.0f, float topRight = 0.0f, float minDepth = 0.0f, float maxDepth = 1.0f);
+		void SetPipelineState(PipelineStateObject* pso);
+		void SetRenderTargets(Span<Handle<Texture>> renderTargets, Handle<Texture> depthTarget = Handle<Texture>());
+
 		void BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count);
 		void BindConstants(uint32 rootParameter, uint32 num32bitValues, uint32 offsetIn32bits, const void* data);
 		void BindTempConstantBuffer(uint32 rootParameter, const void* data, uint64 dataSize);
@@ -158,8 +167,6 @@ namespace limbo::RHI
 		void SubmitResourceBarriers();
 
 	private:
-		void BindSwapchainRenderTargets();
-		void InstallDrawState();
 		bool IsTransitionAllowed(D3D12_RESOURCE_STATES state);
 	};
 }

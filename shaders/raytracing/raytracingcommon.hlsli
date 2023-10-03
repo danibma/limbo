@@ -149,21 +149,9 @@ float4 GetSceneDebugView(in ShadingData shadingData)
     return 0.0f;
 }
 
-struct MaterialPayload
+MaterialRayTracingPayload TraceMaterialRay(in RaytracingAccelerationStructure tlas, in RayDesc ray, in RAY_FLAG flag = RAY_FLAG_NONE, in uint instanceMask = 0xFF)
 {
-    float   Distance;
-    uint    PrimitiveID;
-    uint    InstanceID;
-    float2  Barycentrics;
-    uint    FrontFace;
-
-    bool IsHit() { return Distance > 0; }
-    bool IsFrontFace() { return FrontFace > 0; }
-};
-
-MaterialPayload TraceMaterialRay(in RaytracingAccelerationStructure tlas, in RayDesc ray, in RAY_FLAG flag = RAY_FLAG_NONE, in uint instanceMask = 0xFF)
-{
-    MaterialPayload payload = (MaterialPayload)0;
+    MaterialRayTracingPayload payload = (MaterialRayTracingPayload)0;
 
     TraceRay(
 	    tlas,           // AccelerationStructure

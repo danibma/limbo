@@ -5,6 +5,8 @@
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/rootsignature.h"
+#include "gfx/rhi/pipelinestateobject.h"
+#include "gfx/rhi/shadercompiler.h"
 
 namespace limbo::Gfx
 {
@@ -37,42 +39,32 @@ namespace limbo::Gfx
 		m_CommonRS->AddRootConstants(0, 5);
 		m_CommonRS->Create();
 
-		m_RTAOShader = RHI::CreateShader({
-			.ProgramName = "RTAO",
-			.RootSignature = m_CommonRS,
-			.Libs = {
-				{
-					.LibName = "raytracing/rtao",
-					.HitGroupsDescriptions = 
-					{
-						{
-							.HitGroupExport = L"RTAOHitGroup",
-							.Type = D3D12_HIT_GROUP_TYPE_TRIANGLES,
-							.AnyHitShaderImport = L"RTAOAnyHit",
-						}
-					},
-					.Exports = 
-					{
-						{ .Name = L"RTAORayGen" },
-						{ .Name = L"RTAOAnyHit" },
-						{ .Name = L"RTAOMiss" }
-					},
-					
-				},
-			},
-			.ShaderConfig = {
-				.MaxPayloadSizeInBytes = sizeof(float), // AOPayload
-				.MaxAttributeSizeInBytes = sizeof(float2) // float2 barycentrics
-			},
-			.Type = RHI::ShaderType::RayTracing,
-		});
+		m_RTAOShader = RHI::CreateShader("raytracing/rtao.hlsl", "", RHI::ShaderType::Lib);
+		RHI::SC::Compile(m_RTAOShader);
+		{
+			RHI::RaytracingLibDesc libDesc = {};
+			libDesc.AddExport(L"RTAORayGen");
+			libDesc.AddExport(L"RTAOAnyHit");
+			libDesc.AddExport(L"RTAOMiss");
+			libDesc.AddHitGroup(L"RTAOHitGroup", L"RTAOAnyHit");
 
-		m_DenoiseRTAOShader = RHI::CreateShader({
-			.ProgramName = "raytracing/rtaoaccumulate",
-			.CsEntryPoint = "RTAOAccumulate",
-			.RootSignature = m_CommonRS,
-			.Type = RHI::ShaderType::Compute
-		});
+			RHI::RaytracingPipelineStateInitializer psoInit = {};
+			psoInit.SetGlobalRootSignature(m_CommonRS);
+			psoInit.AddLib(m_RTAOShader, libDesc);
+			psoInit.SetShaderConfig(sizeof(float) /* AOPayload */, sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
+			psoInit.SetName("RTAO PSO");
+			m_RTAOPSO = new RHI::PipelineStateObject(psoInit);
+		}
+
+		m_DenoiseRTAOShader = RHI::CreateShader("raytracing/rtaoaccumulate.hlsl", "RTAOAccumulate", RHI::ShaderType::Compute);
+		RHI::SC::Compile(m_DenoiseRTAOShader);
+		{
+			RHI::PipelineStateInitializer psoInit = {};
+			psoInit.SetRootSignature(m_CommonRS);
+			psoInit.SetComputeShader(m_DenoiseRTAOShader);
+			psoInit.SetName("RTAO Accumulate PSO");
+			m_RTAODenoisePSO = new RHI::PipelineStateObject(psoInit);
+		}
 	}
 
 	RTAO::~RTAO()
@@ -89,6 +81,8 @@ namespace limbo::Gfx
 			DestroyTexture(m_PreviousFrame);
 
 		delete m_CommonRS;
+		delete m_RTAOPSO;
+		delete m_RTAODenoisePSO;
 	}
 
 	void RTAO::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> normalsMap)
@@ -101,9 +95,9 @@ namespace limbo::Gfx
 
 		{
 			RHI::BeginProfileEvent("RTAO");
-			RHI::BindShader(m_RTAOShader);
+			RHI::SetPipelineState(m_RTAOPSO);
 
-			RHI::ShaderBindingTable SBT(m_RTAOShader);
+			RHI::ShaderBindingTable SBT(m_RTAOPSO);
 			SBT.BindRayGen(L"RTAORayGen");
 			SBT.BindMissShader(L"RTAOMiss");
 			SBT.BindHitGroup(L"RTAOHitGroup");
@@ -129,7 +123,7 @@ namespace limbo::Gfx
 
 		{
 			RHI::BeginProfileEvent("RTAO Denoise");
-			RHI::BindShader(m_DenoiseRTAOShader);
+			RHI::SetPipelineState(m_RTAODenoisePSO);
 
 			RHI::DescriptorHandle uavHandles[] =
 			{

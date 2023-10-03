@@ -1,11 +1,13 @@
 ﻿#include "stdafx.h"
 #include "shadercompiler.h"
-
 #include "core/utils.h"
+#include "resourcemanager.h"
+
+#include <dxcapi.h>
 
 namespace limbo::RHI::SC
 {
-	bool Compile(Kernel& result, const char* programName, const char* entryPoint, KernelType kernel )
+	bool Compile(Handle<Shader> shader)
 	{
         static IDxcUtils* dxcUtils;
         static IDxcCompiler3* dxcCompiler;
@@ -20,24 +22,26 @@ namespace limbo::RHI::SC
             dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
         }
 
+        Shader* pShader = ResourceManager::Ptr->GetShader(shader);
+
         // setup arguments
-        std::string cpath = std::string("shaders/" + std::string(programName) + ".hlsl");
+        std::string cpath = std::string("shaders/" + std::string(pShader->File));
         std::wstring path;
         Utils::StringConvert(cpath, path);
 
         std::wstring profile = L"-T ";
-        switch (kernel)
+        switch (pShader->Type)
         {
-        case KernelType::Compute:
+        case ShaderType::Compute:
             profile.append(L"cs");
             break;
-        case KernelType::Vertex:
+        case ShaderType::Vertex:
             profile.append(L"vs");
             break;
-        case KernelType::Pixel:
+        case ShaderType::Pixel:
             profile.append(L"ps");
             break;
-        case KernelType::Lib:
+        case ShaderType::Lib:
             profile.append(L"lib");
         }
         profile.append(L"_6_6");
@@ -48,9 +52,9 @@ namespace limbo::RHI::SC
         arguments.emplace_back(path.c_str());
 
 		std::wstring wentrypoint;
-        if (kernel != KernelType::Lib)
+        if (pShader->Type != ShaderType::Lib)
         {
-	        Utils::StringConvert(entryPoint, wentrypoint);
+	        Utils::StringConvert(pShader->EntryPoint, wentrypoint);
 	        wentrypoint.insert(0, L"-E ");
 	        arguments.emplace_back(wentrypoint.c_str());
         }
@@ -97,7 +101,7 @@ namespace limbo::RHI::SC
         }
 
         // Get shader blob
-        DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&result.Bytecode), nullptr));
+        DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&pShader->Bytecode), nullptr));
 
         return true;
 	}

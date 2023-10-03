@@ -56,9 +56,9 @@ namespace limbo::RHI
 		return m_Buffers.AllocateHandle(spec);
 	}
 
-	Handle<Shader> ResourceManager::CreateShader(const ShaderSpec& spec)
+	Handle<Shader> ResourceManager::CreateShader(const char* file, const char* entryPoint, ShaderType type)
 	{
-		return m_Shaders.AllocateHandle(spec);
+		return m_Shaders.AllocateHandle(file, entryPoint, type);
 	}
 
 	Handle<Texture> ResourceManager::CreateTextureFromFile(const char* path, const char* debugName)
