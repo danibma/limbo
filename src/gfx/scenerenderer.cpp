@@ -99,9 +99,8 @@ namespace limbo::Gfx
 			psoInit.SetVertexShader(m_SkyboxShaderVS);
 			psoInit.SetPixelShader(m_SkyboxShaderPS);
 			psoInit.SetRootSignature(m_SkyboxRS);
-			psoInit.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::UNKNOWN);
+			psoInit.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::D32_SFLOAT);
 			psoInit.SetInputLayout({ { "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT } });
-			psoInit.SetDepthStencilDesc(RHI::TStaticDepthStencilState<false>::GetRHI());
 			psoInit.SetName("Skybox PSO");
 			m_SkyboxPSO = new RHI::PipelineStateObject(psoInit);
 		}
@@ -122,13 +121,13 @@ namespace limbo::Gfx
 
 		{
 			m_LightingRT = RHI::CreateTexture(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "Lighting RT"));
+			m_LightingDT = RHI::CreateTexture(RHI::Tex2DDepth(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), 1.0f, "Lighting DT"));
 
 			RHI::PipelineStateInitializer psoInit = {};
 			psoInit.SetVertexShader(m_QuadShaderVS);
 			psoInit.SetPixelShader(m_PBRShaderPS);
 			psoInit.SetRootSignature(m_LightingRS);
-			psoInit.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::UNKNOWN);
-			psoInit.SetDepthStencilDesc(RHI::TStaticDepthStencilState<false>::GetRHI());
+			psoInit.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::D32_SFLOAT);
 			psoInit.SetName("PBR Lighting PSO");
 			m_PBRPSO = new RHI::PipelineStateObject(psoInit);
 		}
@@ -162,6 +161,14 @@ namespace limbo::Gfx
 		DestroyTexture(m_PrefilterMap);
 		DestroyTexture(m_BRDFLUTMap);
 
+		for (int i = 0; i < 6; ++i)
+			DestroyTexture(m_DeferredShadingRTs[i]);
+		DestroyTexture(m_DeferredShadingDT);
+		DestroyTexture(m_LightingRT);
+		DestroyTexture(m_LightingDT);
+
+		DestroyShader(m_QuadShaderVS);
+
 		DestroyShader(m_PBRShaderPS);
 		DestroyShader(m_SkyboxShaderVS);
 		DestroyShader(m_SkyboxShaderPS);
@@ -193,8 +200,9 @@ namespace limbo::Gfx
 		RHI::SetPipelineState(m_DeferredShadingPSO);
 		RHI::SetPrimitiveTopology();
 		RHI::SetRenderTargets(m_DeferredShadingRTs, m_DeferredShadingDT);
+		RHI::SetViewport(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 
-		RHI::ClearRenderTarget(m_DeferredShadingRTs);
+		RHI::ClearRenderTargets(m_DeferredShadingRTs);
 		RHI::ClearDepthTarget(m_DeferredShadingDT, 0.0f);
 
 		RHI::BindTempConstantBuffer(1, SceneInfo);
@@ -226,7 +234,11 @@ namespace limbo::Gfx
 		RHI::BeginProfileEvent("Render Skybox");
 		RHI::SetPipelineState(m_SkyboxPSO);
 		RHI::SetPrimitiveTopology();
-		RHI::SetRenderTargets(m_LightingRT);
+		RHI::SetRenderTargets(m_LightingRT, m_LightingDT);
+		RHI::SetViewport(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+
+		RHI::ClearRenderTargets(m_LightingRT);
+		RHI::ClearDepthTarget(m_LightingDT);
 
 		RHI::BindTempConstantBuffer(0, SceneInfo);
 
@@ -246,8 +258,9 @@ namespace limbo::Gfx
 		RHI::BeginProfileEvent("Lighting");
 		RHI::SetPipelineState(m_PBRPSO);
 		RHI::SetPrimitiveTopology();
-		RHI::SetRenderTargets(m_LightingRT);
-		
+		RHI::SetRenderTargets(m_LightingRT, m_LightingDT);
+		RHI::SetViewport(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+
 		RHI::BindTempConstantBuffer(1, SceneInfo);
 		RHI::BindTempConstantBuffer(2, m_ShadowMapping->GetShadowData());
 
@@ -284,8 +297,11 @@ namespace limbo::Gfx
 		RHI::SetPipelineState(m_CompositePSO);
 		RHI::SetPrimitiveTopology();
 		RHI::SetRenderTargets(RHI::GetCurrentBackbuffer(), RHI::GetCurrentDepthBackbuffer());
-		RHI::ClearRenderTarget(RHI::GetCurrentBackbuffer());
+		RHI::SetViewport(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+
+		RHI::ClearRenderTargets(RHI::GetCurrentBackbuffer());
 		RHI::ClearDepthTarget(RHI::GetCurrentDepthBackbuffer());
+
 		RHI::BindConstants(0, 0, Tweaks.CurrentTonemap);
 
 		RHI::BindConstants(0, 1, RHI::GetTexture(m_SceneTexture)->SRV());

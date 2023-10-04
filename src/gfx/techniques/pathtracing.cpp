@@ -61,6 +61,8 @@ namespace limbo::Gfx
 			DestroyTexture(m_FinalTexture);
 		if (m_PathTracerLib.IsValid())
 			DestroyShader(m_PathTracerLib);
+		if (m_MaterialLib.IsValid())
+			DestroyShader(m_MaterialLib);
 
 		delete m_CommonRS;
 		delete m_PSO;

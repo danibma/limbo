@@ -76,7 +76,7 @@ namespace limbo::RHI
 
 	template<D3D12_FILL_MODE FillMode = D3D12_FILL_MODE_SOLID,
 	         D3D12_CULL_MODE CullMode = D3D12_CULL_MODE_BACK,
-	         bool FrontCounterClockwise = false,
+	         bool FrontCounterClockwise = true,
 	         int32 DepthBias = 0,
 	         float DepthBiasClamp = 0.0f,
 	         float SlopeScaledDepthBias = 0.0f,

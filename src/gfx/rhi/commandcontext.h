@@ -91,7 +91,7 @@ namespace limbo::RHI
 		void EndEvent();
 		void ScopedEvent(const char* name, uint64 color = 0);
 
-		void ClearRenderTarget(Span<Handle<Texture>> renderTargets, float4 color = float4(0.0f));
+		void ClearRenderTargets(Span<Handle<Texture>> renderTargets, float4 color = float4(0.0f));
 		void ClearDepthTarget(Handle<Texture> depthTarget, float depth = 1.0f, uint8 stencil = 0);
 
 		void SetVertexBuffer(Handle<Buffer> buffer);

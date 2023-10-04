@@ -290,9 +290,9 @@ namespace limbo::RHI
 		GetCommandContext()->EndEvent();
 	}
 
-	FORCEINLINE void ClearRenderTarget(Span<Handle<Texture>> renderTargets, float4 color = float4(0.0f))
+	FORCEINLINE void ClearRenderTargets(Span<Handle<Texture>> renderTargets, float4 color = float4(0.0f))
 	{
-		GetCommandContext()->ClearRenderTarget(renderTargets, color);
+		GetCommandContext()->ClearRenderTargets(renderTargets, color);
 	}
 
 	FORCEINLINE void ClearDepthTarget(Handle<Texture> depthTarget, float depth = 1.0f, uint8 stencil = 0)

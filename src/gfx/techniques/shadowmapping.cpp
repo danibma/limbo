@@ -54,6 +54,9 @@ namespace limbo::Gfx
 		DestroyShader(m_ShadowMapVS);
 		DestroyShader(m_ShadowMapPS);
 
+		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
+			DestroyTexture(m_DepthShadowMaps[i]);
+
 		delete m_CommonRS;
 		delete m_PSO;
 	}
@@ -67,14 +70,18 @@ namespace limbo::Gfx
 
 		// Shadow map
 		RHI::BeginProfileEvent("Shadow Maps Pass");
+		RHI::SetPipelineState(m_PSO);
+		RHI::SetPrimitiveTopology();
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 		{
 			std::string profileName = std::format("Shadow Cascade {}", cascade);
 
 			RHI::BeginProfileEvent(profileName.c_str());
-			RHI::SetPipelineState(m_PSO);
-			RHI::SetPrimitiveTopology();
 			RHI::SetRenderTargets({}, m_DepthShadowMaps[cascade]);
+			RHI::SetViewport(SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade]);
+
+			RHI::ClearDepthTarget(m_DepthShadowMaps[cascade], 1.0f);
+
 			RHI::BindConstants(2, 0, cascade);
 
 			RHI::BindTempConstantBuffer(0, sceneRenderer->SceneInfo);

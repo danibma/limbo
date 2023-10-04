@@ -135,6 +135,7 @@ namespace limbo::Gfx
 		RHI::Handle<RHI::Shader>		m_PBRShaderPS;
 		RHI::PipelineStateObject*		m_PBRPSO;
 		RHI::Handle<RHI::Texture>		m_LightingRT;
+		RHI::Handle<RHI::Texture>		m_LightingDT;
 
 		// Scene Composite
 		RHI::RootSignature*				m_CompositeRS;

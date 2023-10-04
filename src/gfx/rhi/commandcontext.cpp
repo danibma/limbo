@@ -113,7 +113,7 @@ namespace limbo::RHI
 		m_CommandList->CopyBufferRegion(dst->Resource.Get(), dstOffset, src->Resource.Get(), srcOffset, numBytes);
 	}
 
-	void CommandContext::ClearRenderTarget(Span<Handle<Texture>> renderTargets, float4 color)
+	void CommandContext::ClearRenderTargets(Span<Handle<Texture>> renderTargets, float4 color)
 	{
 		for (Handle<Texture> rt : renderTargets)
 		{
