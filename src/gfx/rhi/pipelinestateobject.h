@@ -108,14 +108,14 @@ namespace limbo::RHI
 
 		~PipelineStateObject();
 
-		bool IsCompute()
-		{
-			return m_Compute;
-		}
-
 		bool IsRaytracing()
 		{
 			return m_StateObject != nullptr;
+		}
+
+		bool IsCompute()
+		{
+			return m_Compute || IsRaytracing();
 		}
 
 		ID3D12PipelineState* GetPipelineState() const

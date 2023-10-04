@@ -143,6 +143,8 @@ namespace limbo::RHI
 		check(initializer.m_LibsNum > 0);
 		check(initializer.m_RootSignature);
 
+		m_RootSignature = initializer.m_RootSignature;
+
 		RayTracingStateObjectStream stream;
 		uint32 numObjects = 0;
 

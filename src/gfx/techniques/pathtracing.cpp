@@ -23,9 +23,9 @@ namespace limbo::Gfx
 		});
 
 		m_CommonRS = new RHI::RootSignature("PT Common RS");
-		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_SRV);
+		m_CommonRS->AddRootSRV(0);
 		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-		m_CommonRS->AddDescriptorTable(100, 1, D3D12_DESCRIPTOR_RANGE_TYPE_CBV);
+		m_CommonRS->AddRootCBV(100);
 		m_CommonRS->Create();
 
 		m_PathTracerLib = RHI::CreateShader("raytracing/pathtracer.hlsl", "", RHI::ShaderType::Lib);
@@ -79,7 +79,9 @@ namespace limbo::Gfx
 		SBT.BindHitGroup(L"MaterialHitGroup");
 
 		RHI::BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
-		RHI::BindConstants(1, 0, RHI::GetTexture(m_FinalTexture)->SRV());
+
+		RHI::DescriptorHandle uavHandles[] = { RHI::GetTexture(m_FinalTexture)->UAVHandle[0] };
+		RHI::BindTempDescriptorTable(1, uavHandles, 1);
 
 		RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 		RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
