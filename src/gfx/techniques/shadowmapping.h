@@ -21,6 +21,7 @@ namespace limbo::Gfx
 		RHI::RootSignature*			m_CommonRS;
 		RHI::Handle<RHI::Shader>	m_ShadowMapVS;
 		RHI::Handle<RHI::Shader>	m_ShadowMapPS;
+		RHI::Handle<RHI::Texture>	m_DepthShadowMaps[SHADOWMAP_CASCADES];
 		RHI::PipelineStateObject*	m_PSO;
 
 		ShadowData					m_ShadowData;

@@ -10,6 +10,7 @@
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/pipelinestateobject.h"
+#include "gfx/rhi/shadercompiler.h"
 
 namespace limbo::Gfx
 {
@@ -29,11 +30,21 @@ namespace limbo::Gfx
 		m_CommonRS->AddRootConstants(0, 2);
 		m_CommonRS->Create();
 
+		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
+			m_DepthShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
+
 		m_ShadowMapVS = RHI::CreateShader("shadowmap.hlsl", "VSMain", RHI::ShaderType::Vertex);
+		RHI::SC::Compile(m_ShadowMapVS);
 		m_ShadowMapPS = RHI::CreateShader("shadowmap.hlsl", "PSMain", RHI::ShaderType::Pixel);
+		RHI::SC::Compile(m_ShadowMapPS);
 
 		{
 			RHI::PipelineStateInitializer psoInit = {};
+			psoInit.SetVertexShader(m_ShadowMapVS);
+			psoInit.SetPixelShader(m_ShadowMapPS);
+			psoInit.SetRootSignature(m_CommonRS);
+			psoInit.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT);
+			psoInit.SetName("Shadow Map PSO");
 			m_PSO = new RHI::PipelineStateObject(psoInit);
 		}
 	}
@@ -62,6 +73,8 @@ namespace limbo::Gfx
 
 			RHI::BeginProfileEvent(profileName.c_str());
 			RHI::SetPipelineState(m_PSO);
+			RHI::SetPrimitiveTopology();
+			RHI::SetRenderTargets({}, m_DepthShadowMaps[cascade]);
 			RHI::BindConstants(2, 0, cascade);
 
 			RHI::BindTempConstantBuffer(0, sceneRenderer->SceneInfo);
@@ -87,9 +100,7 @@ namespace limbo::Gfx
 		ImGui::Begin("Shadow Map Debug", &UI::Globals::bDebugShadowMaps);
 		ImGui::Checkbox("Show Shadow Cascades", &UI::Globals::bShowShadowCascades);
 		ImGui::SliderInt("Shadow Cascade", &UI::Globals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
-#if TODO
-		ImGui::Image((ImTextureID)RHI::GetShaderDTTextureID(m_ShadowMapShaders[UI::Globals::ShadowCascadeIndex]), ImVec2(512, 512));
-#endif
+		ImGui::Image((ImTextureID)RHI::GetTextureID(m_DepthShadowMaps[UI::Globals::ShadowCascadeIndex]), ImVec2(512, 512));
 		ImGui::End();
 	}
 
@@ -184,9 +195,7 @@ namespace limbo::Gfx
 			// Store split distance and matrix in cascade
 			m_ShadowData.SplitDepth[cascade]    = (camera->NearZ + splitDist * clipRange) * -1.0f;
 			m_ShadowData.LightViewProj[cascade] = lightOrthoMatrix * lightViewMatrix;
-#if TODO
-			m_ShadowData.ShadowMap[cascade]		= GetTexture(GetShaderDepthTarget(m_ShadowMapShaders[cascade]))->SRV();
-#endif
+			m_ShadowData.ShadowMap[cascade]		= GetTexture(m_DepthShadowMaps[cascade])->SRV();
 
 			lastSplitDist = cascadeSplits[cascade];
 		}

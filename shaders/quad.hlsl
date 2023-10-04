@@ -1,10 +1,4 @@
-﻿#pragma once
-
-struct QuadResult
-{
-	float4 Position : SV_Position;
-	float2 UV		: TEXCOORD0;
-};
+﻿#include "common.hlsli"
 
 static const float quadVertices[] =
 {

@@ -121,6 +121,8 @@ namespace limbo::Gfx
 		RHI::Handle<RHI::Shader>		m_DeferredShadingShaderVS;
 		RHI::Handle<RHI::Shader>		m_DeferredShadingShaderPS;
 		RHI::PipelineStateObject*		m_DeferredShadingPSO;
+		RHI::Handle<RHI::Texture>		m_DeferredShadingRTs[6];
+		RHI::Handle<RHI::Texture>		m_DeferredShadingDT;
 
 		// IBL stuff
 		RHI::Handle<RHI::Texture>		m_EnvironmentCubemap;
@@ -132,6 +134,7 @@ namespace limbo::Gfx
 		RHI::RootSignature*				m_LightingRS;
 		RHI::Handle<RHI::Shader>		m_PBRShaderPS;
 		RHI::PipelineStateObject*		m_PBRPSO;
+		RHI::Handle<RHI::Texture>		m_LightingRT;
 
 		// Scene Composite
 		RHI::RootSignature*				m_CompositeRS;

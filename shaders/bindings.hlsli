@@ -9,6 +9,12 @@ SamplerState SPointWrap      : register(s2, space1);
 ConstantBuffer<SceneInfo> GSceneInfo : register(b100);
 ConstantBuffer<ShadowData> GShadowData : register(b101);
 
+struct QuadResult
+{
+	float4 Position : SV_Position;
+	float2 UV		: TEXCOORD0;
+};
+
 template<typename T = float4>
 Texture2D<T> GetTexture(int index)
 {

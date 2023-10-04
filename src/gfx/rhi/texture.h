@@ -28,6 +28,10 @@ namespace limbo::RHI
 		void*					InitialData;
 	};
 
+	// Helpers
+	TextureSpec Tex2DDepth(uint32 width, uint32 height, float depthClearValue, const char* debugName = nullptr);
+	TextureSpec Tex2DRenderTarget(uint32 width, uint32 height, Format format, const char* debugName = nullptr, float4 clearValue = float4(0.0f));
+
 	class Texture
 	{
 		friend class ResourceManager;

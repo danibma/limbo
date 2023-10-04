@@ -274,4 +274,42 @@ namespace limbo::RHI
 		CreateResource(Spec);
 		InitResource(Spec);
 	}
+
+	RHI::TextureSpec Tex2DDepth(uint32 width, uint32 height, float depthClearValue, const char* debugName /*= nullptr*/)
+	{
+		return {
+			.Width = width,
+			.Height = height,
+			.MipLevels = 1,
+			.DebugName = debugName ? debugName : "",
+			.Flags = TextureUsage::DepthStencil | TextureUsage::ShaderResource,
+			.ClearValue = {
+				.Format = D3DFormat(Format::D32_SFLOAT),
+				.DepthStencil = {
+					.Depth = depthClearValue,
+					.Stencil = 0
+				}
+			},
+			.Format = Format::D32_SFLOAT,
+			.Type = TextureType::Texture2D,
+		};
+	}
+
+	limbo::RHI::TextureSpec Tex2DRenderTarget(uint32 width, uint32 height, Format format, const char* debugName /*= nullptr*/, float4 clearValue /*= float4(0.0f)*/)
+	{
+		return {
+			.Width = width,
+			.Height = height,
+			.MipLevels = 1,
+			.DebugName = debugName ? debugName : "",
+			.Flags = TextureUsage::RenderTarget | TextureUsage::ShaderResource,
+			.ClearValue = {
+				.Format = D3DFormat(format),
+				.Color = clearValue[0]
+			},
+			.Format = format,
+			.Type = TextureType::Texture2D,
+		};
+	}
+
 }

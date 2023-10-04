@@ -235,6 +235,7 @@ namespace limbo::RHI
 		}
 
 		context->Execute();
+
 		m_Swapchain->Present(bEnableVSync);
 		m_FrameIndex = m_Swapchain->GetCurrentIndex();
 
@@ -396,14 +397,19 @@ namespace limbo::RHI
 		{
 		case DescriptorHeapType::SRV:
 			m_GlobalHeap->FreePersistent(handle);
+			break;
 		case DescriptorHeapType::RTV:
 			m_RTVHeap->FreePersistent(handle);
+			break;
 		case DescriptorHeapType::DSV:
 			m_DSVHeap->FreePersistent(handle);
+			break;
 		case DescriptorHeapType::UAV:
 			m_UAVHeap->FreePersistent(handle);
+			break;
 		case DescriptorHeapType::CBV:
 			m_CBVHeap->FreePersistent(handle);
+			break;
 		}
 	}
 

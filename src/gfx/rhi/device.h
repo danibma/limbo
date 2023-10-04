@@ -290,6 +290,16 @@ namespace limbo::RHI
 		GetCommandContext()->EndEvent();
 	}
 
+	FORCEINLINE void ClearRenderTarget(Span<Handle<Texture>> renderTargets, float4 color = float4(0.0f))
+	{
+		GetCommandContext()->ClearRenderTarget(renderTargets, color);
+	}
+
+	FORCEINLINE void ClearDepthTarget(Handle<Texture> depthTarget, float depth = 1.0f, uint8 stencil = 0)
+	{
+		GetCommandContext()->ClearDepthTarget(depthTarget, depth, stencil);
+	}
+
 	FORCEINLINE void SetVertexBuffer(Handle<Buffer> buffer)
 	{
 		GetCommandContext()->SetVertexBuffer(buffer);

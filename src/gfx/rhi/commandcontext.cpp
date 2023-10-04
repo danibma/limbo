@@ -113,10 +113,16 @@ namespace limbo::RHI
 		m_CommandList->CopyBufferRegion(dst->Resource.Get(), dstOffset, src->Resource.Get(), srcOffset, numBytes);
 	}
 
-	void CommandContext::ClearRenderTarget(Handle<Texture> renderTarget, float4 color)
+	void CommandContext::ClearRenderTarget(Span<Handle<Texture>> renderTargets, float4 color)
 	{
-		Texture* rt = GetTexture(renderTarget);
-		m_CommandList->ClearRenderTargetView(rt->UAVHandle[0].CpuHandle, glm::value_ptr(color), 0, nullptr);
+		for (Handle<Texture> rt : renderTargets)
+		{
+			InsertResourceBarrier(rt, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			SubmitResourceBarriers();
+
+			Texture* pRenderTarget = GetTexture(rt);
+			m_CommandList->ClearRenderTargetView(pRenderTarget->UAVHandle[0].CpuHandle, glm::value_ptr(color), 0, nullptr);
+		}
 	}
 
 	void CommandContext::ClearDepthTarget(Handle<Texture> depthTarget, float depth, uint8 stencil)
@@ -209,8 +215,6 @@ namespace limbo::RHI
 
 	void CommandContext::SetRenderTargets(Span<Handle<Texture>> renderTargets, Handle<Texture> depthTarget)
 	{
-		check(renderTargets.GetSize() > 0);
-
 		D3D12_CPU_DESCRIPTOR_HANDLE* depthDescriptor = nullptr;
 		if (depthTarget.IsValid())
 		{
@@ -221,10 +225,12 @@ namespace limbo::RHI
 		TStaticArray<D3D12_CPU_DESCRIPTOR_HANDLE, MAX_RENDER_TARGETS> renderTargetDescriptors;
 		for (uint32 i = 0; i < renderTargets.GetSize(); ++i)
 		{
-			Texture* pRenderTarget = GetTexture(renderTargets[0]);
+			Texture* pRenderTarget = GetTexture(renderTargets[i]);
 			renderTargetDescriptors[i] = pRenderTarget->UAVHandle[0].CpuHandle;
+			InsertResourceBarrier(pRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		}
 
+		SubmitResourceBarriers();
 		m_CommandList->OMSetRenderTargets(renderTargets.GetSize(), renderTargetDescriptors.GetData(), false, depthDescriptor);
 	}
 
