@@ -29,10 +29,6 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Core::CommandLine::Init(lpCmdLine);
 	if (Core::CommandLine::HasArg("--tests"))
 		return Tests::ExecuteTests(lpCmdLine);
-	else if (Core::CommandLine::HasArg("--ctriangle"))
-		return Tests::ExecuteComputeTriangle();
-	else if (Core::CommandLine::HasArg("--gtriangle"))
-		return Tests::ExecuteGraphicsTriangle();
 
 	Core::Window* window = Core::NewWindow({
 		.Title = "limbo",

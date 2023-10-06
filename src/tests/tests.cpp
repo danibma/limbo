@@ -5,9 +5,6 @@
 #define CATCH_CONFIG_RUNNER
 #define CATCH_CONFIG_DISABLE_EXCEPTIONS
 #include <catch/catch.hpp>
-
-#include "gfx/computetriangle.h"
-#include "gfx/graphicstriangle.h"
 #endif
 
 namespace limbo::Tests
@@ -24,24 +21,6 @@ namespace limbo::Tests
 		arr_args[2] = "--break";
 		arr_args[3] = "--success";
 		return session.run(4, arr_args);
-#else
-		LIMBO_TESTS_WARNING
-#endif
-	}
-
-	int ExecuteComputeTriangle()
-	{
-#if ENABLE_LIMBO_TESTS
-		return Gfx::RunComputeTriangle();
-#else
-		LIMBO_TESTS_WARNING
-#endif
-	}
-
-	int ExecuteGraphicsTriangle()
-	{
-#if ENABLE_LIMBO_TESTS
-		return Gfx::RunGfxTriangle();
 #else
 		LIMBO_TESTS_WARNING
 #endif

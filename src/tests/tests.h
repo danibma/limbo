@@ -8,6 +8,4 @@
 namespace limbo::Tests
 {
 	int ExecuteTests(char* args);
-	int ExecuteComputeTriangle();
-	int ExecuteGraphicsTriangle();
 }
