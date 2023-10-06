@@ -4,6 +4,7 @@
 #include "resourcepool.h"
 #include "staticstates.h"
 #include "core/array.h"
+#include "core/refcountptr.h"
 
 #include <vector>
 #include <string>
@@ -110,7 +111,7 @@ namespace limbo::RHI
 
 		bool IsRaytracing()
 		{
-			return m_StateObject != nullptr;
+			return m_StateObject.IsValid();
 		}
 
 		bool IsCompute()
@@ -138,8 +139,8 @@ namespace limbo::RHI
 		void CreateComputePSO(const PipelineStateInitializer& initializer);
 
 	private:
-		ComPtr<ID3D12PipelineState>			m_PipelineState;
-		ComPtr<ID3D12StateObject>			m_StateObject; // for RayTracing
+		RefCountPtr<ID3D12PipelineState>	m_PipelineState;
+		RefCountPtr<ID3D12StateObject>		m_StateObject; // for RayTracing
 		RootSignature*						m_RootSignature;
 
 		bool m_Compute = false;

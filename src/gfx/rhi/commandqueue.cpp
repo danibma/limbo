@@ -8,7 +8,7 @@ namespace limbo::RHI
 {
 	Fence::Fence(Device* device)
 	{
-		DX_CHECK(device->GetDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_Fence)));
+		DX_CHECK(device->GetDevice()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(m_Fence.ReleaseAndGetAddressOf())));
 		m_CurrentValue  = 0;
 
 		// Create an event handler to use for frame synchronization
@@ -60,7 +60,7 @@ namespace limbo::RHI
 			.NodeMask = 0
 		};
 
-		DX_CHECK(device->GetDevice()->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_Queue)));
+		DX_CHECK(device->GetDevice()->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(m_Queue.ReleaseAndGetAddressOf())));
 
 		std::string name = std::format("{} Command queue", CmdListTypeToStr(m_Type));
 		std::wstring wName;

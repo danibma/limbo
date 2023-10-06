@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "rhi/resourcepool.h"
 #include "uirenderer.h"
+#include "core/refcountptr.h"
 
 namespace limbo
 {
@@ -16,9 +17,9 @@ namespace limbo
 	class GPUProfiler
 	{
 	private:
-		RHI::Handle<RHI::Buffer>	m_Readback;
-		ComPtr<ID3D12QueryHeap>		m_QueryHeap;
-		double						m_AvgRenderTime = 0;
+		RHI::Handle<RHI::Buffer>		m_Readback;
+		RefCountPtr<ID3D12QueryHeap>	m_QueryHeap;
+		double							m_AvgRenderTime = 0;
 
 	public:
 		void Initialize();

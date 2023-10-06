@@ -14,7 +14,6 @@
 #include <dxgi1_6.h>
 #include <d3d12/d3dx12/d3dx12.h>
 #include <dxgi1_6.h>
-#include <wrl/client.h>
 #include <dxgidebug.h>
 #define D3DX12_NO_STATE_OBJECT_HELPERS
 #include <d3d12/d3dx12/d3dx12.h>

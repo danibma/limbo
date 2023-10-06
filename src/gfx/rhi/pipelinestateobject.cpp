@@ -197,7 +197,7 @@ namespace limbo::RHI
 			.NumSubobjects = numObjects,
 			.pSubobjects = (D3D12_STATE_SUBOBJECT*)stream.StateObjectData.GetData()
 		};
-		DX_CHECK(Device::Ptr->GetDevice()->CreateStateObject(&desc, IID_PPV_ARGS(&m_StateObject)));
+		DX_CHECK(Device::Ptr->GetDevice()->CreateStateObject(&desc, IID_PPV_ARGS(m_StateObject.ReleaseAndGetAddressOf())));
 
 		if (!initializer.m_Name.empty())
 		{
@@ -271,7 +271,7 @@ namespace limbo::RHI
 		check(initializer.m_DepthStencilDesc.DepthEnable == (initializer.m_DepthTargetFormat != Format::UNKNOWN));
 		desc.DSVFormat = D3DFormat(Device::Ptr->GetSwapchainDepthFormat());
 
-		DX_CHECK(Device::Ptr->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&m_PipelineState)));
+		DX_CHECK(Device::Ptr->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(m_PipelineState.ReleaseAndGetAddressOf())));
 
 		if (!initializer.m_Name.empty())
 		{
@@ -302,7 +302,7 @@ namespace limbo::RHI
 			.CachedPSO = nullptr,
 			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
 		};
-		DX_CHECK(Device::Ptr->GetDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(&m_PipelineState)));
+		DX_CHECK(Device::Ptr->GetDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(m_PipelineState.ReleaseAndGetAddressOf())));
 
 		if (!initializer.m_Name.empty())
 		{

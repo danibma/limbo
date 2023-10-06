@@ -15,7 +15,7 @@ namespace limbo::RHI
 
 	class Swapchain
 	{
-		ComPtr<IDXGISwapChain3>			m_Swapchain;
+		RefCountPtr<IDXGISwapChain3>			m_Swapchain;
 		Handle<Texture>					m_Backbuffers[NUM_BACK_BUFFERS];
 		Handle<Texture>					m_DepthBackbuffers[NUM_BACK_BUFFERS];
 		const Format					m_Format      = Format::RGBA8_UNORM;

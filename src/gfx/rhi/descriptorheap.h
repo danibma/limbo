@@ -2,6 +2,7 @@
 
 #include "core/core.h"
 #include "definitions.h"
+#include "core/refcountptr.h"
 
 namespace limbo::RHI
 {
@@ -27,7 +28,7 @@ namespace limbo::RHI
 	{
 		DescriptorHeapType						m_HeapType;
 
-		ComPtr<ID3D12DescriptorHeap>			m_Heap;
+		RefCountPtr<ID3D12DescriptorHeap>			m_Heap;
 		bool									m_bShaderVisible;
 		uint32									m_DescriptorSize;
 

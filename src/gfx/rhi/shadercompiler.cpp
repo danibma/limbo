@@ -73,8 +73,8 @@ namespace limbo::RHI::SC
         arguments.emplace_back(DXC_ARG_ALL_RESOURCES_BOUND);
 
         // Compile shader
-        ComPtr<IDxcBlobEncoding> source = nullptr;
-        dxcUtils->LoadFile(path.c_str(), nullptr, &source);
+        RefCountPtr<IDxcBlobEncoding> source = nullptr;
+        dxcUtils->LoadFile(path.c_str(), nullptr, source.ReleaseAndGetAddressOf());
         if (!source)
         {
             LB_ERROR("Could not find the program shader file: %s", cpath.c_str());
@@ -86,12 +86,12 @@ namespace limbo::RHI::SC
         sourceBuffer.Size = source->GetBufferSize();
         sourceBuffer.Encoding = DXC_CP_ACP;
 
-        ComPtr<IDxcResult> compileResult;
-        DX_CHECK(dxcCompiler->Compile(&sourceBuffer, arguments.data(), (uint32)arguments.size(), includeHandler, IID_PPV_ARGS(&compileResult)));
+        RefCountPtr<IDxcResult> compileResult;
+        DX_CHECK(dxcCompiler->Compile(&sourceBuffer, arguments.data(), (uint32)arguments.size(), includeHandler, IID_PPV_ARGS(compileResult.ReleaseAndGetAddressOf())));
 
         // Print errors if present.
-        ComPtr<IDxcBlobUtf8> errors = nullptr;
-        DX_CHECK(compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errors), nullptr));
+        RefCountPtr<IDxcBlobUtf8> errors = nullptr;
+        DX_CHECK(compileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(errors.ReleaseAndGetAddressOf()), nullptr));
         // Note that d3dcompiler would return null if no errors or warnings are present.  
         // IDxcCompiler3::Compile will always return an error buffer, but its length will be zero if there are no warnings or errors.
         if (errors != nullptr && errors->GetStringLength() != 0)
@@ -101,7 +101,7 @@ namespace limbo::RHI::SC
         }
 
         // Get shader blob
-        DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&pShader->Bytecode), nullptr));
+        DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(pShader->Bytecode.ReleaseAndGetAddressOf()), nullptr));
 
         return true;
 	}

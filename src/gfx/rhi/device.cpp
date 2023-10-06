@@ -33,7 +33,7 @@ namespace limbo::RHI
 		if (!bIsProfiling)
 			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif
-		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&m_Factory)));
+		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(m_Factory.ReleaseAndGetAddressOf())));
 
 #if !NO_LOG
 		if (!bIsProfiling)
@@ -51,13 +51,13 @@ namespace limbo::RHI
 				}
 			}
 
-			ComPtr<ID3D12Debug> debugController;
-			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+			RefCountPtr<ID3D12Debug> debugController;
+			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
 			debugController->EnableDebugLayer();
 
 #if LIMBO_DEBUG
-			ComPtr<ID3D12Debug1> debugController1;
-			DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(&debugController1)));
+			RefCountPtr<ID3D12Debug1> debugController1;
+			DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(debugController1.ReleaseAndGetAddressOf())));
 			debugController1->SetEnableGPUBasedValidation(true);
 #endif
 		}
@@ -90,10 +90,10 @@ namespace limbo::RHI
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		if (!bIsProfiling && !IsUnderRenderDoc())
 		{
-			ComPtr<ID3D12InfoQueue> d3d12InfoQueue;
-			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue)));
-			ComPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
-			if (SUCCEEDED(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(&d3d12InfoQueue1))))
+			RefCountPtr<ID3D12InfoQueue> d3d12InfoQueue;
+			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(d3d12InfoQueue.ReleaseAndGetAddressOf())));
+			RefCountPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
+			if (SUCCEEDED(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(d3d12InfoQueue1.ReleaseAndGetAddressOf()))))
 			{
 				// Suppress messages based on their severity level
 				D3D12_MESSAGE_SEVERITY Severities[] =
@@ -612,10 +612,10 @@ namespace limbo::RHI
 		m_Adapter = nullptr;
 
 		// Get IDXGIFactory6
-		ComPtr<IDXGIFactory6> factory6;
-		DX_CHECK(m_Factory->QueryInterface(IID_PPV_ARGS(&factory6)));
+		RefCountPtr<IDXGIFactory6> factory6;
+		DX_CHECK(m_Factory->QueryInterface(IID_PPV_ARGS(factory6.ReleaseAndGetAddressOf())));
 		for (uint32_t adapterIndex = 0;
-			!FAILED(factory6->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&m_Adapter)));
+			!FAILED(factory6->EnumAdapterByGpuPreference(adapterIndex, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(m_Adapter.ReleaseAndGetAddressOf())));
 			adapterIndex++)
 		{
 			DXGI_ADAPTER_DESC1 desc;
@@ -652,8 +652,8 @@ namespace limbo::RHI
 		IID GraphicsAnalysisID;
 		if (SUCCEEDED(IIDFromString(L"{9F251514-9D4D-4902-9D60-18988AB7D4B5}", &GraphicsAnalysisID)))
 		{
-			ComPtr<IUnknown> GraphicsAnalysis;
-			if (SUCCEEDED(DXGIGetDebugInterface1(0, GraphicsAnalysisID, (void**)GraphicsAnalysis.ReleaseAndGetAddressOf())))
+			RefCountPtr<IUnknown> GraphicsAnalysis;
+			if (SUCCEEDED(DXGIGetDebugInterface1(0, GraphicsAnalysisID, GraphicsAnalysis.GetRefVoid())))
 			{
 				// Running under PIX
 				return true;
@@ -667,8 +667,8 @@ namespace limbo::RHI
 		IID renderDocID;
 		if (SUCCEEDED(IIDFromString(L"{A7AA6116-9C8D-4BBA-9083-B4D816B71B78}", &renderDocID)))
 		{
-			ComPtr<IUnknown> renderDoc;
-			if (SUCCEEDED(m_Device->QueryInterface(renderDocID, &renderDoc)))
+			RefCountPtr<IUnknown> renderDoc;
+			if (SUCCEEDED(m_Device->QueryInterface(renderDocID, renderDoc.GetRefVoid())))
 			{
 				// Running under RenderDoc, so enable capturing mode
 				LB_LOG("Running under Render Doc, ID3D12InfoQueue features won't be enabled!");

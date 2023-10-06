@@ -99,7 +99,7 @@ namespace limbo::RHI
 		if (errorBlob)
 			LB_ERROR("%s", (char*)errorBlob->GetBufferPointer());
 
-		DX_CHECK(Device::Ptr->GetDevice()->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(&m_RS)));
+		DX_CHECK(Device::Ptr->GetDevice()->CreateRootSignature(0, rootSigBlob->GetBufferPointer(), rootSigBlob->GetBufferSize(), IID_PPV_ARGS(m_RS.ReleaseAndGetAddressOf())));
 
 		std::wstring wname;
 		Utils::StringConvert(m_Name, wname);

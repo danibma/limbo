@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "core/refcountptr.h"
+
 namespace limbo::RHI
 {
 	class CommandContext;
@@ -7,7 +9,7 @@ namespace limbo::RHI
 	class Device;
 	class Fence
 	{
-		ComPtr<ID3D12Fence>	m_Fence;
+		RefCountPtr<ID3D12Fence>	m_Fence;
 		HANDLE				m_CompleteEvent;
 		uint64				m_CurrentValue;
 
@@ -36,7 +38,7 @@ namespace limbo::RHI
 		using CommandAllocatorPool = std::queue<std::pair<ID3D12CommandAllocator*, uint64>>;
 
 	private:
-		ComPtr<ID3D12CommandQueue>	m_Queue;
+		RefCountPtr<ID3D12CommandQueue>	m_Queue;
 		ContextType					m_Type;
 		Fence*						m_Fence;
 

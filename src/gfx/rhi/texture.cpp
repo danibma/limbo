@@ -71,7 +71,7 @@ namespace limbo::RHI
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc, 
 			         InitialState, 
 			         clearValue,
-			         IID_PPV_ARGS(&Resource)));
+			         IID_PPV_ARGS(Resource.ReleaseAndGetAddressOf())));
 	}
 
 	Texture::Texture(const TextureSpec& spec)

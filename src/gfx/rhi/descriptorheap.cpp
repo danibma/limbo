@@ -15,7 +15,7 @@ namespace limbo::RHI
 			.Flags = bShaderVisible ? D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE : D3D12_DESCRIPTOR_HEAP_FLAG_NONE,
 			.NodeMask = 0
 		};
-		DX_CHECK(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&m_Heap)));
+		DX_CHECK(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(m_Heap.ReleaseAndGetAddressOf())));
 
 		m_DescriptorSize = device->GetDescriptorHandleIncrementSize(D3DDescriptorHeapType(heapType));
 

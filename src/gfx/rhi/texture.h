@@ -39,7 +39,7 @@ namespace limbo::RHI
 		DescriptorHandle			m_SRVHandle;
 
 	public:
-		ComPtr<ID3D12Resource>		Resource;
+		RefCountPtr<ID3D12Resource>		Resource;
 		D3D12_RESOURCE_STATES		InitialState;
 		DescriptorHandle			UAVHandle[D3D12_REQ_MIP_LEVELS];
 		TextureSpec					Spec;

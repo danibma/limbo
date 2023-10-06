@@ -65,7 +65,7 @@ namespace limbo::RHI
 		DX_CHECK(d3ddevice->CreateCommittedResource(&heapProps, D3D12_HEAP_FLAG_NONE, &desc,
 													InitialState,
 													nullptr,
-													IID_PPV_ARGS(&Resource)));
+													IID_PPV_ARGS(Resource.ReleaseAndGetAddressOf())));
 
 		if (spec.InitialData)
 		{

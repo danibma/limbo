@@ -18,7 +18,7 @@ namespace limbo::RHI
 		: m_ParentQueue(queue), m_Type(type), m_GlobalHeap(globalHeap)
 	{
 		m_Allocator = queue->RequestAllocator();
-		DX_CHECK(device->CreateCommandList(0, D3DCmdListType(type), m_Allocator, nullptr, IID_PPV_ARGS(&m_CommandList)));
+		DX_CHECK(device->CreateCommandList(0, D3DCmdListType(type), m_Allocator, nullptr, IID_PPV_ARGS(m_CommandList.ReleaseAndGetAddressOf())));
 
 		std::string name = std::format("{} Command Context", CmdListTypeToStr(m_Type));
 		std::wstring wName;

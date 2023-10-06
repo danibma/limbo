@@ -65,7 +65,7 @@ namespace limbo
 			.Count = MaxProfiles * RHI::NUM_BACK_BUFFERS * 2,
 			.NodeMask = 0
 		};
-		DX_CHECK(RHI::Device::Ptr->GetDevice()->CreateQueryHeap(&desc, IID_PPV_ARGS(&m_QueryHeap)));
+		DX_CHECK(RHI::Device::Ptr->GetDevice()->CreateQueryHeap(&desc, IID_PPV_ARGS(m_QueryHeap.ReleaseAndGetAddressOf())));
 	}
 
 	void GPUProfiler::Shutdown()

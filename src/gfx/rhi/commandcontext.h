@@ -61,7 +61,7 @@ namespace limbo::RHI
 		bool								m_bIsClosed = false;
 
 		ID3D12CommandAllocator*				m_Allocator;
-		ComPtr<ID3D12GraphicsCommandList4>	m_CommandList;
+		RefCountPtr<ID3D12GraphicsCommandList4>	m_CommandList;
 		CommandQueue*						m_ParentQueue;
 		ContextType							m_Type;
 

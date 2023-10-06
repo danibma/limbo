@@ -1,4 +1,6 @@
-﻿#include "core.h"
+﻿#pragma once
+
+#include "core.h"
 
 namespace limbo
 {
@@ -38,17 +40,17 @@ namespace limbo
 	/**
 	 * A ref counting pointer to an object which implements AddRef/Release.
 	 */
-	template<typename Type>
+	template<typename T>
 	class RefCountPtr
 	{
-		typedef Type* PointerType;
+		typedef T* PointerType;
 
 	public:
 		FORCEINLINE RefCountPtr() :
 			m_Ptr(nullptr)
 		{ }
 
-		RefCountPtr(Type* InReference)
+		RefCountPtr(T* InReference)
 		{
 			m_Ptr = InReference;
 			if (m_Ptr)
@@ -67,7 +69,7 @@ namespace limbo
 		template<typename CopyType>
 		explicit RefCountPtr(const RefCountPtr<CopyType>& Copy)
 		{
-			m_Ptr = static_cast<Type*>(Copy.Get());
+			m_Ptr = static_cast<T*>(Copy.Get());
 			if (m_Ptr)
 			{
 				m_Ptr->AddRef();
@@ -83,13 +85,13 @@ namespace limbo
 		template<typename MoveReferencedType>
 		explicit RefCountPtr(RefCountPtr<MoveReferencedType>&& Move)
 		{
-			m_Ptr = static_cast<Type*>(Move.Get());
+			m_Ptr = static_cast<T*>(Move.Get());
 			Move.m_Ptr = nullptr;
 		}
 
 		~RefCountPtr()
 		{
-			Type* temp = m_Ptr;
+			T* temp = m_Ptr;
 			if (temp)
 			{
 				m_Ptr = nullptr;
@@ -97,10 +99,10 @@ namespace limbo
 			}
 		}
 
-		RefCountPtr& operator=(Type* InReference)
+		RefCountPtr& operator=(T* InReference)
 		{
 			// Call AddRef before Release, in case the new reference is the same as the old reference.
-			Type* OldReference = m_Ptr;
+			T* OldReference = m_Ptr;
 			m_Ptr = InReference;
 			if (m_Ptr)
 				m_Ptr->AddRef();
@@ -126,7 +128,7 @@ namespace limbo
 		{
 			if (this != &InPtr)
 			{
-				Type* OldReference = m_Ptr;
+				T* OldReference = m_Ptr;
 				m_Ptr = InPtr.m_Ptr;
 				InPtr.m_Ptr = nullptr;
 				if (OldReference)
@@ -137,7 +139,7 @@ namespace limbo
 			return *this;
 		}
 
-		FORCEINLINE Type* operator->() const
+		FORCEINLINE T* operator->() const
 		{
 			return m_Ptr;
 		}
@@ -160,7 +162,7 @@ namespace limbo
 
 		FORCEINLINE void Swap(RefCountPtr& InPtr)
 		{
-			Type* OldReference = m_Ptr;
+			T* OldReference = m_Ptr;
 			m_Ptr = InPtr.m_Ptr;
 			InPtr.m_Ptr = OldReference;
 		}
@@ -170,23 +172,41 @@ namespace limbo
 			return m_Ptr != nullptr;
 		}
 
-		FORCEINLINE Type* Get() const
+		FORCEINLINE T* Get() const
 		{
-			m_Ptr;
+			return m_Ptr;
 		}
 
-		FORCEINLINE [[nodiscard]] Type* const* GetAddressOf() const
+		FORCEINLINE void Reset()
+		{
+			if (m_Ptr)
+				m_Ptr->Release();
+		}
+
+		FORCEINLINE void** GetRefVoid()
+		{
+			return (void**)(ReleaseAndGetAddressOf());
+		}
+
+		FORCEINLINE [[nodiscard]] T** ReleaseAndGetAddressOf()
+		{
+			if (m_Ptr)
+				m_Ptr->Release();
+			return &m_Ptr;
+		}
+
+		FORCEINLINE [[nodiscard]] T* const* GetAddressOf() const
 		{
 			return &m_Ptr;
 		}
 
-		FORCEINLINE [[nodiscard]] Type** GetAddressOf()
+		FORCEINLINE [[nodiscard]] T** GetAddressOf()
 		{
 			return &m_Ptr;
 		}
 
 	private:
-		Type* m_Ptr;
+		T* m_Ptr;
 
 		template <typename OtherType>
 		friend class RefCountPtr;

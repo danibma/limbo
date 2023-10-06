@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "core/refcountptr.h"
+
 namespace limbo::RHI
 {
 	class RootSignature
@@ -17,7 +19,7 @@ namespace limbo::RHI
 		using TRootParameterMap = std::array<RootParameter, ROOT_PARAMETER_NUM>;
 
 		std::string							m_Name;
-		ComPtr<ID3D12RootSignature>			m_RS;
+		RefCountPtr<ID3D12RootSignature>			m_RS;
 		TRootParameterMap					m_RootParameters;
 		uint32								m_NumRootParameters;
 		std::vector<uint32>					m_DescriptorTablesDescriptorAmount;

@@ -1,12 +1,13 @@
 #pragma once
 
 #include "definitions.h"
+#include "core/refcountptr.h"
 
 #include <dxcapi.h>
 
 namespace limbo::RHI
 {
-	typedef ComPtr<IDxcBlob> ShaderBytecode;
+	typedef RefCountPtr<IDxcBlob> ShaderBytecode;
 
 	struct Shader
 	{

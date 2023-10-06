@@ -41,9 +41,9 @@ namespace limbo::RHI
 			.AlphaMode = DXGI_ALPHA_MODE_IGNORE,
 			.Flags = 0
 		};
-		ComPtr<IDXGISwapChain1> tempSwapchain;
-		DX_CHECK(m_Factory->CreateSwapChainForHwnd(m_CommandQueue, m_Window->GetWin32Handle(), &desc, nullptr, nullptr, &tempSwapchain));
-		tempSwapchain->QueryInterface(IID_PPV_ARGS(&m_Swapchain));
+		RefCountPtr<IDXGISwapChain1> tempSwapchain;
+		DX_CHECK(m_Factory->CreateSwapChainForHwnd(m_CommandQueue, m_Window->GetWin32Handle(), &desc, nullptr, nullptr, tempSwapchain.ReleaseAndGetAddressOf()));
+		tempSwapchain->QueryInterface(IID_PPV_ARGS(m_Swapchain.ReleaseAndGetAddressOf()));
 	}
 
 	void Swapchain::InitBackBuffers()

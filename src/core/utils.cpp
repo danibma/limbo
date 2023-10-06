@@ -1,10 +1,10 @@
 ﻿#include "stdafx.h"
 #include "utils.h"
+#include "window.h"
+#include "core/refcountptr.h"
 
 #include <windows.h>
 #include <shobjidl_core.h>
-
-#include "window.h"
 
 namespace limbo::Utils
 {
@@ -32,8 +32,8 @@ namespace limbo::Utils
 	{
 		bool bSuccess = false;
 
-		ComPtr<IFileDialog> FileDialog;
-		if (SUCCEEDED(::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_IFileOpenDialog, IID_PPV_ARGS_Helper(&FileDialog))))
+		RefCountPtr<IFileDialog> FileDialog;
+		if (SUCCEEDED(::CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_IFileOpenDialog, IID_PPV_ARGS_Helper(FileDialog.ReleaseAndGetAddressOf()))))
 		{
 			// Set this up as a multi-select picker
 			if (bMultipleSelection)
@@ -47,8 +47,8 @@ namespace limbo::Utils
 			FileDialog->SetTitle(dialogTitle);
 			if (wcslen(defaultPath) > 0)
 			{
-				ComPtr<IShellItem> DefaultPathItem;
-				if (SUCCEEDED(::SHCreateItemFromParsingName(defaultPath, nullptr, IID_PPV_ARGS(&DefaultPathItem))))
+				RefCountPtr<IShellItem> DefaultPathItem;
+				if (SUCCEEDED(::SHCreateItemFromParsingName(defaultPath, nullptr, IID_PPV_ARGS(DefaultPathItem.ReleaseAndGetAddressOf()))))
 				{
 					FileDialog->SetFolder(DefaultPathItem.Get());
 				}
@@ -76,15 +76,15 @@ namespace limbo::Utils
 			{
 				IFileOpenDialog* FileOpenDialog = static_cast<IFileOpenDialog*>(FileDialog.Get());
 
-				ComPtr<IShellItemArray> Results;
-				if (SUCCEEDED(FileOpenDialog->GetResults(&Results)))
+				RefCountPtr<IShellItemArray> Results;
+				if (SUCCEEDED(FileOpenDialog->GetResults(Results.ReleaseAndGetAddressOf())))
 				{
 					DWORD NumResults = 0;
 					Results->GetCount(&NumResults);
 					for (DWORD ResultIndex = 0; ResultIndex < NumResults; ++ResultIndex)
 					{
-						ComPtr<IShellItem> Result;
-						if (SUCCEEDED(Results->GetItemAt(ResultIndex, &Result)))
+						RefCountPtr<IShellItem> Result;
+						if (SUCCEEDED(Results->GetItemAt(ResultIndex, Result.ReleaseAndGetAddressOf())))
 						{
 							PWSTR pFilePath = nullptr;
 							if (SUCCEEDED(Result->GetDisplayName(SIGDN_FILESYSPATH, &pFilePath)))

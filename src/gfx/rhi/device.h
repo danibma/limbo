@@ -7,6 +7,7 @@
 #include "shaderbindingtable.h"
 #include "gfx/profiler.h"
 #include "core/array.h"
+#include "core/refcountptr.h"
 
 namespace limbo::Core
 {
@@ -43,9 +44,9 @@ namespace limbo::RHI
 		using CommandContextList = std::array<CommandContext*, (int)ContextType::MAX>;
 
 	private:
-		ComPtr<IDXGIFactory2>				m_Factory;
-		ComPtr<IDXGIAdapter1>				m_Adapter;
-		ComPtr<ID3D12Device5>				m_Device;
+		RefCountPtr<IDXGIFactory2>			m_Factory;
+		RefCountPtr<IDXGIAdapter1>			m_Adapter;
+		RefCountPtr<ID3D12Device5>			m_Device;
 
 		CommandContextList					m_CommandContexts;
 		CommandQueueList					m_CommandQueues;

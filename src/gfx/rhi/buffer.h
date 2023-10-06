@@ -33,7 +33,7 @@ namespace limbo::RHI
 	class Buffer
 	{
 	public:
-		ComPtr<ID3D12Resource>	Resource;
+		RefCountPtr<ID3D12Resource>	Resource;
 		D3D12_RESOURCE_STATES	InitialState;
 		DescriptorHandle		CBVHandle;
 		void*					MappedData;
