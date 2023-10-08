@@ -15,6 +15,7 @@
 #include "techniques/ssao.h"
 #include "rhi/pipelinestateobject.h"
 #include "rhi/shadercompiler.h"
+#include "rhi/resourcemanager.h"
 
 namespace limbo::Gfx
 {

@@ -80,28 +80,28 @@ namespace limbo::RHI
 		ID3D12GraphicsCommandList4* Get() const { return m_CommandList.Get(); }
 		ContextType GetType() const { return m_Type; }
 
-		void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst);
-		void CopyTextureToBackBuffer(Handle<Texture> texture);
-		void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst, uint64 dstOffset = 0);
+		void CopyTextureToTexture(TextureHandle src, TextureHandle dst);
+		void CopyTextureToBackBuffer(TextureHandle texture);
+		void CopyBufferToTexture(BufferHandle src, TextureHandle dst, uint64 dstOffset = 0);
 		void CopyBufferToTexture(Buffer* src, Texture* dst, uint64 dstOffset = 0);
-		void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+		void CopyBufferToBuffer(BufferHandle src, BufferHandle dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 		void CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
 
 		void BeginEvent(const char* name, uint64 color = 0);
 		void EndEvent();
 		void ScopedEvent(const char* name, uint64 color = 0);
 
-		void ClearRenderTargets(Span<Handle<Texture>> renderTargets, float4 color = float4(0.0f));
-		void ClearDepthTarget(Handle<Texture> depthTarget, float depth = 1.0f, uint8 stencil = 0);
+		void ClearRenderTargets(Span<TextureHandle> renderTargets, float4 color = float4(0.0f));
+		void ClearDepthTarget(TextureHandle depthTarget, float depth = 1.0f, uint8 stencil = 0);
 
-		void SetVertexBuffer(Handle<Buffer> buffer);
-		void SetIndexBuffer(Handle<Buffer> buffer);
+		void SetVertexBuffer(BufferHandle buffer);
+		void SetIndexBuffer(BufferHandle buffer);
 		void SetVertexBufferView(VertexBufferView view);
 		void SetIndexBufferView(IndexBufferView view);
 		void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		void SetViewport(uint32 width, uint32 height, float topLeft = 0.0f, float topRight = 0.0f, float minDepth = 0.0f, float maxDepth = 1.0f);
 		void SetPipelineState(PipelineStateObject* pso);
-		void SetRenderTargets(Span<Handle<Texture>> renderTargets, Handle<Texture> depthTarget = Handle<Texture>());
+		void SetRenderTargets(Span<TextureHandle> renderTargets, TextureHandle depthTarget = TextureHandle());
 
 		void BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count);
 		void BindConstants(uint32 rootParameter, uint32 num32bitValues, uint32 offsetIn32bits, const void* data);
@@ -114,7 +114,7 @@ namespace limbo::RHI
 		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 		void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth);
 
-		void BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, Handle<Buffer> scratch, Handle<Buffer> result);
+		void BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, BufferHandle scratch, BufferHandle result);
 
 		void Reset();
 		void Free(uint64 fenceValue);

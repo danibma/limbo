@@ -28,7 +28,7 @@ namespace limbo::RHI
 
 	void ShaderBindingTable::Commit(D3D12_DISPATCH_RAYS_DESC& dispatchDesc, uint32 width, uint32 height, uint32 depth) const
 	{
-		Handle<Buffer> sbtBuffer = CreateBuffer({
+		BufferHandle sbtBuffer = CreateBuffer({
 			.DebugName = "ShaderBindingTable Buffer",
 			.ByteSize = 256, // we only support 1 of each shader
 			.Flags = BufferUsage::Upload,

@@ -51,32 +51,32 @@ namespace limbo::RHI
 #endif
 	}
 
-	Handle<Buffer> ResourceManager::CreateBuffer(const BufferSpec& spec)
+	BufferHandle ResourceManager::CreateBuffer(const BufferSpec& spec)
 	{
 		return m_Buffers.AllocateHandle(spec);
 	}
 
-	Handle<Shader> ResourceManager::CreateShader(const char* file, const char* entryPoint, ShaderType type)
+	ShaderHandle ResourceManager::CreateShader(const char* file, const char* entryPoint, ShaderType type)
 	{
 		return m_Shaders.AllocateHandle(file, entryPoint, type);
 	}
 
-	Handle<Texture> ResourceManager::CreateTextureFromFile(const char* path, const char* debugName)
+	TextureHandle ResourceManager::CreateTextureFromFile(const char* path, const char* debugName)
 	{
 		return m_Textures.AllocateHandle(path, debugName);
 	}
 
-	Handle<Texture> ResourceManager::CreateTexture(const TextureSpec& spec)
+	TextureHandle ResourceManager::CreateTexture(const TextureSpec& spec)
 	{
 		return m_Textures.AllocateHandle(spec);
 	}
 
-	Handle<Texture> ResourceManager::CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
+	TextureHandle ResourceManager::CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
 	{
 		return m_Textures.AllocateHandle(resource, spec);
 	}
 
-	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer, bool bImmediate)
+	void ResourceManager::DestroyBuffer(BufferHandle buffer, bool bImmediate)
 	{
 		if (bImmediate)
 		{
@@ -88,7 +88,7 @@ namespace limbo::RHI
 		}
 	}
 
-	void ResourceManager::DestroyShader(Handle<Shader> shader, bool bImmediate)
+	void ResourceManager::DestroyShader(ShaderHandle shader, bool bImmediate)
 	{
 		if (bImmediate)
 		{
@@ -100,7 +100,7 @@ namespace limbo::RHI
 		}
 	}
 
-	void ResourceManager::DestroyTexture(Handle<Texture> texture, bool bImmediate)
+	void ResourceManager::DestroyTexture(TextureHandle texture, bool bImmediate)
 	{
 		if (bImmediate)
 		{

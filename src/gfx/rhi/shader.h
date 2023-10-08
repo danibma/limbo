@@ -1,6 +1,7 @@
 #pragma once
 
 #include "definitions.h"
+#include "resourcepool.h"
 #include "core/refcountptr.h"
 
 #include <dxcapi.h>
@@ -19,4 +20,5 @@ namespace limbo::RHI
 		Shader() = default;
 		Shader(const char* file, const char* entryPoint, ShaderType type);
 	};
+	typedef Handle<Shader> ShaderHandle;
 }

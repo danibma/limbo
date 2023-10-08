@@ -1,8 +1,8 @@
 #pragma once
 
-#include "texture.h"
 #include "definitions.h"
 #include "descriptorheap.h"
+#include "resourcepool.h"
 
 namespace limbo::RHI
 {
@@ -69,4 +69,5 @@ namespace limbo::RHI
 		void CreateResource(const TextureSpec& spec);
 		void InitResource(const TextureSpec& spec);
 	};
+	typedef Handle<Texture> TextureHandle;
 }

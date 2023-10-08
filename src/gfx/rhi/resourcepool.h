@@ -2,7 +2,6 @@
 
 #include "core/core.h"
 
-#include <vector>
 #include <queue>
 
 namespace limbo::RHI

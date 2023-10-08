@@ -25,17 +25,17 @@ namespace limbo::RHI
 	public:
 		static ResourceManager*		Ptr;
 
-		Handle<Texture>				EmptyTexture;
+		TextureHandle				EmptyTexture;
 
 	public:
 		ResourceManager();
 		virtual ~ResourceManager();
 
-		Handle<Buffer> CreateBuffer(const BufferSpec& spec);
-		Handle<Shader> CreateShader(const char* file, const char* entryPoint, ShaderType type);
-		Handle<Texture> CreateTextureFromFile(const char* path, const char* debugName);
-		Handle<Texture> CreateTexture(const TextureSpec& spec);
-		Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
+		BufferHandle CreateBuffer(const BufferSpec& spec);
+		ShaderHandle CreateShader(const char* file, const char* entryPoint, ShaderType type);
+		TextureHandle CreateTextureFromFile(const char* path, const char* debugName);
+		TextureHandle CreateTexture(const TextureSpec& spec);
+		TextureHandle CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
 
 		template<typename ResourceType>
 		ResourceType* Get(Handle<ResourceType> resourceHandle)
@@ -48,17 +48,17 @@ namespace limbo::RHI
 				return m_Shaders.Get(resourceHandle);
 		}
 
-		void DestroyBuffer(Handle<Buffer> buffer, bool bImmediate = false);
-		void DestroyShader(Handle<Shader> shader, bool bImmediate = false);
-		void DestroyTexture(Handle<Texture> texture, bool bImmediate = false);
+		void DestroyBuffer(BufferHandle buffer, bool bImmediate = false);
+		void DestroyShader(ShaderHandle shader, bool bImmediate = false);
+		void DestroyTexture(TextureHandle texture, bool bImmediate = false);
 
 		void RunDeletionQueue();
 		void ForceDeletionQueue();
 
 	private:
-		Pool<Buffer,  1<<7>		m_Buffers;
-		Pool<Texture, 1<<7>	    m_Textures;
-		Pool<Shader,    128>	m_Shaders;
+		Pool<Buffer,			  1<<7>		m_Buffers;
+		Pool<Texture,			  1<<7>	    m_Textures;
+		Pool<Shader,			  128>		m_Shaders;
 
 		bool						m_bOnShutdown = false;
 
@@ -66,44 +66,44 @@ namespace limbo::RHI
 	};
 
 	// Global definitions
-	inline Handle<Buffer> CreateBuffer(const BufferSpec& spec)
+	inline BufferHandle CreateBuffer(const BufferSpec& spec)
 	{
 		return ResourceManager::Ptr->CreateBuffer(spec);
 	}
 
-	inline Handle<Shader> CreateShader(const char* file, const char* entryPoint, ShaderType type)
+	inline ShaderHandle CreateShader(const char* file, const char* entryPoint, ShaderType type)
 	{
 		return ResourceManager::Ptr->CreateShader(file, entryPoint, type);
 	}
 
-	inline Handle<Texture> CreateTextureFromFile(const char* path, const char* debugName)
+	inline TextureHandle CreateTextureFromFile(const char* path, const char* debugName)
 	{
 		return ResourceManager::Ptr->CreateTextureFromFile(path, debugName);
 	}
 
-	inline Handle<Texture> CreateTexture(const TextureSpec& spec)
+	inline TextureHandle CreateTexture(const TextureSpec& spec)
 	{
 		return ResourceManager::Ptr->CreateTexture(spec);
 	}
 
-	inline Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
+	inline TextureHandle CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
 	{
 		return ResourceManager::Ptr->CreateTexture(resource, spec);
 	}
 
-	inline void DestroyBuffer(Handle<Buffer> handle, bool bImmediate = false)
+	inline void DestroyBuffer(BufferHandle handle, bool bImmediate = false)
 	{
 		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyBuffer(handle, bImmediate);
 	}
 
-	inline void DestroyShader(Handle<Shader> handle, bool bImmediate = false)
+	inline void DestroyShader(ShaderHandle handle, bool bImmediate = false)
 	{
 		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyShader(handle, bImmediate);
 	}
 
-	inline void DestroyTexture(Handle<Texture> handle, bool bImmediate = false)
+	inline void DestroyTexture(TextureHandle handle, bool bImmediate = false)
 	{
 		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyTexture(handle, bImmediate);

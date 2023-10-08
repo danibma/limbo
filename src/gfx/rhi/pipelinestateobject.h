@@ -27,9 +27,9 @@ namespace limbo::RHI
 		D3D12_RASTERIZER_DESC						m_RasterizerDesc = TStaticRasterizerState<>::GetRHI();
 		D3D12_DEPTH_STENCIL_DESC					m_DepthStencilDesc = TStaticDepthStencilState<>::GetRHI();
 
-		Handle<Shader>								m_VertexShader;
-		Handle<Shader>								m_PixelShader;
-		Handle<Shader>								m_ComputeShader;
+		ShaderHandle								m_VertexShader;
+		ShaderHandle								m_PixelShader;
+		ShaderHandle								m_ComputeShader;
 
 		TStaticArray<Format, MAX_RENDER_TARGETS>	m_RenderTargetFormats = {};
 		Format										m_DepthTargetFormat = Format::UNKNOWN;
@@ -46,17 +46,17 @@ namespace limbo::RHI
 		void SetRenderTargetFormats(const Span<Format>& rtFormats, Format depthFormat);
 		void SetName(const std::string_view& name);
 
-		void SetVertexShader(Handle<Shader> vertexShader)
+		void SetVertexShader(ShaderHandle vertexShader)
 		{
 			m_VertexShader = vertexShader;
 		}
 
-		void SetPixelShader(Handle<Shader> pixelShader)
+		void SetPixelShader(ShaderHandle pixelShader)
 		{
 			m_PixelShader = pixelShader;
 		}
 
-		void SetComputeShader(Handle<Shader> computeShader)
+		void SetComputeShader(ShaderHandle computeShader)
 		{
 			m_ComputeShader = computeShader;
 		}
@@ -90,12 +90,12 @@ namespace limbo::RHI
 		uint32								m_MaxTraceRecursionDepth = 1;
 
 		uint32								m_LibsNum;
-		TStaticArray<Handle<Shader>, 3>		m_Libs;
+		TStaticArray<ShaderHandle, 3>		m_Libs;
 		TStaticArray<RaytracingLibDesc, 3>	m_LibsDescs;
 	public:
 
 		void SetGlobalRootSignature(RootSignature* rootSignature);
-		void AddLib(Handle<Shader> lib, const RaytracingLibDesc& libDesc);
+		void AddLib(ShaderHandle lib, const RaytracingLibDesc& libDesc);
 		void SetShaderConfig(uint32 maxPayloadSizeInBytes, uint32 maxAttributeSizeInBytes);
 		void SetMaxTraceRecursionDepth(uint32 maxTraceRecursionDepth);
 		void SetName(const std::string_view& name);
@@ -145,5 +145,6 @@ namespace limbo::RHI
 
 		bool m_Compute = false;
 	};
+	typedef Handle<PipelineStateObject> PSOHandle;
 }
 

@@ -1,9 +1,11 @@
 ﻿#pragma once
-#include "resourcepool.h"
+
+#include "buffer.h"
+
+#include <string>
 
 namespace limbo::RHI
 {
-	class Buffer;
 	class CommandQueue;
 	class CommandContext;
 
@@ -39,7 +41,7 @@ namespace limbo::RHI
 		using PreDeletedQueue = std::queue<PreDeletedAllocation>;
 
 	private:
-		Handle<Buffer>	m_Buffer;
+		BufferHandle	m_Buffer;
 		uint64			m_TotalSize;
 		uint64			m_CurrentOffset;
 		void*			m_MappedData;

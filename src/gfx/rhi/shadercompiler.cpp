@@ -7,7 +7,7 @@
 
 namespace limbo::RHI::SC
 {
-	bool Compile(Handle<Shader> shader)
+	bool Compile(ShaderHandle shader)
 	{
         static IDxcUtils* dxcUtils;
         static IDxcCompiler3* dxcCompiler;

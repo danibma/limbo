@@ -38,7 +38,7 @@ namespace limbo::RHI
 		Free(0);
 	}
 
-	void CommandContext::CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
+	void CommandContext::CopyTextureToTexture(TextureHandle src, TextureHandle dst)
 	{
 		Texture* srcTexture = RM_GET(src);
 		Texture* dstTexture = RM_GET(dst);
@@ -50,9 +50,9 @@ namespace limbo::RHI
 		m_CommandList->CopyResource(dstTexture->Resource.Get(), srcTexture->Resource.Get());
 	}
 
-	void CommandContext::CopyTextureToBackBuffer(Handle<Texture> texture)
+	void CommandContext::CopyTextureToBackBuffer(TextureHandle texture)
 	{
-		Handle<Texture> backBufferHandle = Device::Ptr->GetCurrentBackbuffer();
+		TextureHandle backBufferHandle = Device::Ptr->GetCurrentBackbuffer();
 
 		CopyTextureToTexture(texture, backBufferHandle);
 
@@ -60,7 +60,7 @@ namespace limbo::RHI
 		SubmitResourceBarriers();
 	}
 
-	void CommandContext::CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst, uint64 dstOffset)
+	void CommandContext::CopyBufferToTexture(BufferHandle src, TextureHandle dst, uint64 dstOffset)
 	{
 		Texture* dstTexture = RM_GET(dst);
 		Buffer* srcBuffer = RM_GET(src);
@@ -92,7 +92,7 @@ namespace limbo::RHI
 		m_CommandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
 	}
 
-	void CommandContext::CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
+	void CommandContext::CopyBufferToBuffer(BufferHandle src, BufferHandle dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
 	{
 		Buffer* srcBuffer = RM_GET(src);
 		Buffer* dstBuffer = RM_GET(dst);
@@ -109,9 +109,9 @@ namespace limbo::RHI
 		m_CommandList->CopyBufferRegion(dst->Resource.Get(), dstOffset, src->Resource.Get(), srcOffset, numBytes);
 	}
 
-	void CommandContext::ClearRenderTargets(Span<Handle<Texture>> renderTargets, float4 color)
+	void CommandContext::ClearRenderTargets(Span<TextureHandle> renderTargets, float4 color)
 	{
-		for (Handle<Texture> rt : renderTargets)
+		for (TextureHandle rt : renderTargets)
 		{
 			InsertResourceBarrier(rt, D3D12_RESOURCE_STATE_RENDER_TARGET);
 			SubmitResourceBarriers();
@@ -121,7 +121,7 @@ namespace limbo::RHI
 		}
 	}
 
-	void CommandContext::ClearDepthTarget(Handle<Texture> depthTarget, float depth, uint8 stencil)
+	void CommandContext::ClearDepthTarget(TextureHandle depthTarget, float depth, uint8 stencil)
 	{
 		Texture* dt = RM_GET(depthTarget);
 
@@ -132,7 +132,7 @@ namespace limbo::RHI
 		m_CommandList->ClearDepthStencilView(dt->UAVHandle[0].CpuHandle, flags, depth, stencil, 0, nullptr);
 	}
 
-	void CommandContext::SetVertexBuffer(Handle<Buffer> buffer)
+	void CommandContext::SetVertexBuffer(BufferHandle buffer)
 	{
 		Buffer* vb = RM_GET(buffer);
 		InsertResourceBarrier(vb, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
@@ -145,7 +145,7 @@ namespace limbo::RHI
 		m_CommandList->IASetVertexBuffers(0, 1, &vbView);
 	}
 
-	void CommandContext::SetIndexBuffer(Handle<Buffer> buffer)
+	void CommandContext::SetIndexBuffer(BufferHandle buffer)
 	{
 		Buffer* ib = RM_GET(buffer);
 		InsertResourceBarrier(ib, D3D12_RESOURCE_STATE_INDEX_BUFFER);
@@ -207,7 +207,7 @@ namespace limbo::RHI
 		m_CommandList->RSSetScissorRects(1, &scissor);
 	}
 
-	void CommandContext::SetRenderTargets(Span<Handle<Texture>> renderTargets, Handle<Texture> depthTarget)
+	void CommandContext::SetRenderTargets(Span<TextureHandle> renderTargets, TextureHandle depthTarget)
 	{
 		D3D12_CPU_DESCRIPTOR_HANDLE* depthDescriptor = nullptr;
 		if (depthTarget.IsValid())
@@ -388,7 +388,7 @@ namespace limbo::RHI
 		m_ResourceBarriers.clear();
 	}
 
-	void CommandContext::BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, Handle<Buffer> scratch, Handle<Buffer> result)
+	void CommandContext::BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, BufferHandle scratch, BufferHandle result)
 	{
 		InsertResourceBarrier(RM_GET(scratch), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 

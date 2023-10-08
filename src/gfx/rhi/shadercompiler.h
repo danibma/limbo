@@ -187,6 +187,6 @@ namespace limbo::RHI::SC
 		  -W[no-]<warning> Enable/Disable the specified warning
 	*/
 
-	bool Compile(Handle<Shader> shader);
+	bool Compile(ShaderHandle shader);
 }
 

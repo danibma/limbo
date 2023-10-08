@@ -121,13 +121,13 @@ namespace limbo::RHI
 		return m_Swapchain->GetCurrentBackBufferIndex();
 	}
 
-	Handle<Texture> Swapchain::GetBackbuffer(uint32 index)
+	TextureHandle Swapchain::GetBackbuffer(uint32 index)
 	{
 		ensure(index < NUM_BACK_BUFFERS);
 		return m_Backbuffers[index];
 	}
 
-	Handle<Texture> Swapchain::GetDepthBackbuffer(uint32 index)
+	TextureHandle Swapchain::GetDepthBackbuffer(uint32 index)
 	{
 		ensure(index < NUM_BACK_BUFFERS);
 		return m_DepthBackbuffers[index];

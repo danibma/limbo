@@ -59,12 +59,12 @@ namespace limbo::RHI
 					D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO ASBuildInfo = {};
 					d3ddevice->GetRaytracingAccelerationStructurePrebuildInfo(&ASInputs, &ASBuildInfo);
 
-					Handle<Buffer> blasScratch = CreateBuffer({
+					BufferHandle blasScratch = CreateBuffer({
 						.DebugName = "BLAS Scratch Buffer",
 						.ByteSize = ASBuildInfo.ScratchDataSizeInBytes,
 						.Flags = BufferUsage::AccelerationStructure,
 					});
-					Handle<Buffer> blasResult = CreateBuffer({
+					BufferHandle blasResult = CreateBuffer({
 						.DebugName = "BLAS Result Buffer",
 						.ByteSize = ASBuildInfo.ResultDataMaxSizeInBytes,
 						.Flags = BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView,

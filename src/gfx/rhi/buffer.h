@@ -1,9 +1,8 @@
 #pragma once
 
-#include "buffer.h"
-
 #include "definitions.h"
 #include "descriptorheap.h"
+#include "resourcepool.h"
 
 namespace limbo::RHI
 {
@@ -58,6 +57,7 @@ namespace limbo::RHI
 
 		void InitResource(const BufferSpec& spec);
 	};
+	typedef Handle<Buffer> BufferHandle;
 
 	struct VertexBufferView
 	{

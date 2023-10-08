@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "resourcepool.h"
+#include "buffer.h"
 
 namespace limbo::Gfx
 {
@@ -7,13 +7,12 @@ namespace limbo::Gfx
 }
 namespace limbo::RHI
 {
-	class Buffer;
 	class AccelerationStructure
 	{
 	private:
-		Handle<Buffer>		m_ScratchBuffer;
-		Handle<Buffer>		m_TLAS;
-		Handle<Buffer>		m_InstancesBuffer;
+		BufferHandle	m_ScratchBuffer;
+		BufferHandle	m_TLAS;
+		BufferHandle	m_InstancesBuffer;
 
 	public:
 		AccelerationStructure() = default;

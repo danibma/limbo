@@ -105,7 +105,7 @@ namespace limbo::RHI
 		m_RootSignature = rootSignature;
 	}
 
-	void RaytracingPipelineStateInitializer::AddLib(Handle<Shader> lib, const RaytracingLibDesc& libDesc)
+	void RaytracingPipelineStateInitializer::AddLib(ShaderHandle lib, const RaytracingLibDesc& libDesc)
 	{
 		m_Libs[m_LibsNum] = lib;
 		m_LibsDescs[m_LibsNum] = libDesc;
@@ -159,7 +159,7 @@ namespace limbo::RHI
 		// Get all the libs, to later create the global root signature
 		for (uint32 i = 0; i < initializer.m_LibsNum; ++i)
 		{
-			Handle<Shader> lib = initializer.m_Libs[i];
+			ShaderHandle lib = initializer.m_Libs[i];
 			Shader* pLib = RM_GET(lib);
 
 			D3D12_DXIL_LIBRARY_DESC* dxilLib = stream.ContentData.Allocate<D3D12_DXIL_LIBRARY_DESC>();

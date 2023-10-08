@@ -8,6 +8,8 @@
 #include "gfx/profiler.h"
 #include "core/array.h"
 #include "core/refcountptr.h"
+#include "buffer.h"
+#include "texture.h"
 
 namespace limbo::Core
 {
@@ -27,8 +29,6 @@ namespace limbo::RHI
 	struct DrawInfo;
 	struct Shader;
 	class Swapchain;
-	class Buffer;
-	class Texture;
 	class Fence;
 
 	typedef uint8 GfxDeviceFlags;
@@ -77,7 +77,7 @@ namespace limbo::RHI
 		GPUInfo								m_GPUInfo;
 
 		RootSignature*						m_GenerateMipsRS;
-		Handle<Shader>						m_GenerateMipsShader;
+		ShaderHandle						m_GenerateMipsShader;
 		PipelineStateObject*				m_GenerateMipsPSO;
 
 	public:
@@ -124,8 +124,8 @@ namespace limbo::RHI
 			return m_TempBufferAllocator;
 		}
 
-		Handle<Texture> GetCurrentBackbuffer() const;
-		Handle<Texture> GetCurrentDepthBackbuffer() const;
+		TextureHandle GetCurrentBackbuffer() const;
+		TextureHandle GetCurrentDepthBackbuffer() const;
 		Format GetSwapchainFormat();
 		Format GetSwapchainDepthFormat();
 
@@ -143,7 +143,7 @@ namespace limbo::RHI
 
 		void MarkReloadShaders();
 
-		void GenerateMipLevels(Handle<Texture> texture);
+		void GenerateMipLevels(TextureHandle texture);
 
 		// D3D12 specific
 		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
@@ -201,12 +201,12 @@ namespace limbo::RHI
 		return Device::Ptr->GetSwapchainFormat();
 	}
 
-	FORCEINLINE Handle<Texture> GetCurrentBackbuffer()
+	FORCEINLINE TextureHandle GetCurrentBackbuffer()
 	{
 		return Device::Ptr->GetCurrentBackbuffer();
 	}
 
-	FORCEINLINE Handle<Texture> GetCurrentDepthBackbuffer()
+	FORCEINLINE TextureHandle GetCurrentDepthBackbuffer()
 	{
 		return Device::Ptr->GetCurrentDepthBackbuffer();
 	}
@@ -221,7 +221,7 @@ namespace limbo::RHI
 		return Device::Ptr->GetBackbufferHeight();
 	}
 
-	FORCEINLINE void GenerateMipLevels(Handle<Texture> texture)
+	FORCEINLINE void GenerateMipLevels(TextureHandle texture)
 	{
 		Device::Ptr->GenerateMipLevels(texture);
 	}
@@ -244,22 +244,22 @@ namespace limbo::RHI
 	//
 	// Global Command Context
 	//
-	FORCEINLINE void CopyTextureToBackBuffer(Handle<Texture> texture)
+	FORCEINLINE void CopyTextureToBackBuffer(TextureHandle texture)
 	{
 		GetCommandContext()->CopyTextureToBackBuffer(texture);
 	}
 
-	FORCEINLINE void CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
+	FORCEINLINE void CopyBufferToBuffer(BufferHandle src, BufferHandle dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
 	{
 		GetCommandContext()->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
 	}
 
-	FORCEINLINE void CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
+	FORCEINLINE void CopyTextureToTexture(TextureHandle src, TextureHandle dst)
 	{
 		GetCommandContext()->CopyTextureToTexture(src, dst);
 	}
 
-	FORCEINLINE void CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst)
+	FORCEINLINE void CopyBufferToTexture(BufferHandle src, TextureHandle dst)
 	{
 		GetCommandContext()->CopyBufferToTexture(src, dst);
 	}
@@ -291,22 +291,22 @@ namespace limbo::RHI
 		GetCommandContext()->EndEvent();
 	}
 
-	FORCEINLINE void ClearRenderTargets(Span<Handle<Texture>> renderTargets, float4 color = float4(0.0f))
+	FORCEINLINE void ClearRenderTargets(Span<TextureHandle> renderTargets, float4 color = float4(0.0f))
 	{
 		GetCommandContext()->ClearRenderTargets(renderTargets, color);
 	}
 
-	FORCEINLINE void ClearDepthTarget(Handle<Texture> depthTarget, float depth = 1.0f, uint8 stencil = 0)
+	FORCEINLINE void ClearDepthTarget(TextureHandle depthTarget, float depth = 1.0f, uint8 stencil = 0)
 	{
 		GetCommandContext()->ClearDepthTarget(depthTarget, depth, stencil);
 	}
 
-	FORCEINLINE void SetVertexBuffer(Handle<Buffer> buffer)
+	FORCEINLINE void SetVertexBuffer(BufferHandle buffer)
 	{
 		GetCommandContext()->SetVertexBuffer(buffer);
 	}
 
-	FORCEINLINE void SetIndexBuffer(Handle<Buffer> buffer)
+	FORCEINLINE void SetIndexBuffer(BufferHandle buffer)
 	{
 		GetCommandContext()->SetIndexBuffer(buffer);
 	}
@@ -336,7 +336,7 @@ namespace limbo::RHI
 		GetCommandContext()->SetPipelineState(pso);
 	}
 
-	FORCEINLINE void SetRenderTargets(Span<Handle<Texture>> renderTargets, Handle<Texture> depthTarget = Handle<Texture>())
+	FORCEINLINE void SetRenderTargets(Span<TextureHandle> renderTargets, TextureHandle depthTarget = TextureHandle())
 	{
 		GetCommandContext()->SetRenderTargets(renderTargets, depthTarget);
 	}

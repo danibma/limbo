@@ -227,7 +227,7 @@ namespace limbo::RHI
 		}
 
 		{
-			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+			TextureHandle backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
 			Texture* backbuffer = RM_GET(backBufferHandle);
 			context->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
 
@@ -263,11 +263,11 @@ namespace limbo::RHI
 
 		// Prepare frame render targets
 		{
-			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+			TextureHandle backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
 			Texture* backbuffer = RM_GET(backBufferHandle);
 			context->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
 
-			Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
+			TextureHandle depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
 			Texture* depthBackbuffer = RM_GET(depthBackBufferHandle);
 			context->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
@@ -288,12 +288,12 @@ namespace limbo::RHI
 		m_Swapchain->MarkForResize(width, height);
 	}
 
-	Handle<Texture> Device::GetCurrentBackbuffer() const
+	TextureHandle Device::GetCurrentBackbuffer() const
 	{
 		return m_Swapchain->GetBackbuffer(m_FrameIndex);
 	}
 
-	Handle<Texture> Device::GetCurrentDepthBackbuffer() const
+	TextureHandle Device::GetCurrentDepthBackbuffer() const
 	{
 		return m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
 	}
@@ -317,11 +317,11 @@ namespace limbo::RHI
 	{
 		m_Swapchain->InitBackBuffers();
 
-		Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
+		TextureHandle backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
 		Texture* backbuffer = RM_GET(backBufferHandle);
 		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
 
-		Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
+		TextureHandle depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
 		Texture* depthBackbuffer = RM_GET(depthBackBufferHandle);
 		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
@@ -570,7 +570,7 @@ namespace limbo::RHI
 		m_bNeedsShaderReload = true;
 	}
 
-	void Device::GenerateMipLevels(Handle<Texture> texture)
+	void Device::GenerateMipLevels(TextureHandle texture)
 	{
 		Texture* pTexture = RM_GET(texture);
 		FAILIF(!pTexture);
