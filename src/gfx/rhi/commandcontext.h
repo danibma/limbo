@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "resourcepool.h"
 #include "resourcemanager.h"
 #include "shaderbindingtable.h"
 #include "core/array.h"
+#include "pipelinestateobject.h"
 
 namespace limbo::RHI
 {
@@ -44,7 +44,6 @@ namespace limbo::RHI
 	class Device;
 	class CommandQueue;
 	class DescriptorHeap;
-	class PipelineStateObject;
 	class RingBufferAllocator;
 	class AccelerationStructure;
 	class CommandContext
@@ -70,7 +69,7 @@ namespace limbo::RHI
 		ResourceStatesMap					m_ResourceStates;
 		std::vector<D3D12_RESOURCE_BARRIER> m_ResourceBarriers;
 
-		PipelineStateObject*				m_BoundPSO;
+		PSOHandle							m_BoundPSO;
 
 	public:
 		CommandContext(CommandQueue* queue, ContextType type, ID3D12Device5* device, DescriptorHeap* globalHeap);
@@ -100,7 +99,7 @@ namespace limbo::RHI
 		void SetIndexBufferView(IndexBufferView view);
 		void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		void SetViewport(uint32 width, uint32 height, float topLeft = 0.0f, float topRight = 0.0f, float minDepth = 0.0f, float maxDepth = 1.0f);
-		void SetPipelineState(PipelineStateObject* pso);
+		void SetPipelineState(PSOHandle pso);
 		void SetRenderTargets(Span<TextureHandle> renderTargets, TextureHandle depthTarget = TextureHandle());
 
 		void BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count);

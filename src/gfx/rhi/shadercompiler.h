@@ -2,7 +2,6 @@
 
 #include "core/core.h"
 #include "definitions.h"
-#include "resourcepool.h"
 #include "shader.h"
 
 namespace limbo::RHI::SC

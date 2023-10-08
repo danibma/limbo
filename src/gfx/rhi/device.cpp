@@ -204,8 +204,9 @@ namespace limbo::RHI
 	void Device::DestroyResources()
 	{
 		DestroyShader(m_GenerateMipsShader);
+		DestroyPSO(m_GenerateMipsPSO);
+
 		delete m_GenerateMipsRS;
-		delete m_GenerateMipsPSO;
 
 		delete m_TempBufferAllocator;
 		delete m_UploadRingBuffer;
@@ -340,7 +341,7 @@ namespace limbo::RHI
 			psoInit.SetComputeShader(m_GenerateMipsShader);
 			psoInit.SetName("Generate Mips PSO");
 			psoInit.SetRootSignature(m_GenerateMipsRS);
-			m_GenerateMipsPSO = new PipelineStateObject(psoInit);
+			m_GenerateMipsPSO = CreatePSO(psoInit);
 		}
 
 		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256), "Upload Ring Buffer");

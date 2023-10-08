@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "definitions.h"
-#include "resourcepool.h"
 #include "texture.h"
 
 namespace limbo::Core
@@ -15,7 +14,7 @@ namespace limbo::RHI
 
 	class Swapchain
 	{
-		RefCountPtr<IDXGISwapChain3>			m_Swapchain;
+		RefCountPtr<IDXGISwapChain3>	m_Swapchain;
 		TextureHandle					m_Backbuffers[NUM_BACK_BUFFERS];
 		TextureHandle					m_DepthBackbuffers[NUM_BACK_BUFFERS];
 		const Format					m_Format      = Format::RGBA8_UNORM;

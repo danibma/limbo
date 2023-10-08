@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "definitions.h"
-#include "resourcepool.h"
 #include "resourcemanager.h"
 #include "commandcontext.h"
 #include "shaderbindingtable.h"
@@ -78,7 +77,7 @@ namespace limbo::RHI
 
 		RootSignature*						m_GenerateMipsRS;
 		ShaderHandle						m_GenerateMipsShader;
-		PipelineStateObject*				m_GenerateMipsPSO;
+		PSOHandle							m_GenerateMipsPSO;
 
 	public:
 		static Device* Ptr;
@@ -331,7 +330,7 @@ namespace limbo::RHI
 		GetCommandContext()->SetViewport(width, height, topLeft, topRight, minDepth, maxDepth);
 	}
 
-	FORCEINLINE void SetPipelineState(PipelineStateObject* pso)
+	FORCEINLINE void SetPipelineState(PSOHandle pso)
 	{
 		GetCommandContext()->SetPipelineState(pso);
 	}

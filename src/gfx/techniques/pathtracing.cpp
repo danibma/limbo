@@ -51,21 +51,22 @@ namespace limbo::Gfx
 			materialDesc.AddHitGroup(L"MaterialHitGroup", L"MaterialAnyHit", L"MaterialClosestHit");
 			psoInit.AddLib(m_MaterialLib, materialDesc);
 
-			m_PSO = new RHI::PipelineStateObject(psoInit);
+			m_PSO = RHI::CreatePSO(psoInit);
 		}
 	}
 
 	PathTracing::~PathTracing()
 	{
 		if (m_FinalTexture.IsValid())
-			DestroyTexture(m_FinalTexture);
+			RHI::DestroyTexture(m_FinalTexture);
 		if (m_PathTracerLib.IsValid())
-			DestroyShader(m_PathTracerLib);
+			RHI::DestroyShader(m_PathTracerLib);
 		if (m_MaterialLib.IsValid())
-			DestroyShader(m_MaterialLib);
+			RHI::DestroyShader(m_MaterialLib);
+
+		RHI::DestroyPSO(m_PSO);
 
 		delete m_CommonRS;
-		delete m_PSO;
 	}
 
 	void PathTracing::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
@@ -88,7 +89,7 @@ namespace limbo::Gfx
 		RHI::EndProfileEvent("Path Tracing");
 	}
 
-	RHI::Handle<RHI::Texture> PathTracing::GetFinalTexture() const
+	RHI::TextureHandle PathTracing::GetFinalTexture() const
 	{
 		return m_FinalTexture;
 	}

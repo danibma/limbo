@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "shader.h"
-#include "resourcepool.h"
 #include "staticstates.h"
 #include "core/array.h"
 #include "core/refcountptr.h"
@@ -12,7 +11,6 @@
 namespace limbo::RHI
 {
 	class RootSignature;
-
 	class PipelineStateInitializer
 	{
 	private:
@@ -104,6 +102,7 @@ namespace limbo::RHI
 	class PipelineStateObject
 	{
 	public:
+		PipelineStateObject() = default;
 		explicit PipelineStateObject(const PipelineStateInitializer& initializer);
 		explicit PipelineStateObject(const RaytracingPipelineStateInitializer& initializer);
 

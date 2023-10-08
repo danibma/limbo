@@ -7,7 +7,6 @@
 #include "gfx/shaderinterop.h"
 
 #include "rhi/resourcemanager.h"
-#include "rhi/resourcepool.h"
 
 struct cgltf_node;
 struct cgltf_scene;
@@ -31,7 +30,7 @@ namespace limbo::Gfx
 		RHI::VertexBufferView		TexCoordsLocation;
 		RHI::IndexBufferView		IndicesLocation;
 
-		RHI::Handle<RHI::Buffer>	BLAS;
+		RHI::BufferHandle	BLAS;
 
 		uint32						LocalMaterialIndex;
 		uint32						InstanceID;
@@ -47,14 +46,14 @@ namespace limbo::Gfx
 	class Scene
 	{
 		std::vector<Mesh>								m_Meshes;
-		std::vector<RHI::Handle<RHI::Texture>>			m_Textures;
+		std::vector<RHI::TextureHandle>			m_Textures;
 		char											m_FolderPath[256];
 		char											m_SceneName[128];
 
 		std::unordered_map<cgltf_material*, uint32>		m_MaterialPtrToIndex;
 
 		// this will contains all the geometry information about all the meshes
-		RHI::Handle<RHI::Buffer>						m_GeometryBuffer;
+		RHI::BufferHandle						m_GeometryBuffer;
 
 		std::mutex										m_AddToTextureMapMutex;
 

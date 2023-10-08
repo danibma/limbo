@@ -38,7 +38,7 @@ namespace limbo::Gfx
 			psoInit.SetRootSignature(m_SSAORS);
 			psoInit.SetComputeShader(m_SSAOShader);
 			psoInit.SetName("SSAO PSO");
-			m_SSAOPSO = new RHI::PipelineStateObject(psoInit);
+			m_SSAOPSO = RHI::CreatePSO(psoInit);
 		}
 
 		m_BlurredSSAOTexture = RHI::CreateTexture({
@@ -55,7 +55,7 @@ namespace limbo::Gfx
 			psoInit.SetRootSignature(m_BlurSSAORS);
 			psoInit.SetComputeShader(m_BlurSSAOShader);
 			psoInit.SetName("SSAO PSO");
-			m_BlurSSAOPSO = new RHI::PipelineStateObject(psoInit);
+			m_BlurSSAOPSO = RHI::CreatePSO(psoInit);
 		}
 	}
 
@@ -66,14 +66,15 @@ namespace limbo::Gfx
 		RHI::DestroyShader(m_SSAOShader);
 		RHI::DestroyShader(m_BlurSSAOShader);
 
+		RHI::DestroyPSO(m_SSAOPSO);
+		RHI::DestroyPSO(m_BlurSSAOPSO);
+
 		delete m_SSAORS;
-		delete m_SSAOPSO;
 		delete m_BlurSSAORS;
-		delete m_BlurSSAOPSO;
 		
 	}
 
-	void SSAO::Render(SceneRenderer* sceneRenderer, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> sceneDepthMap)
+	void SSAO::Render(SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap)
 	{
 		{
 			RHI::BeginProfileEvent("SSAO");
@@ -113,7 +114,7 @@ namespace limbo::Gfx
 		}
 	}
 
-	RHI::Handle<RHI::Texture> SSAO::GetBlurredTexture() const
+	RHI::TextureHandle SSAO::GetBlurredTexture() const
 	{
 		return m_BlurredSSAOTexture;
 	}

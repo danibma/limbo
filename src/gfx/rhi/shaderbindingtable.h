@@ -1,10 +1,8 @@
 ﻿#pragma once
-#include "resourcepool.h"
+#include "pipelinestateobject.h"
 
 namespace limbo::RHI
 {
-	struct Shader;
-	class PipelineStateObject;
 	class ShaderBindingTable
 	{
 		struct ShaderRecord
@@ -21,7 +19,7 @@ namespace limbo::RHI
 
 	public:
 		ShaderBindingTable() = default;
-		ShaderBindingTable(PipelineStateObject* shader);
+		ShaderBindingTable(PSOHandle pso);
 		void BindRayGen(const wchar_t* name);
 		void BindMissShader(const wchar_t* name);
 		void BindHitGroup(const wchar_t* name);

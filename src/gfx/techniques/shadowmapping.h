@@ -1,14 +1,12 @@
 ﻿#pragma once
 #include "gfx/shaderinterop.h"
-#include "gfx/rhi/resourcepool.h"
+#include "gfx/rhi/shader.h"
+#include "gfx/rhi/texture.h"
+#include "gfx/rhi/pipelinestateobject.h"
 
 namespace limbo::RHI
 {
-	struct Shader;
 	class RootSignature;
-	class PipelineStateObject;
-	class Texture;
-	class Buffer;
 }
 
 namespace limbo::Gfx
@@ -18,15 +16,15 @@ namespace limbo::Gfx
 	class SceneRenderer;
 	class ShadowMapping
 	{
-		RHI::RootSignature*			m_CommonRS;
-		RHI::Handle<RHI::Shader>	m_ShadowMapVS;
-		RHI::Handle<RHI::Shader>	m_ShadowMapPS;
-		RHI::Handle<RHI::Texture>	m_DepthShadowMaps[SHADOWMAP_CASCADES];
-		RHI::PipelineStateObject*	m_PSO;
+		RHI::RootSignature*		m_CommonRS;
+		RHI::ShaderHandle		m_ShadowMapVS;
+		RHI::ShaderHandle		m_ShadowMapPS;
+		RHI::TextureHandle		m_DepthShadowMaps[SHADOWMAP_CASCADES];
+		RHI::PSOHandle			m_PSO;
 
-		ShadowData					m_ShadowData;
+		ShadowData				m_ShadowData;
 
-		float						m_CascadeSplitLambda = 0.95f;
+		float					m_CascadeSplitLambda = 0.95f;
 
 	public:
 		explicit ShadowMapping();

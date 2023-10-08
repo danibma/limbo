@@ -45,7 +45,7 @@ namespace limbo::Gfx
 			psoInit.SetRootSignature(m_CommonRS);
 			psoInit.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT);
 			psoInit.SetName("Shadow Map PSO");
-			m_PSO = new RHI::PipelineStateObject(psoInit);
+			m_PSO = RHI::CreatePSO(psoInit);
 		}
 	}
 
@@ -57,8 +57,8 @@ namespace limbo::Gfx
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
 			DestroyTexture(m_DepthShadowMaps[i]);
 
+		RHI::DestroyPSO(m_PSO);
 		delete m_CommonRS;
-		delete m_PSO;
 	}
 
 	void ShadowMapping::Render(SceneRenderer* sceneRenderer)

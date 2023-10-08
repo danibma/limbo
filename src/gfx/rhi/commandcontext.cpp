@@ -228,19 +228,21 @@ namespace limbo::RHI
 		m_CommandList->OMSetRenderTargets(renderTargets.GetSize(), renderTargetDescriptors.GetData(), false, depthDescriptor);
 	}
 
-	void CommandContext::SetPipelineState(PipelineStateObject* pso)
+	void CommandContext::SetPipelineState(PSOHandle pso)
 	{
 		m_BoundPSO = pso;
 
-		if (!pso->IsRaytracing())
-			m_CommandList->SetPipelineState(pso->GetPipelineState());
-		else
-			m_CommandList->SetPipelineState1(pso->GetStateObject());
+		PipelineStateObject* pPso = RM_GET(pso);
 
-		if (!pso->IsCompute())
-			m_CommandList->SetGraphicsRootSignature(pso->GetRootSignature()->Get());
+		if (!pPso->IsRaytracing())
+			m_CommandList->SetPipelineState(pPso->GetPipelineState());
 		else
-			m_CommandList->SetComputeRootSignature(pso->GetRootSignature()->Get());
+			m_CommandList->SetPipelineState1(pPso->GetStateObject());
+
+		if (!pPso->IsCompute())
+			m_CommandList->SetGraphicsRootSignature(pPso->GetRootSignature()->Get());
+		else
+			m_CommandList->SetComputeRootSignature(pPso->GetRootSignature()->Get());
 	}
 
 	void CommandContext::BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)
@@ -261,7 +263,8 @@ namespace limbo::RHI
 		uint32 destRanges[1] = { count };
 		Device::Ptr->GetDevice()->CopyDescriptors(1, &tempAlloc.CpuHandle, destRanges, count, srcDescriptors, DescriptorCopyRanges, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-		if (!m_BoundPSO->IsCompute())
+		PipelineStateObject* pPso = RM_GET(m_BoundPSO);
+		if (!pPso->IsCompute())
 			m_CommandList->SetGraphicsRootDescriptorTable(rootParameter, tempAlloc.GPUHandle);
 		else
 			m_CommandList->SetComputeRootDescriptorTable(rootParameter, tempAlloc.GPUHandle);
@@ -269,7 +272,8 @@ namespace limbo::RHI
 
 	void CommandContext::BindConstants(uint32 rootParameter, uint32 num32bitValues, uint32 offsetIn32bits, const void* data)
 	{
-		if (!m_BoundPSO->IsCompute())
+		PipelineStateObject* pPso = RM_GET(m_BoundPSO);
+		if (!pPso->IsCompute())
 			m_CommandList->SetGraphicsRoot32BitConstants(rootParameter, num32bitValues, data, offsetIn32bits);
 		else
 			m_CommandList->SetComputeRoot32BitConstants(rootParameter, num32bitValues, data, offsetIn32bits);
@@ -285,7 +289,8 @@ namespace limbo::RHI
 
 	void CommandContext::BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress)
 	{
-		if (!m_BoundPSO->IsCompute())
+		PipelineStateObject* pPso = RM_GET(m_BoundPSO);
+		if (!pPso->IsCompute())
 			m_CommandList->SetGraphicsRootShaderResourceView(rootParameter, gpuVirtualAddress);
 		else
 			m_CommandList->SetComputeRootShaderResourceView(rootParameter, gpuVirtualAddress);
@@ -293,7 +298,8 @@ namespace limbo::RHI
 
 	void CommandContext::BindRootCBV(uint32 rootParameter, uint64 gpuVirtualAddress)
 	{
-		if (!m_BoundPSO->IsCompute())
+		PipelineStateObject* pPso = RM_GET(m_BoundPSO);
+		if (!pPso->IsCompute())
 			m_CommandList->SetGraphicsRootConstantBufferView(rootParameter, gpuVirtualAddress);
 		else
 			m_CommandList->SetComputeRootConstantBufferView(rootParameter, gpuVirtualAddress);

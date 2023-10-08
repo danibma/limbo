@@ -6,9 +6,9 @@
 
 namespace limbo::RHI
 {
-	ShaderBindingTable::ShaderBindingTable(PipelineStateObject* pso)
+	ShaderBindingTable::ShaderBindingTable(PSOHandle pso)
 	{
-		m_StateObject = pso->GetStateObject();
+		m_StateObject = RM_GET(pso)->GetStateObject();
 	}
 
 	void ShaderBindingTable::BindRayGen(const wchar_t* name)

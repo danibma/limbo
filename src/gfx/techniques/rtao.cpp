@@ -53,7 +53,7 @@ namespace limbo::Gfx
 			psoInit.AddLib(m_RTAOShader, libDesc);
 			psoInit.SetShaderConfig(sizeof(float) /* AOPayload */, sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
 			psoInit.SetName("RTAO PSO");
-			m_RTAOPSO = new RHI::PipelineStateObject(psoInit);
+			m_RTAOPSO = RHI::CreatePSO(psoInit);
 		}
 
 		m_DenoiseRTAOShader = RHI::CreateShader("raytracing/rtaoaccumulate.hlsl", "RTAOAccumulate", RHI::ShaderType::Compute);
@@ -63,7 +63,7 @@ namespace limbo::Gfx
 			psoInit.SetRootSignature(m_CommonRS);
 			psoInit.SetComputeShader(m_DenoiseRTAOShader);
 			psoInit.SetName("RTAO Accumulate PSO");
-			m_RTAODenoisePSO = new RHI::PipelineStateObject(psoInit);
+			m_RTAODenoisePSO = RHI::CreatePSO(psoInit);
 		}
 	}
 
@@ -80,12 +80,12 @@ namespace limbo::Gfx
 		if (m_PreviousFrame.IsValid())
 			DestroyTexture(m_PreviousFrame);
 
+		RHI::DestroyPSO(m_RTAOPSO);
+		RHI::DestroyPSO(m_RTAODenoisePSO);
 		delete m_CommonRS;
-		delete m_RTAOPSO;
-		delete m_RTAODenoisePSO;
 	}
 
-	void RTAO::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> normalsMap)
+	void RTAO::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap)
 	{
 		if (sceneRenderer->SceneInfo.PrevView != sceneRenderer->SceneInfo.View)
 		{
@@ -144,7 +144,7 @@ namespace limbo::Gfx
 		RHI::CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
 	}
 
-	RHI::Handle<RHI::Texture> RTAO::GetFinalTexture() const
+	RHI::TextureHandle RTAO::GetFinalTexture() const
 	{
 		return m_FinalTexture;
 	}

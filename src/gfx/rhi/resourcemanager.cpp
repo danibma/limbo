@@ -47,6 +47,7 @@ namespace limbo::RHI
 #if !NO_LOG
 		ensure(m_Buffers.IsEmpty());
 		ensure(m_Textures.IsEmpty());
+		ensure(m_PSOs.IsEmpty());
 		ensure(m_Shaders.IsEmpty());
 #endif
 	}
@@ -74,6 +75,16 @@ namespace limbo::RHI
 	TextureHandle ResourceManager::CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
 	{
 		return m_Textures.AllocateHandle(resource, spec);
+	}
+
+	PSOHandle ResourceManager::CreatePSO(const PipelineStateInitializer& initializer)
+	{
+		return m_PSOs.AllocateHandle(initializer);
+	}
+
+	PSOHandle ResourceManager::CreatePSO(const RaytracingPipelineStateInitializer& initializer)
+	{
+		return m_PSOs.AllocateHandle(initializer);
 	}
 
 	void ResourceManager::DestroyBuffer(BufferHandle buffer, bool bImmediate)
@@ -112,6 +123,18 @@ namespace limbo::RHI
 			{
 				DELETE_RESOURCE(texture, m_Textures);
 			}
+		}
+	}
+
+	void ResourceManager::DestroyPSO(PSOHandle pso, bool bImmediate /*= false*/)
+	{
+		if (bImmediate)
+		{
+			m_PSOs.DeleteHandle(pso);
+		}
+		else
+		{
+			DELETE_RESOURCE(pso, m_PSOs);
 		}
 	}
 

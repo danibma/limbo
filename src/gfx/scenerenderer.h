@@ -6,15 +6,13 @@
 #include "shaderinterop.h"
 #include "core/window.h"
 #include "rhi/accelerationstructure.h"
-#include "rhi/resourcepool.h"
+#include "rhi/shader.h"
+#include "rhi/pipelinestateobject.h"
+#include "rhi/texture.h"
 
 namespace limbo::RHI
 {
-	struct Shader;
 	class RootSignature;
-	class PipelineStateObject;
-	class Texture;
-	class Buffer;
 }
 
 namespace limbo::Gfx
@@ -102,45 +100,45 @@ namespace limbo::Gfx
 		std::vector<Scene*>				m_Scenes;
 		RHI::AccelerationStructure		m_SceneAS;
 
-		RHI::Handle<RHI::Buffer>		m_ScenesMaterials;
-		RHI::Handle<RHI::Buffer>		m_SceneInstances;
+		RHI::BufferHandle				m_ScenesMaterials;
+		RHI::BufferHandle				m_SceneInstances;
 
-		RHI::Handle<RHI::Texture>		m_SceneTexture;
+		RHI::TextureHandle				m_SceneTexture;
 
-		RHI::Handle<RHI::Shader>		m_QuadShaderVS;
+		RHI::ShaderHandle				m_QuadShaderVS;
 
 		// Skybox
 		RHI::RootSignature*				m_SkyboxRS;
-		RHI::Handle<RHI::Shader>		m_SkyboxShaderVS;
-		RHI::Handle<RHI::Shader>		m_SkyboxShaderPS;
-		RHI::PipelineStateObject*		m_SkyboxPSO;
+		RHI::ShaderHandle				m_SkyboxShaderVS;
+		RHI::ShaderHandle				m_SkyboxShaderPS;
+		RHI::PSOHandle					m_SkyboxPSO;
 		Scene*							m_SkyboxCube;
 
 		// Deferred shading
 		RHI::RootSignature*				m_DeferredShadingRS;
-		RHI::Handle<RHI::Shader>		m_DeferredShadingShaderVS;
-		RHI::Handle<RHI::Shader>		m_DeferredShadingShaderPS;
-		RHI::PipelineStateObject*		m_DeferredShadingPSO;
-		RHI::Handle<RHI::Texture>		m_DeferredShadingRTs[6];
-		RHI::Handle<RHI::Texture>		m_DeferredShadingDT;
+		RHI::ShaderHandle				m_DeferredShadingShaderVS;
+		RHI::ShaderHandle				m_DeferredShadingShaderPS;
+		RHI::PSOHandle					m_DeferredShadingPSO;
+		RHI::TextureHandle				m_DeferredShadingRTs[6];
+		RHI::TextureHandle				m_DeferredShadingDT;
 
 		// IBL stuff
-		RHI::Handle<RHI::Texture>		m_EnvironmentCubemap;
-		RHI::Handle<RHI::Texture>		m_IrradianceMap;
-		RHI::Handle<RHI::Texture>		m_PrefilterMap;
-		RHI::Handle<RHI::Texture>		m_BRDFLUTMap;
+		RHI::TextureHandle				m_EnvironmentCubemap;
+		RHI::TextureHandle				m_IrradianceMap;
+		RHI::TextureHandle				m_PrefilterMap;
+		RHI::TextureHandle				m_BRDFLUTMap;
 
 		// PBR
 		RHI::RootSignature*				m_LightingRS;
-		RHI::Handle<RHI::Shader>		m_PBRShaderPS;
-		RHI::PipelineStateObject*		m_PBRPSO;
-		RHI::Handle<RHI::Texture>		m_LightingRT;
-		RHI::Handle<RHI::Texture>		m_LightingDT;
+		RHI::ShaderHandle				m_PBRShaderPS;
+		RHI::PSOHandle					m_PBRPSO;
+		RHI::TextureHandle				m_LightingRT;
+		RHI::TextureHandle				m_LightingDT;
 
 		// Scene Composite
 		RHI::RootSignature*				m_CompositeRS;
-		RHI::Handle<RHI::Shader>		m_CompositeShaderPS;
-		RHI::PipelineStateObject*		m_CompositePSO;
+		RHI::ShaderHandle				m_CompositeShaderPS;
+		RHI::PSOHandle					m_CompositePSO;
 
 		// Techniques
 		std::unique_ptr<SSAO>			m_SSAO;

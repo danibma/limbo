@@ -1,14 +1,13 @@
 ﻿#pragma once
 
-#include "gfx/rhi/resourcepool.h"
+#include "gfx/rhi/shader.h"
+#include "gfx/rhi/pipelinestateobject.h"
+#include "gfx/rhi/texture.h"
 
 namespace limbo::RHI
 {
-	class PipelineStateObject;
 	class AccelerationStructure;
 	class RootSignature;
-	class Texture;
-	struct Shader;
 }
 
 namespace limbo::Gfx
@@ -16,25 +15,25 @@ namespace limbo::Gfx
 	class SceneRenderer;
 	class RTAO
 	{
-		RHI::RootSignature*			m_CommonRS;
+		RHI::RootSignature*	m_CommonRS;
 
-		RHI::Handle<RHI::Shader>	m_RTAOShader;
-		RHI::PipelineStateObject*	m_RTAOPSO;
-		RHI::Handle<RHI::Shader>	m_DenoiseRTAOShader;
-		RHI::PipelineStateObject*	m_RTAODenoisePSO;
-		RHI::Handle<RHI::Texture>	m_NoisedTexture;
-		RHI::Handle<RHI::Texture>	m_FinalTexture;
-		RHI::Handle<RHI::Texture>	m_PreviousFrame;
+		RHI::ShaderHandle	m_RTAOShader;
+		RHI::PSOHandle		m_RTAOPSO;
+		RHI::ShaderHandle	m_DenoiseRTAOShader;
+		RHI::PSOHandle		m_RTAODenoisePSO;
+		RHI::TextureHandle	m_NoisedTexture;
+		RHI::TextureHandle	m_FinalTexture;
+		RHI::TextureHandle	m_PreviousFrame;
 
-		uint32						m_AccumCount;
+		uint32				m_AccumCount;
 
 	public:
 		explicit RTAO();
 		~RTAO();
 
-		void Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::Handle<RHI::Texture> positionsMap, RHI::Handle<RHI::Texture> normalsMap);
+		void Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap);
 
-		RHI::Handle<RHI::Texture> GetFinalTexture() const;
+		RHI::TextureHandle GetFinalTexture() const;
 
 	private:
 		void PreparePreviousFrameTexture();

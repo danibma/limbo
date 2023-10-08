@@ -111,7 +111,7 @@ namespace limbo::Gfx
 				DestroyBuffer(mesh.BLAS);
 		}
 
-		for (RHI::Handle<RHI::Texture> texture : m_Textures)
+		for (RHI::TextureHandle texture : m_Textures)
 			RHI::DestroyTexture(texture);
 
 		DestroyBuffer(m_GeometryBuffer);
@@ -233,7 +233,7 @@ namespace limbo::Gfx
 		check(textureData.Data);
 		textureData.Name += debugName;
 
-		RHI::Handle<RHI::Texture> texture = RHI::CreateTexture({
+		RHI::TextureHandle texture = RHI::CreateTexture({
 			.Width = (uint32)textureData.Width,
 			.Height = (uint32)textureData.Height,
 			.MipLevels = RHI::CalculateMipCount(textureData.Width),
@@ -322,7 +322,7 @@ namespace limbo::Gfx
 		});
 		D3D12_GPU_VIRTUAL_ADDRESS geoBufferAddress = RM_GET(m_GeometryBuffer)->Resource->GetGPUVirtualAddress();
 
-		RHI::Handle<RHI::Buffer> upload = RHI::CreateBuffer({
+		RHI::BufferHandle upload = RHI::CreateBuffer({
 			.DebugName = debugName.c_str(),
 			.ByteSize = bufferSize,
 			.Flags = RHI::BufferUsage::Upload
