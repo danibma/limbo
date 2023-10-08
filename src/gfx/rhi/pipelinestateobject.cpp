@@ -25,7 +25,7 @@ namespace limbo::RHI
 
 	class RayTracingStateObjectStream
 	{
-		template<size_t SIZE>
+		template<uint32 SIZE>
 		struct DataAllocator
 		{
 			template<typename T>
@@ -37,11 +37,11 @@ namespace limbo::RHI
 				return pData;
 			}
 			void Reset() { m_Offset = 0; }
-			const void* GetData() const { return m_Data.data(); }
-			size_t Size() const { return m_Offset; }
+			const void* GetData() const { return m_Data.GetData(); }
+			uint32 Size() const { return m_Offset; }
 		private:
-			size_t m_Offset = 0;
-			std::array<uint8, SIZE> m_Data = {};
+			uint32 m_Offset = 0;
+			TStaticArray<uint8, SIZE> m_Data = {};
 		};
 
 	public:

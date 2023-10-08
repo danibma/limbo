@@ -28,7 +28,7 @@ namespace limbo::RHI
 	{
 		DescriptorHeapType						m_HeapType;
 
-		RefCountPtr<ID3D12DescriptorHeap>			m_Heap;
+		RefCountPtr<ID3D12DescriptorHeap>		m_Heap;
 		bool									m_bShaderVisible;
 		uint32									m_DescriptorSize;
 

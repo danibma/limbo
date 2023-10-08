@@ -186,8 +186,8 @@ namespace limbo::RHI
 
 		for (int i = 0; i < (int)ContextType::MAX; ++i)
 		{
-			delete m_CommandContexts.at(i);
-			delete m_CommandQueues.at(i);
+			delete m_CommandContexts[i];
+			delete m_CommandQueues[i];
 		}
 		
 #if !NO_LOG
@@ -215,7 +215,7 @@ namespace limbo::RHI
 
 	void Device::Present(bool bEnableVSync)
 	{
-		CommandContext* context = m_CommandContexts.at((int)ContextType::Direct);
+		CommandContext* context = m_CommandContexts[(int)ContextType::Direct];
 
 		if (m_Flags & Gfx::GfxDeviceFlag::EnableImgui)
 		{

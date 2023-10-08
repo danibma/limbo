@@ -38,7 +38,7 @@ namespace limbo::RHI
 		}
 
 	private:
-		std::array<D3D12_RESOURCE_STATES, D3D12_REQ_MIP_LEVELS> m_States;
+		TStaticArray<D3D12_RESOURCE_STATES, D3D12_REQ_MIP_LEVELS> m_States;
 	};
 
 	class Device;

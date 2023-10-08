@@ -46,14 +46,14 @@ namespace limbo::Gfx
 	class Scene
 	{
 		std::vector<Mesh>								m_Meshes;
-		std::vector<RHI::TextureHandle>			m_Textures;
+		std::vector<RHI::TextureHandle>					m_Textures;
 		char											m_FolderPath[256];
 		char											m_SceneName[128];
 
 		std::unordered_map<cgltf_material*, uint32>		m_MaterialPtrToIndex;
 
 		// this will contains all the geometry information about all the meshes
-		RHI::BufferHandle						m_GeometryBuffer;
+		RHI::BufferHandle								m_GeometryBuffer;
 
 		std::mutex										m_AddToTextureMapMutex;
 

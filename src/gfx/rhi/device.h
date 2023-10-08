@@ -37,8 +37,8 @@ namespace limbo::RHI
 
 	class Device
 	{
-		using CommandQueueList   = std::array<CommandQueue*, (int)ContextType::MAX>;
-		using CommandContextList = std::array<CommandContext*, (int)ContextType::MAX>;
+		using CommandQueueList   = TStaticArray<CommandQueue*, (int)ContextType::MAX>;
+		using CommandContextList = TStaticArray<CommandContext*, (int)ContextType::MAX>;
 
 	private:
 		RefCountPtr<IDXGIFactory2>			m_Factory;
@@ -144,8 +144,8 @@ namespace limbo::RHI
 
 		// D3D12 specific
 		ID3D12Device5* GetDevice() const { return m_Device.Get(); }
-		CommandContext* GetCommandContext(ContextType type) const { return m_CommandContexts.at((int)type); }
-		CommandQueue* GetCommandQueue(ContextType type) const { return m_CommandQueues.at((int)type); }
+		CommandContext* GetCommandContext(ContextType type) const { return m_CommandContexts[(int)type]; }
+		CommandQueue* GetCommandQueue(ContextType type) const { return m_CommandQueues[(int)type]; }
 		Fence* GetPresentFence() const { return m_PresentFence; }
 
 	private:

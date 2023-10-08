@@ -2,6 +2,7 @@
 
 #include "core/refcountptr.h"
 #include "resourcepool.h"
+#include "core/array.h"
 
 namespace limbo::RHI
 {
@@ -16,7 +17,7 @@ namespace limbo::RHI
 			CD3DX12_DESCRIPTOR_RANGE1	Range;
 		};
 
-		using TRootParameterMap = std::array<RootParameter, ROOT_PARAMETER_NUM>;
+		using TRootParameterMap = TStaticArray<RootParameter, ROOT_PARAMETER_NUM>;
 
 	public:
 		TRootParameterMap			RootParameters;
