@@ -32,12 +32,7 @@ namespace limbo::Gfx
 			.Type = RHI::TextureType::Texture2D,
 		});
 
-		m_CommonRS = new RHI::RootSignature("RTAO Common RS");
-		m_CommonRS->AddRootSRV(0);
-		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-		m_CommonRS->AddRootCBV(100);
-		m_CommonRS->AddRootConstants(0, 5);
-		m_CommonRS->Create();
+		m_CommonRS = RHI::CreateRootSignature("RTAO Common RS", RHI::RSInitializer().Init().AddRootSRV(0).AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootCBV(100).AddRootConstants(0, 5));
 
 		m_RTAOShader = RHI::CreateShader("raytracing/rtao.hlsl", "", RHI::ShaderType::Lib);
 		RHI::SC::Compile(m_RTAOShader);
@@ -82,7 +77,7 @@ namespace limbo::Gfx
 
 		RHI::DestroyPSO(m_RTAOPSO);
 		RHI::DestroyPSO(m_RTAODenoisePSO);
-		delete m_CommonRS;
+		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
 	void RTAO::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap)

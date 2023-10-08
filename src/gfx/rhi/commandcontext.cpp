@@ -239,10 +239,12 @@ namespace limbo::RHI
 		else
 			m_CommandList->SetPipelineState1(pPso->GetStateObject());
 
+		RootSignature* pRS = RM_GET(pPso->GetRootSignature());
+
 		if (!pPso->IsCompute())
-			m_CommandList->SetGraphicsRootSignature(pPso->GetRootSignature()->Get());
+			m_CommandList->SetGraphicsRootSignature(pRS->Get());
 		else
-			m_CommandList->SetComputeRootSignature(pPso->GetRootSignature()->Get());
+			m_CommandList->SetComputeRootSignature(pRS->Get());
 	}
 
 	void CommandContext::BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)

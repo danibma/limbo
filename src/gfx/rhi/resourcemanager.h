@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "texture.h"
 #include "pipelinestateobject.h"
+#include "rootsignature.h"
 
 namespace limbo::RHI
 {
@@ -39,6 +40,7 @@ namespace limbo::RHI
 		TextureHandle CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
 		PSOHandle CreatePSO(const PipelineStateInitializer& initializer);
 		PSOHandle CreatePSO(const RaytracingPipelineStateInitializer& initializer);
+		RootSignatureHandle CreateRootSignature(const std::string& name, const RSInitializer& initializer);
 
 		template<typename ResourceType>
 		ResourceType* Get(Handle<ResourceType> resourceHandle)
@@ -51,12 +53,15 @@ namespace limbo::RHI
 				return m_Shaders.Get(resourceHandle);
 			else if constexpr (TIsSame<ResourceType, PipelineStateObject>::Value)
 				return m_PSOs.Get(resourceHandle);
+			else if constexpr (TIsSame<ResourceType, RootSignature>::Value)
+				return m_RootSignatures.Get(resourceHandle);
 		}
 
 		void DestroyBuffer(BufferHandle buffer, bool bImmediate = false);
 		void DestroyShader(ShaderHandle shader, bool bImmediate = false);
 		void DestroyTexture(TextureHandle texture, bool bImmediate = false);
 		void DestroyPSO(PSOHandle pso, bool bImmediate = false);
+		void DestroyRootSignature(RootSignatureHandle rs, bool bImmediate = false);
 
 		void RunDeletionQueue();
 		void ForceDeletionQueue();
@@ -64,8 +69,9 @@ namespace limbo::RHI
 	private:
 		Pool<Buffer,			  1<<7>		m_Buffers;
 		Pool<Texture,			  1<<7>	    m_Textures;
-		Pool<Shader,			  128>		m_Shaders;
-		Pool<PipelineStateObject, 32>		m_PSOs;
+		Pool<Shader,			   128>		m_Shaders;
+		Pool<RootSignature,		    32>		m_RootSignatures;
+		Pool<PipelineStateObject,   32>		m_PSOs;
 
 		bool								m_bOnShutdown = false;
 
@@ -103,6 +109,11 @@ namespace limbo::RHI
 		return ResourceManager::Ptr->CreatePSO(initializer);
 	}
 
+	FORCEINLINE [[nodiscard]] RootSignatureHandle CreateRootSignature(const std::string& name, const RSInitializer& initializer)
+	{
+		return ResourceManager::Ptr->CreateRootSignature(name, initializer);
+	}
+
 	FORCEINLINE [[nodiscard]] PSOHandle CreatePSO(const RaytracingPipelineStateInitializer& initializer)
 	{
 		return ResourceManager::Ptr->CreatePSO(initializer);
@@ -130,6 +141,12 @@ namespace limbo::RHI
 	{
 		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyPSO(handle, bImmediate);
+	}
+
+	FORCEINLINE void DestroyRootSignature(RootSignatureHandle rs, bool bImmediate = false)
+	{
+		ensure(rs.IsValid());
+		ResourceManager::Ptr->DestroyRootSignature(rs, bImmediate);
 	}
 }
 

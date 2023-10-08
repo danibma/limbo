@@ -22,11 +22,7 @@ namespace limbo::Gfx
 			.Type = RHI::TextureType::Texture2D,
 		});
 
-		m_CommonRS = new RHI::RootSignature("PT Common RS");
-		m_CommonRS->AddRootSRV(0);
-		m_CommonRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-		m_CommonRS->AddRootCBV(100);
-		m_CommonRS->Create();
+		m_CommonRS = RHI::CreateRootSignature("PT Common RS", RHI::RSInitializer().Init().AddRootSRV(0).AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootCBV(100));
 
 		m_PathTracerLib = RHI::CreateShader("raytracing/pathtracer.hlsl", "", RHI::ShaderType::Lib);
 		RHI::SC::Compile(m_PathTracerLib);
@@ -65,8 +61,7 @@ namespace limbo::Gfx
 			RHI::DestroyShader(m_MaterialLib);
 
 		RHI::DestroyPSO(m_PSO);
-
-		delete m_CommonRS;
+		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
 	void PathTracing::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)

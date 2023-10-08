@@ -9,11 +9,7 @@
 #include "rhi/shader.h"
 #include "rhi/pipelinestateobject.h"
 #include "rhi/texture.h"
-
-namespace limbo::RHI
-{
-	class RootSignature;
-}
+#include "rhi/rootsignature.h"
 
 namespace limbo::Gfx
 {
@@ -108,14 +104,14 @@ namespace limbo::Gfx
 		RHI::ShaderHandle				m_QuadShaderVS;
 
 		// Skybox
-		RHI::RootSignature*				m_SkyboxRS;
+		RHI::RootSignatureHandle		m_SkyboxRS;
 		RHI::ShaderHandle				m_SkyboxShaderVS;
 		RHI::ShaderHandle				m_SkyboxShaderPS;
 		RHI::PSOHandle					m_SkyboxPSO;
 		Scene*							m_SkyboxCube;
 
 		// Deferred shading
-		RHI::RootSignature*				m_DeferredShadingRS;
+		RHI::RootSignatureHandle		m_DeferredShadingRS;
 		RHI::ShaderHandle				m_DeferredShadingShaderVS;
 		RHI::ShaderHandle				m_DeferredShadingShaderPS;
 		RHI::PSOHandle					m_DeferredShadingPSO;
@@ -129,14 +125,14 @@ namespace limbo::Gfx
 		RHI::TextureHandle				m_BRDFLUTMap;
 
 		// PBR
-		RHI::RootSignature*				m_LightingRS;
+		RHI::RootSignatureHandle		m_LightingRS;
 		RHI::ShaderHandle				m_PBRShaderPS;
 		RHI::PSOHandle					m_PBRPSO;
 		RHI::TextureHandle				m_LightingRT;
 		RHI::TextureHandle				m_LightingDT;
 
 		// Scene Composite
-		RHI::RootSignature*				m_CompositeRS;
+		RHI::RootSignatureHandle		m_CompositeRS;
 		RHI::ShaderHandle				m_CompositeShaderPS;
 		RHI::PSOHandle					m_CompositePSO;
 

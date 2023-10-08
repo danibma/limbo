@@ -16,11 +16,11 @@ namespace limbo::Gfx
 	class PathTracing
 	{
 	private:
-		RHI::RootSignature*	m_CommonRS;
-		RHI::TextureHandle	m_FinalTexture;
-		RHI::ShaderHandle	m_PathTracerLib;
-		RHI::ShaderHandle	m_MaterialLib;
-		RHI::PSOHandle		m_PSO;
+		RHI::RootSignatureHandle	m_CommonRS;
+		RHI::TextureHandle			m_FinalTexture;
+		RHI::ShaderHandle			m_PathTracerLib;
+		RHI::ShaderHandle			m_MaterialLib;
+		RHI::PSOHandle				m_PSO;
 
 	public:
 		explicit PathTracing();

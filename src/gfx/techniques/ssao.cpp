@@ -20,16 +20,8 @@ namespace limbo::Gfx
 			.Format = RHI::Format::R8_UNORM,
 		});
 
-		m_SSAORS = new RHI::RootSignature("SSAO RS");
-		m_SSAORS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-		m_SSAORS->AddRootConstants(0, 4);
-		m_SSAORS->AddRootCBV(100);
-		m_SSAORS->Create();
-
-		m_BlurSSAORS = new RHI::RootSignature("Blur SSAO RS");
-		m_BlurSSAORS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-		m_BlurSSAORS->AddRootConstants(0, 5);
-		m_BlurSSAORS->Create();
+		m_SSAORS = RHI::CreateRootSignature("SSAO RS", RHI::RSInitializer().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4).AddRootCBV(100));
+		m_BlurSSAORS = RHI::CreateRootSignature("Blur SSAO RS", RHI::RSInitializer().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 5));
 
 		m_SSAOShader = RHI::CreateShader("ssao.hlsl", "ComputeSSAO", RHI::ShaderType::Compute);
 		RHI::SC::Compile(m_SSAOShader);
@@ -69,9 +61,8 @@ namespace limbo::Gfx
 		RHI::DestroyPSO(m_SSAOPSO);
 		RHI::DestroyPSO(m_BlurSSAOPSO);
 
-		delete m_SSAORS;
-		delete m_BlurSSAORS;
-		
+		RHI::DestroyRootSignature(m_SSAORS);
+		RHI::DestroyRootSignature(m_BlurSSAORS);
 	}
 
 	void SSAO::Render(SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap)

@@ -49,7 +49,7 @@ namespace limbo::RHI
 		DataAllocator<1 << 10> ContentData = {};
 	};
 
-	void PipelineStateInitializer::SetRootSignature(RootSignature* rootSignature)
+	void PipelineStateInitializer::SetRootSignature(RootSignatureHandle rootSignature)
 	{
 		m_RootSignature = rootSignature;
 	}
@@ -100,7 +100,7 @@ namespace limbo::RHI
 		m_Exports.emplace_back(name, name, D3D12_EXPORT_FLAG_NONE);
 	}
 
-	void RaytracingPipelineStateInitializer::SetGlobalRootSignature(RootSignature* rootSignature)
+	void RaytracingPipelineStateInitializer::SetGlobalRootSignature(RootSignatureHandle rootSignature)
 	{
 		m_RootSignature = rootSignature;
 	}
@@ -141,7 +141,7 @@ namespace limbo::RHI
 	PipelineStateObject::PipelineStateObject(const RaytracingPipelineStateInitializer& initializer)
 	{
 		check(initializer.m_LibsNum > 0);
-		check(initializer.m_RootSignature);
+		check(initializer.m_RootSignature.IsValid());
 
 		m_RootSignature = initializer.m_RootSignature;
 
@@ -189,7 +189,7 @@ namespace limbo::RHI
 		};
 		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &pipelineConfig);
 
-		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = initializer.m_RootSignature->Get() };
+		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RM_GET(initializer.m_RootSignature)->Get() };
 		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
 
 		D3D12_STATE_OBJECT_DESC desc = {
@@ -209,7 +209,7 @@ namespace limbo::RHI
 
 	void PipelineStateObject::CreateGraphicsPSO(const PipelineStateInitializer& initializer)
 	{
-		check(initializer.m_RootSignature);
+		check(initializer.m_RootSignature.IsValid());
 
 		D3D12_SHADER_BYTECODE vsBytecode = {};
 		D3D12_SHADER_BYTECODE psBytecode = {};
@@ -240,7 +240,7 @@ namespace limbo::RHI
 		blendState.RenderTarget[0] = initializer.m_BlendDesc;
 
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = m_RootSignature->Get(),
+			.pRootSignature = RM_GET(m_RootSignature)->Get(),
 			.VS = vsBytecode,
 			.PS = psBytecode,
 			.StreamOutput = nullptr,
@@ -284,7 +284,7 @@ namespace limbo::RHI
 	void PipelineStateObject::CreateComputePSO(const PipelineStateInitializer& initializer)
 	{
 		check(initializer.m_ComputeShader.IsValid());
-		check(initializer.m_RootSignature);
+		check(initializer.m_RootSignature.IsValid());
 
 		m_RootSignature = initializer.m_RootSignature;
 
@@ -296,7 +296,7 @@ namespace limbo::RHI
 		};
 
 		D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = m_RootSignature->Get(),
+			.pRootSignature = RM_GET(m_RootSignature)->Get(),
 			.CS = shaderByteCode,
 			.NodeMask = 0,
 			.CachedPSO = nullptr,

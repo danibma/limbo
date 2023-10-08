@@ -9,6 +9,7 @@
 #include "core/refcountptr.h"
 #include "buffer.h"
 #include "texture.h"
+#include "rootsignature.h"
 
 namespace limbo::Core
 {
@@ -19,14 +20,11 @@ namespace limbo::RHI
 {
 	enum class DescriptorHeapType : uint8;
 	class RingBufferAllocator;
-	class PipelineStateObject;
 	struct DescriptorHandle;
 	class DescriptorHeap;
-	class RootSignature;
 	class CommandQueue;
 	struct WindowInfo;
 	struct DrawInfo;
-	struct Shader;
 	class Swapchain;
 	class Fence;
 
@@ -75,7 +73,7 @@ namespace limbo::RHI
 
 		GPUInfo								m_GPUInfo;
 
-		RootSignature*						m_GenerateMipsRS;
+		RootSignatureHandle					m_GenerateMipsRS;
 		ShaderHandle						m_GenerateMipsShader;
 		PSOHandle							m_GenerateMipsPSO;
 

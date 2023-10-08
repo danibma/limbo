@@ -206,7 +206,7 @@ namespace limbo::RHI
 		DestroyShader(m_GenerateMipsShader);
 		DestroyPSO(m_GenerateMipsPSO);
 
-		delete m_GenerateMipsRS;
+		DestroyRootSignature(m_GenerateMipsRS);
 
 		delete m_TempBufferAllocator;
 		delete m_UploadRingBuffer;
@@ -328,10 +328,7 @@ namespace limbo::RHI
 
 		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
 
-		m_GenerateMipsRS = new RootSignature("Generate Mips RS");
-		m_GenerateMipsRS->AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV);
-		m_GenerateMipsRS->AddRootConstants(0, 4);
-		m_GenerateMipsRS->Create();
+		m_GenerateMipsRS = RHI::CreateRootSignature("Generate Mips RS", RSInitializer().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4));
 
 		m_GenerateMipsShader = CreateShader("generatemips.hlsl", "GenerateMip", ShaderType::Compute);
 		SC::Compile(m_GenerateMipsShader);

@@ -3,26 +3,22 @@
 #include "gfx/rhi/shader.h"
 #include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/texture.h"
-
-namespace limbo::RHI
-{
-	class RootSignature;
-}
+#include "gfx/rhi/rootsignature.h"
 
 namespace limbo::Gfx
 {
 	class SceneRenderer;
 	class SSAO
 	{
-		RHI::RootSignature*		m_SSAORS;
-		RHI::RootSignature*		m_BlurSSAORS;
+		RHI::RootSignatureHandle	m_SSAORS;
+		RHI::RootSignatureHandle	m_BlurSSAORS;
 
-		RHI::ShaderHandle		m_SSAOShader;
-		RHI::PSOHandle			m_SSAOPSO;
-		RHI::TextureHandle		m_UnblurredSSAOTexture;
-		RHI::ShaderHandle		m_BlurSSAOShader;
-		RHI::PSOHandle			m_BlurSSAOPSO;
-		RHI::TextureHandle		m_BlurredSSAOTexture;
+		RHI::ShaderHandle			m_SSAOShader;
+		RHI::PSOHandle				m_SSAOPSO;
+		RHI::TextureHandle			m_UnblurredSSAOTexture;
+		RHI::ShaderHandle			m_BlurSSAOShader;
+		RHI::PSOHandle				m_BlurSSAOPSO;
+		RHI::TextureHandle			m_BlurredSSAOTexture;
 
 	public:
 		explicit SSAO();

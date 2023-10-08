@@ -24,11 +24,7 @@ namespace limbo::Gfx
 
 	ShadowMapping::ShadowMapping()
 	{
-		m_CommonRS = new RHI::RootSignature("Shadow Mapping Common RS");
-		m_CommonRS->AddRootCBV(100);
-		m_CommonRS->AddRootCBV(101);
-		m_CommonRS->AddRootConstants(0, 2);
-		m_CommonRS->Create();
+		m_CommonRS = RHI::CreateRootSignature("Shadow Mapping Common RS", RHI::RSInitializer().Init().AddRootCBV(100).AddRootCBV(101).AddRootConstants(0, 2));
 
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
 			m_DepthShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
@@ -58,7 +54,7 @@ namespace limbo::Gfx
 			DestroyTexture(m_DepthShadowMaps[i]);
 
 		RHI::DestroyPSO(m_PSO);
-		delete m_CommonRS;
+		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
 	void ShadowMapping::Render(SceneRenderer* sceneRenderer)

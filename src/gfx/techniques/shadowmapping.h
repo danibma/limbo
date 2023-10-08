@@ -3,11 +3,7 @@
 #include "gfx/rhi/shader.h"
 #include "gfx/rhi/texture.h"
 #include "gfx/rhi/pipelinestateobject.h"
-
-namespace limbo::RHI
-{
-	class RootSignature;
-}
+#include "gfx/rhi/rootsignature.h"
 
 namespace limbo::Gfx
 {
@@ -16,15 +12,15 @@ namespace limbo::Gfx
 	class SceneRenderer;
 	class ShadowMapping
 	{
-		RHI::RootSignature*		m_CommonRS;
-		RHI::ShaderHandle		m_ShadowMapVS;
-		RHI::ShaderHandle		m_ShadowMapPS;
-		RHI::TextureHandle		m_DepthShadowMaps[SHADOWMAP_CASCADES];
-		RHI::PSOHandle			m_PSO;
+		RHI::RootSignatureHandle	m_CommonRS;
+		RHI::ShaderHandle			m_ShadowMapVS;
+		RHI::ShaderHandle			m_ShadowMapPS;
+		RHI::TextureHandle			m_DepthShadowMaps[SHADOWMAP_CASCADES];
+		RHI::PSOHandle				m_PSO;
 
-		ShadowData				m_ShadowData;
+		ShadowData					m_ShadowData;
 
-		float					m_CascadeSplitLambda = 0.95f;
+		float						m_CascadeSplitLambda = 0.95f;
 
 	public:
 		explicit ShadowMapping();

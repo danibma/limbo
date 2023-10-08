@@ -2,6 +2,7 @@
 
 #include "shader.h"
 #include "staticstates.h"
+#include "rootsignature.h"
 #include "core/array.h"
 #include "core/refcountptr.h"
 
@@ -10,7 +11,6 @@
 
 namespace limbo::RHI
 {
-	class RootSignature;
 	class PipelineStateInitializer
 	{
 	private:
@@ -18,7 +18,7 @@ namespace limbo::RHI
 
 		using TInputLayout = std::vector<D3D12_INPUT_ELEMENT_DESC>;
 
-		RootSignature*								m_RootSignature;
+		RootSignatureHandle							m_RootSignature;
 		TInputLayout								m_InputLayout;
 		D3D12_PRIMITIVE_TOPOLOGY_TYPE				m_Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		D3D12_RENDER_TARGET_BLEND_DESC				m_BlendDesc = TStaticBlendState<>::GetRHI();
@@ -35,7 +35,7 @@ namespace limbo::RHI
 		std::string									m_Name = "";
 
 	public:
-		void SetRootSignature(RootSignature* rootSignature);
+		void SetRootSignature(RootSignatureHandle rootSignature);
 		void SetInputLayout(TInputLayout inputLayout);
 		void SetTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE topology);
 		void SetBlendDesc(const D3D12_RENDER_TARGET_BLEND_DESC& desc);
@@ -83,7 +83,7 @@ namespace limbo::RHI
 		friend class PipelineStateObject;
 
 		std::string							m_Name = "";
-		RootSignature*						m_RootSignature;
+		RootSignatureHandle					m_RootSignature;
 		D3D12_RAYTRACING_SHADER_CONFIG		m_ShaderConfig;
 		uint32								m_MaxTraceRecursionDepth = 1;
 
@@ -92,7 +92,7 @@ namespace limbo::RHI
 		TStaticArray<RaytracingLibDesc, 3>	m_LibsDescs;
 	public:
 
-		void SetGlobalRootSignature(RootSignature* rootSignature);
+		void SetGlobalRootSignature(RootSignatureHandle rootSignature);
 		void AddLib(ShaderHandle lib, const RaytracingLibDesc& libDesc);
 		void SetShaderConfig(uint32 maxPayloadSizeInBytes, uint32 maxAttributeSizeInBytes);
 		void SetMaxTraceRecursionDepth(uint32 maxTraceRecursionDepth);
@@ -128,7 +128,7 @@ namespace limbo::RHI
 			return m_StateObject.Get();
 		}
 
-		RootSignature* GetRootSignature() const 
+		RootSignatureHandle GetRootSignature() const
 		{
 			return m_RootSignature;
 		}
@@ -140,7 +140,7 @@ namespace limbo::RHI
 	private:
 		RefCountPtr<ID3D12PipelineState>	m_PipelineState;
 		RefCountPtr<ID3D12StateObject>		m_StateObject; // for RayTracing
-		RootSignature*						m_RootSignature;
+		RootSignatureHandle					m_RootSignature;
 
 		bool m_Compute = false;
 	};

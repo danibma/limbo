@@ -48,6 +48,7 @@ namespace limbo::RHI
 		ensure(m_Buffers.IsEmpty());
 		ensure(m_Textures.IsEmpty());
 		ensure(m_PSOs.IsEmpty());
+		ensure(m_RootSignatures.IsEmpty());
 		ensure(m_Shaders.IsEmpty());
 #endif
 	}
@@ -85,6 +86,11 @@ namespace limbo::RHI
 	PSOHandle ResourceManager::CreatePSO(const RaytracingPipelineStateInitializer& initializer)
 	{
 		return m_PSOs.AllocateHandle(initializer);
+	}
+
+	RootSignatureHandle ResourceManager::CreateRootSignature(const std::string& name, const RSInitializer& initializer)
+	{
+		return m_RootSignatures.AllocateHandle(name, initializer);
 	}
 
 	void ResourceManager::DestroyBuffer(BufferHandle buffer, bool bImmediate)
@@ -135,6 +141,18 @@ namespace limbo::RHI
 		else
 		{
 			DELETE_RESOURCE(pso, m_PSOs);
+		}
+	}
+
+	void ResourceManager::DestroyRootSignature(RootSignatureHandle rs, bool bImmediate /*= false*/)
+	{
+		if (bImmediate)
+		{
+			m_RootSignatures.DeleteHandle(rs);
+		}
+		else
+		{
+			DELETE_RESOURCE(rs, m_RootSignatures);
 		}
 	}
 
