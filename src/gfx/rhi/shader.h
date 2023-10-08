@@ -19,6 +19,13 @@ namespace limbo::RHI
 
 		Shader() = default;
 		Shader(const char* file, const char* entryPoint, ShaderType type);
+		~Shader();
+
+		void AddToRecompilation();
+		bool IsCompiled() const { return m_RecompilationHandle; }
+
+	private:
+		DelegateHandle m_RecompilationHandle;
 	};
 	typedef Handle<Shader> ShaderHandle;
 }

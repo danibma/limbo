@@ -257,7 +257,7 @@ namespace limbo::RHI
 		{
 			Core::Timer t;
 			IdleGPU();
-			ReloadShaders.Broadcast();
+			OnReloadShaders.Broadcast();
 			m_bNeedsShaderReload = false;
 			LB_LOG("Shaders got reloaded. It took %.2fs", t.ElapsedSeconds());
 		}

@@ -12,7 +12,6 @@ namespace limbo::RHI
 	public:
 		Handle() : m_Index(0xFFFF), m_Generation(0) {}
 		bool IsValid() const { return m_Index != 0xFFFF; }
-		T* Get() const;
 
 		bool operator!=(const Handle& other)
 		{
@@ -35,6 +34,7 @@ namespace limbo::RHI
 		Pool()
 		{
 			m_Objects = (Object*)malloc(m_Size * sizeof(Object));
+			memset(m_Objects, 0, m_Size * sizeof(Object));
 			for (uint16 i = 0; i < m_Size; ++i)
 			{
 				m_FreeSlots.push(i);
@@ -75,6 +75,7 @@ namespace limbo::RHI
 			uint16 newSize = m_Size + (m_Size >> 1);
 			LB_WARN("Growing '%s' resource pool from %d to %d", typeid(HandleType).name(), m_Size, newSize);
 			Object* newObjects = (Object*)malloc(newSize * sizeof(Object));
+			memset(newObjects, 0, newSize * sizeof(Object));
 			memcpy(newObjects, m_Objects, m_Size * sizeof(Object));
 			for (uint16 i = m_Size; i < newSize; ++i)
 			{

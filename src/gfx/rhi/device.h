@@ -84,7 +84,7 @@ namespace limbo::RHI
 		TOnResizedSwapchain OnResizedSwapchain;
 
 		DECLARE_MULTICAST_DELEGATE(TReloadShaders);
-		TReloadShaders ReloadShaders;
+		TReloadShaders OnReloadShaders;
 
 		DECLARE_MULTICAST_DELEGATE(TOnPrepareFrame);
 		TOnPrepareFrame OnPrepareFrame;

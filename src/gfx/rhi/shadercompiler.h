@@ -187,5 +187,6 @@ namespace limbo::RHI::SC
 	*/
 
 	bool Compile(ShaderHandle shader);
+	bool Compile(Shader* shader);
 }
 

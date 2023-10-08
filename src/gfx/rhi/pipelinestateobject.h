@@ -136,11 +136,13 @@ namespace limbo::RHI
 	private:
 		void CreateGraphicsPSO(const PipelineStateInitializer& initializer);
 		void CreateComputePSO(const PipelineStateInitializer& initializer);
+		void CreateRTPSO(const RaytracingPipelineStateInitializer& initializer);
 
 	private:
 		RefCountPtr<ID3D12PipelineState>	m_PipelineState;
 		RefCountPtr<ID3D12StateObject>		m_StateObject; // for RayTracing
 		RootSignatureHandle					m_RootSignature;
+		DelegateHandle						m_OnReloadShadersHandle;
 
 		bool m_Compute = false;
 	};

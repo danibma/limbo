@@ -136,6 +136,14 @@ namespace limbo::RHI
 			CreateComputePSO(initializer);
 		else
 			CreateGraphicsPSO(initializer);
+
+		m_OnReloadShadersHandle = Device::Ptr->OnReloadShaders.AddLambda([initializer, this]()
+		{
+			if (initializer.m_ComputeShader.IsValid())
+				CreateComputePSO(initializer);
+			else
+				CreateGraphicsPSO(initializer);
+		});
 	}
 
 	PipelineStateObject::PipelineStateObject(const RaytracingPipelineStateInitializer& initializer)
@@ -143,68 +151,12 @@ namespace limbo::RHI
 		check(initializer.m_LibsNum > 0);
 		check(initializer.m_RootSignature.IsValid());
 
-		m_RootSignature = initializer.m_RootSignature;
-
-		RayTracingStateObjectStream stream;
-		uint32 numObjects = 0;
-
-		auto AddSubobject = [&stream, &numObjects](D3D12_STATE_SUBOBJECT_TYPE type, auto* data)
+		m_OnReloadShadersHandle = Device::Ptr->OnReloadShaders.AddLambda([initializer, this]()
 		{
-			D3D12_STATE_SUBOBJECT* subobject = stream.StateObjectData.Allocate<D3D12_STATE_SUBOBJECT>();
-			subobject->Type = type;
-			subobject->pDesc = data;
-			numObjects++;
-		};
+			CreateRTPSO(initializer);
+		});
 
-		// Get all the libs, to later create the global root signature
-		for (uint32 i = 0; i < initializer.m_LibsNum; ++i)
-		{
-			ShaderHandle lib = initializer.m_Libs[i];
-			Shader* pLib = RM_GET(lib);
-
-			D3D12_DXIL_LIBRARY_DESC* dxilLib = stream.ContentData.Allocate<D3D12_DXIL_LIBRARY_DESC>();
-			dxilLib->DXILLibrary = { pLib->Bytecode->GetBufferPointer(), pLib->Bytecode->GetBufferSize() };
-			dxilLib->NumExports = (uint32)initializer.m_LibsDescs[i].m_Exports.size();
-			dxilLib->pExports = const_cast<D3D12_EXPORT_DESC*>(initializer.m_LibsDescs[i].m_Exports.data());
-
-			AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY, dxilLib);
-
-			for (const D3D12_HIT_GROUP_DESC& desc : initializer.m_LibsDescs[i].m_HitGroupDescs)
-			{
-				D3D12_HIT_GROUP_DESC* hitGroup = stream.ContentData.Allocate<D3D12_HIT_GROUP_DESC>();
-				hitGroup->HitGroupExport = desc.HitGroupExport;
-				hitGroup->Type = desc.Type;
-				hitGroup->AnyHitShaderImport = desc.AnyHitShaderImport;
-				hitGroup->ClosestHitShaderImport = desc.ClosestHitShaderImport;
-				hitGroup->IntersectionShaderImport = desc.IntersectionShaderImport;
-				AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP, hitGroup);
-			}
-		}
-
-		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &initializer.m_ShaderConfig);
-
-		// According to Microsoft: Set max recursion depth as low as needed as drivers may apply optimization strategies for low recursion depths. 
-		D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {
-			.MaxTraceRecursionDepth = initializer.m_MaxTraceRecursionDepth
-		};
-		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &pipelineConfig);
-
-		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RM_GET(initializer.m_RootSignature)->Get() };
-		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
-
-		D3D12_STATE_OBJECT_DESC desc = {
-			.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
-			.NumSubobjects = numObjects,
-			.pSubobjects = (D3D12_STATE_SUBOBJECT*)stream.StateObjectData.GetData()
-		};
-		DX_CHECK(Device::Ptr->GetDevice()->CreateStateObject(&desc, IID_PPV_ARGS(m_StateObject.ReleaseAndGetAddressOf())));
-
-		if (!initializer.m_Name.empty())
-		{
-			std::wstring wName;
-			Utils::StringConvert(initializer.m_Name, wName);
-			m_StateObject->SetName(wName.c_str());
-		}
+		CreateRTPSO(initializer);
 	}
 
 	void PipelineStateObject::CreateGraphicsPSO(const PipelineStateInitializer& initializer)
@@ -314,7 +266,74 @@ namespace limbo::RHI
 		m_Compute = true;
 	}
 
+	void PipelineStateObject::CreateRTPSO(const RaytracingPipelineStateInitializer& initializer)
+	{
+		m_RootSignature = initializer.m_RootSignature;
+
+		RayTracingStateObjectStream stream;
+		uint32 numObjects = 0;
+
+		auto AddSubobject = [&stream, &numObjects](D3D12_STATE_SUBOBJECT_TYPE type, auto* data)
+		{
+			D3D12_STATE_SUBOBJECT* subobject = stream.StateObjectData.Allocate<D3D12_STATE_SUBOBJECT>();
+			subobject->Type = type;
+			subobject->pDesc = data;
+			numObjects++;
+		};
+
+		// Get all the libs, to later create the global root signature
+		for (uint32 i = 0; i < initializer.m_LibsNum; ++i)
+		{
+			ShaderHandle lib = initializer.m_Libs[i];
+			Shader* pLib = RM_GET(lib);
+
+			D3D12_DXIL_LIBRARY_DESC* dxilLib = stream.ContentData.Allocate<D3D12_DXIL_LIBRARY_DESC>();
+			dxilLib->DXILLibrary = { pLib->Bytecode->GetBufferPointer(), pLib->Bytecode->GetBufferSize() };
+			dxilLib->NumExports = (uint32)initializer.m_LibsDescs[i].m_Exports.size();
+			dxilLib->pExports = const_cast<D3D12_EXPORT_DESC*>(initializer.m_LibsDescs[i].m_Exports.data());
+
+			AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY, dxilLib);
+
+			for (const D3D12_HIT_GROUP_DESC& desc : initializer.m_LibsDescs[i].m_HitGroupDescs)
+			{
+				D3D12_HIT_GROUP_DESC* hitGroup = stream.ContentData.Allocate<D3D12_HIT_GROUP_DESC>();
+				hitGroup->HitGroupExport = desc.HitGroupExport;
+				hitGroup->Type = desc.Type;
+				hitGroup->AnyHitShaderImport = desc.AnyHitShaderImport;
+				hitGroup->ClosestHitShaderImport = desc.ClosestHitShaderImport;
+				hitGroup->IntersectionShaderImport = desc.IntersectionShaderImport;
+				AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP, hitGroup);
+			}
+		}
+
+		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &initializer.m_ShaderConfig);
+
+		// According to Microsoft: Set max recursion depth as low as needed as drivers may apply optimization strategies for low recursion depths. 
+		D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {
+			.MaxTraceRecursionDepth = initializer.m_MaxTraceRecursionDepth
+		};
+		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &pipelineConfig);
+
+		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RM_GET(initializer.m_RootSignature)->Get() };
+		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
+
+		D3D12_STATE_OBJECT_DESC desc = {
+			.Type = D3D12_STATE_OBJECT_TYPE_RAYTRACING_PIPELINE,
+			.NumSubobjects = numObjects,
+			.pSubobjects = (D3D12_STATE_SUBOBJECT*)stream.StateObjectData.GetData()
+		};
+		DX_CHECK(Device::Ptr->GetDevice()->CreateStateObject(&desc, IID_PPV_ARGS(m_StateObject.ReleaseAndGetAddressOf())));
+
+		if (!initializer.m_Name.empty())
+		{
+			std::wstring wName;
+			Utils::StringConvert(initializer.m_Name, wName);
+			m_StateObject->SetName(wName.c_str());
+		}
+	}
+
 	PipelineStateObject::~PipelineStateObject()
 	{
+		Device::Ptr->OnReloadShaders.Remove(m_OnReloadShadersHandle);
 	}
 }
