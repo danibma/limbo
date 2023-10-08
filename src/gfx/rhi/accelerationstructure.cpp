@@ -77,7 +77,7 @@ namespace limbo::RHI
 					bUpdateBLAS = true;
 				}
 
-				Buffer* pResult = GetBuffer(mesh.BLAS);
+				Buffer* pResult = RM_GET(mesh.BLAS);
 
 				// Describe the top-level acceleration structure instance(s).
 				D3D12_RAYTRACING_INSTANCE_DESC& instance = instances.emplace_back();
@@ -114,7 +114,7 @@ namespace limbo::RHI
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS TLASInput = {};
 		TLASInput.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL;
 		TLASInput.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
-		TLASInput.InstanceDescs = GetBuffer(m_InstancesBuffer)->Resource->GetGPUVirtualAddress();
+		TLASInput.InstanceDescs = RM_GET(m_InstancesBuffer)->Resource->GetGPUVirtualAddress();
 		TLASInput.NumDescs = (uint32)instances.size();
 		TLASInput.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
 
@@ -146,6 +146,6 @@ namespace limbo::RHI
 
 	Buffer* AccelerationStructure::GetTLASBuffer() const
 	{
-		return GetBuffer(m_TLAS);
+		return RM_GET(m_TLAS);
 	}
 }

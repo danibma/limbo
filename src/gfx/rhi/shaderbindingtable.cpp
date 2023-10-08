@@ -34,10 +34,11 @@ namespace limbo::RHI
 			.Flags = BufferUsage::Upload,
 		});
 
-		ID3D12Resource* sbtResource = ResourceManager::Ptr->GetBuffer(sbtBuffer)->Resource.Get();
+		RHI::Buffer* pSbtBuffer = RM_GET(sbtBuffer);
+		ID3D12Resource* sbtResource = pSbtBuffer->Resource.Get();
 
-		Map(sbtBuffer);
-		uint8* data = (uint8*)GetMappedData(sbtBuffer);
+		pSbtBuffer->Map();
+		uint8* data = (uint8*)pSbtBuffer->MappedData;
 
 		memcpy(data, m_RayGenerationRecord.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 		data += D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
@@ -68,7 +69,7 @@ namespace limbo::RHI
 			.Depth = depth
 		};
 
-		Unmap(sbtBuffer);
+		pSbtBuffer->Unmap();
 		DestroyBuffer(sbtBuffer);
 	}
 

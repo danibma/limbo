@@ -48,6 +48,9 @@ namespace limbo::RHI
 
 		virtual ~Buffer();
 
+		void Map(uint32 subresource = 0, D3D12_RANGE* range = nullptr);
+		void Unmap(uint32 subresource = 0, D3D12_RANGE* range = nullptr);
+
 	private:
 		void CreateCBV(ID3D12Device* device, const BufferSpec& spec);
 		void CreateSRV(ID3D12Device* device, const BufferSpec& spec);

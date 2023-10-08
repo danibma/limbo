@@ -242,7 +242,7 @@ namespace limbo::Gfx
 
 		RHI::BindTempConstantBuffer(0, SceneInfo);
 
-		RHI::BindConstants(1, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
+		RHI::BindConstants(1, 0, RM_GET(m_EnvironmentCubemap)->SRV());
 
 		m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
 		{
@@ -272,20 +272,20 @@ namespace limbo::Gfx
 
 
 		// Bind deferred shading render targets
-		RHI::BindConstants(3, 0, RHI::GetTexture(m_DeferredShadingRTs[0])->SRV());
-		RHI::BindConstants(3, 1, RHI::GetTexture(m_DeferredShadingRTs[1])->SRV());
-		RHI::BindConstants(3, 2, RHI::GetTexture(m_DeferredShadingRTs[2])->SRV());
-		RHI::BindConstants(3, 3, RHI::GetTexture(m_DeferredShadingRTs[3])->SRV());
-		RHI::BindConstants(3, 4, RHI::GetTexture(m_DeferredShadingRTs[4])->SRV());
-		RHI::BindConstants(3, 5, RHI::GetTexture(m_DeferredShadingRTs[5])->SRV());
+		RHI::BindConstants(3, 0, RM_GET(m_DeferredShadingRTs[0])->SRV());
+		RHI::BindConstants(3, 1, RM_GET(m_DeferredShadingRTs[1])->SRV());
+		RHI::BindConstants(3, 2, RM_GET(m_DeferredShadingRTs[2])->SRV());
+		RHI::BindConstants(3, 3, RM_GET(m_DeferredShadingRTs[3])->SRV());
+		RHI::BindConstants(3, 4, RM_GET(m_DeferredShadingRTs[4])->SRV());
+		RHI::BindConstants(3, 5, RM_GET(m_DeferredShadingRTs[5])->SRV());
 
 		if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
-			RHI::BindConstants(3, 6, RHI::GetTexture(m_RTAO->GetFinalTexture())->SRV());
+			RHI::BindConstants(3, 6, RM_GET(m_RTAO->GetFinalTexture())->SRV());
 		else
-			RHI::BindConstants(3, 6, RHI::GetTexture(m_SSAO->GetBlurredTexture())->SRV());
-		RHI::BindConstants(3, 7, RHI::GetTexture(m_IrradianceMap)->SRV());
-		RHI::BindConstants(3, 8, RHI::GetTexture(m_PrefilterMap)->SRV());
-		RHI::BindConstants(3, 9, RHI::GetTexture(m_BRDFLUTMap)->SRV());
+			RHI::BindConstants(3, 6, RM_GET(m_SSAO->GetBlurredTexture())->SRV());
+		RHI::BindConstants(3, 7, RM_GET(m_IrradianceMap)->SRV());
+		RHI::BindConstants(3, 8, RM_GET(m_PrefilterMap)->SRV());
+		RHI::BindConstants(3, 9, RM_GET(m_BRDFLUTMap)->SRV());
 
 		RHI::Draw(6);
 		RHI::EndProfileEvent("Lighting");
@@ -304,7 +304,7 @@ namespace limbo::Gfx
 
 		RHI::BindConstants(0, 0, Tweaks.CurrentTonemap);
 
-		RHI::BindConstants(0, 1, RHI::GetTexture(m_SceneTexture)->SRV());
+		RHI::BindConstants(0, 1, RM_GET(m_SceneTexture)->SRV());
 
 		RHI::Draw(6);
 		RHI::EndProfileEvent("Scene Composite");
@@ -410,8 +410,8 @@ namespace limbo::Gfx
 		uploadArrayToGPU(m_ScenesMaterials, materials, "ScenesMaterials");
 		uploadArrayToGPU(m_SceneInstances,  instances, "SceneInstances");
 
-		SceneInfo.MaterialsBufferIndex = GetBuffer(m_ScenesMaterials)->CBVHandle.Index;
-		SceneInfo.InstancesBufferIndex = GetBuffer(m_SceneInstances)->CBVHandle.Index;
+		SceneInfo.MaterialsBufferIndex = RM_GET(m_ScenesMaterials)->CBVHandle.Index;
+		SceneInfo.InstancesBufferIndex = RM_GET(m_SceneInstances)->CBVHandle.Index;
 	}
 
 	void SceneRenderer::UpdateSceneInfo()
@@ -428,7 +428,7 @@ namespace limbo::Gfx
 		SceneInfo.InvProjection			= glm::inverse(Camera.RevProj);
 		SceneInfo.ViewProjection		= Camera.ViewRevProj;
 		SceneInfo.CameraPos				= Camera.Eye;
-		SceneInfo.SkyIndex				= GetTexture(m_EnvironmentCubemap)->SRV();
+		SceneInfo.SkyIndex				= RM_GET(m_EnvironmentCubemap)->SRV();
 		SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
 		SceneInfo.FrameIndex++;
 	}
@@ -491,11 +491,11 @@ namespace limbo::Gfx
 
 			RHI::SetPipelineState(tempPSO);
 
-			RHI::BindConstants(1, 0, RHI::GetTexture(equirectangularTexture)->SRV());
+			RHI::BindConstants(1, 0, RM_GET(equirectangularTexture)->SRV());
 
 			RHI::DescriptorHandle uavTexture[] =
 			{
-				RHI::GetTexture(m_EnvironmentCubemap)->UAVHandle[0]
+				RM_GET(m_EnvironmentCubemap)->UAVHandle[0]
 			};
 			RHI::BindTempDescriptorTable(2, uavTexture, 1);
 			RHI::Dispatch(equirectangularTextureSize.x / 8, equirectangularTextureSize.y / 8, 6);
@@ -533,11 +533,11 @@ namespace limbo::Gfx
 			RHI::PipelineStateObject* tempPSO = new RHI::PipelineStateObject(psoInit); // TODO: mem leak
 
 			RHI::SetPipelineState(tempPSO);
-			RHI::BindConstants(0, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
+			RHI::BindConstants(0, 0, RM_GET(m_EnvironmentCubemap)->SRV());
 
 			RHI::DescriptorHandle uavTexture[] =
 			{
-				RHI::GetTexture(m_IrradianceMap)->UAVHandle[0]
+				RM_GET(m_IrradianceMap)->UAVHandle[0]
 			};
 			RHI::BindTempDescriptorTable(2, uavTexture, 1);
 			RHI::Dispatch(irradianceSize.x / 8, irradianceSize.y / 8, 6);
@@ -578,7 +578,7 @@ namespace limbo::Gfx
 			RHI::PipelineStateObject* tempPSO = new RHI::PipelineStateObject(psoInit); // TODO: mem leak
 
 			RHI::SetPipelineState(tempPSO);
-			RHI::BindConstants(1, 0, RHI::GetTexture(m_EnvironmentCubemap)->SRV());
+			RHI::BindConstants(1, 0, RM_GET(m_EnvironmentCubemap)->SRV());
 
 			const float deltaRoughness = 1.0f / glm::max(float(prefilterMipLevels - 1), 1.0f);
 			for (uint32_t level = 0, size = prefilterSize.x; level < prefilterMipLevels; ++level, size /= 2)
@@ -587,7 +587,7 @@ namespace limbo::Gfx
 
 				RHI::DescriptorHandle uavTexture[] =
 				{
-					RHI::GetTexture(m_PrefilterMap)->UAVHandle[level]
+					RM_GET(m_PrefilterMap)->UAVHandle[level]
 				};
 				RHI::BindTempDescriptorTable(0, uavTexture, 1);
 				RHI::BindConstants(2, 0, level * deltaRoughness);
@@ -626,7 +626,7 @@ namespace limbo::Gfx
 			RHI::SetPipelineState(tempPSO);
 			RHI::DescriptorHandle uavTexture[] =
 			{
-				RHI::GetTexture(m_BRDFLUTMap)->UAVHandle[0]
+				RM_GET(m_BRDFLUTMap)->UAVHandle[0]
 			};
 			RHI::BindTempDescriptorTable(0, uavTexture, 1);
 			RHI::Dispatch(brdfLUTMapSize.x / 8, brdfLUTMapSize.y / 8, 6);

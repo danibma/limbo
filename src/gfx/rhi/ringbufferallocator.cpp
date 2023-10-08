@@ -10,10 +10,11 @@ namespace limbo::RHI
 		: m_TotalSize(size), m_CurrentOffset(0), m_Name(name)
 	{
 		m_Buffer		= CreateBuffer({ .DebugName = m_Name.c_str(), .ByteSize = size, .Flags = BufferUsage::Upload });
-		Map(m_Buffer);
-		m_MappedData	= GetMappedData(m_Buffer);
-
 		m_Queue			= Device::Ptr->GetCommandQueue(ContextType::Copy);
+
+		RHI::Buffer* pBuffer = RM_GET(m_Buffer);
+		pBuffer->Map();
+		m_MappedData = pBuffer->MappedData;
 	}
 
 	RingBufferAllocator::~RingBufferAllocator()
@@ -74,7 +75,7 @@ namespace limbo::RHI
 		FAILIF(offset == InvalidOffset);
 
 		allocation.Context		= GetCommandContext(ContextType::Copy);
-		allocation.Buffer		= GetBuffer(m_Buffer);
+		allocation.Buffer		= RM_GET(m_Buffer);
 		allocation.Offset		= offset;
 		allocation.Size			= size;
 		allocation.MappedData	= (uint8*)m_MappedData + offset;

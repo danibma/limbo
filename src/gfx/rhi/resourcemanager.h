@@ -37,15 +37,16 @@ namespace limbo::RHI
 		Handle<Texture> CreateTexture(const TextureSpec& spec);
 		Handle<Texture> CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
 
-		Buffer* GetBuffer(Handle<Buffer> buffer);
-		Shader* GetShader(Handle<Shader> shader);
-		Texture* GetTexture(Handle<Texture> texture);
-
-		void Map(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
-		void Unmap(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr);
-
-		// Used for Imgui images
-		uint64 GetTextureID(Handle<Texture> texture);
+		template<typename ResourceType>
+		ResourceType* Get(Handle<ResourceType> resourceHandle)
+		{
+			if constexpr (TIsSame<ResourceType, Texture>::Value)
+				return m_Textures.Get(resourceHandle);
+			else if constexpr (TIsSame<ResourceType, Buffer>::Value)
+				return m_Buffers.Get(resourceHandle);
+			else if constexpr (TIsSame<ResourceType, Shader>::Value)
+				return m_Shaders.Get(resourceHandle);
+		}
 
 		void DestroyBuffer(Handle<Buffer> buffer, bool bImmediate = false);
 		void DestroyShader(Handle<Shader> shader, bool bImmediate = false);
@@ -63,7 +64,6 @@ namespace limbo::RHI
 
 		std::deque<Deletion>		m_DeletionQueue;
 	};
-
 
 	// Global definitions
 	inline Handle<Buffer> CreateBuffer(const BufferSpec& spec)
@@ -108,50 +108,6 @@ namespace limbo::RHI
 		ensure(handle.IsValid());
 		ResourceManager::Ptr->DestroyTexture(handle, bImmediate);
 	}
-
-	inline Buffer* GetBuffer(Handle<Buffer> buffer)
-	{
-		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
-		FAILIF(!b, nullptr);
-		return b;
-	}
-
-	inline Texture* GetTexture(Handle<Texture> texture)
-	{
-		Texture* t = ResourceManager::Ptr->GetTexture(texture);
-		FAILIF(!t, nullptr);
-		return t;
-	}
-
-	template<typename ResourceType, TEnableIf<TIsSame<ResourceType, Texture>::Value, int> = 0, TEnableIf<TIsSame<ResourceType, Buffer>::Value, int> = 0>
-	ResourceType* GetResource(Handle<ResourceType> resource)
-	{
-		if constexpr (TIsSame<ResourceType, Texture>::Value)
-			return GetTexture(resource);
-		else
-			return GetBuffer(resource);
-	}
-
-	inline void Map(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
-	{
-		ResourceManager::Ptr->Map(buffer, subresource, range);
-	}
-
-	inline void* GetMappedData(Handle<Buffer> buffer)
-	{
-		Buffer* b = ResourceManager::Ptr->GetBuffer(buffer);
-		FAILIF(!b, nullptr);
-		return b->MappedData;
-	}
-
-	inline void Unmap(Handle<Buffer> buffer, uint32 subresource = 0, D3D12_RANGE* range = nullptr)
-	{
-		ResourceManager::Ptr->Unmap(buffer, subresource, range);
-	}
-
-	// This can be used as a TextureID for ImGui
-	inline uint64 GetTextureID(Handle<Texture> texture)
-	{
-		return ResourceManager::Ptr->GetTextureID(texture);
-	}
 }
+
+#define RM_GET(ResourceHandle) limbo::RHI::ResourceManager::Ptr->Get(ResourceHandle)

@@ -275,6 +275,11 @@ namespace limbo::RHI
 		InitResource(Spec);
 	}
 
+	uint64 Texture::TextureID()
+	{
+		return m_SRVHandle.GPUHandle.ptr;
+	}
+
 	RHI::TextureSpec Tex2DDepth(uint32 width, uint32 height, float depthClearValue, const char* debugName /*= nullptr*/)
 	{
 		return {

@@ -80,7 +80,7 @@ namespace limbo::Gfx
 
 		RHI::BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 
-		RHI::DescriptorHandle uavHandles[] = { RHI::GetTexture(m_FinalTexture)->UAVHandle[0] };
+		RHI::DescriptorHandle uavHandles[] = { RM_GET(m_FinalTexture)->UAVHandle[0] };
 		RHI::BindTempDescriptorTable(1, uavHandles, 1);
 
 		RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);

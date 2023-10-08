@@ -106,7 +106,7 @@ namespace limbo::Gfx
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
-				RHI::GetTexture(m_NoisedTexture)->UAVHandle[0]
+				RM_GET(m_NoisedTexture)->UAVHandle[0]
 			};
 			RHI::BindTempDescriptorTable(1, uavHandles, 1);
 
@@ -115,8 +115,8 @@ namespace limbo::Gfx
 			RHI::BindConstants(3, 0, sceneRenderer->Tweaks.SSAORadius);
 			RHI::BindConstants(3, 1, sceneRenderer->Tweaks.SSAOPower);
 			RHI::BindConstants(3, 2, sceneRenderer->Tweaks.RTAOSamples);
-			RHI::BindConstants(3, 3, RHI::GetTexture(positionsMap)->SRV());
-			RHI::BindConstants(3, 4, RHI::GetTexture(normalsMap)->SRV());
+			RHI::BindConstants(3, 3, RM_GET(positionsMap)->SRV());
+			RHI::BindConstants(3, 4, RM_GET(normalsMap)->SRV());
 			RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 			RHI::EndProfileEvent("RTAO");
 		}
@@ -127,13 +127,13 @@ namespace limbo::Gfx
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
-				RHI::GetTexture(m_FinalTexture)->UAVHandle[0],
+				RM_GET(m_FinalTexture)->UAVHandle[0],
 			};
 			RHI::BindTempDescriptorTable(1, uavHandles, _countof(uavHandles));
 
 			RHI::BindConstants(3, 0, m_AccumCount);
-			RHI::BindConstants(3, 1, RHI::GetTexture(m_PreviousFrame)->SRV());
-			RHI::BindConstants(3, 2, RHI::GetTexture(m_NoisedTexture)->SRV());
+			RHI::BindConstants(3, 1, RM_GET(m_PreviousFrame)->SRV());
+			RHI::BindConstants(3, 2, RM_GET(m_NoisedTexture)->SRV());
 			RHI::Dispatch(RHI::GetBackbufferWidth() / 8, RHI::GetBackbufferHeight() / 8, 1);
 			RHI::EndProfileEvent("RTAO Denoise");
 		}

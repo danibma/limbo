@@ -40,8 +40,8 @@ namespace limbo::RHI
 
 	void CommandContext::CopyTextureToTexture(Handle<Texture> src, Handle<Texture> dst)
 	{
-		Texture* srcTexture = GetTexture(src);
-		Texture* dstTexture = GetTexture(dst);
+		Texture* srcTexture = RM_GET(src);
+		Texture* dstTexture = RM_GET(dst);
 
 		InsertResourceBarrier(srcTexture, D3D12_RESOURCE_STATE_COPY_SOURCE);
 		InsertResourceBarrier(dstTexture, D3D12_RESOURCE_STATE_COPY_DEST);
@@ -56,16 +56,14 @@ namespace limbo::RHI
 
 		CopyTextureToTexture(texture, backBufferHandle);
 
-		InsertResourceBarrier(GetTexture(backBufferHandle), D3D12_RESOURCE_STATE_RENDER_TARGET);
+		InsertResourceBarrier(RM_GET(backBufferHandle), D3D12_RESOURCE_STATE_RENDER_TARGET);
 		SubmitResourceBarriers();
 	}
 
 	void CommandContext::CopyBufferToTexture(Handle<Buffer> src, Handle<Texture> dst, uint64 dstOffset)
 	{
-		Texture* dstTexture = ResourceManager::Ptr->GetTexture(dst);
-		FAILIF(!dstTexture);
-		Buffer* srcBuffer = ResourceManager::Ptr->GetBuffer(src);
-		FAILIF(!srcBuffer);
+		Texture* dstTexture = RM_GET(dst);
+		Buffer* srcBuffer = RM_GET(src);
 
 		CopyBufferToTexture(srcBuffer, dstTexture, dstOffset);
 	}
@@ -96,10 +94,8 @@ namespace limbo::RHI
 
 	void CommandContext::CopyBufferToBuffer(Handle<Buffer> src, Handle<Buffer> dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset)
 	{
-		Buffer* srcBuffer = ResourceManager::Ptr->GetBuffer(src);
-		FAILIF(!srcBuffer);
-		Buffer* dstBuffer = ResourceManager::Ptr->GetBuffer(dst);
-		FAILIF(!dstBuffer);
+		Buffer* srcBuffer = RM_GET(src);
+		Buffer* dstBuffer = RM_GET(dst);
 
 		CopyBufferToBuffer(srcBuffer, dstBuffer, numBytes, srcOffset, dstOffset);
 	}
@@ -120,14 +116,14 @@ namespace limbo::RHI
 			InsertResourceBarrier(rt, D3D12_RESOURCE_STATE_RENDER_TARGET);
 			SubmitResourceBarriers();
 
-			Texture* pRenderTarget = GetTexture(rt);
+			Texture* pRenderTarget = RM_GET(rt);
 			m_CommandList->ClearRenderTargetView(pRenderTarget->UAVHandle[0].CpuHandle, glm::value_ptr(color), 0, nullptr);
 		}
 	}
 
 	void CommandContext::ClearDepthTarget(Handle<Texture> depthTarget, float depth, uint8 stencil)
 	{
-		Texture* dt = GetTexture(depthTarget);
+		Texture* dt = RM_GET(depthTarget);
 
 		D3D12_CLEAR_FLAGS flags = D3D12_CLEAR_FLAG_DEPTH;
 		if (stencil > 0)
@@ -138,8 +134,7 @@ namespace limbo::RHI
 
 	void CommandContext::SetVertexBuffer(Handle<Buffer> buffer)
 	{
-		ResourceManager* rm = ResourceManager::Ptr;
-		Buffer* vb = rm->GetBuffer(buffer);
+		Buffer* vb = RM_GET(buffer);
 		InsertResourceBarrier(vb, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 
 		D3D12_VERTEX_BUFFER_VIEW vbView = {
@@ -152,8 +147,7 @@ namespace limbo::RHI
 
 	void CommandContext::SetIndexBuffer(Handle<Buffer> buffer)
 	{
-		ResourceManager* rm = ResourceManager::Ptr;
-		Buffer* ib = rm->GetBuffer(buffer);
+		Buffer* ib = RM_GET(buffer);
 		InsertResourceBarrier(ib, D3D12_RESOURCE_STATE_INDEX_BUFFER);
 
 		D3D12_INDEX_BUFFER_VIEW ibView = {
@@ -218,14 +212,14 @@ namespace limbo::RHI
 		D3D12_CPU_DESCRIPTOR_HANDLE* depthDescriptor = nullptr;
 		if (depthTarget.IsValid())
 		{
-			Texture* pDepthTarget = GetTexture(depthTarget);
+			Texture* pDepthTarget = RM_GET(depthTarget);
 			depthDescriptor = &pDepthTarget->UAVHandle[0].CpuHandle;
 		}
 
 		TStaticArray<D3D12_CPU_DESCRIPTOR_HANDLE, MAX_RENDER_TARGETS> renderTargetDescriptors;
 		for (uint32 i = 0; i < renderTargets.GetSize(); ++i)
 		{
-			Texture* pRenderTarget = GetTexture(renderTargets[i]);
+			Texture* pRenderTarget = RM_GET(renderTargets[i]);
 			renderTargetDescriptors[i] = pRenderTarget->UAVHandle[0].CpuHandle;
 			InsertResourceBarrier(pRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		}
@@ -396,14 +390,14 @@ namespace limbo::RHI
 
 	void CommandContext::BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, Handle<Buffer> scratch, Handle<Buffer> result)
 	{
-		InsertResourceBarrier(GetBuffer(scratch), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+		InsertResourceBarrier(RM_GET(scratch), D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
 		SubmitResourceBarriers();
 
 		D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC desc = {};
 		desc.Inputs = inputs;
-		desc.ScratchAccelerationStructureData = GetBuffer(scratch)->Resource->GetGPUVirtualAddress();
-		desc.DestAccelerationStructureData = GetBuffer(result)->Resource->GetGPUVirtualAddress();
+		desc.ScratchAccelerationStructureData = RM_GET(scratch)->Resource->GetGPUVirtualAddress();
+		desc.DestAccelerationStructureData = RM_GET(result)->Resource->GetGPUVirtualAddress();
 		m_CommandList->BuildRaytracingAccelerationStructure(&desc, 0, nullptr);
 	}
 

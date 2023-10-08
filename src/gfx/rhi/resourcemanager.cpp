@@ -76,41 +76,6 @@ namespace limbo::RHI
 		return m_Textures.AllocateHandle(resource, spec);
 	}
 
-	RHI::Buffer* ResourceManager::GetBuffer(Handle<Buffer> buffer)
-	{
-		return m_Buffers.Get(buffer);
-	}
-
-	RHI::Shader* ResourceManager::GetShader(Handle<Shader> shader)
-	{
-		return m_Shaders.Get(shader);
-	}
-
-	RHI::Texture* ResourceManager::GetTexture(Handle<Texture> texture)
-	{
-		return m_Textures.Get(texture);
-	}
-
-	void ResourceManager::Map(Handle<Buffer> buffer, uint32 subresource, D3D12_RANGE* range)
-	{
-		Buffer* b = GetBuffer(buffer);
-		FAILIF(!b);
-		DX_CHECK(b->Resource->Map(subresource, range, &b->MappedData));
-	}
-
-	void ResourceManager::Unmap(Handle<Buffer> buffer, uint32 subresource, D3D12_RANGE* range)
-	{
-		Buffer* b = GetBuffer(buffer);
-		FAILIF(!b);
-		b->Resource->Unmap(subresource, range);
-	}
-
-	uint64 ResourceManager::GetTextureID(Handle<Texture> texture)
-	{
-		Texture* t = GetTexture(texture);
-		return t->m_SRVHandle.GPUHandle.ptr;
-	}
-
 	void ResourceManager::DestroyBuffer(Handle<Buffer> buffer, bool bImmediate)
 	{
 		if (bImmediate)

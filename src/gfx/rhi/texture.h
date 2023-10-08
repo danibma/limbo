@@ -61,6 +61,9 @@ namespace limbo::RHI
 		void CreateRTV();
 		void CreateDSV();
 
+		// Used for ImGui images
+		uint64 TextureID();
+
 		uint32 SRV() { return m_SRVHandle.Index; }
 
 		void CreateResource(const TextureSpec& spec);

@@ -81,14 +81,14 @@ namespace limbo::Gfx
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
-				RHI::GetTexture(m_UnblurredSSAOTexture)->UAVHandle[0]
+				RM_GET(m_UnblurredSSAOTexture)->UAVHandle[0]
 			};
 			RHI::BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
 
 			RHI::BindConstants(1, 0, sceneRenderer->Tweaks.SSAORadius);
 			RHI::BindConstants(1, 1, sceneRenderer->Tweaks.SSAOPower);
-			RHI::BindConstants(1, 2, RHI::GetTexture(positionsMap)->SRV());
-			RHI::BindConstants(1, 3, RHI::GetTexture(sceneDepthMap)->SRV());
+			RHI::BindConstants(1, 2, RM_GET(positionsMap)->SRV());
+			RHI::BindConstants(1, 3, RM_GET(sceneDepthMap)->SRV());
 
 			RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 
@@ -102,11 +102,11 @@ namespace limbo::Gfx
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
-				RHI::GetTexture(m_BlurredSSAOTexture)->UAVHandle[0]
+				RM_GET(m_BlurredSSAOTexture)->UAVHandle[0]
 			};
 			RHI::BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
 
-			RHI::BindConstants(1, 4, RHI::GetTexture(m_UnblurredSSAOTexture)->SRV());
+			RHI::BindConstants(1, 4, RM_GET(m_UnblurredSSAOTexture)->SRV());
 
 			RHI::Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
 			RHI::EndProfileEvent("SSAO Blur Texture");

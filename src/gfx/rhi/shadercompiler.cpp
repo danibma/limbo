@@ -22,7 +22,7 @@ namespace limbo::RHI::SC
             dxcUtils->CreateDefaultIncludeHandler(&includeHandler);
         }
 
-        Shader* pShader = ResourceManager::Ptr->GetShader(shader);
+        Shader* pShader = RM_GET(shader);
 
         // setup arguments
         std::string cpath = std::string("shaders/" + std::string(pShader->File));

@@ -74,7 +74,7 @@ namespace limbo::Gfx
 
 		uint32 NumMeshes() const { return (uint32)m_Meshes.size(); }
 
-		RHI::Buffer* GetGeometryBuffer() const { return GetBuffer(m_GeometryBuffer); }
+		RHI::Buffer* GetGeometryBuffer() const { return RM_GET(m_GeometryBuffer); }
 
 	private:
 		void ProcessNode(const cgltf_node* node);

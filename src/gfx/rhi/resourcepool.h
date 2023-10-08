@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <queue>
-#include <type_traits>
 
 namespace limbo::RHI
 {
@@ -14,6 +13,7 @@ namespace limbo::RHI
 	public:
 		Handle() : m_Index(0xFFFF), m_Generation(0) {}
 		bool IsValid() const { return m_Index != 0xFFFF; }
+		T* Get() const;
 
 		bool operator!=(const Handle& other)
 		{

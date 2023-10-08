@@ -170,4 +170,14 @@ namespace limbo::RHI
 				CreateSRV(Device::Ptr->GetDevice(), spec);
 		}
 	}
+
+	void Buffer::Map(uint32 subresource /*= 0*/, D3D12_RANGE* range /*= nullptr*/)
+	{
+		DX_CHECK(Resource->Map(subresource, range, &MappedData));
+	}
+
+	void Buffer::Unmap(uint32 subresource /*= 0*/, D3D12_RANGE* range /*= nullptr*/)
+	{
+		Resource->Unmap(subresource, range);
+	}
 }

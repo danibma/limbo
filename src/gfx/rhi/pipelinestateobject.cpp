@@ -160,7 +160,7 @@ namespace limbo::RHI
 		for (uint32 i = 0; i < initializer.m_LibsNum; ++i)
 		{
 			Handle<Shader> lib = initializer.m_Libs[i];
-			Shader* pLib = ResourceManager::Ptr->GetShader(lib);
+			Shader* pLib = RM_GET(lib);
 
 			D3D12_DXIL_LIBRARY_DESC* dxilLib = stream.ContentData.Allocate<D3D12_DXIL_LIBRARY_DESC>();
 			dxilLib->DXILLibrary = { pLib->Bytecode->GetBufferPointer(), pLib->Bytecode->GetBufferSize() };
@@ -218,7 +218,7 @@ namespace limbo::RHI
 
 		if (initializer.m_VertexShader.IsValid())
 		{
-			Shader* pShader = ResourceManager::Ptr->GetShader(initializer.m_VertexShader);
+			Shader* pShader = RM_GET(initializer.m_VertexShader);
 
 			vsBytecode = {
 				.pShaderBytecode = pShader->Bytecode->GetBufferPointer(),
@@ -228,7 +228,7 @@ namespace limbo::RHI
 
 		if (initializer.m_PixelShader.IsValid())
 		{
-			Shader* pShader = ResourceManager::Ptr->GetShader(initializer.m_PixelShader);
+			Shader* pShader = RM_GET(initializer.m_PixelShader);
 
 			psBytecode = {
 				.pShaderBytecode = pShader->Bytecode->GetBufferPointer(),
@@ -288,7 +288,7 @@ namespace limbo::RHI
 
 		m_RootSignature = initializer.m_RootSignature;
 
-		Shader* pShader = ResourceManager::Ptr->GetShader(initializer.m_ComputeShader);
+		Shader* pShader = RM_GET(initializer.m_ComputeShader);
 
 		D3D12_SHADER_BYTECODE shaderByteCode = {
 			.pShaderBytecode = pShader->Bytecode->GetBufferPointer(),

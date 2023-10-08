@@ -228,7 +228,7 @@ namespace limbo::RHI
 
 		{
 			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
-			Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
+			Texture* backbuffer = RM_GET(backBufferHandle);
 			context->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_PRESENT);
 
 			context->SubmitResourceBarriers();
@@ -264,13 +264,11 @@ namespace limbo::RHI
 		// Prepare frame render targets
 		{
 			Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
-			Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
-			FAILIF(!backbuffer);
+			Texture* backbuffer = RM_GET(backBufferHandle);
 			context->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 			Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
-			Texture* depthBackbuffer = ResourceManager::Ptr->GetTexture(depthBackBufferHandle);
-			FAILIF(!depthBackbuffer);
+			Texture* depthBackbuffer = RM_GET(depthBackBufferHandle);
 			context->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 			context->SubmitResourceBarriers();
@@ -320,13 +318,11 @@ namespace limbo::RHI
 		m_Swapchain->InitBackBuffers();
 
 		Handle<Texture> backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
-		Texture* backbuffer = ResourceManager::Ptr->GetTexture(backBufferHandle);
-		FAILIF(!backbuffer);
+		Texture* backbuffer = RM_GET(backBufferHandle);
 		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 		Handle<Texture> depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
-		Texture* depthBackbuffer = ResourceManager::Ptr->GetTexture(depthBackBufferHandle);
-		FAILIF(!depthBackbuffer);
+		Texture* depthBackbuffer = RM_GET(depthBackBufferHandle);
 		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
@@ -576,15 +572,15 @@ namespace limbo::RHI
 
 	void Device::GenerateMipLevels(Handle<Texture> texture)
 	{
-		Texture* t = ResourceManager::Ptr->GetTexture(texture);
-		FAILIF(!t);
+		Texture* pTexture = RM_GET(texture);
+		FAILIF(!pTexture);
 
-		bool bIsRGB = t->Spec.Format == Format::RGBA8_UNORM_SRGB;
+		bool bIsRGB = pTexture->Spec.Format == Format::RGBA8_UNORM_SRGB;
 
 		SetPipelineState(m_GenerateMipsPSO);
-		for (uint16 i = 1; i < t->Spec.MipLevels; ++i)
+		for (uint16 i = 1; i < pTexture->Spec.MipLevels; ++i)
 		{
-			uint2 outputMipSize = { t->Spec.Width , t->Spec.Height };
+			uint2 outputMipSize = { pTexture->Spec.Width , pTexture->Spec.Height };
 			outputMipSize.x >>= i;
 			outputMipSize.y >>= i;
 			float2 texelSize = { 1.0f / outputMipSize.x, 1.0f / outputMipSize.y };
@@ -592,18 +588,17 @@ namespace limbo::RHI
 			BindConstants(1, 0, texelSize);
 			BindConstants(1, 2, bIsRGB ? 1 : 0);
 
-			Texture* pBaseTexture = GetTexture(texture);
 			DescriptorHandle srvHandles = m_GlobalHeap->AllocateTemp();
-			CreateSRV(pBaseTexture, srvHandles, i - 1);
+			CreateSRV(pTexture, srvHandles, i - 1);
 			BindConstants(1, 3, srvHandles.Index);
 
-			DescriptorHandle uavHandles[] = { GetTexture(texture)->UAVHandle[i] };
+			DescriptorHandle uavHandles[] = { pTexture->UAVHandle[i] };
 			BindTempDescriptorTable(0, uavHandles, 1);
 			Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
-			GetCommandContext(ContextType::Direct)->InsertUAVBarrier(t);
+			GetCommandContext(ContextType::Direct)->InsertUAVBarrier(pTexture);
 		}
 
-		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, t->Spec.MipLevels - 1);
+		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, pTexture->Spec.MipLevels - 1);
 		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
 	}
 

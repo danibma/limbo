@@ -247,7 +247,7 @@ namespace limbo::Gfx
 		RHI::GenerateMipLevels(texture);
 		m_Textures.push_back(texture);
 
-		RHI::Texture* t = RHI::ResourceManager::Ptr->GetTexture(texture);
+		RHI::Texture* t = RM_GET(texture);
 		FAILIF(!t, -1);
 		return t->SRV();
 	}
@@ -320,7 +320,7 @@ namespace limbo::Gfx
 			.ByteSize = bufferSize,
 			.Flags = RHI::BufferUsage::Byte | RHI::BufferUsage::ShaderResourceView
 		});
-		D3D12_GPU_VIRTUAL_ADDRESS geoBufferAddress = GetBuffer(m_GeometryBuffer)->Resource->GetGPUVirtualAddress();
+		D3D12_GPU_VIRTUAL_ADDRESS geoBufferAddress = RM_GET(m_GeometryBuffer)->Resource->GetGPUVirtualAddress();
 
 		RHI::Handle<RHI::Buffer> upload = RHI::CreateBuffer({
 			.DebugName = debugName.c_str(),
@@ -341,8 +341,9 @@ namespace limbo::Gfx
 			offset += streamSize;
 		};
 
-		Map(upload);
-		uint8* data = (uint8*)GetMappedData(upload);
+		RHI::Buffer* pUploadBuffer = RM_GET(upload);
+		pUploadBuffer->Map();
+		uint8* data = (uint8*)pUploadBuffer->MappedData;
 		uint64 dataOffset = 0;
 		for (size_t i = 0; i < PrimitivesStreams.size(); ++i)
 		{

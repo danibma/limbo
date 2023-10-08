@@ -107,7 +107,7 @@ namespace limbo::Gfx
 		ImGui::Begin("Shadow Map Debug", &UI::Globals::bDebugShadowMaps);
 		ImGui::Checkbox("Show Shadow Cascades", &UI::Globals::bShowShadowCascades);
 		ImGui::SliderInt("Shadow Cascade", &UI::Globals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
-		ImGui::Image((ImTextureID)RHI::GetTextureID(m_DepthShadowMaps[UI::Globals::ShadowCascadeIndex]), ImVec2(512, 512));
+		ImGui::Image((ImTextureID)RM_GET(m_DepthShadowMaps[UI::Globals::ShadowCascadeIndex])->TextureID(), ImVec2(512, 512));
 		ImGui::End();
 	}
 
@@ -202,7 +202,7 @@ namespace limbo::Gfx
 			// Store split distance and matrix in cascade
 			m_ShadowData.SplitDepth[cascade]    = (camera->NearZ + splitDist * clipRange) * -1.0f;
 			m_ShadowData.LightViewProj[cascade] = lightOrthoMatrix * lightViewMatrix;
-			m_ShadowData.ShadowMap[cascade]		= GetTexture(m_DepthShadowMaps[cascade])->SRV();
+			m_ShadowData.ShadowMap[cascade]		= RM_GET(m_DepthShadowMaps[cascade])->SRV();
 
 			lastSplitDist = cascadeSplits[cascade];
 		}

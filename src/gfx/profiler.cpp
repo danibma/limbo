@@ -127,7 +127,7 @@ namespace limbo
 
 		// Resolve the data
 		const uint64 dstOffset = ((RHI::Device::Ptr->GetCurrentFrameIndex() * MaxProfiles * 2) + startQueryIdx) * sizeof(uint64);
-		cmd->Get()->ResolveQueryData(m_QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, startQueryIdx, 2, RHI::GetBuffer(m_Readback)->Resource.Get(), dstOffset);
+		cmd->Get()->ResolveQueryData(m_QueryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, startQueryIdx, 2, RM_GET(m_Readback)->Resource.Get(), dstOffset);
 	}
 
 	void GPUProfiler::EndFrame()
@@ -140,8 +140,9 @@ namespace limbo
 		RHI::Device::Ptr->GetCommandQueue(RHI::ContextType::Direct)->GetTimestampFrequency(&gpuFrequency);
 
 		const uint64* frameQueryData = nullptr;
-		RHI::Map(m_Readback);
-		const uint64* queryData = (uint64*)RHI::GetMappedData(m_Readback);
+		RHI::Buffer* pReadbackBuffer = RM_GET(m_Readback);
+		pReadbackBuffer->Map();
+		const uint64* queryData = (uint64*)pReadbackBuffer->MappedData;
 		frameQueryData = queryData + (RHI::Device::Ptr->GetCurrentFrameIndex() * MaxProfiles * 2);
 
 		BEGIN_UI()
