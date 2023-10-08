@@ -56,9 +56,9 @@ namespace limbo::RHI
 		void ForceDeletionQueue();
 
 	private:
-		Pool<Buffer,  1<<14>		m_Buffers;
-		Pool<Texture, 1<<10>		m_Textures;
-		Pool<Shader,    128>		m_Shaders;
+		Pool<Buffer,  1<<7>		m_Buffers;
+		Pool<Texture, 1<<7>	    m_Textures;
+		Pool<Shader,    128>	m_Shaders;
 
 		bool						m_bOnShutdown = false;
 

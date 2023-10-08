@@ -26,17 +26,17 @@ namespace limbo::RHI
 		uint16 m_Index;
 		uint16 m_Generation;
 
-		template<typename T1, size_t MaxSize> friend class Pool;
+		template<typename T1, uint16 InitialSize> friend class Pool;
 	};
 
-	template<typename HandleType, size_t MaxSize>
+	template<typename HandleType, uint16 InitialSize>
 	class Pool
 	{
 	public:
 		Pool()
 		{
-			m_Objects.resize(MAX_SIZE);
-			for (uint16 i = 0; i < MAX_SIZE; ++i)
+			m_Objects = (Object*)malloc(m_Size * sizeof(Object));
+			for (uint16 i = 0; i < m_Size; ++i)
 			{
 				m_FreeSlots.push(i);
 				m_Objects[i].Data = new HandleType();
@@ -45,17 +45,18 @@ namespace limbo::RHI
 
 		~Pool()
 		{
-			for (uint16 i = 0; i < MAX_SIZE; ++i)
+			for (uint16 i = 0; i < m_Size; ++i)
 				free(m_Objects[i].Data);
+			free(m_Objects);
 		}
 
 		template<class... Args>
 		Handle<HandleType> AllocateHandle(Args&&... args)
 		{
-			ensure(m_FreeSlots.size() > 0);
+			if (m_FreeSlots.size() == 0) Grow();
 			uint16 freeSlot = m_FreeSlots.front();
 			m_FreeSlots.pop();
-			ensure(freeSlot < MAX_SIZE);
+			ensure(freeSlot < m_Size);
 			Object& obj = m_Objects[freeSlot];
 			new(obj.Data) HandleType(std::forward<Args>(args)...);
 			return Handle<HandleType>(freeSlot, obj.Generation);
@@ -65,9 +66,25 @@ namespace limbo::RHI
 		{
 			ensure(handle.IsValid());
 			m_FreeSlots.push(handle.m_Index);
-			ensure(m_FreeSlots.size() <= MAX_SIZE);
+			ensure(m_FreeSlots.size() <= m_Size);
 			m_Objects[handle.m_Index].Data->~HandleType();
 			++m_Objects[handle.m_Index].Generation;
+		}
+
+		void Grow()
+		{
+			uint16 newSize = m_Size + (m_Size >> 1);
+			LB_WARN("Growing '%s' resource pool from %d to %d", typeid(HandleType).name(), m_Size, newSize);
+			Object* newObjects = (Object*)malloc(newSize * sizeof(Object));
+			memcpy(newObjects, m_Objects, m_Size * sizeof(Object));
+			for (uint16 i = m_Size; i < newSize; ++i)
+			{
+				m_FreeSlots.push(i);
+				newObjects[i].Data = new HandleType();
+			}
+			free(m_Objects);
+			m_Objects = newObjects;
+			m_Size = newSize;
 		}
 
 		HandleType* Get(Handle<HandleType> handle)
@@ -81,12 +98,12 @@ namespace limbo::RHI
 
 		uint16 GetSize()
 		{
-			return MAX_SIZE;
+			return m_Size;
 		}
 
 		bool IsEmpty()
 		{
-			return m_Objects.size() == m_FreeSlots.size();
+			return m_Size == (uint16)m_FreeSlots.size();
 		}
 
 	private:
@@ -96,9 +113,9 @@ namespace limbo::RHI
 			uint16		Generation;
 		};
 
-		std::vector<Object> m_Objects;
+		Object*			   m_Objects;
 		std::queue<uint16> m_FreeSlots;
 
-		const uint16 MAX_SIZE = MaxSize;
+		uint16 m_Size = InitialSize;
 	};
 }
