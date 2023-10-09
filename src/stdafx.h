@@ -5,7 +5,6 @@
 #include <queue>
 #include <vector>
 #include <unordered_map>
-#include <functional>
 #include <filesystem>
 
 // Third Party

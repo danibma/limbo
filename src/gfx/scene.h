@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional> // for std::function
 #include <cgltf/cgltf.h>
 
 #include "core/math.h"
@@ -42,6 +41,8 @@ namespace limbo::Gfx
 
 		const char*					Name;
 	};
+	DECLARE_DELEGATE(TOnDrawMesh, const Mesh&);
+	DECLARE_DELEGATE(TOnDrawMeshNoConst, Mesh&);
 
 	class Scene
 	{
@@ -68,8 +69,8 @@ namespace limbo::Gfx
 		static Scene* Load(const char* path);
 		void Destroy();
 
-		void IterateMeshes(const std::function<void(const Mesh& mesh)>& drawFunction) const;
-		void IterateMeshesNoConst(const std::function<void(Mesh& mesh)>& drawFunction);
+		void IterateMeshes(TOnDrawMesh drawDelegate) const;
+		void IterateMeshesNoConst(TOnDrawMeshNoConst drawDelegate);
 
 		uint32 NumMeshes() const { return (uint32)m_Meshes.size(); }
 

@@ -85,13 +85,13 @@ namespace limbo::Gfx
 
 			for (const Scene* scene : sceneRenderer->GetScenes())
 			{
-				scene->IterateMeshes([&](const Mesh& mesh)
+				scene->IterateMeshes(TOnDrawMesh::CreateLambda([&](const Mesh& mesh)
 				{
 					RHI::BindConstants(2, 1, mesh.InstanceID);
 
 					RHI::SetIndexBufferView(mesh.IndicesLocation);
 					RHI::DrawIndexed((uint32)mesh.IndexCount);
-				});
+				}));
 			}
 			RHI::EndProfileEvent(profileName.c_str());
 		}

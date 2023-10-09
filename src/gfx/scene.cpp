@@ -65,10 +65,10 @@ namespace limbo::Gfx
 		for (size_t i = 0; i < data->textures_count; ++i)
 			LoadTexture(&data->textures[i]);
 #else
-		Core::JobSystem::ExecuteMany((uint32)data->textures_count, Math::Max((uint32)data->textures_count / Core::JobSystem::ThreadCount(), 1u), [this, data](Core::JobDispatchArgs args)
+		Core::JobSystem::ExecuteMany((uint32)data->textures_count, Math::Max((uint32)data->textures_count / Core::JobSystem::ThreadCount(), 1u), Core::TOnJobSystemExecuteMany::CreateLambda([this, data](Core::JobDispatchArgs args)
 		{
 			LoadTexture(&data->textures[args.jobIndex]);
-		});
+		}));
 		Core::JobSystem::WaitIdle();
 #endif
 
@@ -117,16 +117,16 @@ namespace limbo::Gfx
 		DestroyBuffer(m_GeometryBuffer);
 	}
 
-	void Scene::IterateMeshes(const std::function<void(const Mesh& mesh)>& drawFunction) const
+	void Scene::IterateMeshes(TOnDrawMesh drawDelegate) const
 	{
 		for (const Mesh& m : m_Meshes)
-			drawFunction(m);
+			drawDelegate.ExecuteIfBound(m);
 	}
 
-	void Scene::IterateMeshesNoConst(const std::function<void(Mesh& mesh)>& drawFunction)
+	void Scene::IterateMeshesNoConst(TOnDrawMeshNoConst drawDelegate)
 	{
 		for (Mesh& m : m_Meshes)
-			drawFunction(m);
+			drawDelegate.ExecuteIfBound(m);
 	}
 
 	void Scene::ProcessNode(const cgltf_node* node)

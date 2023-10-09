@@ -30,7 +30,7 @@ namespace limbo::RHI
 		for (Gfx::Scene* scene : scenes)
 		{
 			instances.reserve(instances.capacity() + scene->NumMeshes());
-			scene->IterateMeshesNoConst([&](Gfx::Mesh& mesh)
+			scene->IterateMeshesNoConst(Gfx::TOnDrawMeshNoConst::CreateLambda([&](Gfx::Mesh& mesh)
 			{
 				if (!mesh.BLAS.IsValid())
 				{
@@ -87,7 +87,7 @@ namespace limbo::RHI
 				instance.InstanceContributionToHitGroupIndex = 0;
 				instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 				instance.AccelerationStructure = pResult->Resource->GetGPUVirtualAddress();
-			});
+			}));
 		}
 
 		if (!m_InstancesBuffer.IsValid() || bUpdateBLAS)

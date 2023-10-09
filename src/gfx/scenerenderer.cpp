@@ -31,13 +31,13 @@ namespace limbo::Gfx
 		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
 			EnvironmentMaps.emplace_back(entry.path());
 
-		Core::JobSystem::Execute([this]()
+		Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([this]()
 		{
 			m_SSAO = std::make_unique<SSAO>();
 			m_RTAO = std::make_unique<RTAO>();
 			m_PathTracing = std::make_unique<PathTracing>();
 			m_ShadowMapping = std::make_unique<ShadowMapping>();
-		});
+		}));
 
 		//LoadNewScene("assets/models/cornell_box.glb");
 		//LoadNewScene("assets/models/vulkanscene_shadow.gltf");
@@ -195,13 +195,13 @@ namespace limbo::Gfx
 		RHI::BindTempConstantBuffer(1, SceneInfo);
 		for (Scene* scene : m_Scenes)
 		{
-			scene->IterateMeshes([&](const Mesh& mesh)
+			scene->IterateMeshes(TOnDrawMesh::CreateLambda([&](const Mesh& mesh)
 			{
 				RHI::BindConstants(0, 0, mesh.InstanceID);
 
 				RHI::SetIndexBufferView(mesh.IndicesLocation);
 				RHI::DrawIndexed((uint32)mesh.IndexCount);
-			});
+			}));
 		}
 		RHI::EndProfileEvent("Geometry Pass");
 	}
@@ -231,12 +231,12 @@ namespace limbo::Gfx
 
 		RHI::BindConstants(1, 0, RM_GET(m_EnvironmentCubemap)->SRV());
 
-		m_SkyboxCube->IterateMeshes([&](const Mesh& mesh)
+		m_SkyboxCube->IterateMeshes(TOnDrawMesh::CreateLambda([&](const Mesh& mesh)
 		{
 			RHI::SetVertexBufferView(mesh.PositionsLocation);
 			RHI::SetIndexBufferView(mesh.IndicesLocation);
 			RHI::DrawIndexed((uint32)mesh.IndexCount);
-		});
+		}));
 		RHI::EndProfileEvent("Render Skybox");
 	}
 
@@ -377,7 +377,7 @@ namespace limbo::Gfx
 		uint32 instanceID = 0;
 		for (Scene* scene : m_Scenes)
 		{
-			scene->IterateMeshesNoConst([&](Mesh& mesh)
+			scene->IterateMeshesNoConst(TOnDrawMeshNoConst::CreateLambda([&](Mesh& mesh)
 			{
 				mesh.InstanceID = instanceID;
 				Instance& instance = instances.emplace_back();
@@ -389,7 +389,7 @@ namespace limbo::Gfx
 				instance.IndicesOffset	 = mesh.IndicesLocation.Offset;
 				instance.BufferIndex	 = scene->GetGeometryBuffer()->CBVHandle.Index;
 				instanceID++;
-			});
+			}));
 
 			appendArrays(materials, scene->Materials);
 		}

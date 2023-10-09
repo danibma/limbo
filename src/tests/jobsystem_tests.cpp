@@ -36,10 +36,10 @@ TEST_CASE("jobsystem - Execute() speed")
     // Execute test
     {
         limbo::Core::Timer t;
-        Core::JobSystem::Execute([Spin] { Spin(100); });
-        Core::JobSystem::Execute([Spin] { Spin(100); });
-        Core::JobSystem::Execute([Spin] { Spin(100); });
-        Core::JobSystem::Execute([Spin] { Spin(100); });
+        Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([Spin] { Spin(100); }));
+        Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([Spin] { Spin(100); }));
+        Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([Spin] { Spin(100); }));
+        Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([Spin] { Spin(100); }));
         Core::JobSystem::WaitIdle();
         LB_LOG("MT Spins executed in: %.3fms", t.ElapsedMilliseconds());
     }
@@ -82,10 +82,10 @@ TEST_CASE("jobsystem - ExecuteMany() speed")
 
         constexpr uint32 groupSize = 10000;
 
-        Core::JobSystem::ExecuteMany(dataCount, groupSize, [dataSet](Core::JobDispatchArgs args)
+        Core::JobSystem::ExecuteMany(dataCount, groupSize, Core::TOnJobSystemExecuteMany::CreateLambda([dataSet](Core::JobDispatchArgs args)
         {
             dataSet[args.jobIndex].Compute(args.jobIndex);
-        });
+        }));
         Core::JobSystem::WaitIdle();
 
         LB_LOG("ExecuteMany() with %d jobs per thread executed in: %.3fms", groupSize, t.ElapsedMilliseconds());

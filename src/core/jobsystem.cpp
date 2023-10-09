@@ -9,7 +9,7 @@
 namespace limbo::Core
 {
     uint32                                  SNumThreads = 0;
-    RingBuffer<std::function<void()>, 256>  SJobPool;
+    RingBuffer<TOnJobSystemExecute, 256>    SJobPool;
     std::condition_variable                 SWakeCondition;
     std::mutex                              SWakeMutex;
     uint64                                  SCurrentValue = 0;
@@ -26,14 +26,14 @@ namespace limbo::Core
         {
             std::thread worker([]()
             {
-                std::function<void()> job;
+                TOnJobSystemExecute job;
 
                 // This is the infinite loop that a worker thread will do 
                 while (true)
                 {
                     if (SJobPool.PopFront(job)) // try to grab a job from the jobPool queue
                     {
-                        job();
+                        job.ExecuteIfBound();
                         SCompletedValue.fetch_add(1);
                     }
                     else
@@ -60,17 +60,17 @@ namespace limbo::Core
         }
     }
 
-    void JobSystem::Execute(const std::function<void()>& job)
+    void JobSystem::Execute(TOnJobSystemExecute jobDelegate)
     {
         SCurrentValue += 1;
 
         // Try to push a new job until it is pushed successfully
-        while (!SJobPool.PushBack(job)) { WaitUntilFree(); }
+        while (!SJobPool.PushBack(jobDelegate)) { WaitUntilFree(); }
 
         SWakeCondition.notify_one();
     }
 
-    void JobSystem::ExecuteMany(uint32 jobCount, uint32 groupSize, const std::function<void(JobDispatchArgs)>& job)
+    void JobSystem::ExecuteMany(uint32 jobCount, uint32 groupSize, TOnJobSystemExecuteMany jobDelegate)
     {
         if (jobCount == 0 || groupSize == 0)
             return;
@@ -83,7 +83,7 @@ namespace limbo::Core
         for (uint32 groupIndex = 0; groupIndex < threadsToUse; ++groupIndex)
         {
             // For each group, generate one real job
-            auto jobGroup = [jobCount, groupSize, job, groupIndex]()
+            TOnJobSystemExecute jobGroup = TOnJobSystemExecute::CreateLambda([jobCount, groupSize, jobDelegate, groupIndex]()
         	{
                 // Calculate the current group's offset into the jobs
                 const uint32 groupJobOffset = groupIndex * groupSize;
@@ -96,9 +96,9 @@ namespace limbo::Core
                 for (uint32 i = groupJobOffset; i < groupJobEnd; ++i)
                 {
                     args.jobIndex = i;
-                    job(args);
+                    jobDelegate.ExecuteIfBound(args);
                 }
-            };
+            });
 
             // Try to push a new job until it is pushed successfully:
             while (!SJobPool.PushBack(jobGroup)) { WaitUntilFree(); }
