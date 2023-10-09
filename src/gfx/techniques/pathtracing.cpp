@@ -3,6 +3,7 @@
 
 #include "gfx/scenerenderer.h"
 #include "gfx/rhi/resourcemanager.h"
+#include "gfx/rhi/commandcontext.h"
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/shaderbindingtable.h"
@@ -64,24 +65,24 @@ namespace limbo::Gfx
 		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
-	void PathTracing::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
+	void PathTracing::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
 	{
-		RHI::BeginProfileEvent("Path Tracing");
-		RHI::SetPipelineState(m_PSO);
+		cmd->BeginProfileEvent("Path Tracing");
+		cmd->SetPipelineState(m_PSO);
 
 		RHI::ShaderBindingTable SBT(m_PSO);
 		SBT.BindRayGen(L"RayGen");
 		SBT.BindMissShader(L"MaterialMiss");
 		SBT.BindHitGroup(L"MaterialHitGroup");
 
-		RHI::BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
+		cmd->BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 
 		RHI::DescriptorHandle uavHandles[] = { RM_GET(m_FinalTexture)->UAVHandle[0] };
-		RHI::BindTempDescriptorTable(1, uavHandles, 1);
+		cmd->BindTempDescriptorTable(1, uavHandles, 1);
 
-		RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
-		RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
-		RHI::EndProfileEvent("Path Tracing");
+		cmd->BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
+		cmd->DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+		cmd->EndProfileEvent("Path Tracing");
 	}
 
 	RHI::TextureHandle PathTracing::GetFinalTexture() const

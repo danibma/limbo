@@ -5,6 +5,8 @@
 #include "gfx/rhi/texture.h"
 #include "gfx/rhi/rootsignature.h"
 
+namespace limbo::RHI { class CommandContext; }
+
 namespace limbo::Gfx
 {
 	class SceneRenderer;
@@ -24,7 +26,7 @@ namespace limbo::Gfx
 		explicit SSAO();
 		~SSAO();
 
-		void Render(SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap);
+		void Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap);
 
 		RHI::TextureHandle GetBlurredTexture() const;
 	};

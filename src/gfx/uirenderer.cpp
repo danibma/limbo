@@ -1,11 +1,20 @@
 ﻿#include "stdafx.h"
 #include "uirenderer.h"
 
+#include <imgui/imgui.cpp>
+#include <imgui/imgui_draw.cpp>
+#include <imgui/imgui_demo.cpp>
+#include <imgui/imgui_tables.cpp>
+#include <imgui/imgui_widgets.cpp>
+#include <imgui/backends/imgui_impl_dx12.cpp>
+#include <imgui/backends/imgui_impl_glfw.cpp>
+
 #include "profiler.h"
 #include "scenerenderer.h"
 #include "core/window.h"
 #include "rhi/device.h"
 #include "core/paths.h"
+#include "core/utils.h"
 
 namespace limbo::UI
 {

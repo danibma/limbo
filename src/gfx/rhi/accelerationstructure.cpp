@@ -1,10 +1,8 @@
 ﻿#include "stdafx.h"
 #include "accelerationstructure.h"
-
-#include <glm/gtc/type_ptr.inl>
-
 #include "device.h"
 #include "gfx/scene.h"
+#include "commandcontext.h"
 
 namespace limbo::RHI
 {
@@ -18,12 +16,12 @@ namespace limbo::RHI
 			DestroyBuffer(m_InstancesBuffer);
 	}
 
-	void AccelerationStructure::Build(const std::vector<Gfx::Scene*>& scenes)
+	void AccelerationStructure::Build(CommandContext* cmd, const std::vector<Gfx::Scene*>& scenes)
 	{
 		Device* device = Device::Ptr;
 		ID3D12Device5* d3ddevice = device->GetDevice();
 
-		BeginProfileEvent("Build Acceleration Structure");
+		cmd->BeginProfileEvent("Build Acceleration Structure");
 
 		bool bUpdateBLAS = false;
 		std::vector<D3D12_RAYTRACING_INSTANCE_DESC> instances;
@@ -70,8 +68,8 @@ namespace limbo::RHI
 						.Flags = BufferUsage::AccelerationStructure | BufferUsage::ShaderResourceView,
 					});
 
-					GetCommandContext()->BuildRaytracingAccelerationStructure(ASInputs, blasScratch, blasResult);
-					GetCommandContext()->InsertUAVBarrier(blasResult);
+					cmd->BuildRaytracingAccelerationStructure(ASInputs, blasScratch, blasResult);
+					cmd->InsertUAVBarrier(blasResult);
 					DestroyBuffer(blasScratch);
 					mesh.BLAS = blasResult;
 					bUpdateBLAS = true;
@@ -81,7 +79,7 @@ namespace limbo::RHI
 
 				// Describe the top-level acceleration structure instance(s).
 				D3D12_RAYTRACING_INSTANCE_DESC& instance = instances.emplace_back();
-				memcpy(instance.Transform, glm::value_ptr(glm::transpose(mesh.Transform)), sizeof(float3x4));
+				memcpy(instance.Transform, &glm::transpose(mesh.Transform)[0], sizeof(float3x4));
 				instance.InstanceID = 0;
 				instance.InstanceMask = 1;
 				instance.InstanceContributionToHitGroupIndex = 0;
@@ -138,10 +136,10 @@ namespace limbo::RHI
 		}
 
 		// build top level acceleration structure
-		GetCommandContext()->BuildRaytracingAccelerationStructure(TLASInput, m_ScratchBuffer, m_TLAS);
-		GetCommandContext()->InsertUAVBarrier(m_TLAS);
+		cmd->BuildRaytracingAccelerationStructure(TLASInput, m_ScratchBuffer, m_TLAS);
+		cmd->InsertUAVBarrier(m_TLAS);
 
-		EndProfileEvent("Build Acceleration Structure");
+		cmd->EndProfileEvent("Build Acceleration Structure");
 	}
 
 	Buffer* AccelerationStructure::GetTLASBuffer() const

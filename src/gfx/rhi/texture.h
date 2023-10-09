@@ -17,8 +17,8 @@ namespace limbo::RHI
 
 	struct TextureSpec
 	{
-		uint32					Width;
-		uint32					Height;
+		uint32					Width = 0;
+		uint32					Height = 0;
 		uint16					MipLevels = 1;
 		std::string				DebugName;
 		TextureUsage			Flags = TextureUsage::None;

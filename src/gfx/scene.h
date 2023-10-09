@@ -1,11 +1,13 @@
 #pragma once
 
-#include <cgltf/cgltf.h>
-
 #include "core/math.h"
 #include "gfx/shaderinterop.h"
-
 #include "rhi/resourcemanager.h"
+#include "rhi/definitions.h"
+
+#include <cgltf/cgltf.h>
+#include <CppDelegates/Delegates.h>
+#include <mutex>
 
 struct cgltf_node;
 struct cgltf_scene;

@@ -1,8 +1,11 @@
 #include "stdafx.h"
 #include "scene.h"
 #include "core/paths.h"
-#include "gfx/rhi/device.h"
+#include "gfx/rhi/commandcontext.h"
 #include "gfx/shaderinterop.h"
+#include "core/jobsystem.h"
+#include "rhi/resourcemanager.h"
+#include "core/timer.h"
 
 #pragma warning(push)
 #pragma warning(disable: 4996) // disable _CRT_SECURE_NO_WARNINGS
@@ -10,13 +13,8 @@
 #include <cgltf/cgltf.h>
 #pragma warning(pop)
 
-#include <glm/gtc/type_ptr.hpp>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-
-#include "core/jobsystem.h"
-#include "rhi/resourcemanager.h"
 
 namespace limbo::Gfx
 {
@@ -157,13 +155,13 @@ namespace limbo::Gfx
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "Albedo");
 				material.AlbedoIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM_SRGB);
-				material.AlbedoFactor = glm::make_vec4(workflow.base_color_factor);
+				material.AlbedoFactor = float4(workflow.base_color_factor[0], workflow.base_color_factor[1], workflow.base_color_factor[2], workflow.base_color_factor[3]);
 			}
 			{
-				std::string debugName		 = std::format(" Material({}) {}", index, "MetallicRoughness");
+				std::string debugName = std::format(" Material({}) {}", index, "MetallicRoughness");
 				material.RoughnessMetalIndex = CreateTextureResource(&workflow.metallic_roughness_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM);
-				material.RoughnessFactor	 = workflow.roughness_factor;
-				material.MetallicFactor		 = workflow.metallic_factor;
+				material.RoughnessFactor = workflow.roughness_factor;
+				material.MetallicFactor = workflow.metallic_factor;
 			}
 		}
 		else
@@ -173,13 +171,13 @@ namespace limbo::Gfx
 
 		{
 			std::string debugName = std::format(" Material({}) {}", index, "Normal");
-			material.NormalIndex  = CreateTextureResource(&cgltfMaterial->normal_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM);
+			material.NormalIndex = CreateTextureResource(&cgltfMaterial->normal_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM);
 		}
 
 		{
 			std::string debugName   = std::format(" Material({}) {}", index, "Emissive");
 			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM_SRGB);
-			material.EmissiveFactor = glm::make_vec3(cgltfMaterial->emissive_factor);
+			material.EmissiveFactor = float3(cgltfMaterial->emissive_factor[0], cgltfMaterial->emissive_factor[1], cgltfMaterial->emissive_factor[2]);
 		}
 
 		{
@@ -244,7 +242,7 @@ namespace limbo::Gfx
 			.InitialData = textureData.Data
 		});
 
-		RHI::GenerateMipLevels(texture);
+		RHI::CommandContext::GetCommandContext()->GenerateMipLevels(texture);
 		m_Textures.push_back(texture);
 
 		RHI::Texture* t = RM_GET(texture);
@@ -366,8 +364,8 @@ namespace limbo::Gfx
 			m_Meshes[i].VertexCount = PrimitivesStreams[i].PositionStream.size();
 		}
 
-		CopyBufferToBuffer(upload, m_GeometryBuffer, bufferSize);
-		RHI::GetCommandContext()->InsertResourceBarrier(m_GeometryBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
+		RHI::CommandContext::GetCommandContext()->CopyBufferToBuffer(upload, m_GeometryBuffer, bufferSize);
+		RHI::CommandContext::GetCommandContext()->InsertResourceBarrier(m_GeometryBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
 		DestroyBuffer(upload);
 	}
 }

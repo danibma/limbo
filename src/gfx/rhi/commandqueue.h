@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "core/refcountptr.h"
+#include "definitions.h"
 
 namespace limbo::RHI
 {

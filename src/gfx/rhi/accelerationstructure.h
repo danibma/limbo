@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include "buffer.h"
+
+#include "resourcemanager.h"
 
 namespace limbo::Gfx
 {
@@ -7,6 +8,7 @@ namespace limbo::Gfx
 }
 namespace limbo::RHI
 {
+	class CommandContext;
 	class AccelerationStructure
 	{
 	private:
@@ -18,7 +20,7 @@ namespace limbo::RHI
 		AccelerationStructure() = default;
 		~AccelerationStructure();
 
-		void Build(const std::vector<Gfx::Scene*>& scenes);
+		void Build(CommandContext* cmd, const std::vector<Gfx::Scene*>& scenes);
 
 		Buffer* GetTLASBuffer() const;
 	};

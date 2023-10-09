@@ -1,16 +1,12 @@
 ﻿#include "stdafx.h"
 #include "commandcontext.h"
-
-#include <glm/gtc/type_ptr.inl>
-
+#include "resourcemanager.h"
 #include "accelerationstructure.h"
 #include "commandqueue.h"
-#include "descriptorheap.h"
-#include "rootsignature.h"
-#include "gfx/gfx.h"
 #include "device.h"
 #include "ringbufferallocator.h"
-#include "pipelinestateobject.h"
+#include "core/utils.h"
+#include "gfx/profiler.h"
 
 namespace limbo::RHI
 {
@@ -117,7 +113,7 @@ namespace limbo::RHI
 			SubmitResourceBarriers();
 
 			Texture* pRenderTarget = RM_GET(rt);
-			m_CommandList->ClearRenderTargetView(pRenderTarget->UAVHandle[0].CpuHandle, glm::value_ptr(color), 0, nullptr);
+			m_CommandList->ClearRenderTargetView(pRenderTarget->UAVHandle[0].CpuHandle, &color.x, 0, nullptr);
 		}
 	}
 
@@ -247,7 +243,7 @@ namespace limbo::RHI
 			m_CommandList->SetComputeRootSignature(pRS->Get());
 	}
 
-	void CommandContext::BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)
+	void CommandContext::BindTempDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)
 	{
 		constexpr uint64 MaxBindCount = 16;
 		constexpr uint32 DescriptorCopyRanges[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
@@ -422,5 +418,25 @@ namespace limbo::RHI
 	void CommandContext::ScopedEvent(const char* name, uint64 color)
 	{
 		PIXScopedEvent(m_CommandList.Get(), color, name);
+	}
+
+	void CommandContext::BeginProfileEvent(const char* name, uint64 color /*= 0*/)
+	{
+		PROFILE_BEGIN(this, name);
+	}
+
+	void CommandContext::EndProfileEvent(const char* name)
+	{
+		PROFILE_END(this, name);
+	}
+
+	void CommandContext::GenerateMipLevels(TextureHandle texture)
+	{
+		Device::Ptr->GenerateMipLevels(texture);
+	}
+
+	CommandContext* CommandContext::GetCommandContext(ContextType type /*= ContextType::Direct*/)
+	{
+		return Device::Ptr->GetCommandContext(type);
 	}
 }

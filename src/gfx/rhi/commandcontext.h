@@ -2,8 +2,8 @@
 
 #include "resourcemanager.h"
 #include "shaderbindingtable.h"
+#include "descriptorheap.h"
 #include "core/array.h"
-#include "pipelinestateobject.h"
 
 namespace limbo::RHI
 {
@@ -83,11 +83,15 @@ namespace limbo::RHI
 		void CopyTextureToBackBuffer(TextureHandle texture);
 		void CopyBufferToTexture(BufferHandle src, TextureHandle dst, uint64 dstOffset = 0);
 		void CopyBufferToTexture(Buffer* src, Texture* dst, uint64 dstOffset = 0);
-		void CopyBufferToBuffer(BufferHandle src, BufferHandle dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+		void CopyBufferToBuffer(BufferHandle src, BufferHandle dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0);
 		void CopyBufferToBuffer(Buffer* src, Buffer* dst, uint64 numBytes, uint64 srcOffset, uint64 dstOffset);
+
+		void GenerateMipLevels(TextureHandle texture);
 
 		void BeginEvent(const char* name, uint64 color = 0);
 		void EndEvent();
+		void BeginProfileEvent(const char* name, uint64 color = 0);
+		void EndProfileEvent(const char* name);
 		void ScopedEvent(const char* name, uint64 color = 0);
 
 		void ClearRenderTargets(Span<TextureHandle> renderTargets, float4 color = float4(0.0f));
@@ -102,16 +106,29 @@ namespace limbo::RHI
 		void SetPipelineState(PSOHandle pso);
 		void SetRenderTargets(Span<TextureHandle> renderTargets, TextureHandle depthTarget = TextureHandle());
 
-		void BindDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count);
+		template<typename T>
+		FORCEINLINE void BindConstants(uint32 rootParameter, uint32 offsetIn32bits, const T& data)
+		{
+			static_assert(sizeof(T) % sizeof(uint32) == 0);
+			BindConstants(rootParameter, sizeof(T) / sizeof(uint32), offsetIn32bits, &data);
+		}
+
+		template<typename T>
+		FORCEINLINE void BindTempConstantBuffer(uint32 rootParameter, const T& data)
+		{
+			BindTempConstantBuffer(rootParameter, &data, sizeof(T));
+		}
+
 		void BindConstants(uint32 rootParameter, uint32 num32bitValues, uint32 offsetIn32bits, const void* data);
+		void BindTempDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count);
 		void BindTempConstantBuffer(uint32 rootParameter, const void* data, uint64 dataSize);
 		void BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress);
 		void BindRootCBV(uint32 rootParameter, uint64 gpuVirtualAddress);
 
-		void Draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance);
-		void DrawIndexed(uint32 indexCount, uint32 instanceCount, uint32 firstIndex, int32 baseVertex, uint32 firstInstance);
+		void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0);
+		void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0);
 		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
-		void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth);
+		void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1);
 
 		void BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, BufferHandle scratch, BufferHandle result);
 
@@ -164,6 +181,9 @@ namespace limbo::RHI
 		}
 
 		void SubmitResourceBarriers();
+
+
+		static CommandContext* GetCommandContext(ContextType type = ContextType::Direct);
 
 	private:
 		bool IsTransitionAllowed(D3D12_RESOURCE_STATES state);

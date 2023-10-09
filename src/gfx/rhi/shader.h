@@ -5,6 +5,7 @@
 #include "core/refcountptr.h"
 
 #include <dxcapi.h>
+#include <CppDelegates/Delegates.h>
 
 namespace limbo::RHI
 {

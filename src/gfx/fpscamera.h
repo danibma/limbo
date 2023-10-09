@@ -38,6 +38,6 @@ namespace limbo::Gfx
 		void OnResize(uint32 width, uint32 height);
 	};
 
-	FPSCamera CreateCamera(const float3& eye, const float3& center);
+	FPSCamera CreateCamera(Core::Window* window, const float3& eye, const float3& center);
 	void UpdateCamera(Core::Window* window, FPSCamera& fpsCamera, float deltaTime);
 }

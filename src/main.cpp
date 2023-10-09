@@ -2,7 +2,6 @@
 
 #include "gfx/gfx.h"
 #include "gfx/rhi/device.h"
-#include "gfx/scene.h"
 #include "gfx/fpscamera.h"
 
 #include "core/timer.h"

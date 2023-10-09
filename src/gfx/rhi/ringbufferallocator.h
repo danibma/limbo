@@ -52,7 +52,7 @@ namespace limbo::RHI
 		PreDeletedQueue	m_PreDeletedList;
 		
 	public:
-		RingBufferAllocator(uint64 size, const char* name);
+		RingBufferAllocator(CommandQueue* queue, uint64 size, const char* name);
 		~RingBufferAllocator();
 
 		void Allocate(uint64 size, RingBufferAllocation& allocation);

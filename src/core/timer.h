@@ -1,7 +1,5 @@
 #pragma once
 
-#include <chrono>
-
 namespace limbo::Core
 {
 	struct Timer
@@ -14,15 +12,22 @@ namespace limbo::Core
 		// Record a reference timestamp
 		inline void Record()
 		{
-			m_Timestamp = std::chrono::high_resolution_clock::now();
+			LARGE_INTEGER counter;
+			QueryPerformanceCounter(&counter);
+			m_Timestamp = counter.QuadPart;
+
+			LARGE_INTEGER frequency;
+			QueryPerformanceFrequency(&frequency);
+			m_Frequency = frequency.QuadPart;
 		}
 
 		// Elapsed time in seconds since the Timer creation or last call to record()
 		inline float ElapsedSeconds()
 		{
-			auto timestamp2 = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<float> timeSpan = std::chrono::duration_cast<std::chrono::duration<float>>(timestamp2 - m_Timestamp);
-			return timeSpan.count();
+			LARGE_INTEGER counter;
+			QueryPerformanceCounter(&counter);
+
+			return float(counter.QuadPart - m_Timestamp) / m_Frequency;
 		}
 
 		// Elapsed time in milliseconds since the Timer creation or last call to record()
@@ -32,6 +37,8 @@ namespace limbo::Core
 		}
 
 	private:
-		std::chrono::high_resolution_clock::time_point m_Timestamp;
+		uint64 m_Timestamp;
+
+		inline static uint64 m_Frequency;
 	};
 }

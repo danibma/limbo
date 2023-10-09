@@ -1,8 +1,8 @@
 ﻿#include "stdafx.h"
 #include "commandqueue.h"
-
 #include "commandcontext.h"
 #include "device.h"
+#include "core/utils.h"
 
 namespace limbo::RHI
 {

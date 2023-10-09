@@ -5,6 +5,8 @@
 #include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/rootsignature.h"
 
+namespace limbo::RHI { class CommandContext; }
+
 namespace limbo::Gfx
 {
 	struct FPSCamera;
@@ -26,7 +28,7 @@ namespace limbo::Gfx
 		explicit ShadowMapping();
 		~ShadowMapping();
 
-		void Render(SceneRenderer* sceneRenderer);
+		void Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer);
 		void DrawDebugWindow();
 
 		const ShadowData& GetShadowData() const;

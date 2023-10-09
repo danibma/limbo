@@ -1,14 +1,17 @@
 ﻿#pragma once
 
-// Based of Wicked Engine's jobsystem by János Turánszki - https://wickedengine.net/2018/11/24/simple-job-system-using-standard-c/
+#include "core.h"
 
+#include <CppDelegates/Delegates.h>
+
+// Based of Wicked Engine's jobsystem by János Turánszki - https://wickedengine.net/2018/11/24/simple-job-system-using-standard-c/
 namespace limbo::Core
 {
 	// A *ExecuteMany* job will receive this as function argument:
 	struct JobDispatchArgs
 	{
-		uint32_t jobIndex;
-		uint32_t groupIndex;
+		uint32 jobIndex;
+		uint32 groupIndex;
 	};
 
 	DECLARE_DELEGATE(TOnJobSystemExecute);

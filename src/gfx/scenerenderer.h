@@ -9,6 +9,11 @@
 #include "rhi/texture.h"
 #include "rhi/rootsignature.h"
 
+namespace limbo::RHI
+{
+	class CommandContext;
+}
+
 namespace limbo::Gfx
 {
 	enum class Tonemap : uint8
@@ -163,11 +168,11 @@ namespace limbo::Gfx
 		~SceneRenderer();
 
 		// Render Passes
-		void RenderGeometryPass();
-		void RenderAmbientOcclusionPass();
-		void RenderSkybox();
-		void RenderLightingPass();
-		void RenderSceneCompositePass();
+		void RenderGeometryPass(RHI::CommandContext* cmd);
+		void RenderAmbientOcclusionPass(RHI::CommandContext* cmd);
+		void RenderSkybox(RHI::CommandContext* cmd);
+		void RenderLightingPass(RHI::CommandContext* cmd);
+		void RenderSceneCompositePass(RHI::CommandContext* cmd);
 
 		// Update function with the time passed during that frame as a parameter, in ms
 		void Render(float dt);
@@ -179,7 +184,7 @@ namespace limbo::Gfx
 		const std::vector<Scene*>& GetScenes() const;
 
 	private:
-		void LoadEnvironmentMap(const char* path);
+		void LoadEnvironmentMap(RHI::CommandContext* cmd, const char* path);
 		void UploadScenesToGPU();
 		void UpdateSceneInfo();
 	};

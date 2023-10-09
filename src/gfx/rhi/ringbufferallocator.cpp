@@ -2,15 +2,15 @@
 #include "ringbufferallocator.h"
 #include "resourcemanager.h"
 #include "commandqueue.h"
-#include "device.h"
+#include "commandcontext.h"
 
 namespace limbo::RHI
 {
-	RingBufferAllocator::RingBufferAllocator(uint64 size, const char* name)
+	RingBufferAllocator::RingBufferAllocator(CommandQueue* queue, uint64 size, const char* name)
 		: m_TotalSize(size), m_CurrentOffset(0), m_Name(name)
 	{
 		m_Buffer		= CreateBuffer({ .DebugName = m_Name.c_str(), .ByteSize = size, .Flags = BufferUsage::Upload });
-		m_Queue			= Device::Ptr->GetCommandQueue(ContextType::Copy);
+		m_Queue			= queue;
 
 		RHI::Buffer* pBuffer = RM_GET(m_Buffer);
 		pBuffer->Map();
@@ -74,7 +74,7 @@ namespace limbo::RHI
 		// some allocation is not being freed or is not temporary, which is not the way to use this allocator
 		FAILIF(offset == InvalidOffset);
 
-		allocation.Context		= GetCommandContext(ContextType::Copy);
+		allocation.Context		= CommandContext::GetCommandContext(ContextType::Copy);
 		allocation.Buffer		= RM_GET(m_Buffer);
 		allocation.Offset		= offset;
 		allocation.Size			= size;

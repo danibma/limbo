@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "shader.h"
-#include "device.h"
 #include "shadercompiler.h"
 
 namespace limbo::RHI
@@ -12,12 +11,12 @@ namespace limbo::RHI
 
 	Shader::~Shader()
 	{
-		Device::Ptr->OnReloadShaders.Remove(m_RecompilationHandle);
+		OnReloadShaders.Remove(m_RecompilationHandle);
 	}
 
 	void Shader::AddToRecompilation()
 	{
-		m_RecompilationHandle = Device::Ptr->OnReloadShaders.AddLambda([this]()
+		m_RecompilationHandle = OnReloadShaders.AddLambda([this]()
 		{
 			SC::Compile(this);
 			LB_LOG("Recompiled %s sucessfully", File);

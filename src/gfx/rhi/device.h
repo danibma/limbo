@@ -1,15 +1,14 @@
 ﻿#pragma once
 
 #include "definitions.h"
-#include "resourcemanager.h"
-#include "commandcontext.h"
-#include "shaderbindingtable.h"
-#include "gfx/profiler.h"
 #include "core/array.h"
 #include "core/refcountptr.h"
-#include "buffer.h"
-#include "texture.h"
 #include "rootsignature.h"
+#include "shader.h"
+#include "pipelinestateobject.h"
+#include "texture.h"
+
+#include <dxgi1_6.h>
 
 namespace limbo::Core
 {
@@ -23,6 +22,7 @@ namespace limbo::RHI
 	struct DescriptorHandle;
 	class DescriptorHeap;
 	class CommandQueue;
+	class CommandContext;
 	struct WindowInfo;
 	struct DrawInfo;
 	class Swapchain;
@@ -80,16 +80,6 @@ namespace limbo::RHI
 	public:
 		static Device* Ptr;
 
-		DECLARE_MULTICAST_DELEGATE(TOnResizedSwapchain, uint32, uint32);
-		TOnResizedSwapchain OnResizedSwapchain;
-
-		DECLARE_MULTICAST_DELEGATE(TReloadShaders);
-		TReloadShaders OnReloadShaders;
-
-		DECLARE_MULTICAST_DELEGATE(TOnPrepareFrame);
-		TOnPrepareFrame OnPrepareFrame;
-
-	public:
 		Device(Core::Window* window, GfxDeviceFlags flags);
 		~Device();
 
@@ -178,11 +168,6 @@ namespace limbo::RHI
 		return Device::Ptr->GetTempBufferAllocator();
 	}
 
-	FORCEINLINE CommandContext* GetCommandContext(ContextType type = ContextType::Direct)
-	{
-		return Device::Ptr->GetCommandContext(type);
-	}
-
 	FORCEINLINE void ReloadShaders()
 	{
 		Device::Ptr->MarkReloadShaders();
@@ -218,11 +203,6 @@ namespace limbo::RHI
 		return Device::Ptr->GetBackbufferHeight();
 	}
 
-	FORCEINLINE void GenerateMipLevels(TextureHandle texture)
-	{
-		Device::Ptr->GenerateMipLevels(texture);
-	}
-
 	FORCEINLINE bool CanTakeGPUCapture()
 	{
 		return Device::Ptr->CanTakeGPUCapture();
@@ -236,153 +216,5 @@ namespace limbo::RHI
 	FORCEINLINE void OpenLastGPUCapture()
 	{
 		Device::Ptr->OpenLastGPUCapture();
-	}
-
-	//
-	// Global Command Context
-	//
-	FORCEINLINE void CopyTextureToBackBuffer(TextureHandle texture)
-	{
-		GetCommandContext()->CopyTextureToBackBuffer(texture);
-	}
-
-	FORCEINLINE void CopyBufferToBuffer(BufferHandle src, BufferHandle dst, uint64 numBytes, uint64 srcOffset = 0, uint64 dstOffset = 0)
-	{
-		GetCommandContext()->CopyBufferToBuffer(src, dst, numBytes, srcOffset, dstOffset);
-	}
-
-	FORCEINLINE void CopyTextureToTexture(TextureHandle src, TextureHandle dst)
-	{
-		GetCommandContext()->CopyTextureToTexture(src, dst);
-	}
-
-	FORCEINLINE void CopyBufferToTexture(BufferHandle src, TextureHandle dst)
-	{
-		GetCommandContext()->CopyBufferToTexture(src, dst);
-	}
-
-	FORCEINLINE void BeginProfileEvent(const char* name, uint64 color = 0, ContextType type = ContextType::Direct)
-	{
-		GetCommandContext(type)->BeginEvent(name, color);
-		PROFILE_BEGIN(GetCommandContext(type), name);
-	}
-
-	FORCEINLINE void EndProfileEvent(const char* name, ContextType type = ContextType::Direct)
-	{
-		PROFILE_END(GetCommandContext(type), name);
-		GetCommandContext(type)->EndEvent();
-	}
-
-	FORCEINLINE void BeginEvent(const char* name, uint64 color = 0)
-	{
-		GetCommandContext()->BeginEvent(name, color);
-	}
-
-	FORCEINLINE void ScopedEvent(const char* name, uint64 color = 0)
-	{
-		GetCommandContext()->ScopedEvent(name, color);
-	}
-
-	FORCEINLINE void EndEvent()
-	{
-		GetCommandContext()->EndEvent();
-	}
-
-	FORCEINLINE void ClearRenderTargets(Span<TextureHandle> renderTargets, float4 color = float4(0.0f))
-	{
-		GetCommandContext()->ClearRenderTargets(renderTargets, color);
-	}
-
-	FORCEINLINE void ClearDepthTarget(TextureHandle depthTarget, float depth = 1.0f, uint8 stencil = 0)
-	{
-		GetCommandContext()->ClearDepthTarget(depthTarget, depth, stencil);
-	}
-
-	FORCEINLINE void SetVertexBuffer(BufferHandle buffer)
-	{
-		GetCommandContext()->SetVertexBuffer(buffer);
-	}
-
-	FORCEINLINE void SetIndexBuffer(BufferHandle buffer)
-	{
-		GetCommandContext()->SetIndexBuffer(buffer);
-	}
-
-	FORCEINLINE void SetVertexBufferView(VertexBufferView view)
-	{
-		GetCommandContext()->SetVertexBufferView(view);
-	}
-
-	FORCEINLINE void SetIndexBufferView(IndexBufferView view)
-	{
-		GetCommandContext()->SetIndexBufferView(view);
-	}
-
-	FORCEINLINE void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
-	{
-		GetCommandContext()->SetPrimitiveTopology(topology);
-	}
-
-	FORCEINLINE void SetViewport(uint32 width, uint32 height, float topLeft = 0.0f, float topRight = 0.0f, float minDepth = 0.0f, float maxDepth = 1.0f)
-	{
-		GetCommandContext()->SetViewport(width, height, topLeft, topRight, minDepth, maxDepth);
-	}
-
-	FORCEINLINE void SetPipelineState(PSOHandle pso)
-	{
-		GetCommandContext()->SetPipelineState(pso);
-	}
-
-	FORCEINLINE void SetRenderTargets(Span<TextureHandle> renderTargets, TextureHandle depthTarget = TextureHandle())
-	{
-		GetCommandContext()->SetRenderTargets(renderTargets, depthTarget);
-	}
-
-	FORCEINLINE void BindTempDescriptorTable(uint32 rootParameter, DescriptorHandle* handles, uint32 count)
-	{
-		GetCommandContext()->BindDescriptorTable(rootParameter, handles, count);
-	}
-
-	template<typename T>
-	FORCEINLINE void BindTempConstantBuffer(uint32 rootParameter, const T& data)
-	{
-		GetCommandContext()->BindTempConstantBuffer(rootParameter, &data, sizeof(T));
-	}
-
-	FORCEINLINE void BindRootSRV(uint32 rootParameter, uint64 gpuVirtualAddress)
-	{
-		GetCommandContext()->BindRootSRV(rootParameter, gpuVirtualAddress);
-	}
-
-	FORCEINLINE void BindRootCBV(uint32 rootParameter, uint64 gpuVirtualAddress)
-	{
-		GetCommandContext()->BindRootCBV(rootParameter, gpuVirtualAddress);
-	}
-
-	template<typename T>
-	FORCEINLINE void BindConstants(uint32 rootParameter, uint32 offsetIn32bits, const T& data)
-	{
-		static_assert(sizeof(T) % sizeof(uint32) == 0);
-		GetCommandContext()->BindConstants(rootParameter, sizeof(T) / sizeof(uint32), offsetIn32bits, &data);
-	}
-
-	FORCEINLINE void Draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0)
-	{
-		GetCommandContext()->Draw(vertexCount, instanceCount, firstVertex, firstInstance);
-	}
-
-	FORCEINLINE void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0)
-	{
-		GetCommandContext()->DrawIndexed(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
-	}
-
-	FORCEINLINE void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
-	{
-		GetCommandContext()->Dispatch(groupCountX, groupCountY, groupCountZ);
-	}
-
-	FORCEINLINE void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1)
-	{
-		GetCommandContext()->DispatchRays(sbt, width, height, depth);
 	}
 }

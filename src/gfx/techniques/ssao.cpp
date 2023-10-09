@@ -7,6 +7,7 @@
 #include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/shadercompiler.h"
+#include "gfx/rhi/commandcontext.h"
 
 namespace limbo::Gfx
 {
@@ -65,43 +66,43 @@ namespace limbo::Gfx
 		RHI::DestroyRootSignature(m_BlurSSAORS);
 	}
 
-	void SSAO::Render(SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap)
+	void SSAO::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap)
 	{
 		{
-			RHI::BeginProfileEvent("SSAO");
-			RHI::SetPipelineState(m_SSAOPSO);
+			cmd->BeginProfileEvent("SSAO");
+			cmd->SetPipelineState(m_SSAOPSO);
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
 				RM_GET(m_UnblurredSSAOTexture)->UAVHandle[0]
 			};
-			RHI::BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
+			cmd->BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
 
-			RHI::BindConstants(1, 0, sceneRenderer->Tweaks.SSAORadius);
-			RHI::BindConstants(1, 1, sceneRenderer->Tweaks.SSAOPower);
-			RHI::BindConstants(1, 2, RM_GET(positionsMap)->SRV());
-			RHI::BindConstants(1, 3, RM_GET(sceneDepthMap)->SRV());
+			cmd->BindConstants(1, 0, sceneRenderer->Tweaks.SSAORadius);
+			cmd->BindConstants(1, 1, sceneRenderer->Tweaks.SSAOPower);
+			cmd->BindConstants(1, 2, RM_GET(positionsMap)->SRV());
+			cmd->BindConstants(1, 3, RM_GET(sceneDepthMap)->SRV());
 
-			RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
+			cmd->BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 
-			RHI::Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
-			RHI::EndProfileEvent("SSAO");
+			cmd->Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
+			cmd->EndProfileEvent("SSAO");
 		}
 
 		{
-			RHI::BeginProfileEvent("SSAO Blur Texture");
-			RHI::SetPipelineState(m_BlurSSAOPSO);
+			cmd->BeginProfileEvent("SSAO Blur Texture");
+			cmd->SetPipelineState(m_BlurSSAOPSO);
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
 				RM_GET(m_BlurredSSAOTexture)->UAVHandle[0]
 			};
-			RHI::BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
+			cmd->BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
 
-			RHI::BindConstants(1, 4, RM_GET(m_UnblurredSSAOTexture)->SRV());
+			cmd->BindConstants(1, 4, RM_GET(m_UnblurredSSAOTexture)->SRV());
 
-			RHI::Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
-			RHI::EndProfileEvent("SSAO Blur Texture");
+			cmd->Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
+			cmd->EndProfileEvent("SSAO Blur Texture");
 		}
 	}
 

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "core.h"
+#include "math.h"
 #include "input.h"
 
 #include <CppDelegates/Delegates.h>

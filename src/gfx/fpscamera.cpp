@@ -1,9 +1,11 @@
 #include "stdafx.h"
 #include "fpscamera.h"
-
-#include "gfx/rhi/device.h"
-
 #include "core/input.h"
+#include "core/window.h"
+
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace limbo::Gfx
 {
@@ -22,11 +24,11 @@ namespace limbo::Gfx
 		CascadeProjections[3] = glm::perspective(glm::radians(FOV), aspectRatio, 400.0f, FarZ);
 	}
 
-	FPSCamera CreateCamera(const float3& eye, const float3& center)
+	FPSCamera CreateCamera(Core::Window* window, const float3& eye, const float3& center)
 	{
 		FPSCamera fpsCamera = {};
 
-		const float aspectRatio = (float)RHI::GetBackbufferWidth() / (float)RHI::GetBackbufferHeight();
+		const float aspectRatio = (float)window->Width / (float)window->Height;
 
 		fpsCamera.Eye = eye;
 		fpsCamera.Center = center;

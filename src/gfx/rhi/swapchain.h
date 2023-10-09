@@ -3,6 +3,8 @@
 #include "definitions.h"
 #include "texture.h"
 
+#include <dxgi1_6.h>
+
 namespace limbo::Core
 {
 	class Window;

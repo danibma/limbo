@@ -1,7 +1,6 @@
 ﻿#include "stdafx.h"
 #include "swapchain.h"
 #include "gfx/gfx.h"
-#include "device.h"
 #include "resourcemanager.h"
 
 #include "core/window.h"
@@ -108,7 +107,7 @@ namespace limbo::RHI
 		CreateDXGISwapchain();
 		InitBackBuffers();
 
-		Device::Ptr->OnResizedSwapchain.Broadcast(m_BackbufferWidth, m_BackbufferHeight);
+		OnResizedSwapchain.Broadcast(m_BackbufferWidth, m_BackbufferHeight);
 	}
 
 	void Swapchain::Present(bool vsync)

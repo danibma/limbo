@@ -6,11 +6,15 @@
 #include "gfx/scenerenderer.h"
 #include "gfx/shaderinterop.h"
 #include "gfx/uirenderer.h"
-#include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"
+#include "gfx/rhi/commandcontext.h"
 #include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/shadercompiler.h"
+
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <format>
 
 namespace limbo::Gfx
 {
@@ -57,7 +61,7 @@ namespace limbo::Gfx
 		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
-	void ShadowMapping::Render(SceneRenderer* sceneRenderer)
+	void ShadowMapping::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer)
 	{
 		if (UI::Globals::bDebugShadowMaps)
 			DrawDebugWindow();
@@ -65,37 +69,37 @@ namespace limbo::Gfx
 		CreateLightMatrices(&sceneRenderer->Camera, sceneRenderer->SceneInfo.SunDirection);
 
 		// Shadow map
-		RHI::BeginProfileEvent("Shadow Maps Pass");
-		RHI::SetPipelineState(m_PSO);
-		RHI::SetPrimitiveTopology();
+		cmd->BeginProfileEvent("Shadow Maps Pass");
+		cmd->SetPipelineState(m_PSO);
+		cmd->SetPrimitiveTopology();
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 		{
 			std::string profileName = std::format("Shadow Cascade {}", cascade);
 
-			RHI::BeginProfileEvent(profileName.c_str());
-			RHI::SetRenderTargets({}, m_DepthShadowMaps[cascade]);
-			RHI::SetViewport(SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade]);
+			cmd->BeginProfileEvent(profileName.c_str());
+			cmd->SetRenderTargets({}, m_DepthShadowMaps[cascade]);
+			cmd->SetViewport(SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade]);
 
-			RHI::ClearDepthTarget(m_DepthShadowMaps[cascade], 1.0f);
+			cmd->ClearDepthTarget(m_DepthShadowMaps[cascade], 1.0f);
 
-			RHI::BindConstants(2, 0, cascade);
+			cmd->BindConstants(2, 0, cascade);
 
-			RHI::BindTempConstantBuffer(0, sceneRenderer->SceneInfo);
-			RHI::BindTempConstantBuffer(1, m_ShadowData);
+			cmd->BindTempConstantBuffer(0, sceneRenderer->SceneInfo);
+			cmd->BindTempConstantBuffer(1, m_ShadowData);
 
 			for (const Scene* scene : sceneRenderer->GetScenes())
 			{
 				scene->IterateMeshes(TOnDrawMesh::CreateLambda([&](const Mesh& mesh)
 				{
-					RHI::BindConstants(2, 1, mesh.InstanceID);
+					cmd->BindConstants(2, 1, mesh.InstanceID);
 
-					RHI::SetIndexBufferView(mesh.IndicesLocation);
-					RHI::DrawIndexed((uint32)mesh.IndexCount);
+					cmd->SetIndexBufferView(mesh.IndicesLocation);
+					cmd->DrawIndexed((uint32)mesh.IndexCount);
 				}));
 			}
-			RHI::EndProfileEvent(profileName.c_str());
+			cmd->EndProfileEvent(profileName.c_str());
 		}
-		RHI::EndProfileEvent("Shadow Maps Pass");
+		cmd->EndProfileEvent("Shadow Maps Pass");
 }
 
 	void ShadowMapping::DrawDebugWindow()

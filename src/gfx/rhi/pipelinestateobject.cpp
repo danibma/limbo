@@ -1,8 +1,9 @@
 ﻿#include "stdafx.h"
 #include "pipelinestateobject.h"
-
 #include "device.h"
 #include "rootsignature.h"
+#include "core/utils.h"
+#include "resourcemanager.h"
 
 namespace limbo::RHI
 {
@@ -135,7 +136,7 @@ namespace limbo::RHI
 		else
 			CreateGraphicsPSO(initializer);
 
-		m_OnReloadShadersHandle = Device::Ptr->OnReloadShaders.AddLambda([initializer, this]()
+		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([initializer, this]()
 		{
 			if (initializer.m_ComputeShader.IsValid())
 				CreateComputePSO(initializer);
@@ -149,7 +150,7 @@ namespace limbo::RHI
 		check(initializer.m_LibsNum > 0);
 		check(initializer.m_RootSignature.IsValid());
 
-		m_OnReloadShadersHandle = Device::Ptr->OnReloadShaders.AddLambda([initializer, this]()
+		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([initializer, this]()
 		{
 			CreateRTPSO(initializer);
 		});
@@ -332,6 +333,6 @@ namespace limbo::RHI
 
 	PipelineStateObject::~PipelineStateObject()
 	{
-		Device::Ptr->OnReloadShaders.Remove(m_OnReloadShadersHandle);
+		OnReloadShaders.Remove(m_OnReloadShadersHandle);
 	}
 }

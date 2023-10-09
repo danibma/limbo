@@ -2,7 +2,6 @@
 #include "shadercompiler.h"
 #include "core/utils.h"
 #include "resourcemanager.h"
-#include "device.h"
 
 #include <dxcapi.h>
 

@@ -3,6 +3,7 @@
 #include "uirenderer.h"
 #include "core/refcountptr.h"
 #include "rhi/buffer.h"
+#include "core/timer.h"
 
 namespace limbo
 {

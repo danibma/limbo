@@ -5,16 +5,18 @@
 #include "swapchain.h"
 #include "descriptorheap.h"
 #include "ringbufferallocator.h"
-#include "rootsignature.h"
 #include "shadercompiler.h"
 #include "core/window.h"
+#include "core/utils.h"
+#include "core/timer.h"
 #include "gfx/gfx.h"
+#include "pipelinestateobject.h"
 
 #include <comdef.h> // _com_error
+#include <dxgidebug.h>
 
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
-#include "pipelinestateobject.h"
 
 unsigned int DelegateHandle::CURRENT_ID = 0;
 
@@ -219,12 +221,12 @@ namespace limbo::RHI
 
 		if (m_Flags & Gfx::GfxDeviceFlag::EnableImgui)
 		{
-			BeginEvent("ImGui");
+			context->BeginEvent("ImGui");
 
 			ImGui::Render();
 			ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), context->Get());
 
-			EndEvent();
+			context->EndEvent();
 		}
 
 		{
@@ -320,13 +322,13 @@ namespace limbo::RHI
 
 		TextureHandle backBufferHandle = m_Swapchain->GetBackbuffer(m_FrameIndex);
 		Texture* backbuffer = RM_GET(backBufferHandle);
-		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
+		m_CommandContexts[(int)ContextType::Direct]->InsertResourceBarrier(backbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 		TextureHandle depthBackBufferHandle = m_Swapchain->GetDepthBackbuffer(m_FrameIndex);
 		Texture* depthBackbuffer = RM_GET(depthBackBufferHandle);
-		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
+		m_CommandContexts[(int)ContextType::Direct]->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
-		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
+		m_CommandContexts[(int)ContextType::Direct]->SubmitResourceBarriers();
 
 		m_GenerateMipsRS = RHI::CreateRootSignature("Generate Mips RS", RSInitializer().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4));
 
@@ -341,8 +343,8 @@ namespace limbo::RHI
 			m_GenerateMipsPSO = CreatePSO(psoInit);
 		}
 
-		m_UploadRingBuffer = new RingBufferAllocator(Utils::ToMB(256), "Upload Ring Buffer");
-		m_TempBufferAllocator = new RingBufferAllocator(Utils::ToMB(4), "Temp Buffers Ring Buffer");
+		m_UploadRingBuffer = new RingBufferAllocator(m_CommandQueues[(int)ContextType::Copy], Utils::ToMB(256), "Upload Ring Buffer");
+		m_TempBufferAllocator = new RingBufferAllocator(m_CommandQueues[(int)ContextType::Copy], Utils::ToMB(4), "Temp Buffers Ring Buffer");
 	}
 
 	DescriptorHandle Device::AllocatePersistent(DescriptorHeapType heapType)
@@ -530,7 +532,11 @@ namespace limbo::RHI
 			CreateDirectoryW(directory.c_str(), 0);
 		std::wstring filename = directory;
 		filename.append(L"LB_");
-		filename.append(std::format(L"{:%d_%m_%Y_%H_%M_%OS}", std::chrono::system_clock::now()));
+
+		SYSTEMTIME now;
+		GetLocalTime(&now);
+		filename.append(std::format(L"{}_{}_{}_{}_{}_{}", now.wDay, now.wMonth, now.wYear, now.wHour, now.wMinute, now.wSecond));
+
 		filename.append(L".wpix");
 
 		DX_CHECK(PIXGpuCaptureNextFrames(filename.c_str(), 1));
@@ -573,9 +579,11 @@ namespace limbo::RHI
 		Texture* pTexture = RM_GET(texture);
 		FAILIF(!pTexture);
 
+		CommandContext* cmd = m_CommandContexts[(int)ContextType::Direct];
+
 		bool bIsRGB = pTexture->Spec.Format == Format::RGBA8_UNORM_SRGB;
 
-		SetPipelineState(m_GenerateMipsPSO);
+		cmd->SetPipelineState(m_GenerateMipsPSO);
 		for (uint16 i = 1; i < pTexture->Spec.MipLevels; ++i)
 		{
 			uint2 outputMipSize = { pTexture->Spec.Width , pTexture->Spec.Height };
@@ -583,21 +591,21 @@ namespace limbo::RHI
 			outputMipSize.y >>= i;
 			float2 texelSize = { 1.0f / outputMipSize.x, 1.0f / outputMipSize.y };
 
-			BindConstants(1, 0, texelSize);
-			BindConstants(1, 2, bIsRGB ? 1 : 0);
+			cmd->BindConstants(1, 0, texelSize);
+			cmd->BindConstants(1, 2, bIsRGB ? 1 : 0);
 
 			DescriptorHandle srvHandles = m_GlobalHeap->AllocateTemp();
 			CreateSRV(pTexture, srvHandles, i - 1);
-			BindConstants(1, 3, srvHandles.Index);
+			cmd->BindConstants(1, 3, srvHandles.Index);
 
 			DescriptorHandle uavHandles[] = { pTexture->UAVHandle[i] };
-			BindTempDescriptorTable(0, uavHandles, 1);
-			Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
-			GetCommandContext(ContextType::Direct)->InsertUAVBarrier(pTexture);
+			cmd->BindTempDescriptorTable(0, uavHandles, 1);
+			cmd->Dispatch(Math::Max(outputMipSize.x / 8, 1u), Math::Max(outputMipSize.y / 8, 1u), 1);
+			cmd->InsertUAVBarrier(pTexture);
 		}
 
-		GetCommandContext(ContextType::Direct)->InsertResourceBarrier(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, pTexture->Spec.MipLevels - 1);
-		GetCommandContext(ContextType::Direct)->SubmitResourceBarriers();
+		cmd->InsertResourceBarrier(texture, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, pTexture->Spec.MipLevels - 1);
+		cmd->SubmitResourceBarriers();
 	}
 
 	void Device::PickGPU()

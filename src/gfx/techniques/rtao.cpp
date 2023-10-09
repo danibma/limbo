@@ -7,6 +7,7 @@
 #include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/shadercompiler.h"
+#include "gfx/rhi/commandcontext.h"
 
 namespace limbo::Gfx
 {
@@ -80,7 +81,7 @@ namespace limbo::Gfx
 		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
-	void RTAO::Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap)
+	void RTAO::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap)
 	{
 		if (sceneRenderer->SceneInfo.PrevView != sceneRenderer->SceneInfo.View)
 		{
@@ -89,54 +90,54 @@ namespace limbo::Gfx
 		}
 
 		{
-			RHI::BeginProfileEvent("RTAO");
-			RHI::SetPipelineState(m_RTAOPSO);
+			cmd->BeginProfileEvent("RTAO");
+			cmd->SetPipelineState(m_RTAOPSO);
 
 			RHI::ShaderBindingTable SBT(m_RTAOPSO);
 			SBT.BindRayGen(L"RTAORayGen");
 			SBT.BindMissShader(L"RTAOMiss");
 			SBT.BindHitGroup(L"RTAOHitGroup");
 
-			RHI::BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
+			cmd->BindRootSRV(0, sceneAS->GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
 				RM_GET(m_NoisedTexture)->UAVHandle[0]
 			};
-			RHI::BindTempDescriptorTable(1, uavHandles, 1);
+			cmd->BindTempDescriptorTable(1, uavHandles, 1);
 
-			RHI::BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
+			cmd->BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 
-			RHI::BindConstants(3, 0, sceneRenderer->Tweaks.SSAORadius);
-			RHI::BindConstants(3, 1, sceneRenderer->Tweaks.SSAOPower);
-			RHI::BindConstants(3, 2, sceneRenderer->Tweaks.RTAOSamples);
-			RHI::BindConstants(3, 3, RM_GET(positionsMap)->SRV());
-			RHI::BindConstants(3, 4, RM_GET(normalsMap)->SRV());
-			RHI::DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
-			RHI::EndProfileEvent("RTAO");
+			cmd->BindConstants(3, 0, sceneRenderer->Tweaks.SSAORadius);
+			cmd->BindConstants(3, 1, sceneRenderer->Tweaks.SSAOPower);
+			cmd->BindConstants(3, 2, sceneRenderer->Tweaks.RTAOSamples);
+			cmd->BindConstants(3, 3, RM_GET(positionsMap)->SRV());
+			cmd->BindConstants(3, 4, RM_GET(normalsMap)->SRV());
+			cmd->DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+			cmd->EndProfileEvent("RTAO");
 		}
 
 		{
-			RHI::BeginProfileEvent("RTAO Denoise");
-			RHI::SetPipelineState(m_RTAODenoisePSO);
+			cmd->BeginProfileEvent("RTAO Denoise");
+			cmd->SetPipelineState(m_RTAODenoisePSO);
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
 				RM_GET(m_FinalTexture)->UAVHandle[0],
 			};
-			RHI::BindTempDescriptorTable(1, uavHandles, _countof(uavHandles));
+			cmd->BindTempDescriptorTable(1, uavHandles, _countof(uavHandles));
 
-			RHI::BindConstants(3, 0, m_AccumCount);
-			RHI::BindConstants(3, 1, RM_GET(m_PreviousFrame)->SRV());
-			RHI::BindConstants(3, 2, RM_GET(m_NoisedTexture)->SRV());
-			RHI::Dispatch(RHI::GetBackbufferWidth() / 8, RHI::GetBackbufferHeight() / 8, 1);
-			RHI::EndProfileEvent("RTAO Denoise");
+			cmd->BindConstants(3, 0, m_AccumCount);
+			cmd->BindConstants(3, 1, RM_GET(m_PreviousFrame)->SRV());
+			cmd->BindConstants(3, 2, RM_GET(m_NoisedTexture)->SRV());
+			cmd->Dispatch(RHI::GetBackbufferWidth() / 8, RHI::GetBackbufferHeight() / 8, 1);
+			cmd->EndProfileEvent("RTAO Denoise");
 		}
 
 		++m_AccumCount;
 
-		RHI::GetCommandContext()->InsertUAVBarrier(m_FinalTexture);
-		RHI::CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
+		cmd->InsertUAVBarrier(m_FinalTexture);
+		cmd->CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
 	}
 
 	RHI::TextureHandle RTAO::GetFinalTexture() const

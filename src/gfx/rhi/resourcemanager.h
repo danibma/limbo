@@ -1,11 +1,10 @@
 ﻿#pragma once
 
-#include "resourcepool.h"
 #include "buffer.h"
-#include "shader.h"
 #include "texture.h"
-#include "pipelinestateobject.h"
 #include "rootsignature.h"
+#include "pipelinestateobject.h"
+#include "shader.h"
 
 namespace limbo::RHI
 {
@@ -42,20 +41,11 @@ namespace limbo::RHI
 		PSOHandle CreatePSO(const RaytracingPipelineStateInitializer& initializer);
 		RootSignatureHandle CreateRootSignature(const std::string& name, const RSInitializer& initializer);
 
-		template<typename ResourceType>
-		ResourceType* Get(Handle<ResourceType> resourceHandle)
-		{
-			if constexpr (TIsSame<ResourceType, Texture>::Value)
-				return m_Textures.Get(resourceHandle);
-			else if constexpr (TIsSame<ResourceType, Buffer>::Value)
-				return m_Buffers.Get(resourceHandle);
-			else if constexpr (TIsSame<ResourceType, Shader>::Value)
-				return m_Shaders.Get(resourceHandle);
-			else if constexpr (TIsSame<ResourceType, PipelineStateObject>::Value)
-				return m_PSOs.Get(resourceHandle);
-			else if constexpr (TIsSame<ResourceType, RootSignature>::Value)
-				return m_RootSignatures.Get(resourceHandle);
-		}
+		Texture* Get(TextureHandle handle) { return m_Textures.Get(handle); }
+		Buffer* Get(BufferHandle handle) { return m_Buffers.Get(handle); }
+		Shader* Get(ShaderHandle handle) { return m_Shaders.Get(handle); }
+		RootSignature* Get(RootSignatureHandle handle) { return m_RootSignatures.Get(handle); }
+		PipelineStateObject* Get(PSOHandle handle) { return m_PSOs.Get(handle); }
 
 		void DestroyBuffer(BufferHandle buffer, bool bImmediate = false);
 		void DestroyShader(ShaderHandle shader, bool bImmediate = false);

@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <mutex>
+
 namespace limbo::Core
 {
     template <typename T, size_t Capacity, bool ThreadSafe = true>

@@ -9,6 +9,7 @@ namespace limbo::RHI
 {
 	class AccelerationStructure;
 	class RootSignature;
+	class CommandContext;
 }
 
 namespace limbo::Gfx
@@ -32,7 +33,7 @@ namespace limbo::Gfx
 		explicit RTAO();
 		~RTAO();
 
-		void Render(SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap);
+		void Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap);
 
 		RHI::TextureHandle GetFinalTexture() const;
 

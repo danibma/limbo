@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "shader.h"
 #include "staticstates.h"
+#include "shader.h"
 #include "rootsignature.h"
 #include "core/array.h"
 #include "core/refcountptr.h"

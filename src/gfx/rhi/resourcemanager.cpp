@@ -1,7 +1,5 @@
 ﻿#include "stdafx.h"
 #include "resourcemanager.h"
-
-#include "device.h"
 #include "gfx/gfx.h"
 
 namespace limbo::RHI
@@ -31,7 +29,7 @@ namespace limbo::RHI
 			});
 		});
 
-		Device::Ptr->OnPrepareFrame.AddLambda([&]()
+		OnPrepareFrame.AddLambda([&]()
 		{
 			RunDeletionQueue();
 		});
