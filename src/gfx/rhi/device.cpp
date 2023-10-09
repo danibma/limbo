@@ -10,7 +10,7 @@
 #include "core/window.h"
 #include "gfx/gfx.h"
 
-#include <comdef.h>
+#include <comdef.h> // _com_error
 
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>

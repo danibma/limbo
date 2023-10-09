@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include <filesystem>
-
 #include "fpscamera.h"
 #include "shaderinterop.h"
 #include "core/window.h"
@@ -90,7 +88,7 @@ namespace limbo::Gfx
 	class RTAO;
 	class SceneRenderer
 	{
-		using EnvironmentMapList = std::vector<std::filesystem::path>;
+		using EnvironmentMapList = TStaticArray<const char*, 8>;
 
 	private:
 		std::vector<Scene*>				m_Scenes;

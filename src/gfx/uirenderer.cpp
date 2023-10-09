@@ -5,6 +5,7 @@
 #include "scenerenderer.h"
 #include "core/window.h"
 #include "rhi/device.h"
+#include "core/paths.h"
 
 namespace limbo::UI
 {
@@ -30,13 +31,16 @@ namespace limbo::UI
 
 				ImGui::SeparatorText("Environment Map");
 				{
-					std::string envPreviewValue = sceneRenderer->EnvironmentMaps[sceneRenderer->Tweaks.SelectedEnvMapIdx].stem().string();
-					if (ImGui::BeginCombo("##env_map", envPreviewValue.c_str()))
+					char envPreviewValue[1024];
+					Paths::GetFilename(sceneRenderer->EnvironmentMaps[sceneRenderer->Tweaks.SelectedEnvMapIdx], envPreviewValue);
+					if (ImGui::BeginCombo("##env_map", envPreviewValue))
 					{
-						for (int i = 0; i < sceneRenderer->EnvironmentMaps.size(); i++)
+						for (uint32 i = 0; i < sceneRenderer->EnvironmentMaps.GetSize(); i++)
 						{
 							const bool bIsSelected = (sceneRenderer->Tweaks.SelectedEnvMapIdx == i);
-							if (ImGui::Selectable(sceneRenderer->EnvironmentMaps[i].stem().string().c_str(), bIsSelected))
+							char selectedValue[1024];
+							Paths::GetFilename(sceneRenderer->EnvironmentMaps[i], selectedValue);
+							if (ImGui::Selectable(selectedValue, bIsSelected))
 							{
 								if (sceneRenderer->Tweaks.SelectedEnvMapIdx != i)
 									sceneRenderer->bNeedsEnvMapChange = true;

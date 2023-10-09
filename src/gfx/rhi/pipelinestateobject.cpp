@@ -4,8 +4,6 @@
 #include "device.h"
 #include "rootsignature.h"
 
-#include <span>
-
 namespace limbo::RHI
 {
 	constexpr D3D12_ROOT_SIGNATURE_FLAGS ComputeRSFlags = D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS |

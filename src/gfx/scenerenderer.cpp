@@ -1,8 +1,6 @@
 ﻿#include "stdafx.h"
 #include "scenerenderer.h"
 
-#include <filesystem>
-
 #include "profiler.h"
 #include "scene.h"
 #include "uirenderer.h"
@@ -27,9 +25,16 @@ namespace limbo::Gfx
 	{
 		RHI::Device::Ptr->OnResizedSwapchain.AddRaw(&Camera, &FPSCamera::OnResize);
 
-		const char* env_maps_path = "assets/environment";
-		for (const auto& entry : std::filesystem::directory_iterator(env_maps_path))
-			EnvironmentMaps.emplace_back(entry.path());
+		EnvironmentMaps = {
+			"assets/environment/a_rotes_rathaus_4k.hdr",
+			"assets/environment/footprint_court.hdr",
+			"assets/environment/helipad.hdr",
+			"assets/environment/kiara_1_dawn_4k.hdr",
+			"assets/environment/pink_sunrise_4k.hdr",
+			"assets/environment/spree_bank_4k.hdr",
+			"assets/environment/the_sky_is_on_fire_4k.hdr",
+			"assets/environment/venice_dawn_1_4k.hdr"
+		};
 
 		Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([this]()
 		{
@@ -304,7 +309,7 @@ namespace limbo::Gfx
 		if (bNeedsEnvMapChange)
 		{
 			RHI::BeginEvent("Loading Environment Map");
-			LoadEnvironmentMap(EnvironmentMaps[Tweaks.SelectedEnvMapIdx].string().c_str());
+			LoadEnvironmentMap(EnvironmentMaps[Tweaks.SelectedEnvMapIdx]);
 			bNeedsEnvMapChange = false;
 			RHI::EndEvent();
 		}

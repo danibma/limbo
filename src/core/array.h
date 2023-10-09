@@ -62,7 +62,7 @@ namespace limbo
 
 		TStaticArray(const std::initializer_list<std::remove_cv_t<Type>>& list)
 			: m_Capacity(Capacity)
-			, m_Size(list.size())
+			, m_Size((uint32)list.size())
 		{
 			memcpy(m_Data, list.begin(), sizeof(Type) * list.size());
 		}
