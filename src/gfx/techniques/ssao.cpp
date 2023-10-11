@@ -21,16 +21,17 @@ namespace limbo::Gfx
 			.Format = RHI::Format::R8_UNORM,
 		});
 
-		m_SSAORS = RHI::CreateRootSignature("SSAO RS", RHI::RSInitializer().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4).AddRootCBV(100));
-		m_BlurSSAORS = RHI::CreateRootSignature("Blur SSAO RS", RHI::RSInitializer().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 5));
+		m_SSAORS = RHI::CreateRootSignature("SSAO RS", RHI::RSSpec().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4).AddRootCBV(100));
+		m_BlurSSAORS = RHI::CreateRootSignature("Blur SSAO RS", RHI::RSSpec().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 5));
 
 		m_SSAOShader = RHI::CreateShader("ssao.hlsl", "ComputeSSAO", RHI::ShaderType::Compute);
 		RHI::SC::Compile(m_SSAOShader);
 		{
-			RHI::PipelineStateInitializer psoInit = {};
-			psoInit.SetRootSignature(m_SSAORS);
-			psoInit.SetComputeShader(m_SSAOShader);
-			psoInit.SetName("SSAO PSO");
+			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec()
+				.Init()
+				.SetRootSignature(m_SSAORS)
+				.SetComputeShader(m_SSAOShader)
+				.SetName("SSAO PSO");
 			m_SSAOPSO = RHI::CreatePSO(psoInit);
 		}
 
@@ -44,10 +45,11 @@ namespace limbo::Gfx
 		m_BlurSSAOShader = RHI::CreateShader("ssao.hlsl", "BlurSSAO", RHI::ShaderType::Compute);
 		RHI::SC::Compile(m_BlurSSAOShader);
 		{
-			RHI::PipelineStateInitializer psoInit = {};
-			psoInit.SetRootSignature(m_BlurSSAORS);
-			psoInit.SetComputeShader(m_BlurSSAOShader);
-			psoInit.SetName("SSAO PSO");
+			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec()
+				.Init()
+				.SetRootSignature(m_BlurSSAORS)
+				.SetComputeShader(m_BlurSSAOShader)
+				.SetName("SSAO PSO");
 			m_BlurSSAOPSO = RHI::CreatePSO(psoInit);
 		}
 	}

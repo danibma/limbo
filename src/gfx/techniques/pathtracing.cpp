@@ -23,7 +23,7 @@ namespace limbo::Gfx
 			.Type = RHI::TextureType::Texture2D,
 		});
 
-		m_CommonRS = RHI::CreateRootSignature("PT Common RS", RHI::RSInitializer().Init().AddRootSRV(0).AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootCBV(100));
+		m_CommonRS = RHI::CreateRootSignature("PT Common RS", RHI::RSSpec().Init().AddRootSRV(0).AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootCBV(100));
 
 		m_PathTracerLib = RHI::CreateShader("raytracing/pathtracer.hlsl", "", RHI::ShaderType::Lib);
 		RHI::SC::Compile(m_PathTracerLib);
@@ -32,20 +32,21 @@ namespace limbo::Gfx
 
 		{
 
-			RHI::RaytracingPipelineStateInitializer psoInit = {};
-			psoInit.SetGlobalRootSignature(m_CommonRS);
-			psoInit.SetName("Path Tracer PSO");
-			psoInit.SetShaderConfig(sizeof(MaterialRayTracingPayload), sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
+			RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec()
+				.Init()
+				.SetGlobalRootSignature(m_CommonRS)
+				.SetName("Path Tracer PSO")
+				.SetShaderConfig(sizeof(MaterialRayTracingPayload), sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
 
-			RHI::RaytracingLibDesc pathTracerDesc = {};
-			pathTracerDesc.AddExport(L"RayGen");
+			RHI::RTLibSpec pathTracerDesc = RHI::RTLibSpec().Init().AddExport(L"RayGen");
 			psoInit.AddLib(m_PathTracerLib, pathTracerDesc);
 
-			RHI::RaytracingLibDesc materialDesc = {};
-			materialDesc.AddExport(L"MaterialAnyHit");
-			materialDesc.AddExport(L"MaterialClosestHit");
-			materialDesc.AddExport(L"MaterialMiss");
-			materialDesc.AddHitGroup(L"MaterialHitGroup", L"MaterialAnyHit", L"MaterialClosestHit");
+			RHI::RTLibSpec materialDesc = RHI::RTLibSpec()
+				.Init()
+				.AddExport(L"MaterialAnyHit")
+				.AddExport(L"MaterialClosestHit")
+				.AddExport(L"MaterialMiss")
+				.AddHitGroup(L"MaterialHitGroup", L"MaterialAnyHit", L"MaterialClosestHit");
 			psoInit.AddLib(m_MaterialLib, materialDesc);
 
 			m_PSO = RHI::CreatePSO(psoInit);

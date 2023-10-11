@@ -9,7 +9,7 @@ namespace limbo::RHI
 	static D3D12_DESCRIPTOR_RANGE_FLAGS SDefaultTableRangeFlags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE | D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE;
 	static D3D12_ROOT_DESCRIPTOR_FLAGS SDefaultRootDescriptorFlags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
 
-	RSInitializer& RSInitializer::Init()
+	RSSpec& RSSpec::Init()
 	{
 		NumRootParameters = 0;
 		Flags = D3D12_ROOT_SIGNATURE_FLAG_NONE;
@@ -17,7 +17,7 @@ namespace limbo::RHI
 		return *this;
 	}
 
-	RSInitializer& RSInitializer::AddRootConstants(uint32 shaderRegister, uint32 constantCount, uint32 space, D3D12_SHADER_VISIBILITY visibility)
+	RSSpec& RSSpec::AddRootConstants(uint32 shaderRegister, uint32 constantCount, uint32 space, D3D12_SHADER_VISIBILITY visibility)
 	{
 		RootParameter& parameter = RootParameters[NumRootParameters++];
 		parameter.Parameter.InitAsConstants(constantCount, shaderRegister, space, visibility);
@@ -26,7 +26,7 @@ namespace limbo::RHI
 		return *this;
 	}
 
-	RSInitializer& RSInitializer::AddRootCBV(uint32 shaderRegister, uint32 space, D3D12_SHADER_VISIBILITY visibility)
+	RSSpec& RSSpec::AddRootCBV(uint32 shaderRegister, uint32 space, D3D12_SHADER_VISIBILITY visibility)
 	{
 		RootParameter& parameter = RootParameters[NumRootParameters++];
 		parameter.Parameter.InitAsConstantBufferView(shaderRegister, space, SDefaultRootDescriptorFlags, visibility);
@@ -35,7 +35,7 @@ namespace limbo::RHI
 		return *this;
 	}
 
-	RSInitializer& RSInitializer::AddRootSRV(uint32 shaderRegister, uint32 space, D3D12_SHADER_VISIBILITY visibility)
+	RSSpec& RSSpec::AddRootSRV(uint32 shaderRegister, uint32 space, D3D12_SHADER_VISIBILITY visibility)
 	{
 		RootParameter& parameter = RootParameters[NumRootParameters++];
 		parameter.Parameter.InitAsShaderResourceView(shaderRegister, space, SDefaultRootDescriptorFlags, visibility);
@@ -44,7 +44,7 @@ namespace limbo::RHI
 		return *this;
 	}
 
-	RSInitializer& RSInitializer::AddRootUAV(uint32 shaderRegister, uint32 space, D3D12_SHADER_VISIBILITY visibility)
+	RSSpec& RSSpec::AddRootUAV(uint32 shaderRegister, uint32 space, D3D12_SHADER_VISIBILITY visibility)
 	{
 		RootParameter& parameter = RootParameters[NumRootParameters++];
 		parameter.Parameter.InitAsUnorderedAccessView(shaderRegister, space, SDefaultRootDescriptorFlags, visibility);
@@ -53,7 +53,7 @@ namespace limbo::RHI
 		return *this;
 	}
 
-	RSInitializer& RSInitializer::AddDescriptorTable(uint32 shaderRegister, uint32 numDescriptors, D3D12_DESCRIPTOR_RANGE_TYPE type, uint32 space, D3D12_SHADER_VISIBILITY visibility)
+	RSSpec& RSSpec::AddDescriptorTable(uint32 shaderRegister, uint32 numDescriptors, D3D12_DESCRIPTOR_RANGE_TYPE type, uint32 space, D3D12_SHADER_VISIBILITY visibility)
 	{
 		RootParameter& parameter = RootParameters[NumRootParameters++];
 		parameter.Range.Init(type, numDescriptors, shaderRegister, space, SDefaultTableRangeFlags, D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND);
@@ -63,14 +63,14 @@ namespace limbo::RHI
 		return *this;
 	}
 
-	RSInitializer& RSInitializer::SetFlags(D3D12_ROOT_SIGNATURE_FLAGS flags)
+	RSSpec& RSSpec::SetFlags(D3D12_ROOT_SIGNATURE_FLAGS flags)
 	{
 		Flags = flags;
 
 		return *this;
 	}
 
-	RootSignature::RootSignature(const std::string& name, const RSInitializer& initializer)
+	RootSignature::RootSignature(const std::string& name, const RSSpec& initializer)
 		: m_Name(name)
 	{
 		D3D12_STATIC_SAMPLER_DESC staticSamplers[16] = {};
@@ -132,7 +132,7 @@ namespace limbo::RHI
 		m_RS.Reset();
 	}
 
-	uint32 RootSignature::GetDWORDCost(const RSInitializer& initializer)
+	uint32 RootSignature::GetDWORDCost(const RSSpec& initializer)
 	{
 		uint32 cost = 0;
 

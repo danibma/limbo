@@ -37,9 +37,9 @@ namespace limbo::RHI
 		TextureHandle CreateTextureFromFile(const char* path, const char* debugName);
 		TextureHandle CreateTexture(const TextureSpec& spec);
 		TextureHandle CreateTexture(ID3D12Resource* resource, const TextureSpec& spec);
-		PSOHandle CreatePSO(const PipelineStateInitializer& initializer);
-		PSOHandle CreatePSO(const RaytracingPipelineStateInitializer& initializer);
-		RootSignatureHandle CreateRootSignature(const std::string& name, const RSInitializer& initializer);
+		PSOHandle CreatePSO(const PipelineStateSpec& initializer);
+		PSOHandle CreatePSO(const RTPipelineStateSpec& initializer);
+		RootSignatureHandle CreateRootSignature(const std::string& name, const RSSpec& initializer);
 
 		Texture* Get(TextureHandle handle) { return m_Textures.Get(handle); }
 		Buffer* Get(BufferHandle handle) { return m_Buffers.Get(handle); }
@@ -94,17 +94,17 @@ namespace limbo::RHI
 		return ResourceManager::Ptr->CreateTexture(resource, spec);
 	}
 
-	FORCEINLINE [[nodiscard]] PSOHandle CreatePSO(const PipelineStateInitializer& initializer)
+	FORCEINLINE [[nodiscard]] PSOHandle CreatePSO(const PipelineStateSpec& initializer)
 	{
 		return ResourceManager::Ptr->CreatePSO(initializer);
 	}
 
-	FORCEINLINE [[nodiscard]] RootSignatureHandle CreateRootSignature(const std::string& name, const RSInitializer& initializer)
+	FORCEINLINE [[nodiscard]] RootSignatureHandle CreateRootSignature(const std::string& name, const RSSpec& initializer)
 	{
 		return ResourceManager::Ptr->CreateRootSignature(name, initializer);
 	}
 
-	FORCEINLINE [[nodiscard]] PSOHandle CreatePSO(const RaytracingPipelineStateInitializer& initializer)
+	FORCEINLINE [[nodiscard]] PSOHandle CreatePSO(const RTPipelineStateSpec& initializer)
 	{
 		return ResourceManager::Ptr->CreatePSO(initializer);
 	}

@@ -8,7 +8,7 @@ namespace limbo::RHI
 {
 	inline constexpr uint8 ROOT_PARAMETER_NUM = 8;
 
-	struct RSInitializer
+	struct RSSpec
 	{
 	private:
 		struct RootParameter
@@ -26,17 +26,17 @@ namespace limbo::RHI
 		D3D12_ROOT_SIGNATURE_FLAGS  Flags;
 
 		template<typename T>
-		RSInitializer& AddRootConstants(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
+		RSSpec& AddRootConstants(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL)
 		{
 			return AddRootConstants(shaderRegister, sizeof(T) / sizeof(uint32), space, visibility);
 		}
-		RSInitializer& Init();
-		RSInitializer& AddRootConstants(uint32 shaderRegister, uint32 constantCount, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
-		RSInitializer& AddRootCBV(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
-		RSInitializer& AddRootSRV(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
-		RSInitializer& AddRootUAV(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
-		RSInitializer& AddDescriptorTable(uint32 shaderRegister, uint32 numDescriptors, D3D12_DESCRIPTOR_RANGE_TYPE type, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
-		RSInitializer& SetFlags(D3D12_ROOT_SIGNATURE_FLAGS flags);
+		RSSpec& Init();
+		RSSpec& AddRootConstants(uint32 shaderRegister, uint32 constantCount, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
+		RSSpec& AddRootCBV(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
+		RSSpec& AddRootSRV(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
+		RSSpec& AddRootUAV(uint32 shaderRegister, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
+		RSSpec& AddDescriptorTable(uint32 shaderRegister, uint32 numDescriptors, D3D12_DESCRIPTOR_RANGE_TYPE type, uint32 space = 0, D3D12_SHADER_VISIBILITY visibility = D3D12_SHADER_VISIBILITY_ALL);
+		RSSpec& SetFlags(D3D12_ROOT_SIGNATURE_FLAGS flags);
 	};
 
 	class RootSignature
@@ -47,14 +47,14 @@ namespace limbo::RHI
 
 	public:
 		RootSignature() = default;
-		RootSignature(const std::string& name, const RSInitializer& initializer);
+		RootSignature(const std::string& name, const RSSpec& initializer);
 		~RootSignature() {}
 
 		ID3D12RootSignature* Get() const { return m_RS.Get(); }
 		void Reset();
 
 	private:
-		uint32 GetDWORDCost(const RSInitializer& initializer);
+		uint32 GetDWORDCost(const RSSpec& initializer);
 	};
 	typedef Handle<RootSignature> RootSignatureHandle;
 }

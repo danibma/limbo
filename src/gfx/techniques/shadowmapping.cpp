@@ -28,7 +28,7 @@ namespace limbo::Gfx
 
 	ShadowMapping::ShadowMapping()
 	{
-		m_CommonRS = RHI::CreateRootSignature("Shadow Mapping Common RS", RHI::RSInitializer().Init().AddRootCBV(100).AddRootCBV(101).AddRootConstants(0, 2));
+		m_CommonRS = RHI::CreateRootSignature("Shadow Mapping Common RS", RHI::RSSpec().Init().AddRootCBV(100).AddRootCBV(101).AddRootConstants(0, 2));
 
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
 			m_DepthShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
@@ -39,12 +39,13 @@ namespace limbo::Gfx
 		RHI::SC::Compile(m_ShadowMapPS);
 
 		{
-			RHI::PipelineStateInitializer psoInit = {};
-			psoInit.SetVertexShader(m_ShadowMapVS);
-			psoInit.SetPixelShader(m_ShadowMapPS);
-			psoInit.SetRootSignature(m_CommonRS);
-			psoInit.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT);
-			psoInit.SetName("Shadow Map PSO");
+			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec()
+				.Init()
+				.SetVertexShader(m_ShadowMapVS)
+				.SetPixelShader(m_ShadowMapPS)
+				.SetRootSignature(m_CommonRS)
+				.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT)
+				.SetName("Shadow Map PSO");
 			m_PSO = RHI::CreatePSO(psoInit);
 		}
 	}

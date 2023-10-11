@@ -330,16 +330,17 @@ namespace limbo::RHI
 
 		m_CommandContexts[(int)ContextType::Direct]->SubmitResourceBarriers();
 
-		m_GenerateMipsRS = RHI::CreateRootSignature("Generate Mips RS", RSInitializer().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4));
+		m_GenerateMipsRS = RHI::CreateRootSignature("Generate Mips RS", RSSpec().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4));
 
 		m_GenerateMipsShader = CreateShader("generatemips.hlsl", "GenerateMip", ShaderType::Compute);
 		SC::Compile(m_GenerateMipsShader);
 
 		{
-			PipelineStateInitializer psoInit = {};
-			psoInit.SetComputeShader(m_GenerateMipsShader);
-			psoInit.SetName("Generate Mips PSO");
-			psoInit.SetRootSignature(m_GenerateMipsRS);
+			PipelineStateSpec psoInit = PipelineStateSpec()
+				.Init()
+				.SetComputeShader(m_GenerateMipsShader)
+				.SetName("Generate Mips PSO")
+				.SetRootSignature(m_GenerateMipsRS);
 			m_GenerateMipsPSO = CreatePSO(psoInit);
 		}
 

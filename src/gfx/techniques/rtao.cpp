@@ -33,32 +33,35 @@ namespace limbo::Gfx
 			.Type = RHI::TextureType::Texture2D,
 		});
 
-		m_CommonRS = RHI::CreateRootSignature("RTAO Common RS", RHI::RSInitializer().Init().AddRootSRV(0).AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootCBV(100).AddRootConstants(0, 5));
+		m_CommonRS = RHI::CreateRootSignature("RTAO Common RS", RHI::RSSpec().Init().AddRootSRV(0).AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootCBV(100).AddRootConstants(0, 5));
 
 		m_RTAOShader = RHI::CreateShader("raytracing/rtao.hlsl", "", RHI::ShaderType::Lib);
 		RHI::SC::Compile(m_RTAOShader);
 		{
-			RHI::RaytracingLibDesc libDesc = {};
-			libDesc.AddExport(L"RTAORayGen");
-			libDesc.AddExport(L"RTAOAnyHit");
-			libDesc.AddExport(L"RTAOMiss");
-			libDesc.AddHitGroup(L"RTAOHitGroup", L"RTAOAnyHit");
+			RHI::RTLibSpec libDesc = RHI::RTLibSpec()
+				.Init()
+				.AddExport(L"RTAORayGen")
+				.AddExport(L"RTAOAnyHit")
+				.AddExport(L"RTAOMiss")
+				.AddHitGroup(L"RTAOHitGroup", L"RTAOAnyHit");
 
-			RHI::RaytracingPipelineStateInitializer psoInit = {};
-			psoInit.SetGlobalRootSignature(m_CommonRS);
-			psoInit.AddLib(m_RTAOShader, libDesc);
-			psoInit.SetShaderConfig(sizeof(float) /* AOPayload */, sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
-			psoInit.SetName("RTAO PSO");
+			RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec()
+				.Init()
+				.SetGlobalRootSignature(m_CommonRS)
+				.AddLib(m_RTAOShader, libDesc)
+				.SetShaderConfig(sizeof(float) /* AOPayload */, sizeof(float2) /* BuiltInTriangleIntersectionAttributes */)
+				.SetName("RTAO PSO");
 			m_RTAOPSO = RHI::CreatePSO(psoInit);
 		}
 
 		m_DenoiseRTAOShader = RHI::CreateShader("raytracing/rtaoaccumulate.hlsl", "RTAOAccumulate", RHI::ShaderType::Compute);
 		RHI::SC::Compile(m_DenoiseRTAOShader);
 		{
-			RHI::PipelineStateInitializer psoInit = {};
-			psoInit.SetRootSignature(m_CommonRS);
-			psoInit.SetComputeShader(m_DenoiseRTAOShader);
-			psoInit.SetName("RTAO Accumulate PSO");
+			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec()
+				.Init()
+                .SetRootSignature(m_CommonRS)
+                .SetComputeShader(m_DenoiseRTAOShader)
+                .SetName("RTAO Accumulate PSO");
 			m_RTAODenoisePSO = RHI::CreatePSO(psoInit);
 		}
 	}

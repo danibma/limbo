@@ -11,7 +11,7 @@
 
 namespace limbo::RHI
 {
-	class PipelineStateInitializer
+	class PipelineStateSpec
 	{
 	private:
 		friend class PipelineStateObject;
@@ -20,47 +20,36 @@ namespace limbo::RHI
 
 		RootSignatureHandle							m_RootSignature;
 		TInputLayout								m_InputLayout;
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE				m_Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		D3D12_RENDER_TARGET_BLEND_DESC				m_BlendDesc = TStaticBlendState<>::GetRHI();
-		D3D12_RASTERIZER_DESC						m_RasterizerDesc = TStaticRasterizerState<>::GetRHI();
-		D3D12_DEPTH_STENCIL_DESC					m_DepthStencilDesc = TStaticDepthStencilState<>::GetRHI();
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE				m_Topology;
+		D3D12_RENDER_TARGET_BLEND_DESC				m_BlendDesc;
+		D3D12_RASTERIZER_DESC						m_RasterizerDesc;
+		D3D12_DEPTH_STENCIL_DESC					m_DepthStencilDesc;
 
 		ShaderHandle								m_VertexShader;
 		ShaderHandle								m_PixelShader;
 		ShaderHandle								m_ComputeShader;
 
-		TStaticArray<Format, MAX_RENDER_TARGETS>	m_RenderTargetFormats = {};
-		Format										m_DepthTargetFormat = Format::UNKNOWN;
+		TStaticArray<Format, MAX_RENDER_TARGETS>	m_RenderTargetFormats;
+		Format										m_DepthTargetFormat;
 
-		std::string									m_Name = "";
+		std::string									m_Name;
 
 	public:
-		void SetRootSignature(RootSignatureHandle rootSignature);
-		void SetInputLayout(TInputLayout inputLayout);
-		void SetTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE topology);
-		void SetBlendDesc(const D3D12_RENDER_TARGET_BLEND_DESC& desc);
-		void SetRasterizerDesc(const D3D12_RASTERIZER_DESC& desc);
-		void SetDepthStencilDesc(const D3D12_DEPTH_STENCIL_DESC& desc);
-		void SetRenderTargetFormats(const Span<Format>& rtFormats, Format depthFormat);
-		void SetName(const std::string_view& name);
-
-		void SetVertexShader(ShaderHandle vertexShader)
-		{
-			m_VertexShader = vertexShader;
-		}
-
-		void SetPixelShader(ShaderHandle pixelShader)
-		{
-			m_PixelShader = pixelShader;
-		}
-
-		void SetComputeShader(ShaderHandle computeShader)
-		{
-			m_ComputeShader = computeShader;
-		}
+		PipelineStateSpec& Init();
+		PipelineStateSpec& SetRootSignature(RootSignatureHandle rootSignature);
+		PipelineStateSpec& SetInputLayout(TInputLayout inputLayout);
+		PipelineStateSpec& SetTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE topology);
+		PipelineStateSpec& SetBlendDesc(const D3D12_RENDER_TARGET_BLEND_DESC& desc);
+		PipelineStateSpec& SetRasterizerDesc(const D3D12_RASTERIZER_DESC& desc);
+		PipelineStateSpec& SetDepthStencilDesc(const D3D12_DEPTH_STENCIL_DESC& desc);
+		PipelineStateSpec& SetRenderTargetFormats(const Span<Format>& rtFormats, Format depthFormat);
+		PipelineStateSpec& SetName(const std::string_view& name);
+		PipelineStateSpec& SetVertexShader(ShaderHandle vertexShader);
+		PipelineStateSpec& SetPixelShader(ShaderHandle pixelShader);
+		PipelineStateSpec& SetComputeShader(ShaderHandle computeShader);
 	};
 
-	class RaytracingLibDesc
+	class RTLibSpec
 	{
 		friend class PipelineStateObject;
 
@@ -68,43 +57,45 @@ namespace limbo::RHI
 		std::vector<D3D12_EXPORT_DESC>		m_Exports;
 
 	public:
-		void AddHitGroup(const wchar_t* hitGroupExport, 
-						 const wchar_t* anyHitShaderImport = nullptr,
-						 const wchar_t* closestHitShaderImport = nullptr,
-						 const wchar_t* intersectionShaderImport = nullptr,
-						 D3D12_HIT_GROUP_TYPE type = D3D12_HIT_GROUP_TYPE_TRIANGLES);
+		RTLibSpec& Init();
+		RTLibSpec& AddHitGroup(const wchar_t* hitGroupExport,
+									   const wchar_t* anyHitShaderImport = nullptr,
+									   const wchar_t* closestHitShaderImport = nullptr,
+									   const wchar_t* intersectionShaderImport = nullptr,
+									   D3D12_HIT_GROUP_TYPE type = D3D12_HIT_GROUP_TYPE_TRIANGLES);
 
-		void AddExport(const wchar_t* name);
+		RTLibSpec& AddExport(const wchar_t* name);
 	};
 
-	class RaytracingPipelineStateInitializer
+	class RTPipelineStateSpec
 	{
 	private:
 		friend class PipelineStateObject;
 
-		std::string							m_Name = "";
+		std::string							m_Name;
 		RootSignatureHandle					m_RootSignature;
 		D3D12_RAYTRACING_SHADER_CONFIG		m_ShaderConfig;
-		uint32								m_MaxTraceRecursionDepth = 1;
+		uint32								m_MaxTraceRecursionDepth;
 
 		uint32								m_LibsNum;
 		TStaticArray<ShaderHandle, 3>		m_Libs;
-		TStaticArray<RaytracingLibDesc, 3>	m_LibsDescs;
-	public:
+		TStaticArray<RTLibSpec, 3>			m_LibsDescs;
 
-		void SetGlobalRootSignature(RootSignatureHandle rootSignature);
-		void AddLib(ShaderHandle lib, const RaytracingLibDesc& libDesc);
-		void SetShaderConfig(uint32 maxPayloadSizeInBytes, uint32 maxAttributeSizeInBytes);
-		void SetMaxTraceRecursionDepth(uint32 maxTraceRecursionDepth);
-		void SetName(const std::string_view& name);
+	public:
+		RTPipelineStateSpec& Init();
+		RTPipelineStateSpec& SetGlobalRootSignature(RootSignatureHandle rootSignature);
+		RTPipelineStateSpec& AddLib(ShaderHandle lib, const RTLibSpec& libDesc);
+		RTPipelineStateSpec& SetShaderConfig(uint32 maxPayloadSizeInBytes, uint32 maxAttributeSizeInBytes);
+		RTPipelineStateSpec& SetMaxTraceRecursionDepth(uint32 maxTraceRecursionDepth);
+		RTPipelineStateSpec& SetName(const std::string_view& name);
 	};
 
 	class PipelineStateObject
 	{
 	public:
 		PipelineStateObject() = default;
-		explicit PipelineStateObject(const PipelineStateInitializer& initializer);
-		explicit PipelineStateObject(const RaytracingPipelineStateInitializer& initializer);
+		explicit PipelineStateObject(const PipelineStateSpec& spec);
+		explicit PipelineStateObject(const RTPipelineStateSpec& spec);
 
 		~PipelineStateObject();
 
@@ -134,9 +125,9 @@ namespace limbo::RHI
 		}
 
 	private:
-		void CreateGraphicsPSO(const PipelineStateInitializer& initializer);
-		void CreateComputePSO(const PipelineStateInitializer& initializer);
-		void CreateRTPSO(const RaytracingPipelineStateInitializer& initializer);
+		void CreateGraphicsPSO(const PipelineStateSpec& spec);
+		void CreateComputePSO(const PipelineStateSpec& spec);
+		void CreateRTPSO(const RTPipelineStateSpec& spec);
 
 	private:
 		RefCountPtr<ID3D12PipelineState>	m_PipelineState;

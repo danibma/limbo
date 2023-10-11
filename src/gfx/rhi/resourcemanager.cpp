@@ -76,17 +76,17 @@ namespace limbo::RHI
 		return m_Textures.AllocateHandle(resource, spec);
 	}
 
-	PSOHandle ResourceManager::CreatePSO(const PipelineStateInitializer& initializer)
+	PSOHandle ResourceManager::CreatePSO(const PipelineStateSpec& initializer)
 	{
 		return m_PSOs.AllocateHandle(initializer);
 	}
 
-	PSOHandle ResourceManager::CreatePSO(const RaytracingPipelineStateInitializer& initializer)
+	PSOHandle ResourceManager::CreatePSO(const RTPipelineStateSpec& initializer)
 	{
 		return m_PSOs.AllocateHandle(initializer);
 	}
 
-	RootSignatureHandle ResourceManager::CreateRootSignature(const std::string& name, const RSInitializer& initializer)
+	RootSignatureHandle ResourceManager::CreateRootSignature(const std::string& name, const RSSpec& initializer)
 	{
 		return m_RootSignatures.AllocateHandle(name, initializer);
 	}
