@@ -86,12 +86,16 @@ namespace limbo::RHI
 		DX_CHECK(m_FeatureSupport.Init(m_Device.Get()));
 		check(m_FeatureSupport.ResourceBindingTier() >= D3D12_RESOURCE_BINDING_TIER_3);
 		check(m_FeatureSupport.HighestShaderModel() >= D3D_SHADER_MODEL_6_6);
-		check(m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1);
+
+		m_GPUInfo.bSupportsRaytracing = false;
 
 #if !NO_LOG
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		if (!bIsProfiling && !IsUnderRenderDoc())
 		{
+			// RenderDoc does not support rt for some reason as well
+			m_GPUInfo.bSupportsRaytracing = m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1;
+
 			RefCountPtr<ID3D12InfoQueue> d3d12InfoQueue;
 			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(d3d12InfoQueue.ReleaseAndGetAddressOf())));
 			RefCountPtr<ID3D12InfoQueue1> d3d12InfoQueue1;

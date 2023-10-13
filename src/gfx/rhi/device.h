@@ -33,6 +33,7 @@ namespace limbo::RHI
 	struct GPUInfo
 	{
 		char Name[128];
+		bool bSupportsRaytracing;
 	};
 
 	class Device

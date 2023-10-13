@@ -42,7 +42,7 @@ namespace limbo::Gfx
 	enum class RenderPath : uint8
 	{
 		Deferred = 0,
-		PathTracing,
+		PathTracing, // Leave this as the last one, so it does not show in the UI as an option, if rt is not available
 
 		MAX
 	};
@@ -51,7 +51,7 @@ namespace limbo::Gfx
 	{
 		None = 0,
 		SSAO,
-		RTAO,
+		RTAO, // Leave this as the last one, so it does not show in the UI as an option, if rt is not available
 
 		MAX
 	};

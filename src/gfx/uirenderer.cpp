@@ -105,15 +105,23 @@ namespace limbo::UI
 		{
 			if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
 			{
+				int maxRenderPath = (int)Gfx::RenderPath::MAX;
+				if (!RHI::GetGPUInfo().bSupportsRaytracing)
+					maxRenderPath = (int)Gfx::RenderPath::PathTracing;
+
 				ImGui::PushItemWidth(200.0f);
-				ImGui::Combo("Render Path", &sceneRenderer->Tweaks.CurrentRenderPath, sceneRenderer->RenderPathList, (int)Gfx::RenderPath::MAX);
+				ImGui::Combo("Render Path", &sceneRenderer->Tweaks.CurrentRenderPath, sceneRenderer->RenderPathList, maxRenderPath);
 				ImGui::Combo("Tonemap", &sceneRenderer->Tweaks.CurrentTonemap, sceneRenderer->TonemapList, (int)Gfx::Tonemap::MAX);
 				ImGui::Combo("Scene Views", &sceneRenderer->Tweaks.CurrentSceneView, sceneRenderer->SceneViewList, (int)Gfx::SceneView::MAX);
 				ImGui::Checkbox("VSync", &sceneRenderer->Tweaks.bEnableVSync);
 				ImGui::PopItemWidth();
 
+				int maxAO = (int)Gfx::AmbientOcclusion::MAX;
+				if (!RHI::GetGPUInfo().bSupportsRaytracing)
+					maxAO = (int)Gfx::AmbientOcclusion::RTAO;
+
 				ImGui::SeparatorText("Ambient Occlusion");
-				ImGui::Combo("Technique", &sceneRenderer->Tweaks.CurrentAOTechnique, sceneRenderer->AOList, (int)Gfx::AmbientOcclusion::MAX);
+				ImGui::Combo("Technique", &sceneRenderer->Tweaks.CurrentAOTechnique, sceneRenderer->AOList, maxAO);
 				ImGui::DragFloat("SSAO Radius", &sceneRenderer->Tweaks.SSAORadius, 0.1f, 0.0f, 1.0f);
 				ImGui::DragFloat("SSAO Power", &sceneRenderer->Tweaks.SSAOPower, 0.1f, 0.0f, 2.0f);
 

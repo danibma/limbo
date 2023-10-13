@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #define LIMBO_CMD_PROFILE "--profile"
+#define LIMBO_CMD_WAIT_FOR_DEBUGGER "--waitfordebugger"
 
 namespace limbo::Core
 {

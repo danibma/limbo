@@ -324,6 +324,8 @@ namespace limbo::RHI
 
 	void PipelineStateObject::CreateRTPSO(const RTPipelineStateSpec& spec)
 	{
+		if (!RHI::GetGPUInfo().bSupportsRaytracing) return;
+
 		m_RootSignature = spec.m_RootSignature;
 
 		RayTracingStateObjectStream stream;

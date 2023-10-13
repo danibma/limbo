@@ -29,6 +29,12 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	if (Core::CommandLine::HasArg("--tests"))
 		return Tests::ExecuteTests(lpCmdLine);
 
+	if (Core::CommandLine::HasArg(LIMBO_CMD_WAIT_FOR_DEBUGGER))
+	{
+		while (!IsDebuggerPresent())
+			;
+	}
+
 	Core::Window* window = Core::NewWindow({
 		.Title = "limbo",
 		.Width = WIDTH,
