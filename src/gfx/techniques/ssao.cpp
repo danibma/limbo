@@ -13,6 +13,7 @@ namespace limbo::Gfx
 {
 	SSAO::SSAO()
 	{
+#if TODO
 		m_UnblurredSSAOTexture = RHI::CreateTexture({
 			.Width = RHI::GetBackbufferWidth(),
 			.Height = RHI::GetBackbufferHeight(),
@@ -52,10 +53,12 @@ namespace limbo::Gfx
 				.SetName("SSAO PSO");
 			m_BlurSSAOPSO = RHI::CreatePSO(psoInit);
 		}
+#endif
 	}
 
 	SSAO::~SSAO()
 	{
+#if TODO
 		RHI::DestroyTexture(m_UnblurredSSAOTexture);
 		RHI::DestroyTexture(m_BlurredSSAOTexture);
 		RHI::DestroyShader(m_SSAOShader);
@@ -66,10 +69,12 @@ namespace limbo::Gfx
 
 		RHI::DestroyRootSignature(m_SSAORS);
 		RHI::DestroyRootSignature(m_BlurSSAORS);
+#endif
 	}
 
 	void SSAO::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap)
 	{
+#if TODO
 		{
 			cmd->BeginProfileEvent("SSAO");
 			cmd->SetPipelineState(m_SSAOPSO);
@@ -106,6 +111,7 @@ namespace limbo::Gfx
 			cmd->Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
 			cmd->EndProfileEvent("SSAO Blur Texture");
 		}
+#endif
 	}
 
 	RHI::TextureHandle SSAO::GetBlurredTexture() const

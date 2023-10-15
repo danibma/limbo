@@ -14,6 +14,7 @@ namespace limbo::Gfx
 {
 	PathTracing::PathTracing()
 	{
+#if TODO
 		m_FinalTexture = RHI::CreateTexture({
 			.Width = RHI::GetBackbufferWidth(),
 			.Height = RHI::GetBackbufferHeight(),
@@ -51,10 +52,12 @@ namespace limbo::Gfx
 
 			m_PSO = RHI::CreatePSO(psoInit);
 		}
+#endif
 	}
 
 	PathTracing::~PathTracing()
 	{
+#if TODO
 		if (m_FinalTexture.IsValid())
 			RHI::DestroyTexture(m_FinalTexture);
 		if (m_PathTracerLib.IsValid())
@@ -64,10 +67,12 @@ namespace limbo::Gfx
 
 		RHI::DestroyPSO(m_PSO);
 		RHI::DestroyRootSignature(m_CommonRS);
+#endif
 	}
 
 	void PathTracing::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
 	{
+#if TODO
 		cmd->BeginProfileEvent("Path Tracing");
 		cmd->SetPipelineState(m_PSO);
 
@@ -84,6 +89,7 @@ namespace limbo::Gfx
 		cmd->BindTempConstantBuffer(2, sceneRenderer->SceneInfo);
 		cmd->DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 		cmd->EndProfileEvent("Path Tracing");
+#endif
 	}
 
 	RHI::TextureHandle PathTracing::GetFinalTexture() const

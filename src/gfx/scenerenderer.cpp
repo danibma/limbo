@@ -37,6 +37,7 @@ namespace limbo::Gfx
 			"assets/environment/venice_dawn_1_4k.hdr"
 		};
 
+#if TODO
 		Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([this]()
 		{
 			m_SSAO = std::make_unique<SSAO>();
@@ -149,10 +150,12 @@ namespace limbo::Gfx
 		}
 
 		Core::JobSystem::WaitIdle();
+#endif
 	}
 
 	SceneRenderer::~SceneRenderer()
 	{
+#if TODO
 		DestroyTexture(m_EnvironmentCubemap);
 		DestroyTexture(m_IrradianceMap);
 		DestroyTexture(m_PrefilterMap);
@@ -189,10 +192,12 @@ namespace limbo::Gfx
 		DestroyPSO(m_DeferredShadingPSO);
 		DestroyPSO(m_PBRPSO);
 		DestroyPSO(m_CompositePSO);
+#endif
 	}
 
 	void SceneRenderer::RenderGeometryPass(RHI::CommandContext* cmd)
-{
+	{
+#if TODO
 		cmd->BeginProfileEvent("Geometry Pass");
 		cmd->SetPipelineState(m_DeferredShadingPSO);
 		cmd->SetPrimitiveTopology();
@@ -214,20 +219,24 @@ namespace limbo::Gfx
 			}));
 		}
 		cmd->EndProfileEvent("Geometry Pass");
+#endif
 	}
 
 	void SceneRenderer::RenderAmbientOcclusionPass(RHI::CommandContext* cmd)
-{
+	{
+#if TODO
 		PROFILE_SCOPE(cmd, "Ambient Occlusion");
 
 		if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO)
 			m_SSAO->Render(cmd, this, m_DeferredShadingRTs[0], m_DeferredShadingDT);
 		else if (Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO)
 			m_RTAO->Render(cmd, this, &m_SceneAS, m_DeferredShadingRTs[1], m_DeferredShadingRTs[3]);
+#endif
 	}
 
 	void SceneRenderer::RenderSkybox(RHI::CommandContext* cmd)
-{
+	{
+#if TODO
 		cmd->BeginProfileEvent("Render Skybox");
 		cmd->SetPipelineState(m_SkyboxPSO);
 		cmd->SetPrimitiveTopology();
@@ -248,10 +257,12 @@ namespace limbo::Gfx
 			cmd->DrawIndexed((uint32)mesh.IndexCount);
 		}));
 		cmd->EndProfileEvent("Render Skybox");
+#endif
 	}
 
 	void SceneRenderer::RenderLightingPass(RHI::CommandContext* cmd)
-{
+	{
+#if TODO
 		cmd->BeginProfileEvent("Lighting");
 		cmd->SetPipelineState(m_PBRPSO);
 		cmd->SetPrimitiveTopology();
@@ -286,10 +297,12 @@ namespace limbo::Gfx
 
 		cmd->Draw(6);
 		cmd->EndProfileEvent("Lighting");
+#endif
 	}
 
 	void SceneRenderer::RenderSceneCompositePass(RHI::CommandContext* cmd)
-{
+	{
+#if TODO
 		cmd->BeginProfileEvent("Scene Composite");
 		cmd->SetPipelineState(m_CompositePSO);
 		cmd->SetPrimitiveTopology();
@@ -305,11 +318,13 @@ namespace limbo::Gfx
 
 		cmd->Draw(6);
 		cmd->EndProfileEvent("Scene Composite");
+#endif
 	}
 
 	void SceneRenderer::Render(float dt)
 	{
 		RHI::CommandContext* cmd = RHI::CommandContext::GetCommandContext();
+#if TODO
 
 		PROFILE_SCOPE(cmd, "Render");
 
@@ -348,6 +363,7 @@ namespace limbo::Gfx
 		// render scene composite
 		RenderSceneCompositePass(cmd);
 
+#endif
 		// present
 		{
 			PROFILE_GPU_SCOPE(cmd, "Present");
@@ -451,6 +467,7 @@ namespace limbo::Gfx
 
 	void SceneRenderer::LoadEnvironmentMap(RHI::CommandContext* cmd, const char* path)
 	{
+#if TODO
 		if (m_EnvironmentCubemap.IsValid())
 			DestroyTexture(m_EnvironmentCubemap);
 		if (m_IrradianceMap.IsValid())
@@ -630,5 +647,6 @@ namespace limbo::Gfx
 			RHI::DestroyRootSignature(tempRS);
 			cmd->EndEvent();
 		}
+#endif
 	}
 }

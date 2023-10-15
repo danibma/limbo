@@ -28,6 +28,7 @@ namespace limbo::Gfx
 
 	ShadowMapping::ShadowMapping()
 	{
+#if TODO
 		m_CommonRS = RHI::CreateRootSignature("Shadow Mapping Common RS", RHI::RSSpec().Init().AddRootCBV(100).AddRootCBV(101).AddRootConstants(0, 2));
 
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
@@ -48,10 +49,12 @@ namespace limbo::Gfx
 				.SetName("Shadow Map PSO");
 			m_PSO = RHI::CreatePSO(psoInit);
 		}
+#endif
 	}
 
 	ShadowMapping::~ShadowMapping()
 	{
+#if TODO
 		DestroyShader(m_ShadowMapVS);
 		DestroyShader(m_ShadowMapPS);
 
@@ -60,10 +63,12 @@ namespace limbo::Gfx
 
 		RHI::DestroyPSO(m_PSO);
 		RHI::DestroyRootSignature(m_CommonRS);
+#endif
 	}
 
 	void ShadowMapping::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer)
 	{
+#if TODO
 		if (UI::Globals::bDebugShadowMaps)
 			DrawDebugWindow();
 
@@ -101,7 +106,8 @@ namespace limbo::Gfx
 			cmd->EndProfileEvent(profileName.c_str());
 		}
 		cmd->EndProfileEvent("Shadow Maps Pass");
-}
+#endif
+	}
 
 	void ShadowMapping::DrawDebugWindow()
 	{

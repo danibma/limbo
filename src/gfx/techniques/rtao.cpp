@@ -13,6 +13,7 @@ namespace limbo::Gfx
 {
 	RTAO::RTAO()
 	{
+#if TODO
 		m_NoisedTexture = RHI::CreateTexture({
 			.Width = RHI::GetBackbufferWidth(),
 			.Height = RHI::GetBackbufferHeight(),
@@ -64,10 +65,12 @@ namespace limbo::Gfx
                 .SetName("RTAO Accumulate PSO");
 			m_RTAODenoisePSO = RHI::CreatePSO(psoInit);
 		}
+#endif
 	}
 
 	RTAO::~RTAO()
 	{
+#if TODO
 		if (m_FinalTexture.IsValid())
 			DestroyTexture(m_FinalTexture);
 		if (m_RTAOShader.IsValid())
@@ -82,10 +85,12 @@ namespace limbo::Gfx
 		RHI::DestroyPSO(m_RTAOPSO);
 		RHI::DestroyPSO(m_RTAODenoisePSO);
 		RHI::DestroyRootSignature(m_CommonRS);
+#endif
 	}
 
 	void RTAO::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, RHI::TextureHandle positionsMap, RHI::TextureHandle normalsMap)
 	{
+#if TODO
 		if (sceneRenderer->SceneInfo.PrevView != sceneRenderer->SceneInfo.View)
 		{
 			RHI::DestroyTexture(m_PreviousFrame);
@@ -141,6 +146,7 @@ namespace limbo::Gfx
 
 		cmd->InsertUAVBarrier(m_FinalTexture);
 		cmd->CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
+#endif
 	}
 
 	RHI::TextureHandle RTAO::GetFinalTexture() const
@@ -150,6 +156,7 @@ namespace limbo::Gfx
 
 	void RTAO::PreparePreviousFrameTexture()
 	{
+#if TODO
 		m_AccumCount = 0;
 		m_PreviousFrame = RHI::CreateTexture({
 			.Width = RHI::GetBackbufferWidth(),
@@ -159,5 +166,6 @@ namespace limbo::Gfx
 			.Format = RHI::Format::RGBA8_UNORM,
 			.Type = RHI::TextureType::Texture2D,
 		});
+#endif
 	}
 }
