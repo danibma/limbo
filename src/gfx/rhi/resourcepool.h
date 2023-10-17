@@ -1,32 +1,12 @@
 ﻿#pragma once
 
 #include "core/core.h"
+#include "resourcehandle.h"
 
 #include <queue>
 
 namespace limbo::RHI
 {
-	template<typename T>
-	class Handle
-	{
-	public:
-		Handle() : m_Index(0xFFFF), m_Generation(0) {}
-		bool IsValid() const { return m_Index != 0xFFFF; }
-
-		bool operator!=(const Handle& other)
-		{
-			return !(m_Index == other.m_Index && m_Generation == other.m_Generation);
-		}
-
-	private:
-		Handle(uint16 index, uint16 generation) : m_Index(index), m_Generation(generation) {}
-
-		uint16 m_Index;
-		uint16 m_Generation;
-
-		template<typename T1, uint16 InitialSize> friend class Pool;
-	};
-
 	template<typename HandleType, uint16 InitialSize>
 	class Pool
 	{
@@ -50,7 +30,7 @@ namespace limbo::RHI
 		}
 
 		template<class... Args>
-		Handle<HandleType> AllocateHandle(Args&&... args)
+		TypedHandle<HandleType> AllocateHandle(Args&&... args)
 		{
 			if (m_FreeSlots.size() == 0) Grow();
 			uint16 freeSlot = m_FreeSlots.front();
@@ -58,16 +38,16 @@ namespace limbo::RHI
 			ensure(freeSlot < m_Size);
 			Object& obj = m_Objects[freeSlot];
 			new(obj.Data) HandleType(std::forward<Args>(args)...);
-			return Handle<HandleType>(freeSlot, obj.Generation);
+			return TypedHandle<HandleType>({ freeSlot, obj.Generation });
 		}
 
-		void DeleteHandle(Handle<HandleType> handle)
+		void DeleteHandle(TypedHandle<HandleType> handle)
 		{
-			ensure(handle.IsValid());
-			m_FreeSlots.push(handle.m_Index);
+			ensure(handle.RawHandle.IsValid());
+			m_FreeSlots.push(handle.RawHandle.m_Index);
 			ensure(m_FreeSlots.size() <= m_Size);
-			m_Objects[handle.m_Index].Data->~HandleType();
-			++m_Objects[handle.m_Index].Generation;
+			m_Objects[handle.RawHandle.m_Index].Data->~HandleType();
+			++m_Objects[handle.RawHandle.m_Index].Generation;
 		}
 
 		void Grow()
@@ -87,11 +67,11 @@ namespace limbo::RHI
 			m_Size = newSize;
 		}
 
-		HandleType* Get(Handle<HandleType> handle)
+		HandleType* Get(TypedHandle<HandleType> handle)
 		{
-			ensure(handle.IsValid());
-			const Object& obj = m_Objects[handle.m_Index];
-			if (handle.m_Generation != obj.Generation)
+			ensure(handle.RawHandle.IsValid());
+			const Object& obj = m_Objects[handle.RawHandle.m_Index];
+			if (handle.RawHandle.m_Generation != obj.Generation)
 				return nullptr;
 			return obj.Data;
 		}

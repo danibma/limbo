@@ -137,6 +137,6 @@ namespace limbo::RHI
 
 		bool m_Compute = false;
 	};
-	typedef Handle<PipelineStateObject> PSOHandle;
+	typedef TypedHandle<PipelineStateObject> PSOHandle;
 }
 

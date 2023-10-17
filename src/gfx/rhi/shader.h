@@ -28,5 +28,5 @@ namespace limbo::RHI
 	private:
 		DelegateHandle m_RecompilationHandle;
 	};
-	typedef Handle<Shader> ShaderHandle;
+	typedef TypedHandle<Shader> ShaderHandle;
 }

@@ -163,7 +163,7 @@ namespace limbo::RHI
 		}
 
 		template<typename ResourceType>
-		void InsertResourceBarrier(Handle<ResourceType> resource, D3D12_RESOURCE_STATES newState, uint32 subresource = ~0)
+		void InsertResourceBarrier(TypedHandle<ResourceType> resource, D3D12_RESOURCE_STATES newState, uint32 subresource = ~0)
 		{
 			InsertResourceBarrier(RM_GET(resource), newState, subresource);
 		}
@@ -175,7 +175,7 @@ namespace limbo::RHI
 		}
 
 		template<typename ResourceType>
-		void InsertUAVBarrier(Handle<ResourceType> resource)
+		void InsertUAVBarrier(TypedHandle<ResourceType> resource)
 		{
 			InsertUAVBarrier(RM_GET(resource));
 		}

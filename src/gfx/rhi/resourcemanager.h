@@ -69,42 +69,42 @@ namespace limbo::RHI
 	};
 
 	// Global definitions
-	FORCEINLINE [[nodiscard]] BufferHandle CreateBuffer(const BufferSpec& spec)
+	FORCEINLINE NODISCARD BufferHandle CreateBuffer(const BufferSpec& spec)
 	{
 		return ResourceManager::Ptr->CreateBuffer(spec);
 	}
 
-	FORCEINLINE [[nodiscard]] ShaderHandle CreateShader(const char* file, const char* entryPoint, ShaderType type)
+	FORCEINLINE NODISCARD ShaderHandle CreateShader(const char* file, const char* entryPoint, ShaderType type)
 	{
 		return ResourceManager::Ptr->CreateShader(file, entryPoint, type);
 	}
 
-	FORCEINLINE [[nodiscard]] TextureHandle CreateTextureFromFile(const char* path, const char* debugName)
+	FORCEINLINE NODISCARD TextureHandle CreateTextureFromFile(const char* path, const char* debugName)
 	{
 		return ResourceManager::Ptr->CreateTextureFromFile(path, debugName);
 	}
 
-	FORCEINLINE [[nodiscard]] TextureHandle CreateTexture(const TextureSpec& spec)
+	FORCEINLINE NODISCARD TextureHandle CreateTexture(const TextureSpec& spec)
 	{
 		return ResourceManager::Ptr->CreateTexture(spec);
 	}
 
-	FORCEINLINE [[nodiscard]] TextureHandle CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
+	FORCEINLINE NODISCARD TextureHandle CreateTexture(ID3D12Resource* resource, const TextureSpec& spec)
 	{
 		return ResourceManager::Ptr->CreateTexture(resource, spec);
 	}
 
-	FORCEINLINE [[nodiscard]] PSOHandle CreatePSO(const PipelineStateSpec& initializer)
+	FORCEINLINE NODISCARD PSOHandle CreatePSO(const PipelineStateSpec& initializer)
 	{
 		return ResourceManager::Ptr->CreatePSO(initializer);
 	}
 
-	FORCEINLINE [[nodiscard]] RootSignatureHandle CreateRootSignature(const std::string& name, const RSSpec& initializer)
+	FORCEINLINE NODISCARD RootSignatureHandle CreateRootSignature(const std::string& name, const RSSpec& initializer)
 	{
 		return ResourceManager::Ptr->CreateRootSignature(name, initializer);
 	}
 
-	FORCEINLINE [[nodiscard]] PSOHandle CreatePSO(const RTPipelineStateSpec& initializer)
+	FORCEINLINE NODISCARD PSOHandle CreatePSO(const RTPipelineStateSpec& initializer)
 	{
 		return ResourceManager::Ptr->CreatePSO(initializer);
 	}

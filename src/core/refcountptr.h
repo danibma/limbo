@@ -188,19 +188,19 @@ namespace limbo
 			return (void**)(ReleaseAndGetAddressOf());
 		}
 
-		FORCEINLINE [[nodiscard]] T** ReleaseAndGetAddressOf()
+		FORCEINLINE NODISCARD T** ReleaseAndGetAddressOf()
 		{
 			if (m_Ptr)
 				m_Ptr->Release();
 			return &m_Ptr;
 		}
 
-		FORCEINLINE [[nodiscard]] T* const* GetAddressOf() const
+		FORCEINLINE NODISCARD T* const* GetAddressOf() const
 		{
 			return &m_Ptr;
 		}
 
-		FORCEINLINE [[nodiscard]] T** GetAddressOf()
+		FORCEINLINE NODISCARD T** GetAddressOf()
 		{
 			return &m_Ptr;
 		}

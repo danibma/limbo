@@ -69,5 +69,5 @@ namespace limbo::RHI
 		void CreateResource(const TextureSpec& spec);
 		void InitResource(const TextureSpec& spec);
 	};
-	typedef Handle<Texture> TextureHandle;
+	typedef TypedHandle<Texture> TextureHandle;
 }

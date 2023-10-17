@@ -118,8 +118,6 @@ namespace limbo::Gfx
 		RHI::ShaderHandle				m_DeferredShadingShaderVS;
 		RHI::ShaderHandle				m_DeferredShadingShaderPS;
 		RHI::PSOHandle					m_DeferredShadingPSO;
-		RHI::TextureHandle				m_DeferredShadingRTs[6];
-		RHI::TextureHandle				m_DeferredShadingDT;
 
 		// IBL stuff
 		RHI::TextureHandle				m_EnvironmentCubemap;

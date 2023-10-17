@@ -56,5 +56,5 @@ namespace limbo::RHI
 	private:
 		uint32 GetDWORDCost(const RSSpec& initializer);
 	};
-	typedef Handle<RootSignature> RootSignatureHandle;
+	typedef TypedHandle<RootSignature> RootSignatureHandle;
 }

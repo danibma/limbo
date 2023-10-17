@@ -57,7 +57,7 @@ namespace limbo::RHI
 
 		void InitResource(const BufferSpec& spec);
 	};
-	typedef Handle<Buffer> BufferHandle;
+	typedef TypedHandle<Buffer> BufferHandle;
 
 	struct VertexBufferView
 	{

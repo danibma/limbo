@@ -16,6 +16,7 @@
 
 #define FORCENOINLINE __declspec(noinline)
 #define FORCEINLINE   __forceinline
+#define NODISCARD [[nodiscard]]
 
 //
 // Types

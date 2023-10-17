@@ -5,6 +5,7 @@
 #include "scene.h"
 #include "uirenderer.h"
 #include "core/jobsystem.h"
+#include "rendergraph/rgbuilder.h"
 #include "rhi/device.h"
 #include "rhi/rootsignature.h"
 #include "techniques/pathtracing.h"
@@ -37,7 +38,7 @@ namespace limbo::Gfx
 			"assets/environment/venice_dawn_1_4k.hdr"
 		};
 
-#if TODO
+#if 1
 		Core::JobSystem::Execute(Core::TOnJobSystemExecute::CreateLambda([this]()
 		{
 			m_SSAO = std::make_unique<SSAO>();
@@ -59,15 +60,6 @@ namespace limbo::Gfx
 		RHI::SC::Compile(m_DeferredShadingShaderPS);
 
 		{
-			m_DeferredShadingRTs[0] = RHI::CreateTexture(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "PixelPosition"));
-			m_DeferredShadingRTs[1] = RHI::CreateTexture(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "WorldPosition"));
-			m_DeferredShadingRTs[2] = RHI::CreateTexture(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "Albedo"));
-			m_DeferredShadingRTs[3] = RHI::CreateTexture(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "Normal"));
-			m_DeferredShadingRTs[4] = RHI::CreateTexture(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "RoughnessMetallicAO"));
-			m_DeferredShadingRTs[5] = RHI::CreateTexture(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "Emissive"));
-			m_DeferredShadingDT = RHI::CreateTexture(RHI::Tex2DDepth(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), 0.0f, "DeferredDepth"));
-
-
 			constexpr RHI::Format deferredShadingFormats[] = {
 				RHI::Format::RGBA16_SFLOAT,
 				RHI::Format::RGBA16_SFLOAT,
@@ -323,7 +315,48 @@ namespace limbo::Gfx
 
 	void SceneRenderer::Render(float dt)
 	{
-		RHI::CommandContext* cmd = RHI::CommandContext::GetCommandContext();
+		RHI::CommandContext* context = RHI::CommandContext::GetCommandContext();
+		RGBuilder builder(context);
+
+		TStaticArray<RGHandle, 6> deferredShadingRTs;
+		deferredShadingRTs[0] = builder.Create(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "PixelPosition"));
+		deferredShadingRTs[1] = builder.Create(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "WorldPosition"));
+		deferredShadingRTs[2] = builder.Create(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "Albedo"));
+		deferredShadingRTs[3] = builder.Create(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "Normal"));
+		deferredShadingRTs[4] = builder.Create(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "RoughnessMetallicAO"));
+		deferredShadingRTs[5] = builder.Create(RHI::Tex2DRenderTarget(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), RHI::Format::RGBA16_SFLOAT, "Emissive"));
+		RGHandle deferredShadingDT = builder.Create(RHI::Tex2DDepth(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight(), 0.0f, "DeferredDepth"));
+
+		builder.AddPass("Geometry Pass", RGPassFlags::Graphics)
+			.RenderTarget(deferredShadingRTs[0])
+			.RenderTarget(deferredShadingRTs[1])
+			.RenderTarget(deferredShadingRTs[2])
+			.RenderTarget(deferredShadingRTs[3])
+			.RenderTarget(deferredShadingRTs[5])
+			.RenderTarget(deferredShadingRTs[5])
+			.DepthStencil(deferredShadingDT)
+			.Bind([=](RHI::CommandContext* ctx)
+			{
+				ctx->SetPipelineState(m_DeferredShadingPSO);
+				ctx->SetPrimitiveTopology();
+				//context->SetRenderTargets(m_DeferredShadingRTs, m_DeferredShadingDT);
+				ctx->SetViewport(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+
+				//context->ClearRenderTargets(m_DeferredShadingRTs);
+				//context->ClearDepthTarget(m_DeferredShadingDT, 0.0f);
+
+				ctx->BindTempConstantBuffer(1, SceneInfo);
+				for (Scene* scene : m_Scenes)
+				{
+					scene->IterateMeshes(TOnDrawMesh::CreateLambda([&](const Mesh& mesh)
+					{
+						ctx->BindConstants(0, 0, mesh.InstanceID);
+
+						ctx->SetIndexBufferView(mesh.IndicesLocation);
+						ctx->DrawIndexed((uint32)mesh.IndexCount);
+					}));
+				}
+			});
 #if TODO
 
 		PROFILE_SCOPE(cmd, "Render");
@@ -364,9 +397,11 @@ namespace limbo::Gfx
 		RenderSceneCompositePass(cmd);
 
 #endif
+		builder.Execute();
+
 		// present
 		{
-			PROFILE_GPU_SCOPE(cmd, "Present");
+			PROFILE_GPU_SCOPE(context, "Present");
 			RHI::Present(Tweaks.bEnableVSync);
 		}
 	}
