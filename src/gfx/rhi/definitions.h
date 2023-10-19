@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/core.h"
-#include "core/math.h"
 
 namespace limbo::RHI
 {

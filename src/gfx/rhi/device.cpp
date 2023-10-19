@@ -125,7 +125,7 @@ namespace limbo::RHI
 					};
 
 					D3D12_INFO_QUEUE_FILTER NewFilter = {};
-					NewFilter.DenyList.NumSeverities = _countof(Severities);
+					NewFilter.DenyList.NumSeverities = ARRAY_LEN(Severities);
 					NewFilter.DenyList.pSeverityList = Severities;
 
 					DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true));
@@ -151,7 +151,7 @@ namespace limbo::RHI
 		m_RTVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV,  128,    0);
 		m_DSVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV,   64,    0);
 
-		for (int i = 0; i < (int)ContextType::MAX; ++i)
+		for (uint8 i = 0; i < ENUM_COUNT<ContextType>(); ++i)
 		{
 			m_CommandQueues[i] = new CommandQueue((ContextType)i, this);
 			m_CommandContexts[i] = new CommandContext(m_CommandQueues[i], (ContextType)i, m_Device.Get(), m_GlobalHeap);
@@ -208,7 +208,7 @@ namespace limbo::RHI
 			ImGui::DestroyContext();
 		}
 
-		for (int i = 0; i < (int)ContextType::MAX; ++i)
+		for (uint8 i = 0; i < ENUM_COUNT<ContextType>(); ++i)
 		{
 			delete m_CommandContexts[i];
 			delete m_CommandQueues[i];
@@ -581,7 +581,7 @@ namespace limbo::RHI
 	void Device::GenerateMipLevels(TextureHandle texture)
 	{
 		Texture* pTexture = RM_GET(texture);
-		FAILIF(!pTexture);
+		ENSURE_RETURN(!pTexture);
 
 		CommandContext* cmd = m_CommandContexts[(int)ContextType::Direct];
 
@@ -648,7 +648,7 @@ namespace limbo::RHI
 
 	void Device::IdleGPU()
 	{
-		for (int i = 0; i < (int)ContextType::MAX; ++i)
+		for (uint8 i = 0; i < ENUM_COUNT<ContextType>(); ++i)
 			m_CommandQueues[i]->WaitForIdle();
 	}
 

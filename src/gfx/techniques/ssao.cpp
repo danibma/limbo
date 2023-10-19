@@ -45,7 +45,7 @@ namespace limbo::Gfx
 			{
 				RM_GET(m_UnblurredSSAOTexture)->UAVHandle[0]
 			};
-			cmd->BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
+			cmd->BindTempDescriptorTable(0, uavHandles, ARRAY_LEN(uavHandles));
 
 			cmd->BindConstants(1, 0, sceneRenderer->Tweaks.SSAORadius);
 			cmd->BindConstants(1, 1, sceneRenderer->Tweaks.SSAOPower);
@@ -66,7 +66,7 @@ namespace limbo::Gfx
 			{
 				RM_GET(m_BlurredSSAOTexture)->UAVHandle[0]
 			};
-			cmd->BindTempDescriptorTable(0, uavHandles, _countof(uavHandles));
+			cmd->BindTempDescriptorTable(0, uavHandles, ARRAY_LEN(uavHandles));
 
 			cmd->BindConstants(1, 4, RM_GET(m_UnblurredSSAOTexture)->SRV());
 

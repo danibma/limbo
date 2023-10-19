@@ -271,7 +271,7 @@ namespace limbo::Gfx::PSOCache
 
 	void DestroyPSOs()
 	{
-		for (uint8 i = 0; i < (uint8)PipelineID::MAX; ++i)
+		for (uint8 i = 0; i < ENUM_COUNT<PipelineID>(); ++i)
 		{
 			if (!ensure(s_Pipelines.contains((PipelineID)i))) continue;
 			RHI::DestroyPSO(s_Pipelines[(PipelineID)i]);
@@ -283,7 +283,7 @@ namespace limbo::Gfx::PSOCache
 
 	RHI::PSOHandle Get(PipelineID pipelineID)
 	{
-		FAILIF(!s_Pipelines.contains(pipelineID), RHI::PSOHandle());
+		ENSURE_RETURN(!s_Pipelines.contains(pipelineID), RHI::PSOHandle());
 		return s_Pipelines[pipelineID];
 	}
 }

@@ -7,7 +7,7 @@ namespace limbo::Algo
     // sdbm hash function - http://www.cse.yorku.ca/~oz/hash.html
 	static uint32 Hash(const char* str)
 	{
-        FAILIF(!str, ~0);
+        ENSURE_RETURN(!str, ~0);
 
         uint32 hash = 0;
         int c;

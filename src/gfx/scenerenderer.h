@@ -137,10 +137,10 @@ namespace limbo::Gfx
 		EnvironmentMapList				EnvironmentMaps;
 
 		// This string lists are used for the UI
-		const char*						TonemapList[(uint8)Tonemap::MAX]		= { "None", "AcesFilm", "Reinhard" };
-		const char*						SceneViewList[(uint8)SceneView::MAX]	= { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
-		const char*						RenderPathList[(uint8)RenderPath::MAX]	= { "Deferred", "Path Tracing" };
-		const char*						AOList[(uint8)AmbientOcclusion::MAX]	= { "None", "SSAO", "RTAO" };
+		const char*						TonemapList[ENUM_COUNT<Tonemap>()]		= { "None", "AcesFilm", "Reinhard" };
+		const char*						SceneViewList[ENUM_COUNT<SceneView>()] = {"Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion"};
+		const char*						RenderPathList[ENUM_COUNT<RenderPath>()] = {"Deferred", "Path Tracing"};
+		const char*						AOList[ENUM_COUNT<AmbientOcclusion>()] = {"None", "SSAO", "RTAO"};
 
 	public:
 		SceneRenderer(Core::Window* window);

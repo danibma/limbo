@@ -18,6 +18,7 @@ namespace limbo::RHI
 		ShaderResourceView		= 1 << 7,
 		Readback				= 1 << 8
 	};
+	DECLARE_ENUM_BITWISE_OPERATORS(BufferUsage)
 
 	struct BufferSpec
 	{

@@ -111,8 +111,8 @@ namespace limbo::UI
 
 				ImGui::PushItemWidth(200.0f);
 				ImGui::Combo("Render Path", &sceneRenderer->Tweaks.CurrentRenderPath, sceneRenderer->RenderPathList, maxRenderPath);
-				ImGui::Combo("Tonemap", &sceneRenderer->Tweaks.CurrentTonemap, sceneRenderer->TonemapList, (int)Gfx::Tonemap::MAX);
-				ImGui::Combo("Scene Views", &sceneRenderer->Tweaks.CurrentSceneView, sceneRenderer->SceneViewList, (int)Gfx::SceneView::MAX);
+				ImGui::Combo("Tonemap", &sceneRenderer->Tweaks.CurrentTonemap, sceneRenderer->TonemapList, ENUM_COUNT<Gfx::Tonemap>());
+				ImGui::Combo("Scene Views", &sceneRenderer->Tweaks.CurrentSceneView, sceneRenderer->SceneViewList, ENUM_COUNT<Gfx::SceneView>());
 				ImGui::Checkbox("VSync", &sceneRenderer->Tweaks.bEnableVSync);
 				ImGui::PopItemWidth();
 

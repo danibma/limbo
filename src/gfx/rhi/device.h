@@ -38,8 +38,8 @@ namespace limbo::RHI
 
 	class Device
 	{
-		using CommandQueueList   = TStaticArray<CommandQueue*, (int)ContextType::MAX>;
-		using CommandContextList = TStaticArray<CommandContext*, (int)ContextType::MAX>;
+		using CommandQueueList   = TStaticArray<CommandQueue*, ENUM_COUNT<ContextType>()>;
+		using CommandContextList = TStaticArray<CommandContext*, ENUM_COUNT<ContextType>()>;
 
 	private:
 		RefCountPtr<IDXGIFactory2>			m_Factory;

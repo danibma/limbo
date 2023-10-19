@@ -133,7 +133,7 @@ namespace limbo::Gfx::ShadersCache
 	void CompileShaders()
 	{
 		Core::Timer t;
-		for (uint8 i = 0; i < (uint8)ShaderID::MAX; ++i)
+		for (uint8 i = 0; i < ENUM_COUNT<ShaderID>(); ++i)
 		{
 			ShaderID shaderID = (ShaderID)i;
 			s_Shaders[shaderID] = RHI::CreateShader(GetShaderFile(shaderID), GetEntryPoint(shaderID), GetShaderType(shaderID));
@@ -144,7 +144,7 @@ namespace limbo::Gfx::ShadersCache
 
 	void DestroyShaders()
 	{
-		for (uint8 i = 0; i < (uint8)ShaderID::MAX; ++i)
+		for (uint8 i = 0; i < ENUM_COUNT<ShaderID>(); ++i)
 		{
 			if (!ensure(s_Shaders.contains((ShaderID)i))) continue;
 			RHI::DestroyShader(s_Shaders[(ShaderID)i]);
@@ -153,7 +153,7 @@ namespace limbo::Gfx::ShadersCache
 
 	RHI::ShaderHandle Get(ShaderID shaderID)
 	{
-		FAILIF(!s_Shaders.contains(shaderID), RHI::ShaderHandle());
+		ENSURE_RETURN(!s_Shaders.contains(shaderID), RHI::ShaderHandle());
 		return s_Shaders[shaderID];
 	}
 }

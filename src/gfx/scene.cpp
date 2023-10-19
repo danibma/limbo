@@ -51,9 +51,9 @@ namespace limbo::Gfx
 		cgltf_options options = {};
 		cgltf_data* data = nullptr;
 		cgltf_result result = cgltf_parse_file(&options, path, &data);
-		FAILIF(result != cgltf_result_success);
+		ENSURE_RETURN(result != cgltf_result_success);
 		result = cgltf_load_buffers(&options, data, path);
-		FAILIF(result != cgltf_result_success);
+		ENSURE_RETURN(result != cgltf_result_success);
 
 		Paths::GetPath(path, m_FolderPath);
 		Paths::GetFilename(path, m_SceneName);
@@ -246,7 +246,7 @@ namespace limbo::Gfx
 		m_Textures.push_back(texture);
 
 		RHI::Texture* t = RM_GET(texture);
-		FAILIF(!t, -1);
+		ENSURE_RETURN(!t, -1);
 		return t->SRV();
 	}
 

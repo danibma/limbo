@@ -89,7 +89,7 @@ namespace limbo::Gfx
 			{
 				RM_GET(m_FinalTexture)->UAVHandle[0],
 			};
-			cmd->BindTempDescriptorTable(1, uavHandles, _countof(uavHandles));
+			cmd->BindTempDescriptorTable(1, uavHandles, ARRAY_LEN(uavHandles));
 
 			cmd->BindConstants(3, 0, m_AccumCount);
 			cmd->BindConstants(3, 1, RM_GET(m_PreviousFrame)->SRV());

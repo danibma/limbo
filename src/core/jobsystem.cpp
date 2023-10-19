@@ -1,7 +1,6 @@
 ﻿#include "stdafx.h"
 #include "jobsystem.h"
 #include "ringbuffer.h"
-#include "math.h"
 
 #include <format>
 #include <atomic>

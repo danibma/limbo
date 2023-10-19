@@ -24,7 +24,7 @@ namespace limbo::RHI
 		if (m_Type != ContextType::Copy)
 		{
 			ID3D12DescriptorHeap* heaps[] = { m_GlobalHeap->GetHeap() };
-			m_CommandList->SetDescriptorHeaps(_countof(heaps), heaps);
+			m_CommandList->SetDescriptorHeaps(ARRAY_LEN(heaps), heaps);
 		}
 	}
 
@@ -247,7 +247,7 @@ namespace limbo::RHI
 	{
 		constexpr uint64 MaxBindCount = 16;
 		constexpr uint32 DescriptorCopyRanges[] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
-		static_assert(_countof(DescriptorCopyRanges) == MaxBindCount);
+		static_assert(ARRAY_LEN(DescriptorCopyRanges) == MaxBindCount);
 
 		check(count < MaxBindCount);
 		check(count > 0);
@@ -338,7 +338,7 @@ namespace limbo::RHI
 		if (m_Type != ContextType::Copy)
 		{
 			ID3D12DescriptorHeap* heaps[] = { m_GlobalHeap->GetHeap() };
-			m_CommandList->SetDescriptorHeaps(_countof(heaps), heaps);
+			m_CommandList->SetDescriptorHeaps(ARRAY_LEN(heaps), heaps);
 		}
 	}
 

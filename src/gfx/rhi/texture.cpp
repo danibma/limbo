@@ -92,13 +92,13 @@ namespace limbo::RHI
 		if (strcmp(extension, ".hdr") == 0)
 		{
 			data = stbi_loadf(path, &width, &height, &numChannels, 4);
-			FAILIF(!data);
+			ENSURE_RETURN(!data);
 			format = Format::RGBA32_SFLOAT;
 		}
 		else
 		{
 			data = stbi_load(path, &width, &height, &numChannels, 4);
-			FAILIF(!data);
+			ENSURE_RETURN(!data);
 			if (stbi_is_16_bit(path))
 				format = Format::RGBA16_UNORM;
 			else
@@ -170,7 +170,7 @@ namespace limbo::RHI
 
 	void Texture::CreateDSV()
 	{
-		FAILIF(Spec.Type == TextureType::Texture3D); // this is not a valid texture type fro DSV
+		ENSURE_RETURN(Spec.Type == TextureType::Texture3D); // this is not a valid texture type fro DSV
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC desc = {
 			.Format = D3DFormat(Spec.Format),

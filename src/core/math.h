@@ -38,24 +38,6 @@ namespace limbo::Math
 	inline constexpr float Radians(float degrees) { return degrees * DegreesToRadians; }
 	inline constexpr float Degrees(float radians) { return radians * RadiansToDegrees; }
 
-	template<typename T>
-	T Align(T value, T alignement)
-	{
-		return (value + (alignement - 1)) & ~(alignement - 1);
-	}
-
-	template<typename T>
-	T Max(T first, T second)
-	{
-		return first >= second ? first : second;
-	}
-
-	template<typename T>
-	T Min(T first, T second)
-	{
-		return first <= second ? first : second;
-	}
-
 	// https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/
 	inline float4x4 InfReversedProj_RH(float fovY_radians, float aspectRatio, float zNear)
 	{

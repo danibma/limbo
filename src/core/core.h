@@ -157,16 +157,16 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 #endif
 
 #define check(expr) \
-	{ \
+	do { \
 		bool r = (expr); \
 		if (!(r)) \
 		{ \
 			LB_ERROR("Check failed! '%s'", #expr); \
 			abort(); \
 		} \
-	}
+	} while(0)
 
-#define FAILIF(expr, ...) if (!ensure(!(expr))) return __VA_ARGS__;
+#define ENSURE_RETURN(expr, ...) if (!ensure(!(expr))) return __VA_ARGS__;
 
 /* An empty function as breakpoint target
 Usage: just put Noop(); at any line in a function, then you can set a breakpoint there.
@@ -216,37 +216,14 @@ template<typename A, typename B>	struct TIsSame { enum { Value = false }; };
 template<typename T>				struct TIsSame<T, T> { enum { Value = true }; };
 
 // Support bitwise operation
-template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
-constexpr Type operator&(Type a, Type b)
-{
-	return static_cast<Type>(static_cast<__underlying_type(Type)>(a) & static_cast<__underlying_type(Type)>(b));
-}
-
-template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
-constexpr Type operator|(Type a, Type b)
-{
-	return static_cast<Type>(static_cast<__underlying_type(Type)>(a) | static_cast<__underlying_type(Type)>(b));
-}
-
-template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
-constexpr Type operator~(Type a)
-{
-	return static_cast<Type>(~static_cast<__underlying_type(Type)>(a));
-}
-
-template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
-constexpr Type operator|=(Type a, Type b)
-{
-	a = static_cast<Type>(static_cast<__underlying_type(Type)>(a) | static_cast<__underlying_type(Type)>(b));
-	return a;
-}
-
-template<typename Type, typename TEnableIf<TIsEnum<Type>::Value, int>::Type = 0>
-constexpr Type operator&=(Type a, Type b)
-{
-	a = static_cast<Type>(static_cast<__underlying_type(Type)>(a) | static_cast<__underlying_type(Type)>(b));
-	return a;
-}
+#define DECLARE_ENUM_BITWISE_OPERATORS(T) \
+	inline constexpr T operator|(T a, T b) { return (T)((uint64_t)a | (uint64_t)b); } \
+	inline constexpr T operator&(T a, T b) { return (T)((uint64_t)a & (uint64_t)b); } \
+	inline constexpr T operator^(T a, T b) { return (T)((uint64_t)a ^ (uint64_t)b); } \
+	inline constexpr T operator~(T a) { return (T)~(uint64_t)a; } \
+	inline T& operator|=(T& a, T b) { return a = (T)((uint64_t)a | (uint64_t)b); } \
+	inline T& operator&=(T& a, T b) { return a = (T)((uint64_t)a & (uint64_t)b); } \
+	inline T& operator^=(T& a, T b) { return a = (T)((uint64_t)a ^ (uint64_t)b); }
 
 template<typename Enum, typename = TEnableIf<TIsEnum<Enum>::Value>>
 constexpr inline bool EnumHasAllFlags(Enum Flags, Enum Contains)
@@ -259,3 +236,37 @@ constexpr inline bool EnumHasAnyFlags(Enum Flags, Enum Contains)
 {
 	return (((__underlying_type(Enum))Flags) & (__underlying_type(Enum))Contains) != 0;
 }
+
+// Simple math operations
+namespace limbo::Math
+{
+	template<typename T>
+	constexpr FORCEINLINE T Align(T value, T alignement)
+	{
+		return (value + (alignement - 1)) & ~(alignement - 1);
+	}
+
+	template<typename T>
+	constexpr FORCEINLINE T Max(T first, T second)
+	{
+		return first >= second ? first : second;
+	}
+
+	template<typename T>
+	constexpr FORCEINLINE T Min(T first, T second)
+	{
+		return first <= second ? first : second;
+	}
+
+	template<typename T>
+	constexpr FORCEINLINE T Abs(T value)
+	{
+		return value < 0 ? -value : value;
+	}
+}
+
+template<typename T, size_t N>
+constexpr FORCEINLINE uint32 ARRAY_LEN(T const(&)[N]) { return uint32(N); }
+
+template<typename T>
+constexpr FORCEINLINE uint8 ENUM_COUNT() { return uint8(T::MAX); }

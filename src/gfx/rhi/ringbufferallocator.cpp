@@ -26,7 +26,7 @@ namespace limbo::RHI
 
 	void RingBufferAllocator::Allocate(uint64 size, RingBufferAllocation& allocation)
 	{
-		FAILIF(size > m_TotalSize);
+		ENSURE_RETURN(size > m_TotalSize);
 
 		uint64 freedOffset = 0;
 
@@ -72,7 +72,7 @@ namespace limbo::RHI
 
 		// if, even after waiting for an allocation to be done, we still can't allocate, it means
 		// some allocation is not being freed or is not temporary, which is not the way to use this allocator
-		FAILIF(offset == InvalidOffset);
+		ENSURE_RETURN(offset == InvalidOffset);
 
 		allocation.Context		= CommandContext::GetCommandContext(ContextType::Copy);
 		allocation.Buffer		= RM_GET(m_Buffer);

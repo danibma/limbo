@@ -14,6 +14,7 @@ namespace limbo::RHI
 		RenderTarget	= 1 << 3,
 		DepthStencil	= 1 << 4,
 	};
+	DECLARE_ENUM_BITWISE_OPERATORS(TextureUsage)
 
 	struct TextureSpec
 	{
