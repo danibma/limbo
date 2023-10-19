@@ -23,6 +23,8 @@ using namespace limbo;
 
 int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lpCmdLine, int nCmdShow)
 {
+	Core::Timer initTimer;
+
 	Core::JobSystem::Initialize();
 
 	Core::CommandLine::Init(lpCmdLine);
@@ -46,6 +48,8 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 	Profiler::Initialize();
 
 	Gfx::SceneRenderer* sceneRenderer = Gfx::CreateSceneRenderer(window);
+
+	LB_LOG("Took %.2fs to initialize all the systems", initTimer.ElapsedSeconds());
 
 	Core::Timer deltaTimer;
 	while (!window->ShouldClose())

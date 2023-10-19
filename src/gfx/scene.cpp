@@ -83,7 +83,7 @@ namespace limbo::Gfx
 		// Create the geometry buffer and create the Vertex/Index buffer views for the respective meshes
 		ProcessPrimitivesData();
 
-		LB_LOG("Finished loading %s (took %.2fs)", path, timer.ElapsedSeconds());
+		LB_LOG("Finished loading %s (took %.3fs)", path, timer.ElapsedSeconds());
 
 		// Clear streams
 		PrimitivesStreams.clear();

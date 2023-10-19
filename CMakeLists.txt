@@ -80,7 +80,7 @@ set_source_files_properties(${SHADER_FILES} ${RT_SHADER_FILES} ${TEST_SHADER_FIL
 target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Defines
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNO_LOG")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DLB_RELEASE")
 
 # GLFW
 target_link_libraries(limbo PUBLIC glfw)

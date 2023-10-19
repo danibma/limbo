@@ -75,7 +75,7 @@ namespace limbo
 
 	void GPUProfiler::StartProfile(RHI::CommandContext* cmd, const char* name)
 	{
-#if NO_LOG // don't run the profiler stuff in release mode
+#if LB_RELEASE // don't run the profiler stuff in release mode
 		return;
 #endif
 
@@ -104,7 +104,7 @@ namespace limbo
 
 	void GPUProfiler::EndProfile(RHI::CommandContext* cmd, const char* name)
 	{
-#if NO_LOG // don't run the profiler stuff in release mode
+#if LB_RELEASE // don't run the profiler stuff in release mode
 		return;
 #endif
 
@@ -132,7 +132,7 @@ namespace limbo
 
 	void GPUProfiler::EndFrame()
 	{
-#if NO_LOG // don't run the profiler stuff in release mode
+#if LB_RELEASE // don't run the profiler stuff in release mode
 		return;
 #endif
 
@@ -213,7 +213,7 @@ namespace limbo
 
 	void CPUProfiler::StartProfile(const char* name)
 	{
-#if NO_LOG // don't run the profiler stuff in release mode
+#if LB_RELEASE // don't run the profiler stuff in release mode
 		return;
 #endif
 
@@ -240,7 +240,7 @@ namespace limbo
 
 	void CPUProfiler::EndProfile(const char* name)
 	{
-#if NO_LOG // don't run the profiler stuff in release mode
+#if LB_RELEASE // don't run the profiler stuff in release mode
 		return;
 #endif
 
@@ -261,7 +261,7 @@ namespace limbo
 
 	void CPUProfiler::EndFrame()
 	{
-#if NO_LOG // don't run the profiler stuff in release mode
+#if LB_RELEASE // don't run the profiler stuff in release mode
 		return;
 #endif
 

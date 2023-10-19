@@ -16,7 +16,7 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include <imgui.h>
 #include <CppDelegates/Delegates.h>
-#if !NO_LOG
+#if !LB_RELEASE
 #	define USE_PIX
 #endif
 #include <WinPixEventRuntime/pix3.h>

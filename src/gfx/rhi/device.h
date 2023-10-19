@@ -74,10 +74,6 @@ namespace limbo::RHI
 
 		GPUInfo								m_GPUInfo;
 
-		RootSignatureHandle					m_GenerateMipsRS;
-		ShaderHandle						m_GenerateMipsShader;
-		PSOHandle							m_GenerateMipsPSO;
-
 	public:
 		static Device* Ptr;
 

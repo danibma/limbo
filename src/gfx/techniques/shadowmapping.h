@@ -1,9 +1,6 @@
 ﻿#pragma once
 #include "gfx/shaderinterop.h"
-#include "gfx/rhi/shader.h"
 #include "gfx/rhi/texture.h"
-#include "gfx/rhi/pipelinestateobject.h"
-#include "gfx/rhi/rootsignature.h"
 
 namespace limbo::RHI { class CommandContext; }
 
@@ -14,11 +11,7 @@ namespace limbo::Gfx
 	class SceneRenderer;
 	class ShadowMapping
 	{
-		RHI::RootSignatureHandle	m_CommonRS;
-		RHI::ShaderHandle			m_ShadowMapVS;
-		RHI::ShaderHandle			m_ShadowMapPS;
 		RHI::TextureHandle			m_DepthShadowMaps[SHADOWMAP_CASCADES];
-		RHI::PSOHandle				m_PSO;
 
 		ShadowData					m_ShadowData;
 

@@ -1,11 +1,10 @@
 ﻿#include "stdafx.h"
 #include "ssao.h"
 
+#include "gfx/psocache.h"
 #include "gfx/scenerenderer.h"
 #include "gfx/rhi/device.h"
 #include "gfx/rhi/resourcemanager.h"
-#include "gfx/rhi/rootsignature.h"
-#include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/shadercompiler.h"
 #include "gfx/rhi/commandcontext.h"
 
@@ -21,20 +20,6 @@ namespace limbo::Gfx
 			.Format = RHI::Format::R8_UNORM,
 		});
 
-		m_SSAORS = RHI::CreateRootSignature("SSAO RS", RHI::RSSpec().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4).AddRootCBV(100));
-		m_BlurSSAORS = RHI::CreateRootSignature("Blur SSAO RS", RHI::RSSpec().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 5));
-
-		m_SSAOShader = RHI::CreateShader("ssao.hlsl", "ComputeSSAO", RHI::ShaderType::Compute);
-		RHI::SC::Compile(m_SSAOShader);
-		{
-			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec()
-				.Init()
-				.SetRootSignature(m_SSAORS)
-				.SetComputeShader(m_SSAOShader)
-				.SetName("SSAO PSO");
-			m_SSAOPSO = RHI::CreatePSO(psoInit);
-		}
-
 		m_BlurredSSAOTexture = RHI::CreateTexture({
 			.Width = RHI::GetBackbufferWidth(),
 			.Height = RHI::GetBackbufferHeight(),
@@ -42,37 +27,19 @@ namespace limbo::Gfx
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
 			.Format = RHI::Format::R8_UNORM,
 		});
-		m_BlurSSAOShader = RHI::CreateShader("ssao.hlsl", "BlurSSAO", RHI::ShaderType::Compute);
-		RHI::SC::Compile(m_BlurSSAOShader);
-		{
-			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec()
-				.Init()
-				.SetRootSignature(m_BlurSSAORS)
-				.SetComputeShader(m_BlurSSAOShader)
-				.SetName("SSAO PSO");
-			m_BlurSSAOPSO = RHI::CreatePSO(psoInit);
-		}
 	}
 
 	SSAO::~SSAO()
 	{
 		RHI::DestroyTexture(m_UnblurredSSAOTexture);
 		RHI::DestroyTexture(m_BlurredSSAOTexture);
-		RHI::DestroyShader(m_SSAOShader);
-		RHI::DestroyShader(m_BlurSSAOShader);
-
-		RHI::DestroyPSO(m_SSAOPSO);
-		RHI::DestroyPSO(m_BlurSSAOPSO);
-
-		RHI::DestroyRootSignature(m_SSAORS);
-		RHI::DestroyRootSignature(m_BlurSSAORS);
 	}
 
 	void SSAO::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::TextureHandle positionsMap, RHI::TextureHandle sceneDepthMap)
 	{
 		{
 			cmd->BeginProfileEvent("SSAO");
-			cmd->SetPipelineState(m_SSAOPSO);
+			cmd->SetPipelineState(PSOCache::Get(PipelineID::SSAO));
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
@@ -93,7 +60,7 @@ namespace limbo::Gfx
 
 		{
 			cmd->BeginProfileEvent("SSAO Blur Texture");
-			cmd->SetPipelineState(m_BlurSSAOPSO);
+			cmd->SetPipelineState(PSOCache::Get(PipelineID::SSAOBlur));
 
 			RHI::DescriptorHandle uavHandles[] =
 			{

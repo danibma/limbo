@@ -18,6 +18,8 @@
 #include <imgui/backends/imgui_impl_dx12.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 
+#include "gfx/psocache.h"
+
 unsigned int DelegateHandle::CURRENT_ID = 0;
 
 extern "C" { __declspec(dllexport) extern const UINT D3D12SDKVersion = 610; }
@@ -30,14 +32,21 @@ namespace limbo::RHI
 	{
 		uint32_t dxgiFactoryFlags = 0;
 		bool bIsProfiling = Core::CommandLine::HasArg(LIMBO_CMD_PROFILE);
+		bool bD3DDebug = Core::CommandLine::HasArg(LIMBO_CMD_D3DDEBUG);
+		bool bGPUValidation = Core::CommandLine::HasArg(LIMBO_CMD_GPU_VALIDATION);
 
-#if !NO_LOG
-		if (!bIsProfiling)
+		if (bD3DDebug)
+			LB_WARN("D3D Debug enabled");
+		if (bGPUValidation)
+			LB_WARN("GPU Validation enabled");
+
+#if !LB_RELEASE
+		if (!bIsProfiling && bD3DDebug)
 			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif
 		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(m_Factory.ReleaseAndGetAddressOf())));
 
-#if !NO_LOG
+#if !LB_RELEASE
 		if (!bIsProfiling)
 		{
 			// note: disabled pix capture for now, it redirects the GPU validation into their stuff, so the app does not get any GPU validation errors
@@ -53,15 +62,21 @@ namespace limbo::RHI
 				}
 			}
 
-			RefCountPtr<ID3D12Debug> debugController;
-			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
-			debugController->EnableDebugLayer();
+			if (bD3DDebug)
+			{
+				RefCountPtr<ID3D12Debug> debugController;
+				DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
+				debugController->EnableDebugLayer();
+			}
 
-#if LIMBO_DEBUG
-			RefCountPtr<ID3D12Debug1> debugController1;
-			DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(debugController1.ReleaseAndGetAddressOf())));
-			debugController1->SetEnableGPUBasedValidation(true);
-#endif
+			if (bGPUValidation)
+			{
+				RefCountPtr<ID3D12Debug> debugController;
+				DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
+				RefCountPtr<ID3D12Debug1> debugController1;
+				DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(debugController1.ReleaseAndGetAddressOf())));
+				debugController1->SetEnableGPUBasedValidation(true);
+			}
 		}
 #endif
 
@@ -89,40 +104,43 @@ namespace limbo::RHI
 
 		m_GPUInfo.bSupportsRaytracing = false;
 
-#if !NO_LOG
+#if !LB_RELEASE
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		if (!bIsProfiling && !IsUnderRenderDoc())
 		{
 			// RenderDoc does not support rt for some reason as well
 			m_GPUInfo.bSupportsRaytracing = m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1;
 
-			RefCountPtr<ID3D12InfoQueue> d3d12InfoQueue;
-			DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(d3d12InfoQueue.ReleaseAndGetAddressOf())));
-			RefCountPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
-			if (SUCCEEDED(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(d3d12InfoQueue1.ReleaseAndGetAddressOf()))))
+			if (bD3DDebug)
 			{
-				// Suppress messages based on their severity level
-				D3D12_MESSAGE_SEVERITY Severities[] =
+				RefCountPtr<ID3D12InfoQueue> d3d12InfoQueue;
+				DX_CHECK(m_Device->QueryInterface(IID_PPV_ARGS(d3d12InfoQueue.ReleaseAndGetAddressOf())));
+				RefCountPtr<ID3D12InfoQueue1> d3d12InfoQueue1;
+				if (SUCCEEDED(d3d12InfoQueue->QueryInterface(IID_PPV_ARGS(d3d12InfoQueue1.ReleaseAndGetAddressOf()))))
 				{
-					D3D12_MESSAGE_SEVERITY_INFO
-				};
+					// Suppress messages based on their severity level
+					D3D12_MESSAGE_SEVERITY Severities[] =
+					{
+						D3D12_MESSAGE_SEVERITY_INFO
+					};
 
-				D3D12_INFO_QUEUE_FILTER NewFilter = {};
-				NewFilter.DenyList.NumSeverities = _countof(Severities);
-				NewFilter.DenyList.pSeverityList = Severities;
+					D3D12_INFO_QUEUE_FILTER NewFilter = {};
+					NewFilter.DenyList.NumSeverities = _countof(Severities);
+					NewFilter.DenyList.pSeverityList = Severities;
 
-				DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true));
-				DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true));
-				DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false));
+					DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true));
+					DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true));
+					DX_CHECK(d3d12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, false));
 
-				DX_CHECK(d3d12InfoQueue->PushStorageFilter(&NewFilter));
+					DX_CHECK(d3d12InfoQueue->PushStorageFilter(&NewFilter));
 
-				DWORD messageCallbackCookie;
-				DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, this, &messageCallbackCookie));
-			}
-			else
-			{
-				LB_WARN("Failed to get ID3D12InfoQueue1, there will be no message callback.");
+					DWORD messageCallbackCookie;
+					DX_CHECK(d3d12InfoQueue1->RegisterMessageCallback(Internal::DXMessageCallback, D3D12_MESSAGE_CALLBACK_FLAG_NONE, this, &messageCallbackCookie));
+				}
+				else
+				{
+					LB_WARN("Failed to get ID3D12InfoQueue1, there will be no message callback.");
+				}
 			}
 		}
 #endif
@@ -196,7 +214,7 @@ namespace limbo::RHI
 			delete m_CommandQueues[i];
 		}
 		
-#if !NO_LOG
+#if !LB_RELEASE
 		if (m_Flags & Gfx::GfxDeviceFlag::DetailedLogging)
 		{
 			IDXGIDebug1* dxgiDebug;
@@ -209,11 +227,6 @@ namespace limbo::RHI
 
 	void Device::DestroyResources()
 	{
-		DestroyShader(m_GenerateMipsShader);
-		DestroyPSO(m_GenerateMipsPSO);
-
-		DestroyRootSignature(m_GenerateMipsRS);
-
 		delete m_TempBufferAllocator;
 		delete m_UploadRingBuffer;
 		delete m_Swapchain;
@@ -333,20 +346,6 @@ namespace limbo::RHI
 		m_CommandContexts[(int)ContextType::Direct]->InsertResourceBarrier(depthBackbuffer, D3D12_RESOURCE_STATE_COMMON);
 
 		m_CommandContexts[(int)ContextType::Direct]->SubmitResourceBarriers();
-
-		m_GenerateMipsRS = RHI::CreateRootSignature("Generate Mips RS", RSSpec().Init().AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootConstants(0, 4));
-
-		m_GenerateMipsShader = CreateShader("generatemips.hlsl", "GenerateMip", ShaderType::Compute);
-		SC::Compile(m_GenerateMipsShader);
-
-		{
-			PipelineStateSpec psoInit = PipelineStateSpec()
-				.Init()
-				.SetComputeShader(m_GenerateMipsShader)
-				.SetName("Generate Mips PSO")
-				.SetRootSignature(m_GenerateMipsRS);
-			m_GenerateMipsPSO = CreatePSO(psoInit);
-		}
 
 		m_UploadRingBuffer = new RingBufferAllocator(m_CommandQueues[(int)ContextType::Copy], Utils::ToMB(256), "Upload Ring Buffer");
 		m_TempBufferAllocator = new RingBufferAllocator(m_CommandQueues[(int)ContextType::Copy], Utils::ToMB(4), "Temp Buffers Ring Buffer");
@@ -588,7 +587,7 @@ namespace limbo::RHI
 
 		bool bIsRGB = pTexture->Spec.Format == Format::RGBA8_UNORM_SRGB;
 
-		cmd->SetPipelineState(m_GenerateMipsPSO);
+		cmd->SetPipelineState(Gfx::PSOCache::Get(Gfx::PipelineID::GenerateMips));
 		for (uint16 i = 1; i < pTexture->Spec.MipLevels; ++i)
 		{
 			uint2 outputMipSize = { pTexture->Spec.Width , pTexture->Spec.Height };

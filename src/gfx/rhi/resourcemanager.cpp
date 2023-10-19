@@ -42,7 +42,7 @@ namespace limbo::RHI
 
 		ForceDeletionQueue();
 
-#if !NO_LOG
+#if !LB_RELEASE
 		ensure(m_Buffers.IsEmpty());
 		ensure(m_Textures.IsEmpty());
 		ensure(m_PSOs.IsEmpty());

@@ -57,13 +57,13 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 #define INTERNAL_PLATFORM_LOG(msg) OutputDebugStringA(msg)
 #define INTERNAL_PLATFORM_WLOG(msg) OutputDebugStringW(msg)
 
-#if !NO_LOG
+#if !LB_RELEASE
 	#define INTERNAL_PLATFORM_BREAK() __debugbreak();
 #else
 	#define INTERNAL_PLATFORM_BREAK();
 #endif
 
-#if !NO_LOG
+#if !LB_RELEASE
 	#define LB_LOG(msg, ...) \
 	{ \
 		constexpr uint16 bufferSize = 1024; \
@@ -143,7 +143,7 @@ extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ cons
 //
 // Assertion macros
 //
-#if !NO_LOG
+#if !LB_RELEASE
 	#define ensure(expr) \
 		([&]() \
 		{\

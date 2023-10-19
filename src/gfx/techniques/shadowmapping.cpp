@@ -1,20 +1,19 @@
 ﻿#include "stdafx.h"
 #include "shadowmapping.h"
 
-#include "gfx/profiler.h"
 #include "gfx/scene.h"
 #include "gfx/scenerenderer.h"
 #include "gfx/shaderinterop.h"
 #include "gfx/uirenderer.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/commandcontext.h"
-#include "gfx/rhi/rootsignature.h"
-#include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/shadercompiler.h"
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <format>
+
+#include "gfx/psocache.h"
 
 namespace limbo::Gfx
 {
@@ -28,38 +27,14 @@ namespace limbo::Gfx
 
 	ShadowMapping::ShadowMapping()
 	{
-		m_CommonRS = RHI::CreateRootSignature("Shadow Mapping Common RS", RHI::RSSpec().Init().AddRootCBV(100).AddRootCBV(101).AddRootConstants(0, 2));
-
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
 			m_DepthShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
-
-		m_ShadowMapVS = RHI::CreateShader("shadowmap.hlsl", "VSMain", RHI::ShaderType::Vertex);
-		RHI::SC::Compile(m_ShadowMapVS);
-		m_ShadowMapPS = RHI::CreateShader("shadowmap.hlsl", "PSMain", RHI::ShaderType::Pixel);
-		RHI::SC::Compile(m_ShadowMapPS);
-
-		{
-			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec()
-				.Init()
-				.SetVertexShader(m_ShadowMapVS)
-				.SetPixelShader(m_ShadowMapPS)
-				.SetRootSignature(m_CommonRS)
-				.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT)
-				.SetName("Shadow Map PSO");
-			m_PSO = RHI::CreatePSO(psoInit);
-		}
 	}
 
 	ShadowMapping::~ShadowMapping()
 	{
-		DestroyShader(m_ShadowMapVS);
-		DestroyShader(m_ShadowMapPS);
-
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
 			DestroyTexture(m_DepthShadowMaps[i]);
-
-		RHI::DestroyPSO(m_PSO);
-		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
 	void ShadowMapping::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer)
@@ -71,7 +46,7 @@ namespace limbo::Gfx
 
 		// Shadow map
 		cmd->BeginProfileEvent("Shadow Maps Pass");
-		cmd->SetPipelineState(m_PSO);
+		cmd->SetPipelineState(PSOCache::Get(PipelineID::ShadowMapping));
 		cmd->SetPrimitiveTopology();
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 		{

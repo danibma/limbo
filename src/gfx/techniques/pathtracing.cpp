@@ -1,13 +1,12 @@
 ﻿#include "stdafx.h"
 #include "pathtracing.h"
 
+#include "gfx/psocache.h"
 #include "gfx/scenerenderer.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/commandcontext.h"
 #include "gfx/rhi/device.h"
-#include "gfx/rhi/rootsignature.h"
 #include "gfx/rhi/shaderbindingtable.h"
-#include "gfx/rhi/pipelinestateobject.h"
 #include "gfx/rhi/shadercompiler.h"
 
 namespace limbo::Gfx
@@ -22,56 +21,22 @@ namespace limbo::Gfx
 			.Format = RHI::Format::RGBA8_UNORM,
 			.Type = RHI::TextureType::Texture2D,
 		});
-
-		m_CommonRS = RHI::CreateRootSignature("PT Common RS", RHI::RSSpec().Init().AddRootSRV(0).AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV).AddRootCBV(100));
-
-		m_PathTracerLib = RHI::CreateShader("raytracing/pathtracer.hlsl", "", RHI::ShaderType::Lib);
-		RHI::SC::Compile(m_PathTracerLib);
-		m_MaterialLib = RHI::CreateShader("raytracing/materiallib.hlsl", "", RHI::ShaderType::Lib);
-		RHI::SC::Compile(m_MaterialLib);
-
-		{
-
-			RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec()
-				.Init()
-				.SetGlobalRootSignature(m_CommonRS)
-				.SetName("Path Tracer PSO")
-				.SetShaderConfig(sizeof(MaterialRayTracingPayload), sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
-
-			RHI::RTLibSpec pathTracerDesc = RHI::RTLibSpec().Init().AddExport(L"RayGen");
-			psoInit.AddLib(m_PathTracerLib, pathTracerDesc);
-
-			RHI::RTLibSpec materialDesc = RHI::RTLibSpec()
-				.Init()
-				.AddExport(L"MaterialAnyHit")
-				.AddExport(L"MaterialClosestHit")
-				.AddExport(L"MaterialMiss")
-				.AddHitGroup(L"MaterialHitGroup", L"MaterialAnyHit", L"MaterialClosestHit");
-			psoInit.AddLib(m_MaterialLib, materialDesc);
-
-			m_PSO = RHI::CreatePSO(psoInit);
-		}
 	}
 
 	PathTracing::~PathTracing()
 	{
 		if (m_FinalTexture.IsValid())
 			RHI::DestroyTexture(m_FinalTexture);
-		if (m_PathTracerLib.IsValid())
-			RHI::DestroyShader(m_PathTracerLib);
-		if (m_MaterialLib.IsValid())
-			RHI::DestroyShader(m_MaterialLib);
-
-		RHI::DestroyPSO(m_PSO);
-		RHI::DestroyRootSignature(m_CommonRS);
 	}
 
 	void PathTracing::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer, RHI::AccelerationStructure* sceneAS, const FPSCamera& camera)
 	{
-		cmd->BeginProfileEvent("Path Tracing");
-		cmd->SetPipelineState(m_PSO);
+		RHI::PSOHandle pso = PSOCache::Get(PipelineID::PathTracing);
 
-		RHI::ShaderBindingTable SBT(m_PSO);
+		cmd->BeginProfileEvent("Path Tracing");
+		cmd->SetPipelineState(pso);
+
+		RHI::ShaderBindingTable SBT(pso);
 		SBT.BindRayGen(L"RayGen");
 		SBT.BindMissShader(L"MaterialMiss");
 		SBT.BindHitGroup(L"MaterialHitGroup");

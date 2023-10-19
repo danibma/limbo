@@ -44,7 +44,7 @@ namespace limbo::Core
 
 	void CommandLine::Init(const char* args)
 	{
-#if !NO_LOG
+#if !LB_RELEASE
 		ConsoleHandle = Win32Console::Open();
 #endif
 
@@ -105,7 +105,7 @@ namespace limbo::Core
 
 	CommandLine::~CommandLine()
 	{
-#if !NO_LOG
+#if !LB_RELEASE
 		Win32Console::Close(ConsoleHandle);
 #endif
 	}

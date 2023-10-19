@@ -31,7 +31,9 @@ namespace limbo::RHI
 		Compute,
 		Vertex,
 		Pixel,
-		Lib
+		Lib,
+
+		MAX
 	};
 
 	enum class TextureType : uint8
