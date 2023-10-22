@@ -25,7 +25,7 @@ namespace limbo::Gfx::ShadersCache
 			return "ibl.hlsl";
 		case ShaderID::VS_GBuffer:
 		case ShaderID::PS_GBuffer:
-			return "deferredshading.hlsl";
+			return "gbuffer.hlsl";
 		case ShaderID::VS_Sky:
 		case ShaderID::PS_Sky:
 			return "sky.hlsl";
@@ -34,8 +34,8 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::VS_ShadowMapping:
 		case ShaderID::PS_ShadowMapping:
 			return "shadowmap.hlsl";
-		case ShaderID::PS_Lighting:
-			return "pbrlighting.hlsl";
+		case ShaderID::PS_DeferredLighting:
+			return "deferredlighting.hlsl";
 		case ShaderID::PS_Composite:
 			return "scenecomposite.hlsl";
 		case ShaderID::LIB_PathTracer:
@@ -80,7 +80,7 @@ namespace limbo::Gfx::ShadersCache
 			return "VSMain";
 		case ShaderID::PS_GBuffer:
 		case ShaderID::PS_Sky:
-		case ShaderID::PS_Lighting:
+		case ShaderID::PS_DeferredLighting:
 		case ShaderID::PS_Composite:
 		case ShaderID::PS_ShadowMapping:
 			return "PSMain";
@@ -115,7 +115,7 @@ namespace limbo::Gfx::ShadersCache
 			return RHI::ShaderType::Vertex;
 		case ShaderID::PS_GBuffer:
 		case ShaderID::PS_Sky:
-		case ShaderID::PS_Lighting:
+		case ShaderID::PS_DeferredLighting:
 		case ShaderID::PS_Composite:
 		case ShaderID::PS_ShadowMapping:
 			return RHI::ShaderType::Pixel;

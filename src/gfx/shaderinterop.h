@@ -6,7 +6,7 @@
 
 #define CONCAT_IMPL( x, y ) x##y
 #define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
-#define PAD uint MACRO_CONCAT(padding, __COUNTER__)
+#define __PAD uint MACRO_CONCAT(padding, __COUNTER__)
 
 #define SHADOWMAP_CASCADES 4
 
@@ -29,8 +29,8 @@ struct SceneInfo
 
 	uint		bSunCastsShadows;
 	uint		bShowShadowCascades;
-	PAD;
-	PAD;
+	__PAD;
+	__PAD;
 };
 #ifdef __cplusplus
 static_assert(sizeof(SceneInfo) % 16 == 0);

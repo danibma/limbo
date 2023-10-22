@@ -1,5 +1,5 @@
 ﻿#include "stdafx.h"
-#include "uirenderer.h"
+#include "ui.h"
 
 #include <imgui/imgui.cpp>
 #include <imgui/imgui_draw.cpp>
@@ -10,15 +10,15 @@
 #include <imgui/backends/imgui_impl_glfw.cpp>
 
 #include "profiler.h"
-#include "scenerenderer.h"
-#include "core/window.h"
+#include "rendercontext.h"
 #include "rhi/device.h"
 #include "core/paths.h"
 #include "core/utils.h"
+#include "renderer/renderer.h"
 
 namespace limbo::UI
 {
-	void Render(Gfx::SceneRenderer* sceneRenderer, float dt)
+	void Render(Gfx::RenderContext& context, float dt)
 	{
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -27,33 +27,33 @@ namespace limbo::UI
 				if (ImGui::MenuItem("Load"))
 				{
 					std::vector<wchar_t*> results;
-					if (Utils::OpenFileDialog(sceneRenderer->Window, L"Choose scene to load", results, L"", { L"*.gltf; *.glb" }))
+					if (Utils::OpenFileDialog(context.Window, L"Choose scene to load", results, L"", { L"*.gltf; *.glb" }))
 					{
 						char path[MAX_PATH];
 						Utils::StringConvert(results[0], path);
-						sceneRenderer->LoadNewScene(path);
+						context.LoadNewScene(path);
 					}
 				}
 
-				if (ImGui::MenuItem("Clear Scene", "", false, sceneRenderer->HasScenes()))
-					sceneRenderer->ClearScenes();
+				if (ImGui::MenuItem("Clear Scene", "", false, context.HasScenes()))
+					context.ClearScenes();
 
 				ImGui::SeparatorText("Environment Map");
 				{
 					char envPreviewValue[1024];
-					Paths::GetFilename(sceneRenderer->EnvironmentMaps[sceneRenderer->Tweaks.SelectedEnvMapIdx], envPreviewValue);
+					Paths::GetFilename(context.EnvironmentMaps[context.Tweaks.SelectedEnvMapIdx], envPreviewValue);
 					if (ImGui::BeginCombo("##env_map", envPreviewValue))
 					{
-						for (uint32 i = 0; i < sceneRenderer->EnvironmentMaps.GetSize(); i++)
+						for (uint32 i = 0; i < context.EnvironmentMaps.GetSize(); i++)
 						{
-							const bool bIsSelected = (sceneRenderer->Tweaks.SelectedEnvMapIdx == i);
+							const bool bIsSelected = (context.Tweaks.SelectedEnvMapIdx == i);
 							char selectedValue[1024];
-							Paths::GetFilename(sceneRenderer->EnvironmentMaps[i], selectedValue);
+							Paths::GetFilename(context.EnvironmentMaps[i], selectedValue);
 							if (ImGui::Selectable(selectedValue, bIsSelected))
 							{
-								if (sceneRenderer->Tweaks.SelectedEnvMapIdx != i)
-									sceneRenderer->bNeedsEnvMapChange = true;
-								sceneRenderer->Tweaks.SelectedEnvMapIdx = i;
+								if (context.Tweaks.SelectedEnvMapIdx != i)
+									context.bNeedsEnvMapChange = true;
+								context.Tweaks.SelectedEnvMapIdx = i;
 							}
 
 							// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
@@ -105,53 +105,79 @@ namespace limbo::UI
 		{
 			if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				int maxRenderPath = (int)Gfx::RenderPath::MAX;
-				if (!RHI::GetGPUInfo().bSupportsRaytracing)
-					maxRenderPath = (int)Gfx::RenderPath::PathTracing;
-
 				ImGui::PushItemWidth(200.0f);
-				ImGui::Combo("Render Path", &sceneRenderer->Tweaks.CurrentRenderPath, sceneRenderer->RenderPathList, maxRenderPath);
-				ImGui::Combo("Tonemap", &sceneRenderer->Tweaks.CurrentTonemap, sceneRenderer->TonemapList, ENUM_COUNT<Gfx::Tonemap>());
-				ImGui::Combo("Scene Views", &sceneRenderer->Tweaks.CurrentSceneView, sceneRenderer->SceneViewList, ENUM_COUNT<Gfx::SceneView>());
-				ImGui::Checkbox("VSync", &sceneRenderer->Tweaks.bEnableVSync);
+
+				// Select which renderer to use
+				// TODO: implement this in here RHI::GetGPUInfo().bSupportsRaytracing
+				const auto& rendererNames = Gfx::Renderer::GetNames();
+				int32 selectedRenderer = (int32)(std::find(rendererNames.cbegin(), rendererNames.cend(), context.CurrentRendererString) - rendererNames.cbegin());
+				int32 currentRenderer = selectedRenderer;
+				std::string rendererString;
+				for (auto& i : rendererNames)
+				{
+					rendererString += i;
+					rendererString += '\0';
+				}
+
+				if (ImGui::Combo("Renderer", &selectedRenderer, rendererString.c_str()))
+				{
+					if (currentRenderer != selectedRenderer)
+					{
+						context.CurrentRendererString = rendererNames[selectedRenderer];
+						context.bUpdateRenderer = true;
+					}
+				}
+				ImGui::Combo("Scene Views", &context.Tweaks.CurrentSceneView, context.SceneViewList, ENUM_COUNT<Gfx::SceneView>());
+				ImGui::Checkbox("VSync", &context.Tweaks.bEnableVSync);
 				ImGui::PopItemWidth();
+
+				if (ImGui::CollapsingHeader("Render Options"))
+				{
+					for (auto& [name, value] : context.CurrentRenderOptions.Options)
+					{
+						if (std::holds_alternative<bool>(value))
+						{
+							ImGui::Checkbox(name.data(), &std::get<bool>(value));
+						}
+					}
+				}
 
 				int maxAO = (int)Gfx::AmbientOcclusion::MAX;
 				if (!RHI::GetGPUInfo().bSupportsRaytracing)
 					maxAO = (int)Gfx::AmbientOcclusion::RTAO;
 
 				ImGui::SeparatorText("Ambient Occlusion");
-				ImGui::Combo("Technique", &sceneRenderer->Tweaks.CurrentAOTechnique, sceneRenderer->AOList, maxAO);
-				ImGui::DragFloat("SSAO Radius", &sceneRenderer->Tweaks.SSAORadius, 0.1f, 0.0f, 1.0f);
-				ImGui::DragFloat("SSAO Power", &sceneRenderer->Tweaks.SSAOPower, 0.1f, 0.0f, 2.0f);
+				ImGui::Combo("Technique", &context.Tweaks.CurrentAOTechnique, context.AOList, maxAO);
+				ImGui::DragFloat("SSAO Radius", &context.Tweaks.SSAORadius, 0.1f, 0.0f, 1.0f);
+				ImGui::DragFloat("SSAO Power", &context.Tweaks.SSAOPower, 0.1f, 0.0f, 2.0f);
 
-				if (sceneRenderer->Tweaks.CurrentAOTechnique == (int)Gfx::AmbientOcclusion::RTAO)
-					ImGui::DragInt("RTAO Samples", &sceneRenderer->Tweaks.RTAOSamples, 1, 0, 16);
+				if (context.Tweaks.CurrentAOTechnique == (int)Gfx::AmbientOcclusion::RTAO)
+					ImGui::DragInt("RTAO Samples", &context.Tweaks.RTAOSamples, 1, 0, 16);
 
 				ImGui::SeparatorText("Shadows");
-				ImGui::Checkbox("Sun Casts Shadows", &sceneRenderer->Tweaks.bSunCastsShadows);
+				ImGui::Checkbox("Sun Casts Shadows", &context.Tweaks.bSunCastsShadows);
 			}
 
 			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				ImGui::Text("Position: %.1f, %.1f, %.1f", sceneRenderer->Camera.Eye.x, sceneRenderer->Camera.Eye.y, sceneRenderer->Camera.Eye.z);
+				ImGui::Text("Position: %.1f, %.1f, %.1f", context.Camera.Eye.x, context.Camera.Eye.y, context.Camera.Eye.z);
 				ImGui::PushItemWidth(150.0f);
-				ImGui::DragFloat("Speed", &sceneRenderer->Camera.CameraSpeed, 0.1f, 0.1f);
+				ImGui::DragFloat("Speed", &context.Camera.CameraSpeed, 0.1f, 0.1f);
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				if (ImGui::Button("Set to light pos"))
-					sceneRenderer->Camera.Eye = sceneRenderer->Light.Position;
+					context.Camera.Eye = context.Light.Position;
 			}
 
 			if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				ImGui::DragFloat3("Light Position", &sceneRenderer->Light.Position[0], 0.1f);
-				ImGui::ColorEdit3("Light Color", &sceneRenderer->Light.Color[0]);
+				ImGui::DragFloat3("Light Position", &context.Light.Position[0], 0.1f);
+				ImGui::ColorEdit3("Light Color", &context.Light.Color[0]);
 			}
 
 			if (ImGui::CollapsingHeader("Sun", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				ImGui::DragFloat3("Direction", &sceneRenderer->Sun.Direction[0], 0.1f);
+				ImGui::DragFloat3("Direction", &context.Sun.Direction[0], 0.1f);
 			}
 
 			ImGui::End();

@@ -12,8 +12,7 @@
 
 #include "tests/tests.h"
 
-#include "gfx/scenerenderer.h"
-#include "gfx/uirenderer.h"
+#include "gfx/rendercontext.h"
 
 
 using namespace limbo;
@@ -47,7 +46,7 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 
 	Profiler::Initialize();
 
-	Gfx::SceneRenderer* sceneRenderer = Gfx::CreateSceneRenderer(window);
+	Gfx::RenderContext* sceneRenderer = Gfx::CreateSceneRenderer(window);
 
 	LB_LOG("Took %.2fs to initialize all the systems", initTimer.ElapsedSeconds());
 
@@ -64,8 +63,6 @@ int WINAPI WinMain(HINSTANCE /*hInstance*/, HINSTANCE /*hPrevInstance*/, PSTR lp
 		bool ReloadShadersBind = Input::IsKeyDown(window, Input::KeyCode::LeftControl) && Input::IsKeyDown(window, Input::KeyCode::R);
 		if (ReloadShadersBind)
 			RHI::ReloadShaders();
-
-		UI::Render(sceneRenderer, deltaTime);
 
 		sceneRenderer->Render(deltaTime);
 

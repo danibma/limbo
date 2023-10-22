@@ -2,9 +2,9 @@
 #include "shadowmapping.h"
 
 #include "gfx/scene.h"
-#include "gfx/scenerenderer.h"
+#include "gfx/rendercontext.h"
 #include "gfx/shaderinterop.h"
-#include "gfx/uirenderer.h"
+#include "gfx/ui.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/commandcontext.h"
 #include "gfx/rhi/shadercompiler.h"
@@ -26,57 +26,73 @@ namespace limbo::Gfx
 	};
 
 	ShadowMapping::ShadowMapping()
+		: RenderTechnique("Shadow Mapping")
 	{
-		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
-			m_DepthShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
 	}
 
 	ShadowMapping::~ShadowMapping()
 	{
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
-			DestroyTexture(m_DepthShadowMaps[i]);
+			RHI::DestroyTexture(m_DepthShadowMaps[i]);
 	}
 
-	void ShadowMapping::Render(RHI::CommandContext* cmd, SceneRenderer* sceneRenderer)
+	bool ShadowMapping::Init()
+	{
+		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
+			m_DepthShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
+
+		return true;
+	}
+
+	bool ShadowMapping::ConditionalRender(RenderContext& context)
+	{
+		return context.Tweaks.bSunCastsShadows;
+	}
+
+	void ShadowMapping::Render(RHI::CommandContext& cmd, RenderContext& context)
 	{
 		if (UI::Globals::bDebugShadowMaps)
 			DrawDebugWindow();
 
-		CreateLightMatrices(&sceneRenderer->Camera, sceneRenderer->SceneInfo.SunDirection);
+		// Assign the current depth maps to the scene textures, so other techniques can use them
+		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
+			context.SceneTextures.DepthShadowMaps[i] = m_DepthShadowMaps[i];
+
+		CreateLightMatrices(&context.Camera, context.SceneInfo.SunDirection);
 
 		// Shadow map
-		cmd->BeginProfileEvent("Shadow Maps Pass");
-		cmd->SetPipelineState(PSOCache::Get(PipelineID::ShadowMapping));
-		cmd->SetPrimitiveTopology();
+		cmd.BeginProfileEvent("Shadow Maps Pass");
+		cmd.SetPipelineState(PSOCache::Get(PipelineID::ShadowMapping));
+		cmd.SetPrimitiveTopology();
 		for (int cascade = 0; cascade < SHADOWMAP_CASCADES; ++cascade)
 		{
 			std::string profileName = std::format("Shadow Cascade {}", cascade);
 
-			cmd->BeginProfileEvent(profileName.c_str());
-			cmd->SetRenderTargets({}, m_DepthShadowMaps[cascade]);
-			cmd->SetViewport(SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade]);
+			cmd.BeginProfileEvent(profileName.c_str());
+			cmd.SetRenderTargets({}, m_DepthShadowMaps[cascade]);
+			cmd.SetViewport(SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade]);
 
-			cmd->ClearDepthTarget(m_DepthShadowMaps[cascade], 1.0f);
+			cmd.ClearDepthTarget(m_DepthShadowMaps[cascade], 1.0f);
 
-			cmd->BindConstants(2, 0, cascade);
+			cmd.BindConstants(2, 0, cascade);
 
-			cmd->BindTempConstantBuffer(0, sceneRenderer->SceneInfo);
-			cmd->BindTempConstantBuffer(1, m_ShadowData);
+			cmd.BindTempConstantBuffer(0, context.SceneInfo);
+			cmd.BindTempConstantBuffer(1, m_ShadowData);
 
-			for (const Scene* scene : sceneRenderer->GetScenes())
+			for (const Scene* scene : context.GetScenes())
 			{
 				scene->IterateMeshes(TOnDrawMesh::CreateLambda([&](const Mesh& mesh)
 				{
-					cmd->BindConstants(2, 1, mesh.InstanceID);
+					cmd.BindConstants(2, 1, mesh.InstanceID);
 
-					cmd->SetIndexBufferView(mesh.IndicesLocation);
-					cmd->DrawIndexed((uint32)mesh.IndexCount);
+					cmd.SetIndexBufferView(mesh.IndicesLocation);
+					cmd.DrawIndexed((uint32)mesh.IndexCount);
 				}));
 			}
-			cmd->EndProfileEvent(profileName.c_str());
+			cmd.EndProfileEvent(profileName.c_str());
 		}
-		cmd->EndProfileEvent("Shadow Maps Pass");
-}
+		cmd.EndProfileEvent("Shadow Maps Pass");
+	}
 
 	void ShadowMapping::DrawDebugWindow()
 	{
@@ -85,11 +101,6 @@ namespace limbo::Gfx
 		ImGui::SliderInt("Shadow Cascade", &UI::Globals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
 		ImGui::Image((ImTextureID)RM_GET(m_DepthShadowMaps[UI::Globals::ShadowCascadeIndex])->TextureID(), ImVec2(512, 512));
 		ImGui::End();
-	}
-
-	const ShadowData& ShadowMapping::GetShadowData() const
-	{
-		return m_ShadowData;
 	}
 
 	/*

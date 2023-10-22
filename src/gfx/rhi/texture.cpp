@@ -165,7 +165,7 @@ namespace limbo::RHI
 			desc.Texture3D.WSize = -1;
 		}
 
-		Device::Ptr->GetDevice()->CreateRenderTargetView(Resource.Get(), &desc, UAVHandle[0].CpuHandle);
+		Device::Ptr->GetDevice()->CreateRenderTargetView(Resource.Get(), &desc, RTVHandle.CpuHandle);
 	}
 
 	void Texture::CreateDSV()
@@ -191,7 +191,7 @@ namespace limbo::RHI
 			};
 		}
 
-		Device::Ptr->GetDevice()->CreateDepthStencilView(Resource.Get(), &desc, UAVHandle[0].CpuHandle);
+		Device::Ptr->GetDevice()->CreateDepthStencilView(Resource.Get(), &desc, RTVHandle.CpuHandle);
 	}
 
 	void Texture::InitResource(const TextureSpec& spec)
@@ -203,17 +203,18 @@ namespace limbo::RHI
 
 		if (EnumHasAllFlags(spec.Flags, TextureUsage::RenderTarget))
 		{
-			if (UAVHandle[0].CpuHandle.ptr == 0)
-				UAVHandle[0] = device->AllocatePersistent(DescriptorHeapType::RTV);
+			if (RTVHandle.CpuHandle.ptr == 0)
+				RTVHandle = device->AllocatePersistent(DescriptorHeapType::RTV);
 			CreateRTV();
 		}
 		else if (EnumHasAllFlags(spec.Flags, TextureUsage::DepthStencil))
 		{
-			if (UAVHandle[0].CpuHandle.ptr == 0)
-				UAVHandle[0] = device->AllocatePersistent(DescriptorHeapType::DSV);
+			if (RTVHandle.CpuHandle.ptr == 0)
+				RTVHandle = device->AllocatePersistent(DescriptorHeapType::DSV);
 			CreateDSV();
 		}
-		else if (EnumHasAllFlags(spec.Flags, TextureUsage::UnorderedAccess))
+
+		if (EnumHasAllFlags(spec.Flags, TextureUsage::UnorderedAccess))
 		{
 			for (uint8 i = 0; i < spec.MipLevels; ++i)
 			{

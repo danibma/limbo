@@ -43,6 +43,7 @@ namespace limbo::RHI
 		RefCountPtr<ID3D12Resource>	Resource;
 		D3D12_RESOURCE_STATES		InitialState;
 		DescriptorHandle			UAVHandle[D3D12_REQ_MIP_LEVELS];
+		DescriptorHandle			RTVHandle; /**< This is used for both an RTV or a DSV */
 		TextureSpec					Spec;
 		bool						bResetState;
 

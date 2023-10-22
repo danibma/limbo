@@ -1,6 +1,6 @@
 ﻿#include "common.hlsli"
 
-uint		g_TonemapMode; // 0 = None, 1 = AcesFilm, 2 = Reinhard
+uint		g_bEnableTonemap; // 0 = None, 1 = AcesFilm, 2 = Reinhard
 uint		g_sceneTexture;
 
 float3 AcesFilm(const float3 x)
@@ -22,14 +22,9 @@ float4 PSMain(in QuadResult quad) : SV_Target
 {
     float3 finalColor = Sample2D(g_sceneTexture, SLinearWrap, quad.UV).rgb;
 
-    if (g_TonemapMode == 1)
+    if (g_bEnableTonemap == 1)
     {
         finalColor = AcesFilm(finalColor);
-        finalColor = pow(finalColor, (float3) (1.0 / 2.2)); // gamma correction    
-    }
-    else if (g_TonemapMode == 2)
-    {
-        finalColor = ReinhardTonemap(finalColor);
         finalColor = pow(finalColor, (float3) (1.0 / 2.2)); // gamma correction    
     }
     

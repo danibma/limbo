@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "uirenderer.h"
+#include "ui.h"
 #include "core/refcountptr.h"
 #include "rhi/buffer.h"
 #include "core/timer.h"

@@ -109,8 +109,16 @@ namespace limbo::RHI
 		template<typename T>
 		FORCEINLINE void BindConstants(uint32 rootParameter, uint32 offsetIn32bits, const T& data)
 		{
-			static_assert(sizeof(T) % sizeof(uint32) == 0);
-			BindConstants(rootParameter, sizeof(T) / sizeof(uint32), offsetIn32bits, &data);
+			if constexpr (TIsSame<T, bool>::Value)
+			{
+				uint32 value = data ? 1 : 0;
+				BindConstants(rootParameter, 1, offsetIn32bits, &value);
+			}
+			else
+			{
+				static_assert(sizeof(T) % sizeof(uint32) == 0);
+				BindConstants(rootParameter, sizeof(T) / sizeof(uint32), offsetIn32bits, &data);
+			}
 		}
 
 		template<typename T>

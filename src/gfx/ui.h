@@ -1,9 +1,5 @@
 ﻿#pragma once
-
-namespace limbo::Gfx
-{
-	class SceneRenderer;
-}
+#include "rendercontext.h"
 
 namespace limbo::UI
 {
@@ -16,5 +12,5 @@ namespace limbo::UI
 		inline bool bShowShadowCascades = false;
 	};
 
-	void Render(Gfx::SceneRenderer* sceneRenderer, float dt);
+	void Render(Gfx::RenderContext& context, float dt);
 }

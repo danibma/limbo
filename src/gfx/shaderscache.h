@@ -21,7 +21,7 @@ namespace limbo::Gfx
 
 		PS_GBuffer,
 		PS_Sky,
-		PS_Lighting,
+		PS_DeferredLighting,
 		PS_Composite,
 		PS_ShadowMapping,
 

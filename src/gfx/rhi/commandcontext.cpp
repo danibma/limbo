@@ -113,7 +113,7 @@ namespace limbo::RHI
 			SubmitResourceBarriers();
 
 			Texture* pRenderTarget = RM_GET(rt);
-			m_CommandList->ClearRenderTargetView(pRenderTarget->UAVHandle[0].CpuHandle, &color.x, 0, nullptr);
+			m_CommandList->ClearRenderTargetView(pRenderTarget->RTVHandle.CpuHandle, &color.x, 0, nullptr);
 		}
 	}
 
@@ -125,7 +125,7 @@ namespace limbo::RHI
 		if (stencil > 0)
 			flags |= D3D12_CLEAR_FLAG_STENCIL;
 
-		m_CommandList->ClearDepthStencilView(dt->UAVHandle[0].CpuHandle, flags, depth, stencil, 0, nullptr);
+		m_CommandList->ClearDepthStencilView(dt->RTVHandle.CpuHandle, flags, depth, stencil, 0, nullptr);
 	}
 
 	void CommandContext::SetVertexBuffer(BufferHandle buffer)
@@ -209,14 +209,14 @@ namespace limbo::RHI
 		if (depthTarget.IsValid())
 		{
 			Texture* pDepthTarget = RM_GET(depthTarget);
-			depthDescriptor = &pDepthTarget->UAVHandle[0].CpuHandle;
+			depthDescriptor = &pDepthTarget->RTVHandle.CpuHandle;
 		}
 
 		TStaticArray<D3D12_CPU_DESCRIPTOR_HANDLE, MAX_RENDER_TARGETS> renderTargetDescriptors;
 		for (uint32 i = 0; i < renderTargets.GetSize(); ++i)
 		{
 			Texture* pRenderTarget = RM_GET(renderTargets[i]);
-			renderTargetDescriptors[i] = pRenderTarget->UAVHandle[0].CpuHandle;
+			renderTargetDescriptors[i] = pRenderTarget->RTVHandle.CpuHandle;
 			InsertResourceBarrier(pRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		}
 
