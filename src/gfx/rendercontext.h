@@ -14,6 +14,15 @@ namespace limbo::RHI
 
 namespace limbo::Gfx
 {
+	namespace UIGlobals
+	{
+		inline bool bShowProfiler = false;
+		inline bool bOrderProfilerResults = false;
+		inline bool bDebugShadowMaps = false;
+		inline int  ShadowCascadeIndex = 0;
+		inline bool bShowShadowCascades = false;
+	};
+
 	enum class SceneView : uint8
 	{
 		Full = 0,
@@ -35,22 +44,6 @@ namespace limbo::Gfx
 		RTAO, // Leave this as the last one, so it does not show in the UI as an option, if rt is not available
 
 		MAX
-	};
-
-	struct RendererTweaks
-	{
-		bool				bEnableVSync		= true;
-
-		bool				bSunCastsShadows	= true;
-
-		// Ambient Occlusion
-		float				SSAORadius			= 0.3f;
-		float				SSAOPower			= 1.2f;
-		int					RTAOSamples			= 2;
-
-		int					CurrentSceneView	= 0; // SceneView enum
-		int					CurrentAOTechnique  = 1; // AmbientOcclusion enum
-		int					SelectedEnvMapIdx	= 1;
 	};
 
 	struct PointLight
@@ -111,11 +104,9 @@ namespace limbo::Gfx
 	public:
 		Core::Window*					Window;
 		uint2							RenderSize;
-		RenderOptions					CurrentRenderOptions;
 		RenderTechniquesList			CurrentRenderTechniques;
 		std::unique_ptr<Renderer>		CurrentRenderer;
 		std::string_view				CurrentRendererString;
-		RendererTweaks					Tweaks;
 		FPSCamera						Camera;
 		PointLight						Light;
 		DirectionalLight				Sun;
@@ -126,10 +117,6 @@ namespace limbo::Gfx
 		bool							bUpdateRenderer = false;
 		bool							bNeedsEnvMapChange = true;
 		EnvironmentMapList				EnvironmentMaps;
-
-		// This string lists are used for the UI
-		const char*						SceneViewList[ENUM_COUNT<SceneView>()] = {"Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion"};
-		const char*						AOList[ENUM_COUNT<AmbientOcclusion>()] = {"None", "SSAO", "RTAO"};
 
 	public:
 		RenderContext(Core::Window* window);
@@ -146,6 +133,11 @@ namespace limbo::Gfx
 		bool HasScenes() const;
 		const std::vector<Scene*>& GetScenes() const;
 
+		bool CanRenderSSAO() const;
+		bool CanRenderRTAO() const;
+		bool CanRenderShadows() const;
+		bool IsAOEnabled() const;
+
 	private:
 		void LoadEnvironmentMap(RHI::CommandContext* cmd, const char* path);
 		void UploadScenesToGPU();
@@ -154,6 +146,7 @@ namespace limbo::Gfx
 		void CreateSceneTextures(uint32 width, uint32 height);
 		void UpdateSceneTextures(uint32 width, uint32 height);
 		void DestroySceneTextures();
+		void RenderUI(float dt);
 	};
 
 	inline RenderContext* CreateSceneRenderer(Core::Window* window) { return new RenderContext(window); }

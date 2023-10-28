@@ -4,7 +4,6 @@
 #include "gfx/scene.h"
 #include "gfx/rendercontext.h"
 #include "gfx/shaderinterop.h"
-#include "gfx/ui.h"
 #include "gfx/rhi/resourcemanager.h"
 #include "gfx/rhi/commandcontext.h"
 #include "gfx/rhi/shadercompiler.h"
@@ -46,12 +45,12 @@ namespace limbo::Gfx
 
 	bool ShadowMapping::ConditionalRender(RenderContext& context)
 	{
-		return context.Tweaks.bSunCastsShadows;
+		return context.CanRenderShadows();
 	}
 
 	void ShadowMapping::Render(RHI::CommandContext& cmd, RenderContext& context)
 	{
-		if (UI::Globals::bDebugShadowMaps)
+		if (UIGlobals::bDebugShadowMaps)
 			DrawDebugWindow();
 
 		// Assign the current depth maps to the scene textures, so other techniques can use them
@@ -96,10 +95,10 @@ namespace limbo::Gfx
 
 	void ShadowMapping::DrawDebugWindow()
 	{
-		ImGui::Begin("Shadow Map Debug", &UI::Globals::bDebugShadowMaps);
-		ImGui::Checkbox("Show Shadow Cascades", &UI::Globals::bShowShadowCascades);
-		ImGui::SliderInt("Shadow Cascade", &UI::Globals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
-		ImGui::Image((ImTextureID)RM_GET(m_DepthShadowMaps[UI::Globals::ShadowCascadeIndex])->TextureID(), ImVec2(512, 512));
+		ImGui::Begin("Shadow Map Debug", &UIGlobals::bDebugShadowMaps);
+		ImGui::Checkbox("Show Shadow Cascades", &UIGlobals::bShowShadowCascades);
+		ImGui::SliderInt("Shadow Cascade", &UIGlobals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
+		ImGui::Image((ImTextureID)RM_GET(m_DepthShadowMaps[UIGlobals::ShadowCascadeIndex])->TextureID(), ImVec2(512, 512));
 		ImGui::End();
 	}
 

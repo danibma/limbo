@@ -20,12 +20,6 @@ namespace limbo::Gfx
 		virtual ~RenderTechnique() = default;
 
 		/**
-		 * Gets configuration options for current technique.
-		 * @return A list of all valid configuration options.
-		 */
-		virtual OptionsList GetOptions();
-
-		/**
 		 * Initialize any internal data or state.
 		 * This is called by the scene renderer during setup and should be used to
 		 * create any required CPU|GPU resources.
@@ -42,6 +36,11 @@ namespace limbo::Gfx
 		 * Perform Render operations
 		 */
 		virtual void Render(RHI::CommandContext& cmd, RenderContext& context) = 0;
+
+		/**
+		 * Perform UI Render operations
+		 */
+		virtual void RenderUI(RenderContext& context);
 
 	protected:
 		std::string_view m_Name;

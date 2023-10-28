@@ -8,13 +8,12 @@ namespace limbo::Gfx
 	{
 	}
 
-	OptionsList RenderTechnique::GetOptions()
-	{
-		return {};
-	}
-
 	bool RenderTechnique::ConditionalRender(RenderContext& context)
 	{
 		return true;
+	}
+
+	void RenderTechnique::RenderUI(RenderContext& context)
+	{
 	}
 }

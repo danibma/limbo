@@ -8,21 +8,14 @@
 
 namespace limbo::Gfx
 {
+	namespace 
+	{
+		int32 s_CurrentTonemap = 1;
+	}
+
 	Composite::Composite()
 		: RenderTechnique("Scene Composite")
 	{
-	}
-
-	void Composite::ConvertOptions(RenderContext& context)
-	{
-		RENDER_OPTION_GET(m_Options, bEnableTonemap, context.CurrentRenderOptions.Options);
-	}
-
-	OptionsList Composite::GetOptions()
-	{
-		OptionsList result;
-		result.emplace(RENDER_OPTION_MAKE(m_Options, bEnableTonemap));
-		return result;
 	}
 
 	bool Composite::Init()
@@ -32,8 +25,6 @@ namespace limbo::Gfx
 
 	void Composite::Render(RHI::CommandContext& cmd, RenderContext& context)
 	{
-		ConvertOptions(context);
-
 		if (!ensure(context.SceneTextures.PreCompositeSceneTexture.IsValid()))
 			context.SceneTextures.PreCompositeSceneTexture = RHI::ResourceManager::Ptr->EmptyTexture;
 
@@ -46,11 +37,26 @@ namespace limbo::Gfx
 		cmd.ClearRenderTargets(RHI::GetCurrentBackbuffer());
 		cmd.ClearDepthTarget(RHI::GetCurrentDepthBackbuffer());
 
-		cmd.BindConstants(0, 0, m_Options.bEnableTonemap);
+		cmd.BindConstants(0, 0, s_CurrentTonemap);
 
 		cmd.BindConstants(0, 1, RM_GET(context.SceneTextures.PreCompositeSceneTexture)->SRV());
 
 		cmd.Draw(6);
 		cmd.EndProfileEvent(m_Name.data());
+	}
+
+	void Composite::RenderUI(RenderContext& context)
+	{
+		enum class Tonemap : uint8
+		{
+			None = 0,
+			AcesFilm,
+			Reinhard,
+
+			MAX
+		};
+
+		const char* tonemapList[ENUM_COUNT<Tonemap>()] = { "None", "AcesFilm", "Reinhard" };
+		ImGui::Combo("Tonemap", &s_CurrentTonemap, tonemapList, ENUM_COUNT<Tonemap>());
 	}
 }

@@ -4,18 +4,33 @@
 #include "profiler.h"
 #include "psocache.h"
 #include "scene.h"
-#include "ui.h"
 #include "core/jobsystem.h"
+#include "core/paths.h"
+#include "core/utils.h"
 #include "rhi/device.h"
 #include "techniques/pathtracing/pathtracing.h"
-#include "techniques/rtao/rtao.h"
-#include "techniques/shadowmapping/shadowmapping.h"
-#include "techniques/ssao/ssao.h"
 #include "rhi/resourcemanager.h"
 #include "rhi/commandcontext.h"
 
+#include <imgui/imgui.cpp>
+#include <imgui/imgui_draw.cpp>
+#include <imgui/imgui_demo.cpp>
+#include <imgui/imgui_tables.cpp>
+#include <imgui/imgui_widgets.cpp>
+#include <imgui/backends/imgui_impl_dx12.cpp>
+#include <imgui/backends/imgui_impl_glfw.cpp>
+
 namespace limbo::Gfx
 {
+	namespace Tweaks
+	{
+		bool			bEnableVSync = true;
+		bool			bSunCastsShadows = true;
+		int				CurrentSceneView = 0; // SceneView enum
+		int				CurrentAOTechnique = 1; // AmbientOcclusion enum
+		int				SelectedEnvMapIdx = 1;
+	}
+
 	RenderContext::RenderContext(Core::Window* window)
 		: Window(window)
 		, Camera(CreateCamera(window, float3(0.0f, 1.0f, 4.0f), float3(0.0f, 0.0f, -1.0f)))
@@ -37,7 +52,6 @@ namespace limbo::Gfx
 		for (auto& i : CurrentRenderTechniques)
 		{
 			check(i->Init());
-			CurrentRenderOptions.Options.merge(i->GetOptions());
 		}
 
 		EnvironmentMaps = {
@@ -86,6 +100,171 @@ namespace limbo::Gfx
 		};
 	}
 
+	void RenderContext::RenderUI(float dt)
+	{
+		//
+		// Begin MenuBar
+		//
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("Scene"))
+			{
+				if (ImGui::MenuItem("Load"))
+				{
+					std::vector<wchar_t*> results;
+					if (Utils::OpenFileDialog(Window, L"Choose scene to load", results, L"", { L"*.gltf; *.glb" }))
+					{
+						char path[MAX_PATH];
+						Utils::StringConvert(results[0], path);
+						LoadNewScene(path);
+					}
+				}
+
+				if (ImGui::MenuItem("Clear Scene", "", false, HasScenes()))
+					ClearScenes();
+
+				ImGui::SeparatorText("Environment Map");
+				{
+					char envPreviewValue[1024];
+					Paths::GetFilename(EnvironmentMaps[Tweaks::SelectedEnvMapIdx], envPreviewValue);
+					if (ImGui::BeginCombo("##env_map", envPreviewValue))
+					{
+						for (uint32 i = 0; i < EnvironmentMaps.GetSize(); i++)
+						{
+							const bool bIsSelected = (Tweaks::SelectedEnvMapIdx == i);
+							char selectedValue[1024];
+							Paths::GetFilename(EnvironmentMaps[i], selectedValue);
+							if (ImGui::Selectable(selectedValue, bIsSelected))
+							{
+								if (Tweaks::SelectedEnvMapIdx != i)
+									bNeedsEnvMapChange = true;
+								Tweaks::SelectedEnvMapIdx = i;
+							}
+
+							// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+							if (bIsSelected)
+								ImGui::SetItemDefaultFocus();
+						}
+						ImGui::EndCombo();
+					}
+				}
+
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Renderer"))
+			{
+				if (RHI::CanTakeGPUCapture() && ImGui::MenuItem("Take GPU Capture"))
+					RHI::TakeGPUCapture();
+
+				if (RHI::CanTakeGPUCapture() && ImGui::MenuItem("Open Last GPU Capture"))
+					RHI::OpenLastGPUCapture();
+
+				if (ImGui::MenuItem("Reload Shaders", "Ctrl-R"))
+					RHI::ReloadShaders();
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Windows"))
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+				ImGui::Checkbox("Show Profiler", &UIGlobals::bShowProfiler);
+				ImGui::Checkbox("Show Shadow Maps Debug", &UIGlobals::bDebugShadowMaps);
+				ImGui::PopStyleVar();
+
+				ImGui::EndMenu();
+			}
+
+			char menuText[256];
+			snprintf(menuText, 256, "Device: %s | CPU Time: %.2f ms (%.2f fps) | GPU Time: %.2f ms", RHI::GetGPUInfo().Name, GCPUProfiler.GetRenderTime(), 1000.0f / GCPUProfiler.GetRenderTime(), GGPUProfiler.GetRenderTime());
+			ImGui::SetCursorPosX((ImGui::GetWindowSize().x - ImGui::CalcTextSize(menuText).x) - 10.0f);
+			ImGui::Text(menuText);
+
+			ImGui::EndMainMenuBar();
+		}
+		//
+		// End MenuBar
+		//
+
+		ImGui::SetNextWindowBgAlpha(0.7f);
+		ImGui::Begin("Limbo##debugwindow", nullptr);
+		{
+			if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::PushItemWidth(200.0f);
+
+				// Select which renderer to use
+				// TODO: implement this in here RHI::GetGPUInfo().bSupportsRaytracing
+				const auto& rendererNames = Gfx::Renderer::GetNames();
+				int32 selectedRenderer = (int32)(std::find(rendererNames.cbegin(), rendererNames.cend(), CurrentRendererString) - rendererNames.cbegin());
+				int32 currentRenderer = selectedRenderer;
+				std::string rendererString;
+				for (auto& i : rendererNames)
+				{
+					rendererString += i;
+					rendererString += '\0';
+				}
+
+				if (ImGui::Combo("Renderer", &selectedRenderer, rendererString.c_str()))
+				{
+					if (currentRenderer != selectedRenderer)
+					{
+						CurrentRendererString = rendererNames[selectedRenderer];
+						bUpdateRenderer = true;
+					}
+				}
+
+				const char* SceneViewList[ENUM_COUNT<SceneView>()] = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
+				ImGui::Combo("Scene Views", &Tweaks::CurrentSceneView, SceneViewList, ENUM_COUNT<Gfx::SceneView>());
+				ImGui::Checkbox("VSync", &Tweaks::bEnableVSync);
+				ImGui::PopItemWidth();
+
+				if (ImGui::CollapsingHeader("Render Options"))
+				{
+					for (auto& rt : CurrentRenderTechniques)
+						rt->RenderUI(*this);
+				}
+
+				int maxAO = (int)Gfx::AmbientOcclusion::MAX;
+				if (!RHI::GetGPUInfo().bSupportsRaytracing)
+					maxAO = (int)Gfx::AmbientOcclusion::RTAO;
+
+				ImGui::SeparatorText("Ambient Occlusion");
+				const char* aoList[ENUM_COUNT<AmbientOcclusion>()] = { "None", "SSAO", "RTAO" };
+				ImGui::Combo("Technique", &Tweaks::CurrentAOTechnique, aoList, maxAO);
+
+				ImGui::SeparatorText("Shadows");
+				ImGui::Checkbox("Sun Casts Shadows", &Tweaks::bSunCastsShadows);
+			}
+
+			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::Text("Position: %.1f, %.1f, %.1f", Camera.Eye.x, Camera.Eye.y, Camera.Eye.z);
+				ImGui::PushItemWidth(150.0f);
+				ImGui::DragFloat("Speed", &Camera.CameraSpeed, 0.1f, 0.1f);
+				ImGui::PopItemWidth();
+				ImGui::SameLine();
+				if (ImGui::Button("Set to light pos"))
+					Camera.Eye = Light.Position;
+			}
+
+			if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat3("Light Position", &Light.Position[0], 0.1f);
+				ImGui::ColorEdit3("Light Color", &Light.Color[0]);
+			}
+
+			if (ImGui::CollapsingHeader("Sun", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat3("Direction", &Sun.Direction[0], 0.1f);
+			}
+
+			ImGui::End();
+		}
+	}
+
 	void RenderContext::Render(float dt)
 	{
 		if (bUpdateRenderer)
@@ -96,14 +275,14 @@ namespace limbo::Gfx
 
 		RHI::CommandContext* cmd = RHI::CommandContext::GetCommandContext();
 
-		UI::Render(*this, dt);
+		RenderUI(dt);
 
 		PROFILE_SCOPE(cmd, "Render");
 
 		if (bNeedsEnvMapChange)
 		{
 			cmd->BeginEvent("Loading Environment Map");
-			LoadEnvironmentMap(cmd, EnvironmentMaps[Tweaks.SelectedEnvMapIdx]);
+			LoadEnvironmentMap(cmd, EnvironmentMaps[Tweaks::SelectedEnvMapIdx]);
 			bNeedsEnvMapChange = false;
 			cmd->EndEvent();
 		}
@@ -121,7 +300,7 @@ namespace limbo::Gfx
 		// present
 		{
 			PROFILE_GPU_SCOPE(cmd, "Present");
-			RHI::Present(Tweaks.bEnableVSync);
+			RHI::Present(Tweaks::bEnableVSync);
 		}
 	}
 
@@ -185,9 +364,9 @@ namespace limbo::Gfx
 
 	void RenderContext::UpdateSceneInfo()
 	{
-		SceneInfo.bSunCastsShadows		= Tweaks.bSunCastsShadows;
+		SceneInfo.bSunCastsShadows		= Tweaks::bSunCastsShadows;
 		SceneInfo.SunDirection			= float4(Sun.Direction, 1.0f);
-		SceneInfo.bShowShadowCascades	= UI::Globals::bShowShadowCascades;
+		SceneInfo.bShowShadowCascades	= UIGlobals::bShowShadowCascades;
 
 		SceneInfo.PrevView				= SceneInfo.View;
 
@@ -198,21 +377,19 @@ namespace limbo::Gfx
 		SceneInfo.ViewProjection		= Camera.ViewRevProj;
 		SceneInfo.CameraPos				= Camera.Eye;
 		SceneInfo.SkyIndex				= RM_GET(SceneTextures.EnvironmentCubemap)->SRV();
-		SceneInfo.SceneViewToRender		= Tweaks.CurrentSceneView;
+		SceneInfo.SceneViewToRender		= Tweaks::CurrentSceneView;
 		SceneInfo.FrameIndex++;
 	}
 
 	void RenderContext::UpdateRenderer()
 	{
 		CurrentRenderTechniques.clear();
-		CurrentRenderOptions.Options.clear();
 
 		CurrentRenderer = Renderer::Create(CurrentRendererString);
 		CurrentRenderTechniques = CurrentRenderer->SetupRenderTechniques();
 		for (auto& i : CurrentRenderTechniques)
 		{
 			check(i->Init());
-			CurrentRenderOptions.Options.merge(i->GetOptions());
 		}
 	}
 
@@ -283,6 +460,26 @@ namespace limbo::Gfx
 	const std::vector<Scene*>& RenderContext::GetScenes() const
 	{
 		return m_Scenes;
+	}
+
+	bool RenderContext::CanRenderSSAO() const
+	{
+		return Tweaks::CurrentAOTechnique == (int)AmbientOcclusion::SSAO;
+	}
+
+	bool RenderContext::CanRenderRTAO() const
+	{
+		return Tweaks::CurrentAOTechnique == (int)AmbientOcclusion::RTAO;
+	}
+
+	bool RenderContext::CanRenderShadows() const
+	{
+		return Tweaks::bSunCastsShadows;
+	}
+
+	bool RenderContext::IsAOEnabled() const
+	{
+		return Tweaks::CurrentAOTechnique > 0;
 	}
 
 	void RenderContext::LoadEnvironmentMap(RHI::CommandContext* cmd, const char* path)

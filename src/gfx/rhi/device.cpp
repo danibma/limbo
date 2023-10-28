@@ -10,7 +10,6 @@
 #include "core/utils.h"
 #include "core/timer.h"
 #include "gfx/gfx.h"
-#include "pipelinestateobject.h"
 
 #include <comdef.h> // _com_error
 #include <dxgidebug.h>

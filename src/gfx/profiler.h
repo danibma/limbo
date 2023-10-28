@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "ui.h"
+#include "rendercontext.h"
 #include "core/refcountptr.h"
 #include "rhi/buffer.h"
 #include "core/timer.h"
@@ -102,12 +102,12 @@ namespace limbo
 
 		inline void Present()
 		{
-			if (UI::Globals::bShowProfiler)
+			if (Gfx::UIGlobals::bShowProfiler)
 			{
 				ImGui::SetNextWindowBgAlpha(0.7f);
 				ImGui::Begin("Profiler", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 				ImGui::SetWindowPos(ImVec2(ImGui::GetMainViewport()->Size.x - ImGui::GetWindowSize().x - 5.0f, 28.0f));
-				ImGui::Checkbox("Order results", &UI::Globals::bOrderProfilerResults);
+				ImGui::Checkbox("Order results", &Gfx::UIGlobals::bOrderProfilerResults);
 				ImGui::End();
 			}
 

@@ -4,11 +4,12 @@
 #include "rhi/device.h"
 #include "rhi/commandcontext.h"
 #include "rhi/resourcemanager.h"
+#include "rendercontext.h"
 
 #include <set>
 
 #define BEGIN_UI() \
-	if (UI::Globals::bShowProfiler) \
+	if (limbo::Gfx::UIGlobals::bShowProfiler) \
 	{ \
 		ImGui::SetNextWindowBgAlpha(0.7f); \
 		ImGui::Begin("Profiler", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize ); \
@@ -146,7 +147,7 @@ namespace limbo
 		frameQueryData = queryData + (RHI::Device::Ptr->GetCurrentFrameIndex() * MaxProfiles * 2);
 
 		BEGIN_UI()
-		if (UI::Globals::bShowProfiler)
+		if (Gfx::UIGlobals::bShowProfiler)
 			ImGui::SeparatorText("GPU Times");
 
 		std::set<OrderedData> orderedData;
@@ -181,16 +182,16 @@ namespace limbo
 			if (profileData.Name == "Render")
 				m_AvgRenderTime = avgTime;
 
-			if (UI::Globals::bShowProfiler)
+			if (Gfx::UIGlobals::bShowProfiler)
 			{
-				if (UI::Globals::bOrderProfilerResults)
+				if (Gfx::UIGlobals::bOrderProfilerResults)
 					orderedData.emplace(profileData.Name.c_str(), avgTime);
 				else
 					ImGui::Text("%s: %.2fms", profileData.Name.c_str(), avgTime);
 			}
 		}
 
-		if (UI::Globals::bShowProfiler)
+		if (Gfx::UIGlobals::bShowProfiler)
 		{
 			for (const OrderedData& data : orderedData)
 				ImGui::Text("%s: %.2fms", data.Name, data.Time);
@@ -266,7 +267,7 @@ namespace limbo
 #endif
 
 		BEGIN_UI()
-		if (UI::Globals::bShowProfiler)
+		if (Gfx::UIGlobals::bShowProfiler)
 			ImGui::SeparatorText("CPU Times");
 
 		std::set<OrderedData> orderedData;
@@ -299,16 +300,16 @@ namespace limbo
 			if (profileData.Name == "Render")
 				m_AvgRenderTime = avgTime;
 
-			if (UI::Globals::bShowProfiler)
+			if (Gfx::UIGlobals::bShowProfiler)
 			{
-				if (UI::Globals::bOrderProfilerResults)
+				if (Gfx::UIGlobals::bOrderProfilerResults)
 					orderedData.emplace(profileData.Name.c_str(), avgTime);
 				else
 					ImGui::Text("%s: %.2fms", profileData.Name.c_str(), avgTime);
 			}
 		}
 
-		if (UI::Globals::bShowProfiler)
+		if (Gfx::UIGlobals::bShowProfiler)
 		{
 			for (const OrderedData& data : orderedData)
 				ImGui::Text("%s: %.2fms", data.Name, data.Time);

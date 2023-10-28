@@ -28,7 +28,7 @@ namespace limbo::Gfx
 		cmd.BindTempConstantBuffer(1, context.SceneInfo);
 		//cmd.BindTempConstantBuffer(2, m_ShadowMapping->GetShadowData());
 
-		cmd.BindConstants(0, 0, context.Tweaks.CurrentAOTechnique);
+		cmd.BindConstants(0, 0, context.IsAOEnabled());
 
 		// PBR scene info
 		cmd.BindConstants(0, 1, context.Light.Position);

@@ -10,6 +10,12 @@
 
 namespace limbo::Gfx
 {
+	namespace
+	{
+		float s_SSAORadius = 0.3f;
+		float s_SSAOPower  = 1.2f;
+	}
+
 	SSAO::SSAO()
 		: RenderTechnique("SSAO")
 	{
@@ -35,7 +41,7 @@ namespace limbo::Gfx
 
 	bool SSAO::ConditionalRender(RenderContext& context)
 	{
-		return context.Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::SSAO;
+		return context.CanRenderSSAO();
 	}
 
 	void SSAO::Render(RHI::CommandContext& cmd, RenderContext& context)
@@ -50,8 +56,8 @@ namespace limbo::Gfx
 			};
 			cmd.BindTempDescriptorTable(0, uavHandles, ARRAY_LEN(uavHandles));
 
-			cmd.BindConstants(1, 0, context.Tweaks.SSAORadius);
-			cmd.BindConstants(1, 1, context.Tweaks.SSAOPower);
+			cmd.BindConstants(1, 0, s_SSAORadius);
+			cmd.BindConstants(1, 1, s_SSAOPower);
 			cmd.BindConstants(1, 2, RM_GET(context.SceneTextures.GBufferRenderTargetA)->SRV());
 			cmd.BindConstants(1, 3, RM_GET(context.SceneTextures.GBufferDepthTarget)->SRV());
 
@@ -76,5 +82,11 @@ namespace limbo::Gfx
 			cmd.Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
 			cmd.EndProfileEvent("SSAO Blur Texture");
 		}
+	}
+
+	void SSAO::RenderUI(RenderContext& context)
+	{
+		ImGui::DragFloat("SSAO Radius", &s_SSAORadius, 0.1f, 0.0f, 1.0f);
+		ImGui::DragFloat("SSAO Power", &s_SSAOPower, 0.1f, 0.0f, 2.0f);
 	}
 }

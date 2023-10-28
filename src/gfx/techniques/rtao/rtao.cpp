@@ -10,6 +10,13 @@
 
 namespace limbo::Gfx
 {
+	namespace
+	{
+		int	  s_RTAOSamples = 2;
+		float s_RTAORadius = 0.3f;
+		float s_RTAOPower = 1.2f;
+	}
+
 	RTAO::RTAO()
 		: RenderTechnique("RTAO")
 	{
@@ -41,7 +48,7 @@ namespace limbo::Gfx
 
 	bool RTAO::ConditionalRender(RenderContext& context)
 	{
-		return context.Tweaks.CurrentAOTechnique == (int)AmbientOcclusion::RTAO;
+		return context.CanRenderRTAO();
 	}
 
 	void RTAO::Render(RHI::CommandContext& cmd, RenderContext& context)
@@ -73,9 +80,9 @@ namespace limbo::Gfx
 
 			cmd.BindTempConstantBuffer(2, context.SceneInfo);
 
-			cmd.BindConstants(3, 0, context.Tweaks.SSAORadius);
-			cmd.BindConstants(3, 1, context.Tweaks.SSAOPower);
-			cmd.BindConstants(3, 2, context.Tweaks.RTAOSamples);
+			cmd.BindConstants(3, 0, s_RTAORadius);
+			cmd.BindConstants(3, 1, s_RTAOPower);
+			cmd.BindConstants(3, 2, s_RTAOSamples);
 			cmd.BindConstants(3, 3, RM_GET(context.SceneTextures.GBufferRenderTargetB)->SRV());
 			cmd.BindConstants(3, 4, RM_GET(context.SceneTextures.GBufferRenderTargetD)->SRV());
 			cmd.DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
@@ -105,6 +112,13 @@ namespace limbo::Gfx
 		cmd.CopyTextureToTexture(context.SceneTextures.AOTexture, m_PreviousFrame);
 	}
 
+	void RTAO::RenderUI(RenderContext& context)
+	{
+		ImGui::DragFloat("RTAO Radius", &s_RTAORadius, 0.1f, 0.0f, 1.0f);
+		ImGui::DragFloat("RTAO Power", &s_RTAOPower, 0.1f, 0.0f, 2.0f);
+		ImGui::DragInt("RTAO Samples", &s_RTAOSamples, 1, 0, 16);
+	}
+
 	void RTAO::PreparePreviousFrameTexture()
 	{
 		m_AccumCount = 0;
@@ -113,7 +127,7 @@ namespace limbo::Gfx
 			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "RTAO Previous Frame",
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
-			.Format = RHI::Format::RGBA8_UNORM,
+			.Format = RHI::Format::R8_UNORM,
 			.Type = RHI::TextureType::Texture2D,
 		});
 	}

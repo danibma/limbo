@@ -25,6 +25,7 @@ namespace limbo::Gfx
 		virtual bool Init() override;
 		virtual bool ConditionalRender(RenderContext& context) override;
 		virtual void Render(RHI::CommandContext& cmd, RenderContext& context) override;
+		virtual void RenderUI(RenderContext& context) override;
 
 	private:
 		void PreparePreviousFrameTexture();
