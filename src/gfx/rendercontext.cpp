@@ -426,10 +426,10 @@ namespace limbo::Gfx
 			.DebugName = "PreCompositeSceneTexture",
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource | RHI::TextureUsage::RenderTarget,
 			.ClearValue = {
-				.Format = RHI::D3DFormat(RHI::GetSwapchainFormat()),
+				.Format = RHI::D3DFormat(RHI::Format::RGBA16_SFLOAT),
 				.Color = clearValue[0]
 			},
-			.Format = RHI::GetSwapchainFormat(),
+			.Format = RHI::Format::RGBA16_SFLOAT,
 			.Type = RHI::TextureType::Texture2D,
 		});
 

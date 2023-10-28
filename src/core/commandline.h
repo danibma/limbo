@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#define LIMBO_CMD_PROFILE "--profile"
+#define LIMBO_CMD_SHADER_DEBUG "--shader-debug"
 #define LIMBO_CMD_WAIT_FOR_DEBUGGER "--waitfordebugger"
 #define LIMBO_CMD_D3DDEBUG "--d3ddebug"
 #define LIMBO_CMD_GPU_VALIDATION "--gpu-validation"

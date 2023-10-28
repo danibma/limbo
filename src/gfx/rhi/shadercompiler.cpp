@@ -66,7 +66,7 @@ namespace limbo::RHI::SC
 		arguments.emplace_back(profile.c_str());
 
 #if !LIMBO_DEBUG
-		if (Core::CommandLine::HasArg(LIMBO_CMD_PROFILE))
+		if (Core::CommandLine::HasArg(LIMBO_CMD_SHADER_DEBUG))
 #endif
 		{
 			arguments.emplace_back(DXC_ARG_SKIP_OPTIMIZATIONS); // Disable optimizations

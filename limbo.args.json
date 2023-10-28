@@ -21,8 +21,8 @@
           "Command": "--waitfordebugger"
         },
         {
-          "Id": "7c06dc14-7788-41f8-81e1-1d409f9138e0",
-          "Command": "--profile"
+          "Id": "41b9f824-be60-4e0c-ac98-80fbe2cfc5bc",
+          "Command": "--shader-debug"
         }
       ]
     },

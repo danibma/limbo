@@ -68,7 +68,7 @@ namespace limbo::Gfx::PSOCache
 				.SetVertexShader(ShadersCache::Get(ShaderID::VS_Sky))
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_Sky))
 				.SetRootSignature(rs)
-				.SetRenderTargetFormats({ RHI::GetSwapchainFormat() }, RHI::Format::UNKNOWN)
+				.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::UNKNOWN)
 				.SetDepthStencilDesc(RHI::TStaticDepthStencilState<false>::GetRHI())
 				.SetInputLayout({ { "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT } })
 				.SetName("Skybox PSO");
@@ -88,7 +88,7 @@ namespace limbo::Gfx::PSOCache
 				.SetVertexShader(ShadersCache::Get(ShaderID::VS_Quad))
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_DeferredLighting))
 				.SetRootSignature(rs)
-				.SetRenderTargetFormats({ RHI::GetSwapchainFormat() }, RHI::Format::UNKNOWN)
+				.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::UNKNOWN)
 				.SetDepthStencilDesc(RHI::TStaticDepthStencilState<false>::GetRHI())
 				.SetName("PBR Lighting PSO");
 			s_Pipelines[PipelineID::PBRLighting] = RHI::CreatePSO(psoInit);

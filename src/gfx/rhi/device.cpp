@@ -30,7 +30,6 @@ namespace limbo::RHI
 		: m_Flags(flags), m_GPUInfo()
 	{
 		uint32_t dxgiFactoryFlags = 0;
-		bool bIsProfiling = Core::CommandLine::HasArg(LIMBO_CMD_PROFILE);
 		bool bD3DDebug = Core::CommandLine::HasArg(LIMBO_CMD_D3DDEBUG);
 		bool bGPUValidation = Core::CommandLine::HasArg(LIMBO_CMD_GPU_VALIDATION);
 
@@ -40,42 +39,39 @@ namespace limbo::RHI
 			LB_WARN("GPU Validation enabled");
 
 #if !LB_RELEASE
-		if (!bIsProfiling && bD3DDebug)
+		if (bD3DDebug)
 			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif
 		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(m_Factory.ReleaseAndGetAddressOf())));
 
 #if !LB_RELEASE
-		if (!bIsProfiling)
+		// note: disabled pix capture for now, it redirects the GPU validation into their stuff, so the app does not get any GPU validation errors
+		if (!IsUnderPIX() && false) 
 		{
-			// note: disabled pix capture for now, it redirects the GPU validation into their stuff, so the app does not get any GPU validation errors
-			if (!IsUnderPIX() && false) 
+			HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
+			if (pixGPUCapturer)
 			{
-				HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
-				if (pixGPUCapturer)
-				{
-					DX_CHECK(PIXSetTargetWindow(window->GetWin32Handle()));
-					DX_CHECK(PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS));
-					m_bPIXCanCapture = true;
-					LB_LOG("PIX capture enabled.");
-				}
+				DX_CHECK(PIXSetTargetWindow(window->GetWin32Handle()));
+				DX_CHECK(PIXSetHUDOptions(PIX_HUD_SHOW_ON_NO_WINDOWS));
+				m_bPIXCanCapture = true;
+				LB_LOG("PIX capture enabled.");
 			}
+		}
 
-			if (bD3DDebug)
-			{
-				RefCountPtr<ID3D12Debug> debugController;
-				DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
-				debugController->EnableDebugLayer();
-			}
+		if (bD3DDebug)
+		{
+			RefCountPtr<ID3D12Debug> debugController;
+			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
+			debugController->EnableDebugLayer();
+		}
 
-			if (bGPUValidation)
-			{
-				RefCountPtr<ID3D12Debug> debugController;
-				DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
-				RefCountPtr<ID3D12Debug1> debugController1;
-				DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(debugController1.ReleaseAndGetAddressOf())));
-				debugController1->SetEnableGPUBasedValidation(true);
-			}
+		if (bGPUValidation)
+		{
+			RefCountPtr<ID3D12Debug> debugController;
+			DX_CHECK(D3D12GetDebugInterface(IID_PPV_ARGS(debugController.ReleaseAndGetAddressOf())));
+			RefCountPtr<ID3D12Debug1> debugController1;
+			DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(debugController1.ReleaseAndGetAddressOf())));
+			debugController1->SetEnableGPUBasedValidation(true);
 		}
 #endif
 
@@ -105,7 +101,7 @@ namespace limbo::RHI
 
 #if !LB_RELEASE
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
-		if (!bIsProfiling && !IsUnderRenderDoc())
+		if (!IsUnderRenderDoc())
 		{
 			// RenderDoc does not support rt for some reason as well
 			m_GPUInfo.bSupportsRaytracing = m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1;
