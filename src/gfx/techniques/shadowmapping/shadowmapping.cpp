@@ -57,7 +57,7 @@ namespace limbo::Gfx
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
 			context.SceneTextures.DepthShadowMaps[i] = m_DepthShadowMaps[i];
 
-		CreateLightMatrices(&context.Camera, context.SceneInfo.SunDirection);
+		CreateLightMatrices(context);
 
 		// Shadow map
 		cmd.BeginProfileEvent("Shadow Maps Pass");
@@ -76,7 +76,7 @@ namespace limbo::Gfx
 			cmd.BindConstants(2, 0, cascade);
 
 			cmd.BindTempConstantBuffer(0, context.SceneInfo);
-			cmd.BindTempConstantBuffer(1, m_ShadowData);
+			cmd.BindTempConstantBuffer(1, context.ShadowMapData);
 
 			for (const Scene* scene : context.GetScenes())
 			{
@@ -106,12 +106,12 @@ namespace limbo::Gfx
 		Calculate frustum split depths and matrices for the shadow map cascades
 		Based on https://johanmedestrom.wordpress.com/2016/03/18/opengl-cascaded-shadow-maps/
 	*/
-	void ShadowMapping::CreateLightMatrices(const FPSCamera* camera, float3 lightDirection)
+	void ShadowMapping::CreateLightMatrices(RenderContext& context)
 	{
 		float cascadeSplits[SHADOWMAP_CASCADES];
 
-		float nearClip = camera->NearZ;
-		float farClip = camera->FarZ;
+		float nearClip = context.Camera.NearZ;
+		float farClip = context.Camera.FarZ;
 		float clipRange = farClip - nearClip;
 
 		float minZ = nearClip;
@@ -150,7 +150,7 @@ namespace limbo::Gfx
 			float splitDist = cascadeSplits[cascade];
 
 			// Project frustum corners into world space
-			float4x4 invCam = glm::inverse(camera->ViewProj);
+			float4x4 invCam = glm::inverse(context.Camera.ViewProj);
 			for (uint32 i = 0; i < 8; i++) 
 			{
 				float4 invCorner = invCam * float4(frustumCorners[i], 1.0f);
@@ -181,14 +181,14 @@ namespace limbo::Gfx
 			glm::vec3 maxExtents = glm::vec3(radius);
 			glm::vec3 minExtents = -maxExtents;
 
-			glm::vec3 lightDir = glm::normalize(-lightDirection);
+			glm::vec3 lightDir = glm::normalize(-context.SceneInfo.SunDirection);
 			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
 			glm::mat4 lightOrthoMatrix = glm::orthoZO(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
 
 			// Store split distance and matrix in cascade
-			m_ShadowData.SplitDepth[cascade]    = (camera->NearZ + splitDist * clipRange) * -1.0f;
-			m_ShadowData.LightViewProj[cascade] = lightOrthoMatrix * lightViewMatrix;
-			m_ShadowData.ShadowMap[cascade]		= RM_GET(m_DepthShadowMaps[cascade])->SRV();
+			context.ShadowMapData.SplitDepth[cascade]    = (context.Camera.NearZ + splitDist * clipRange) * -1.0f;
+			context.ShadowMapData.LightViewProj[cascade] = lightOrthoMatrix * lightViewMatrix;
+			context.ShadowMapData.ShadowMap[cascade]	 = RM_GET(m_DepthShadowMaps[cascade])->SRV();
 
 			lastSplitDist = cascadeSplits[cascade];
 		}

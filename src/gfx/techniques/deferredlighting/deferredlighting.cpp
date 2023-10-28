@@ -26,7 +26,7 @@ namespace limbo::Gfx
 		cmd.SetViewport(context.RenderSize.x, context.RenderSize.y);
 
 		cmd.BindTempConstantBuffer(1, context.SceneInfo);
-		//cmd.BindTempConstantBuffer(2, m_ShadowMapping->GetShadowData());
+		cmd.BindTempConstantBuffer(2, context.ShadowMapData);
 
 		cmd.BindConstants(0, 0, context.IsAOEnabled());
 

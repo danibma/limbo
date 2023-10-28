@@ -9,7 +9,6 @@ namespace limbo::Gfx
 
 	class ShadowMapping : public RenderTechnique
 	{
-		ShadowData					m_ShadowData;
 		RHI::TextureHandle			m_DepthShadowMaps[SHADOWMAP_CASCADES];
 		float						m_CascadeSplitLambda = 0.95f;
 
@@ -23,6 +22,6 @@ namespace limbo::Gfx
 
 	private:
 		void DrawDebugWindow();
-		void CreateLightMatrices(const FPSCamera* camera, float3 lightDirection);
+		void CreateLightMatrices(RenderContext& context);
 	};
 }

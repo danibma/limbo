@@ -34,11 +34,7 @@ namespace limbo::Gfx
 		float3 Direction;
 	};
 
-	class ShadowMapping;
-	class PathTracing;
 	class Scene;
-	class SSAO;
-	class RTAO;
 	class RenderContext
 	{
 		using EnvironmentMapList = TStaticArray<const char*, 8>;
@@ -89,6 +85,7 @@ namespace limbo::Gfx
 		DirectionalLight				Sun;
 		SceneTextures					SceneTextures;
 		SceneInfo						SceneInfo;
+		ShadowData						ShadowMapData;
 		RHI::AccelerationStructure		SceneAccelerationStructure;
 
 		bool							bUpdateRenderer = false;
