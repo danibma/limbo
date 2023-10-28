@@ -114,9 +114,14 @@ namespace limbo::Gfx
 
 	void RTAO::RenderUI(RenderContext& context)
 	{
-		ImGui::DragFloat("RTAO Radius", &s_RTAORadius, 0.1f, 0.0f, 1.0f);
-		ImGui::DragFloat("RTAO Power", &s_RTAOPower, 0.1f, 0.0f, 2.0f);
-		ImGui::DragInt("RTAO Samples", &s_RTAOSamples, 1, 0, 16);
+		if (ImGui::TreeNode("AO"))
+		{
+			ImGui::DragFloat("Radius", &s_RTAORadius, 0.1f, 0.0f, 1.0f);
+			ImGui::DragFloat("Power", &s_RTAOPower, 0.1f, 0.0f, 2.0f);
+			ImGui::DragInt("Samples", &s_RTAOSamples, 1, 0, 16);
+
+			ImGui::TreePop();
+		}
 	}
 
 	void RTAO::PreparePreviousFrameTexture()

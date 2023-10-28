@@ -86,7 +86,12 @@ namespace limbo::Gfx
 
 	void SSAO::RenderUI(RenderContext& context)
 	{
-		ImGui::DragFloat("SSAO Radius", &s_SSAORadius, 0.1f, 0.0f, 1.0f);
-		ImGui::DragFloat("SSAO Power", &s_SSAOPower, 0.1f, 0.0f, 2.0f);
+		if (ImGui::TreeNode("AO"))
+		{
+			ImGui::DragFloat("Radius", &s_SSAORadius, 0.1f, 0.0f, 1.0f);
+			ImGui::DragFloat("Power", &s_SSAOPower, 0.1f, 0.0f, 2.0f);
+
+			ImGui::TreePop();
+		}
 	}
 }

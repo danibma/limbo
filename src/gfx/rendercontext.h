@@ -23,29 +23,6 @@ namespace limbo::Gfx
 		inline bool bShowShadowCascades = false;
 	};
 
-	enum class SceneView : uint8
-	{
-		Full = 0,
-		Color,
-		Normal,
-		WorldPosition,
-		Metallic,
-		Roughness,
-		Emissive,
-		AO,
-
-		MAX
-	};
-
-	enum class AmbientOcclusion : uint8
-	{
-		None = 0,
-		SSAO,
-		RTAO, // Leave this as the last one, so it does not show in the UI as an option, if rt is not available
-
-		MAX
-	};
-
 	struct PointLight
 	{
 		float3 Position;

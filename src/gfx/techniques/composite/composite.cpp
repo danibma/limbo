@@ -47,16 +47,21 @@ namespace limbo::Gfx
 
 	void Composite::RenderUI(RenderContext& context)
 	{
-		enum class Tonemap : uint8
+		if (ImGui::TreeNode("Composite"))
 		{
-			None = 0,
-			AcesFilm,
-			Reinhard,
+			enum class Tonemap : uint8
+			{
+				None = 0,
+				AcesFilm,
+				Reinhard,
 
-			MAX
-		};
+				MAX
+			};
 
-		const char* tonemapList[ENUM_COUNT<Tonemap>()] = { "None", "AcesFilm", "Reinhard" };
-		ImGui::Combo("Tonemap", &s_CurrentTonemap, tonemapList, ENUM_COUNT<Tonemap>());
+			const char* tonemapList[ENUM_COUNT<Tonemap>()] = { "None", "AcesFilm", "Reinhard" };
+			ImGui::Combo("Tonemap", &s_CurrentTonemap, tonemapList, ENUM_COUNT<Tonemap>());
+
+			ImGui::TreePop();
+		}
 	}
 }

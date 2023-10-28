@@ -24,6 +24,29 @@ namespace limbo::Gfx
 {
 	namespace Tweaks
 	{
+		enum class SceneView : uint8
+		{
+			Full = 0,
+			Color,
+			Normal,
+			WorldPosition,
+			Metallic,
+			Roughness,
+			Emissive,
+			AO,
+
+			MAX
+		};
+
+		enum class AmbientOcclusion : uint8
+		{
+			None = 0,
+			SSAO,
+			RTAO, // Leave this as the last one, so it does not show in the UI as an option, if rt is not available
+
+			MAX
+		};
+
 		bool			bEnableVSync = true;
 		bool			bSunCastsShadows = true;
 		int				CurrentSceneView = 0; // SceneView enum
@@ -216,30 +239,31 @@ namespace limbo::Gfx
 					}
 				}
 
-				const char* SceneViewList[ENUM_COUNT<SceneView>()] = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
-				ImGui::Combo("Scene Views", &Tweaks::CurrentSceneView, SceneViewList, ENUM_COUNT<Gfx::SceneView>());
+				const char* SceneViewList[ENUM_COUNT<Tweaks::SceneView>()] = { "Full", "Color", "Normal", "World Position", "Metallic", "Roughness", "Emissive", "Ambient Occlusion" };
+				ImGui::Combo("Scene Views", &Tweaks::CurrentSceneView, SceneViewList, ENUM_COUNT<Tweaks::SceneView>());
 				ImGui::Checkbox("VSync", &Tweaks::bEnableVSync);
 				ImGui::PopItemWidth();
 
-				if (ImGui::CollapsingHeader("Render Options"))
-				{
-					for (auto& rt : CurrentRenderTechniques)
-						rt->RenderUI(*this);
-				}
-
-				int maxAO = (int)Gfx::AmbientOcclusion::MAX;
+				int maxAO = (int)Tweaks::AmbientOcclusion::MAX;
 				if (!RHI::GetGPUInfo().bSupportsRaytracing)
-					maxAO = (int)Gfx::AmbientOcclusion::RTAO;
+					maxAO = (int)Tweaks::AmbientOcclusion::RTAO;
 
 				ImGui::SeparatorText("Ambient Occlusion");
-				const char* aoList[ENUM_COUNT<AmbientOcclusion>()] = { "None", "SSAO", "RTAO" };
+				const char* aoList[ENUM_COUNT<Tweaks::AmbientOcclusion>()] = { "None", "SSAO", "RTAO" };
 				ImGui::Combo("Technique", &Tweaks::CurrentAOTechnique, aoList, maxAO);
 
 				ImGui::SeparatorText("Shadows");
 				ImGui::Checkbox("Sun Casts Shadows", &Tweaks::bSunCastsShadows);
 			}
 
-			if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
+			if (ImGui::CollapsingHeader("Render Options", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				for (auto& rt : CurrentRenderTechniques)
+					if (rt->ConditionalRender(*this))
+						rt->RenderUI(*this);
+			}
+
+			if (ImGui::CollapsingHeader("Camera"))
 			{
 				ImGui::Text("Position: %.1f, %.1f, %.1f", Camera.Eye.x, Camera.Eye.y, Camera.Eye.z);
 				ImGui::PushItemWidth(150.0f);
@@ -250,13 +274,13 @@ namespace limbo::Gfx
 					Camera.Eye = Light.Position;
 			}
 
-			if (ImGui::CollapsingHeader("Light", ImGuiTreeNodeFlags_DefaultOpen))
+			if (ImGui::CollapsingHeader("Light"))
 			{
 				ImGui::DragFloat3("Light Position", &Light.Position[0], 0.1f);
 				ImGui::ColorEdit3("Light Color", &Light.Color[0]);
 			}
 
-			if (ImGui::CollapsingHeader("Sun", ImGuiTreeNodeFlags_DefaultOpen))
+			if (ImGui::CollapsingHeader("Sun"))
 			{
 				ImGui::DragFloat3("Direction", &Sun.Direction[0], 0.1f);
 			}
@@ -464,12 +488,12 @@ namespace limbo::Gfx
 
 	bool RenderContext::CanRenderSSAO() const
 	{
-		return Tweaks::CurrentAOTechnique == (int)AmbientOcclusion::SSAO;
+		return Tweaks::CurrentAOTechnique == (int)Tweaks::AmbientOcclusion::SSAO;
 	}
 
 	bool RenderContext::CanRenderRTAO() const
 	{
-		return Tweaks::CurrentAOTechnique == (int)AmbientOcclusion::RTAO;
+		return Tweaks::CurrentAOTechnique == (int)Tweaks::AmbientOcclusion::RTAO;
 	}
 
 	bool RenderContext::CanRenderShadows() const

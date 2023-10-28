@@ -177,6 +177,7 @@ namespace limbo::RHI
 			io.Fonts->AddFontFromFileTTF("assets/fonts/NotoSans/NotoSans-Regular.ttf", 18.0f);
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.ItemInnerSpacing = ImVec2(10.0f, 0.0f);
+			style.WindowRounding = 4.0f;
 
 			DescriptorHandle imguiDescriptor = m_GlobalHeap->AllocatePersistent();
 
