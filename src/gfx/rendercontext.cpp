@@ -80,12 +80,10 @@ namespace limbo::Gfx
 		EnvironmentMaps = {
 			"assets/environment/a_rotes_rathaus_4k.hdr",
 			"assets/environment/footprint_court.hdr",
-			"assets/environment/helipad.hdr",
 			"assets/environment/kiara_1_dawn_4k.hdr",
 			"assets/environment/pink_sunrise_4k.hdr",
-			"assets/environment/spree_bank_4k.hdr",
 			"assets/environment/the_sky_is_on_fire_4k.hdr",
-			"assets/environment/venice_dawn_1_4k.hdr"
+			"assets/environment/venice_dawn_1_4k.hdr",
 		};
 
 		//LoadNewScene("assets/models/cornell_box.glb");
@@ -298,7 +296,10 @@ namespace limbo::Gfx
 
 		RHI::CommandContext* cmd = RHI::CommandContext::GetCommandContext();
 
-		RenderUI(dt);
+		{
+			PROFILE_CPU_SCOPE("RenderUI");
+			RenderUI(dt);
+		}
 
 		PROFILE_SCOPE(cmd, "Render");
 

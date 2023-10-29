@@ -37,7 +37,7 @@ namespace limbo::Gfx
 	class Scene;
 	class RenderContext
 	{
-		using EnvironmentMapList = TStaticArray<const char*, 8>;
+		using EnvironmentMapList = TStaticArray<const char*, 7>;
 
 		struct SceneTextures
 		{

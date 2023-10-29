@@ -11,6 +11,7 @@ namespace limbo::Gfx
 	namespace 
 	{
 		int32 s_CurrentTonemap = 1;
+		bool  s_EnableGammaCorrection = true;
 	}
 
 	Composite::Composite()
@@ -38,8 +39,8 @@ namespace limbo::Gfx
 		cmd.ClearDepthTarget(RHI::GetCurrentDepthBackbuffer());
 
 		cmd.BindConstants(0, 0, s_CurrentTonemap);
-
-		cmd.BindConstants(0, 1, RM_GET(context.SceneTextures.PreCompositeSceneTexture)->SRV());
+		cmd.BindConstants(0, 1, s_EnableGammaCorrection);
+		cmd.BindConstants(0, 2, RM_GET(context.SceneTextures.PreCompositeSceneTexture)->SRV());
 
 		cmd.Draw(6);
 		cmd.EndProfileEvent(m_Name.data());
@@ -54,12 +55,15 @@ namespace limbo::Gfx
 				None = 0,
 				AcesFilm,
 				Reinhard,
+				Uncharted2,
+				Unreal,
 
 				MAX
 			};
 
-			const char* tonemapList[ENUM_COUNT<Tonemap>()] = { "None", "AcesFilm", "Reinhard" };
+			const char* tonemapList[ENUM_COUNT<Tonemap>()] = { "None", "AcesFilm", "Reinhard", "Uncharted2", "Unreal" };
 			ImGui::Combo("Tonemap", &s_CurrentTonemap, tonemapList, ENUM_COUNT<Tonemap>());
+			ImGui::Checkbox("Gamma Correction", &s_EnableGammaCorrection);
 
 			ImGui::TreePop();
 		}
