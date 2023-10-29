@@ -422,12 +422,14 @@ namespace limbo::RHI
 
 	void CommandContext::BeginProfileEvent(const char* name, uint64 color /*= 0*/)
 	{
+		BeginEvent(name, color);
 		PROFILE_BEGIN(this, name);
 	}
 
 	void CommandContext::EndProfileEvent(const char* name)
 	{
 		PROFILE_END(this, name);
+		EndEvent();
 	}
 
 	void CommandContext::GenerateMipLevels(TextureHandle texture)
