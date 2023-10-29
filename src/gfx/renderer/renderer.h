@@ -6,6 +6,13 @@ namespace limbo::Gfx
 {
 	using RenderTechniquesList = std::vector<std::unique_ptr<RenderTechnique>>;
 
+	enum RendererRequiredFeatures
+	{
+		RF_None,
+		RF_RayTracing
+	};
+	DECLARE_ENUM_BITWISE_OPERATORS(RendererRequiredFeatures)
+
 	class Renderer
 	{
 		LB_NON_COPYABLE(Renderer);
@@ -18,7 +25,7 @@ namespace limbo::Gfx
 			auto& list = GetList();
 			auto it = list.find(name);
 			if (ensure(it != list.cend()))
-				return it->second();
+				return it->second.Function();
 			
 			return nullptr;
 		}
@@ -28,8 +35,8 @@ namespace limbo::Gfx
 			std::vector<std::string_view> result;
 			for (auto& i : GetList())
 			{
-				/** Remove the path tracer from the UI, when ray tracing is not supported */
-				if (i.first == "Path Tracer" && !RHI::GetGPUInfo().bSupportsRaytracing)
+				/** Remove the renderer from the UI, if it requires features that are not supported */
+				if (EnumHasAllFlags(i.second.RequiredFeatures, RF_RayTracing) && !RHI::GetGPUInfo().bSupportsRaytracing)
 					continue;
 
 				result.push_back(i.first);
@@ -45,9 +52,15 @@ namespace limbo::Gfx
 
 	private:
 		using FunctionType = std::unique_ptr<Renderer>(*)();
+		struct RegisteredRenderer
+		{
+			FunctionType Function;
+			RendererRequiredFeatures RequiredFeatures;
+		};
+
 		static auto& GetList()
 		{
-			static std::unordered_map<std::string_view, FunctionType> list;
+			static std::unordered_map<std::string_view, RegisteredRenderer> list;
 			return list;
 		}
 
@@ -65,10 +78,13 @@ namespace limbo::Gfx
 		static bool RegisterType()
 		{
 			auto name = T::Name;
-			Renderer::GetList()[name] = []() -> std::unique_ptr<Renderer>
+			auto& element = Renderer::GetList()[name];
+			element.Function = []() -> std::unique_ptr<Renderer>
 			{
 				return std::make_unique<T>();
 			};
+
+			element.RequiredFeatures = T::RequiredFeatures;
 			return true;
 		}
 

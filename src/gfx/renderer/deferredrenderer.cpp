@@ -14,6 +14,7 @@ namespace limbo::Gfx
 	{
 	public:
 		static constexpr std::string_view Name = "Deferred";
+		static constexpr RendererRequiredFeatures RequiredFeatures = RF_None;
 
 		DeferredRenderer() {}
 

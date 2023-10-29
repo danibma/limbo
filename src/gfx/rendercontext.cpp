@@ -219,7 +219,6 @@ namespace limbo::Gfx
 				ImGui::PushItemWidth(200.0f);
 
 				// Select which renderer to use
-				// TODO: implement this in here RHI::GetGPUInfo().bSupportsRaytracing
 				const auto& rendererNames = Gfx::Renderer::GetNames();
 				int32 selectedRenderer = (int32)(std::find(rendererNames.cbegin(), rendererNames.cend(), CurrentRendererString) - rendererNames.cbegin());
 				int32 currentRenderer = selectedRenderer;

@@ -9,6 +9,7 @@ namespace limbo::Gfx
 	{
 	public:
 		static constexpr std::string_view Name = "Path Tracer";
+		static constexpr RendererRequiredFeatures RequiredFeatures = RF_RayTracing;
 
 		PathTracer() {}
 
