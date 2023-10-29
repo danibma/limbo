@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "gfx/rhi/device.h"
 #include "gfx/techniques/rendertechnique.h"
 
 namespace limbo::Gfx
@@ -26,7 +27,13 @@ namespace limbo::Gfx
 		{
 			std::vector<std::string_view> result;
 			for (auto& i : GetList())
+			{
+				/** Remove the path tracer from the UI, when ray tracing is not supported */
+				if (i.first == "Path Tracer" && !RHI::GetGPUInfo().bSupportsRaytracing)
+					continue;
+
 				result.push_back(i.first);
+			}
 			return result;
 		}
 

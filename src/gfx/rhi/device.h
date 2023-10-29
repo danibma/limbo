@@ -3,9 +3,6 @@
 #include "definitions.h"
 #include "core/array.h"
 #include "core/refcountptr.h"
-#include "rootsignature.h"
-#include "shader.h"
-#include "pipelinestateobject.h"
 #include "texture.h"
 
 #include <dxgi1_6.h>

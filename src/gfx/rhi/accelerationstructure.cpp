@@ -18,6 +18,8 @@ namespace limbo::RHI
 
 	void AccelerationStructure::Build(CommandContext* cmd, const std::vector<Gfx::Scene*>& scenes)
 	{
+		if (!RHI::GetGPUInfo().bSupportsRaytracing) return;
+
 		Device* device = Device::Ptr;
 		ID3D12Device5* d3ddevice = device->GetDevice();
 
