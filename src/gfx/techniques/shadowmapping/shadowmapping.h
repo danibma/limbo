@@ -10,7 +10,7 @@ namespace limbo::Gfx
 	class ShadowMapping : public RenderTechnique
 	{
 		RHI::TextureHandle			m_DepthShadowMaps[SHADOWMAP_CASCADES];
-		float						m_CascadeSplitLambda = 0.95f;
+		float						m_CascadeSplitLambda = 0.85f;
 
 	public:
 		ShadowMapping();

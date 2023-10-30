@@ -37,7 +37,7 @@ cbuffer Textures : register(b1)
 
 float CalculateShadow(float4 shadowCoord, float2 off, uint cascadeIndex)
 {
-    float shadowBias = 0.005f;
+    float shadowBias = 0.001f;
     shadowCoord.y = -shadowCoord.y;
 
     float shadow = 1.0;
