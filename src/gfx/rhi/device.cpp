@@ -45,8 +45,7 @@ namespace limbo::RHI
 		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(m_Factory.ReleaseAndGetAddressOf())));
 
 #if !LB_RELEASE
-		// note: disabled pix capture for now, it redirects the GPU validation into their stuff, so the app does not get any GPU validation errors
-		if (!IsUnderPIX() && false) 
+		if (!IsUnderPIX() && !bGPUValidation)
 		{
 			HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
 			if (pixGPUCapturer)
