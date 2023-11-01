@@ -79,6 +79,11 @@ set_source_files_properties(${SHADER_FILES} ${RT_SHADER_FILES} ${TEST_SHADER_FIL
 
 target_include_directories(limbo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+# Command line args stuff
+get_filename_component(smartCmdArgJsonFile "project.args.json" ABSOLUTE)
+MESSAGE(STATUS "Path to json file: " ${smartCmdArgJsonFile})
+set_property(TARGET limbo PROPERTY VS_GLOBAL_SmartCmdArgJsonFile ${smartCmdArgJsonFile})
+
 # Defines
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DLB_RELEASE")
 
