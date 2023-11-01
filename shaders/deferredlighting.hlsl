@@ -115,6 +115,7 @@ float4 PSMain(QuadResult quad) : SV_Target
     }
 
     float3 indirectLighting = CalculateIBL(N, V, material, IrradianceMap, PrefilterMap, LUT);
+    float3 lightRadiance = (directLighting + indirectLighting);
 
     float shadow = 1.0f;
 
@@ -143,18 +144,18 @@ float4 PSMain(QuadResult quad) : SV_Target
             switch (cascadeIndex)
             {
                 case 0:
-                    return float4(1.0f, 1.0f, 1.0f, 1.0f);
+                    return float4(lightRadiance, 1.0f) * float4(0.5f, 0.5f, 1.0f, 1.0f);
                 case 1:
-                    return float4(1.0f, 0.0f, 0.0f, 1.0f);
+                    return float4(lightRadiance, 1.0f) * float4(1.0f, 0.0f, 0.0f, 1.0f);
                 case 2:
-                    return float4(0.0f, 1.0f, 0.0f, 1.0f);
+                    return float4(lightRadiance, 1.0f) * float4(0.0f, 1.0f, 0.0f, 1.0f);
                 case 3:
-                    return float4(0.0f, 0.0f, 1.0f, 1.0f);
+                    return float4(lightRadiance, 1.0f) * float4(0.0f, 0.0f, 1.0f, 1.0f);
             }
         }
     }
 
-    float3 color = ((directLighting + indirectLighting) * shadow) + emissive;
+    float3 color = (lightRadiance * shadow) + emissive;
     float4 finalColor = float4(color, 1.0f);
     
     return finalColor;
