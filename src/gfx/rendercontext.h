@@ -59,7 +59,7 @@ namespace limbo::Gfx
 			 * These textures are created and deleted by render techniques or from other place in code.
 			 * They should not be deleted in the normal @DestroySceneTextures.
 			 */
-			RHI::TextureHandle DepthShadowMaps[SHADOWMAP_CASCADES]; /**< External */
+			RHI::TextureHandle ShadowMaps[SHADOWMAP_CASCADES]; /**< External */
 
 			// IBL
 			RHI::TextureHandle EnvironmentCubemap; /**< External */

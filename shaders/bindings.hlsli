@@ -6,6 +6,8 @@ SamplerState SLinearWrap     : register(s0, space1);
 SamplerState SLinearClamp    : register(s1, space1);
 SamplerState SPointWrap      : register(s2, space1);
 
+SamplerComparisonState SShadowWrapSampler : register(s3, space1);
+
 ConstantBuffer<SceneInfo> GSceneInfo : register(b100);
 ConstantBuffer<ShadowData> GShadowData : register(b101);
 
@@ -31,6 +33,24 @@ float4 SampleLevel2D(int index, SamplerState s, float2 uv, float level)
 {
     Texture2D texture = ResourceDescriptorHeap[NonUniformResourceIndex(index)];
 	return texture.SampleLevel(s, uv, level);
+}
+
+float4 Sample2DGrad(int index, SamplerState s, float2 uv, float2 ddx, float2 ddy)
+{
+    Texture2D texture = ResourceDescriptorHeap[NonUniformResourceIndex(index)];
+    return texture.SampleGrad(s, uv, ddx, ddy);
+}
+
+float4 Sample2DCmp(int index, SamplerComparisonState s, float2 uv, float compareValue)
+{
+    Texture2D texture = ResourceDescriptorHeap[NonUniformResourceIndex(index)];
+    return texture.SampleCmp(s, uv, compareValue);
+}
+
+float4 Sample2DCmpLevelZero(int index, SamplerComparisonState s, float2 uv, float compareValue)
+{
+    Texture2D texture = ResourceDescriptorHeap[NonUniformResourceIndex(index)];
+    return texture.SampleCmpLevelZero(s, uv, compareValue);
 }
 
 float4 SampleLevelCube(int index, SamplerState s, float3 uv, float level)

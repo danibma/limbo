@@ -18,6 +18,11 @@ namespace limbo::RHI
 			return !(m_Index == other.m_Index && m_Generation == other.m_Generation);
 		}
 
+		bool operator==(const Handle& other)
+		{
+			return m_Index == other.m_Index && m_Generation == other.m_Generation;
+		}
+
 	private:
 		Handle(uint16 index, uint16 generation) : m_Index(index), m_Generation(generation) {}
 

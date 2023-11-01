@@ -2,6 +2,10 @@
 
 #ifdef __cplusplus
 	#include "core/math.h"
+
+	#define __CONST constexpr
+#else
+	#define __CONST static const
 #endif
 
 #define CONCAT_IMPL( x, y ) x##y
@@ -9,6 +13,14 @@
 #define __PAD uint MACRO_CONCAT(padding, __COUNTER__)
 
 #define SHADOWMAP_CASCADES 4
+
+__CONST uint SHADOWMAP_SIZES[SHADOWMAP_CASCADES] =
+{
+	2048,
+	2048,
+	2048,
+	2048,
+};
 
 struct SceneInfo
 {

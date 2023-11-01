@@ -9,8 +9,8 @@ namespace limbo::Gfx
 
 	class ShadowMapping : public RenderTechnique
 	{
-		RHI::TextureHandle			m_DepthShadowMaps[SHADOWMAP_CASCADES];
-		float						m_CascadeSplitLambda = 0.85f;
+		RHI::TextureHandle			m_ShadowMaps[SHADOWMAP_CASCADES];
+		float						m_CascadeSplitLambda = 0.95f;
 
 	public:
 		ShadowMapping();
@@ -19,6 +19,7 @@ namespace limbo::Gfx
 		virtual bool Init() override;
 		virtual bool ConditionalRender(RenderContext& context) override;
 		virtual void Render(RHI::CommandContext& cmd, RenderContext& context) override;
+		virtual void RenderUI(RenderContext& context) override;
 
 	private:
 		void DrawDebugWindow();

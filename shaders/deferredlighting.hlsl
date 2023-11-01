@@ -33,45 +33,28 @@ cbuffer Textures : register(b1)
     uint LUT;
 }
 
-#define SHADOW_AMBIENT 0.1f
-
-float CalculateShadow(float4 shadowCoord, float2 off, uint cascadeIndex)
+float ShadowPCF3x3(float3 sc, uint cascadeIndex)
 {
-    float shadowBias = 0.001f;
-    shadowCoord.y = -shadowCoord.y;
+    if (sc.z > 1.0f)
+        return 1.0;
 
-    float shadow = 1.0;
-    if (shadowCoord.z > -1.0 && shadowCoord.z < 1.0)
+    float depth = sc.z;
+    const float dx = 1.0f / SHADOWMAP_SIZES[cascadeIndex];
+    float2 offsets[9] =
     {
-        float dist = Sample2D(GShadowData.ShadowMap[cascadeIndex], SPointWrap, shadowCoord.xy + off).r;
-        if (shadowCoord.w > 0.0 && dist < shadowCoord.z - shadowBias)
-        {
-            shadow = SHADOW_AMBIENT;
-        }
-    }
-    return shadow;
-}
+        float2(-dx, -dx), float2(0.0f, -dx), float2(dx, -dx),
+		float2(-dx, 0.0f), float2(0.0f, 0.0f), float2(dx, 0.0f),
+		float2(-dx, +dx), float2(0.0f, +dx), float2(dx, +dx)
+    };
 
-float ShadowPCF(float4 sc, uint cascadeIndex)
-{
-    float2 texDim = GetDimensions2D(GShadowData.ShadowMap[cascadeIndex]);
-    float scale = 0.75;
-    float dx = scale * 1.0 / float(texDim.x);
-    float dy = scale * 1.0 / float(texDim.y);
-
-    float shadowFactor = 0.0;
-    int count = 0;
-    int range = 1;
-
-    for (int x = -range; x <= range; x++)
+    float percentLit = 0.0f;
+	[unroll(9)] 
+    for (int i = 0; i < 9; ++i)
     {
-        for (int y = -range; y <= range; y++)
-        {
-            shadowFactor += CalculateShadow(sc, float2(dx * x, dy * y), cascadeIndex);
-            count++;
-        }
+        percentLit += Sample2DCmpLevelZero(GShadowData.ShadowMap[cascadeIndex], SShadowWrapSampler, sc.xy + offsets[i], depth).x;
     }
-    return shadowFactor / count;
+    percentLit /= 9.0f;
+    return percentLit + 0.05f;
 }
 
 float4 PSMain(QuadResult quad) : SV_Target
@@ -148,14 +131,12 @@ float4 PSMain(QuadResult quad) : SV_Target
             }
         }
 
-        float4x4 biasMatrix = float4x4(
-		0.5, 0.0, 0.0, 0.5,
-		0.0, 0.5, 0.0, 0.5,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 0.0, 0.0, 1.0);
-        float4 shadowDepth = mul(mul(biasMatrix, GShadowData.LightViewProj[cascadeIndex]), float4(worldPos, 1.0f));
-        shadowDepth = shadowDepth / shadowDepth.w;
-        shadow = ShadowPCF(shadowDepth, cascadeIndex);
+    	float4 shadowPosition = mul(GShadowData.LightViewProj[cascadeIndex], float4(worldPos, 1.0f));
+        shadowPosition = shadowPosition / shadowPosition.w;
+        shadowPosition.xy = 0.5 * shadowPosition.xy + 0.5;
+        shadowPosition.y = 1.0 - shadowPosition.y;
+
+        shadow = ShadowPCF3x3(shadowPosition.xyz, cascadeIndex);
 
         if (any(GSceneInfo.bShowShadowCascades))
         {

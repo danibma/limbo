@@ -178,6 +178,7 @@ namespace limbo::Gfx::PSOCache
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_ShadowMapping))
 				.SetRootSignature(rs)
 				.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT)
+				.SetRasterizerDesc(RHI::TStaticRasterizerState<D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, true, 7500, 1.0f, 0.0f, false>::GetRHI())
 				.SetName("Shadow Map PSO");
 			s_Pipelines[PipelineID::ShadowMapping] = RHI::CreatePSO(psoInit);
 		}

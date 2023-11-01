@@ -16,13 +16,10 @@
 
 namespace limbo::Gfx
 {
-	constexpr uint32 SHADOWMAP_SIZES[SHADOWMAP_CASCADES] =
+	namespace
 	{
-		8192,
-		4096,
-		2048,
-		2048,
-	};
+		bool bStabilizeCascades = true;
+	}
 
 	ShadowMapping::ShadowMapping()
 		: RenderTechnique("Shadow Mapping")
@@ -32,13 +29,13 @@ namespace limbo::Gfx
 	ShadowMapping::~ShadowMapping()
 	{
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
-			RHI::DestroyTexture(m_DepthShadowMaps[i]);
+			RHI::DestroyTexture(m_ShadowMaps[i]);
 	}
 
 	bool ShadowMapping::Init()
 	{
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
-			m_DepthShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
+			m_ShadowMaps[i] = RHI::CreateTexture(RHI::Tex2DDepth(SHADOWMAP_SIZES[i], SHADOWMAP_SIZES[i], 1.0f));
 
 		return true;
 	}
@@ -55,7 +52,7 @@ namespace limbo::Gfx
 
 		// Assign the current depth maps to the scene textures, so other techniques can use them
 		for (int i = 0; i < SHADOWMAP_CASCADES; ++i)
-			context.SceneTextures.DepthShadowMaps[i] = m_DepthShadowMaps[i];
+			context.SceneTextures.ShadowMaps[i] = m_ShadowMaps[i];
 
 		CreateLightMatrices(context);
 
@@ -68,10 +65,10 @@ namespace limbo::Gfx
 			std::string profileName = std::format("Shadow Cascade {}", cascade);
 
 			cmd.BeginProfileEvent(profileName.c_str());
-			cmd.SetRenderTargets({}, m_DepthShadowMaps[cascade]);
+			cmd.SetRenderTargets({}, m_ShadowMaps[cascade]);
 			cmd.SetViewport(SHADOWMAP_SIZES[cascade], SHADOWMAP_SIZES[cascade]);
 
-			cmd.ClearDepthTarget(m_DepthShadowMaps[cascade], 1.0f);
+			cmd.ClearDepthTarget(m_ShadowMaps[cascade], 1.0f);
 
 			cmd.BindConstants(2, 0, cascade);
 
@@ -93,12 +90,21 @@ namespace limbo::Gfx
 		cmd.EndProfileEvent("Shadow Maps Pass");
 	}
 
+	void ShadowMapping::RenderUI(RenderContext& context)
+	{
+		if (ImGui::TreeNode("Shadows"))
+		{
+			ImGui::Checkbox("Stabilize cascades", &bStabilizeCascades);
+			ImGui::TreePop();
+		}
+	}
+
 	void ShadowMapping::DrawDebugWindow()
 	{
 		ImGui::Begin("Shadow Map Debug", &UIGlobals::bDebugShadowMaps);
 		ImGui::Checkbox("Show Shadow Cascades", &UIGlobals::bShowShadowCascades);
 		ImGui::SliderInt("Shadow Cascade", &UIGlobals::ShadowCascadeIndex, 0, SHADOWMAP_CASCADES - 1);
-		ImGui::Image((ImTextureID)RM_GET(m_DepthShadowMaps[UIGlobals::ShadowCascadeIndex])->TextureID(), ImVec2(512, 512));
+		ImGui::Image((ImTextureID)RM_GET(m_ShadowMaps[UIGlobals::ShadowCascadeIndex])->TextureID(), ImVec2(512, 512));
 		ImGui::End();
 	}
 
@@ -184,11 +190,30 @@ namespace limbo::Gfx
 			glm::vec3 lightDir = glm::normalize(-context.SceneInfo.SunDirection);
 			glm::mat4 lightViewMatrix = glm::lookAt(frustumCenter - lightDir * -minExtents.z, frustumCenter, glm::vec3(0.0f, 1.0f, 0.0f));
 			glm::mat4 lightOrthoMatrix = glm::orthoZO(minExtents.x, maxExtents.x, minExtents.y, maxExtents.y, 0.0f, maxExtents.z - minExtents.z);
+			glm::mat4 shadowMatrix = lightOrthoMatrix * lightViewMatrix;
+
+			if (bStabilizeCascades)
+			{
+				// Create the rounding matrix, by projecting the world-space origin and determining the fractional offset in texel space
+				// https://github.com/TheRealMJP/Shadows/blob/master/Shadows/MeshRenderer.cpp#L1325
+				float4 shadowOrigin = float4(0.0f, 0.0f, 0.0f, 1.0f);
+				shadowOrigin = shadowMatrix * shadowOrigin;
+				shadowOrigin *= SHADOWMAP_SIZES[cascade] / 2.0f;
+
+				float4 roundedOrigin = glm::round(shadowOrigin);
+				float4 roundOffset = roundedOrigin - shadowOrigin;
+				roundOffset *=  2.0f / SHADOWMAP_SIZES[cascade];
+				roundOffset.z = 0.0f;
+				roundOffset.w = 0.0f;
+
+				lightOrthoMatrix[3] += roundOffset;
+				shadowMatrix = lightOrthoMatrix * lightViewMatrix;
+			}
 
 			// Store split distance and matrix in cascade
 			context.ShadowMapData.SplitDepth[cascade]    = (context.Camera.NearZ + splitDist * clipRange) * -1.0f;
-			context.ShadowMapData.LightViewProj[cascade] = lightOrthoMatrix * lightViewMatrix;
-			context.ShadowMapData.ShadowMap[cascade]	 = RM_GET(m_DepthShadowMaps[cascade])->SRV();
+			context.ShadowMapData.LightViewProj[cascade] = shadowMatrix;
+			context.ShadowMapData.ShadowMap[cascade]	 = RM_GET(m_ShadowMaps[cascade])->SRV();
 
 			lastSplitDist = cascadeSplits[cascade];
 		}

@@ -82,7 +82,7 @@ namespace limbo::RHI
 				.AddressV = wrapMode,
 				.AddressW = wrapMode,
 				.MipLODBias = 0.0f,
-				.MaxAnisotropy = 8,
+				.MaxAnisotropy = 16,
 				.ComparisonFunc = compareFunc,
 				.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
 				.MinLOD = 0.0f,
@@ -100,6 +100,8 @@ namespace limbo::RHI
 		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_WRAP);   // SLinearWrap
 		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_LINEAR, D3D12_TEXTURE_ADDRESS_MODE_CLAMP);  // SLinearClamp
 		addStaticSampler(numStaticSamplers++, D3D12_FILTER_MIN_MAG_MIP_POINT,  D3D12_TEXTURE_ADDRESS_MODE_WRAP);   // SPointWrap
+
+		addStaticSampler(numStaticSamplers++, D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_COMPARISON_FUNC_LESS_EQUAL); // SShadowWrapSampler
 
 		constexpr uint32 recommendedDwords = 12;
 		uint32 rsCost = GetDWORDCost(initializer);
