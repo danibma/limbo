@@ -22,7 +22,7 @@
 - Shader hot-reloading
 - Screen space ambient occlusion
 - Raytraced ambient occlusion (no denoising yet, only temporal accumulation)
-- Cascaded Shadow Maps (PCF3x3 Filter)
+- PCF Cascaded Shadow Maps for directional lights
  
 ## Screenshots
 ### Ambient Occlusion
