@@ -21,6 +21,10 @@
     {
       "Id": "0c4e415a-cac7-4d92-ab72-91031fb38489",
       "Command": "--shader-debug"
+    },
+    {
+      "Id": "590af068-6cb9-4e3b-bccf-de1d523c576b",
+      "Command": "--no-console"
     }
   ]
 }

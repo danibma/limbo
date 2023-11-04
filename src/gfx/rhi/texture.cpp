@@ -263,6 +263,8 @@ namespace limbo::RHI
 		Device::Ptr->FreeHandle(m_SRVHandle);
 		for (uint8 i = 0; i < Spec.MipLevels; ++i)
 			Device::Ptr->FreeHandle(UAVHandle[i]);
+		if (RTVHandle.CpuHandle.ptr != 0)
+			Device::Ptr->FreeHandle(RTVHandle);
 	}
 
 	void Texture::ReloadSize(uint32 width, uint32 height)

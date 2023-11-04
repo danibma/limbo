@@ -4,6 +4,7 @@
 #define LIMBO_CMD_WAIT_FOR_DEBUGGER "--waitfordebugger"
 #define LIMBO_CMD_D3DDEBUG "--d3ddebug"
 #define LIMBO_CMD_GPU_VALIDATION "--gpu-validation"
+#define LIMBO_CMD_NO_CONSOLE "--no-console"
 
 namespace limbo::Core
 {

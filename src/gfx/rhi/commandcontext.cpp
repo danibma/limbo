@@ -226,8 +226,6 @@ namespace limbo::RHI
 
 	void CommandContext::SetPipelineState(PSOHandle pso)
 	{
-		if (pso == m_BoundPSO) return;
-
 		m_BoundPSO = pso;
 
 		PipelineStateObject* pPso = RM_GET(pso);

@@ -44,10 +44,6 @@ namespace limbo::Core
 
 	void CommandLine::Init(const char* args)
 	{
-#if !LB_RELEASE
-		ConsoleHandle = Win32Console::Open();
-#endif
-
 		size_t charNum = strlen(args);
 		std::string arg = "";
 		for (size_t i = 0; i <= charNum; ++i)
@@ -67,6 +63,11 @@ namespace limbo::Core
 
 			arg += args[i];
 		}
+
+#if !LB_RELEASE
+		if (!HasArg(LIMBO_CMD_NO_CONSOLE))
+			ConsoleHandle = Win32Console::Open();
+#endif
 	}
 
 	bool CommandLine::HasArg(const char* arg)
