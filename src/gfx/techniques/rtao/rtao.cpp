@@ -24,10 +24,9 @@ namespace limbo::Gfx
 
 	RTAO::~RTAO()
 	{
-		if (m_NoisedTexture.IsValid())
-			DestroyTexture(m_NoisedTexture);
-		if (m_PreviousFrame.IsValid())
-			DestroyTexture(m_PreviousFrame);
+		RHI::DestroyTexture(m_NoisedTexture);
+		RHI::DestroyTexture(m_PreviousFrame);
+		RHI::DestroyTexture(m_FinalTexture);
 	}
 
 	bool RTAO::Init()
@@ -39,6 +38,14 @@ namespace limbo::Gfx
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
 			.Format = RHI::Format::RGBA8_UNORM,
 			.Type = RHI::TextureType::Texture2D,
+		});
+
+		m_FinalTexture = RHI::CreateTexture({
+			.Width = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
+			.DebugName = "AO Texture",
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::R8_UNORM,
 		});
 
 		PreparePreviousFrameTexture();
@@ -95,7 +102,7 @@ namespace limbo::Gfx
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
-				RM_GET(context.SceneTextures.AOTexture)->UAVHandle[0],
+				RM_GET(m_FinalTexture)->UAVHandle[0],
 			};
 			cmd.BindTempDescriptorTable(1, uavHandles, ARRAY_LEN(uavHandles));
 
@@ -108,8 +115,10 @@ namespace limbo::Gfx
 
 		++m_AccumCount;
 
-		cmd.InsertUAVBarrier(context.SceneTextures.AOTexture);
-		cmd.CopyTextureToTexture(context.SceneTextures.AOTexture, m_PreviousFrame);
+		cmd.InsertUAVBarrier(m_FinalTexture);
+		cmd.CopyTextureToTexture(m_FinalTexture, m_PreviousFrame);
+
+		context.SceneTextures.AOTexture = m_FinalTexture;
 	}
 
 	void RTAO::RenderUI(RenderContext& context)

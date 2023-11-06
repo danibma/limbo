@@ -253,6 +253,12 @@ namespace limbo::Math
 	}
 
 	template<typename T>
+	constexpr FORCEINLINE T DivideAndRoundUp(T dividend, T divisor)
+	{
+		return (dividend + divisor - 1) / divisor;
+	}
+
+	template<typename T>
 	constexpr FORCEINLINE T Min(T first, T second)
 	{
 		return first <= second ? first : second;

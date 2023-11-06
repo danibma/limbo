@@ -52,14 +52,13 @@ namespace limbo::Gfx
 			RHI::TextureHandle GBufferRenderTargetF; /**< Emissive */
 			RHI::TextureHandle GBufferDepthTarget;
 
-			RHI::TextureHandle AOTexture;
-
 			/**
 			 * External textures are not created in the normal @CreateSceneTextures.
 			 * These textures are created and deleted by render techniques or from other place in code.
 			 * They should not be deleted in the normal @DestroySceneTextures.
 			 */
 			RHI::TextureHandle ShadowMaps[SHADOWMAP_CASCADES]; /**< External */
+			RHI::TextureHandle AOTexture; /**< External */
 
 			// IBL
 			RHI::TextureHandle EnvironmentCubemap; /**< External */

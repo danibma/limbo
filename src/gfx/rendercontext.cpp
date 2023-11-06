@@ -433,14 +433,6 @@ namespace limbo::Gfx
 			.Type = RHI::TextureType::Texture2D,
 		});
 
-		SceneTextures.AOTexture = RHI::CreateTexture({
-			.Width = width,
-			.Height = height,
-			.DebugName = "AO Texture",
-			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
-			.Format = RHI::Format::R8_UNORM,
-		});
-
 		SceneTextures.GBufferRenderTargetA = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetA"));
 		SceneTextures.GBufferRenderTargetB = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetB"));
 		SceneTextures.GBufferRenderTargetC = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetC"));
@@ -466,7 +458,6 @@ namespace limbo::Gfx
 		RHI::DestroyTexture(SceneTextures.GBufferRenderTargetE);
 		RHI::DestroyTexture(SceneTextures.GBufferRenderTargetF);
 		RHI::DestroyTexture(SceneTextures.GBufferDepthTarget);
-		RHI::DestroyTexture(SceneTextures.AOTexture);
 	}
 
 	void RenderContext::ClearScenes()

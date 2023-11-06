@@ -8,19 +8,20 @@ uint positionsMap;
 uint sceneDepth;
 
 #define KERNEL_SIZE 16
+#define BLOCK_SIZE 16
 
 RWTexture2D<float4> g_UnblurredSSAOTexture;
 
-[numthreads(16, 16, 1)]
+[numthreads(BLOCK_SIZE, BLOCK_SIZE, 1)]
 void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
 {
-    float width, height;
+    uint width, height;
     g_UnblurredSSAOTexture.GetDimensions(width, height);
     float2 targetDimensions = float2(width, height);
     float2 uv = (threadID + 0.5f) / targetDimensions;
 
-    float3 pixelPos = SampleLevel2D(positionsMap, SLinearWrap, uv, 0).rgb;
-    float3 normal = NormalFromDepth(threadID, sceneDepth, GSceneInfo.InvProjection);
+    float3 pixelPos = SampleLevel2D(positionsMap, SLinearClamp, uv, 0).rgb;
+    float3 normal = NormalFromDepth(threadID, sceneDepth, targetDimensions, GSceneInfo.InvProjection);
 
     uint seed = RandomSeed(threadID, targetDimensions, GSceneInfo.FrameIndex);
     float3 randomVec = float3(Random01(seed), Random01(seed), Random01(seed)) * 2.0f - 1.0f;
@@ -52,7 +53,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
 
         if (all(offset.xy >= 0) && all(offset.xy <= 1))
         {
-            float sampleDepth = SampleLevel2D(positionsMap, SLinearWrap, offset.xy, 0).z;
+            float sampleDepth = SampleLevel2D(positionsMap, SLinearClamp, offset.xy, 0).z;
 
             float rangeCheck = smoothstep(0.0, 1.0, radius / abs(pixelPos.z - sampleDepth));
             occlusion += (sampleDepth >= samplePos.z + bias) * rangeCheck;
@@ -65,7 +66,7 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
 uint SSAOTextureIndex;
 RWTexture2D<float4> g_BlurredSSAOTexture;
 
-[numthreads(16, 16, 1)]
+[numthreads(BLOCK_SIZE, BLOCK_SIZE, 1)]
 void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
 {
     int blurSize = 2;

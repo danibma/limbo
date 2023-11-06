@@ -13,10 +13,11 @@ namespace limbo::Gfx
 {
 	class RTAO : public RenderTechnique
 	{
-		RHI::TextureHandle			m_NoisedTexture;
-		RHI::TextureHandle			m_PreviousFrame;
+		RHI::TextureHandle m_NoisedTexture;
+		RHI::TextureHandle m_PreviousFrame;
+		RHI::TextureHandle m_FinalTexture;
 
-		uint32						m_AccumCount;
+		uint32			   m_AccumCount;
 
 	public:
 		RTAO();

@@ -14,6 +14,11 @@ namespace limbo::Gfx
 	{
 		float s_SSAORadius = 0.3f;
 		float s_SSAOPower  = 1.2f;
+
+		int s_SSAORes = 1;
+
+		uint32 s_SSAOResWidth;
+		uint32 s_SSAOResHeight;
 	}
 
 	SSAO::SSAO()
@@ -24,17 +29,40 @@ namespace limbo::Gfx
 	SSAO::~SSAO()
 	{
 		RHI::DestroyTexture(m_UnblurredSSAOTexture);
+		RHI::DestroyTexture(m_FinalSSAOTexture);
 	}
 
-	bool SSAO::Init()
+	void SSAO::Resize(uint32 width, uint32 height)
 	{
+		if (m_FinalSSAOTexture.IsValid())
+			RHI::DestroyTexture(m_FinalSSAOTexture);
+		if (m_UnblurredSSAOTexture.IsValid())
+			RHI::DestroyTexture(m_UnblurredSSAOTexture);
+
+		s_SSAOResWidth = width >> s_SSAORes;
+		s_SSAOResHeight = height >> s_SSAORes;
+
+		m_FinalSSAOTexture = RHI::CreateTexture({
+			.Width = s_SSAOResWidth,
+			.Height = s_SSAOResHeight,
+			.DebugName = "AO Texture",
+			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
+			.Format = RHI::Format::R8_UNORM,
+		});
+
 		m_UnblurredSSAOTexture = RHI::CreateTexture({
-			.Width = RHI::GetBackbufferWidth(),
-			.Height = RHI::GetBackbufferHeight(),
+			.Width = s_SSAOResWidth,
+			.Height = s_SSAOResHeight,
 			.DebugName = "SSAO Unblurred Texture",
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
 			.Format = RHI::Format::R8_UNORM,
 		});
+	}
+
+	bool SSAO::Init()
+	{
+		RHI::OnResizedSwapchain.AddRaw(this, &SSAO::Resize);
+		Resize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 
 		return true;
 	}
@@ -63,7 +91,7 @@ namespace limbo::Gfx
 
 			cmd.BindTempConstantBuffer(2, context.SceneInfo);
 
-			cmd.Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
+			cmd.Dispatch(Math::DivideAndRoundUp(s_SSAOResWidth, 16u), Math::DivideAndRoundUp(s_SSAOResHeight, 16u), 1);
 			cmd.EndProfileEvent("SSAO");
 		}
 
@@ -73,15 +101,17 @@ namespace limbo::Gfx
 
 			RHI::DescriptorHandle uavHandles[] =
 			{
-				RM_GET(context.SceneTextures.AOTexture)->UAVHandle[0]
+				RM_GET(m_FinalSSAOTexture)->UAVHandle[0]
 			};
 			cmd.BindTempDescriptorTable(0, uavHandles, ARRAY_LEN(uavHandles));
 
 			cmd.BindConstants(1, 4, RM_GET(m_UnblurredSSAOTexture)->SRV());
 
-			cmd.Dispatch(RHI::GetBackbufferWidth() / 16, RHI::GetBackbufferHeight() / 16, 1);
+			cmd.Dispatch(Math::DivideAndRoundUp(s_SSAOResWidth, 16u), Math::DivideAndRoundUp(s_SSAOResHeight, 16u), 1);
 			cmd.EndProfileEvent("SSAO Blur Texture");
 		}
+
+		context.SceneTextures.AOTexture = m_FinalSSAOTexture;
 	}
 
 	void SSAO::RenderUI(RenderContext& context)
@@ -90,6 +120,17 @@ namespace limbo::Gfx
 		{
 			ImGui::DragFloat("Radius", &s_SSAORadius, 0.1f, 0.0f, 1.0f);
 			ImGui::DragFloat("Power", &s_SSAOPower, 0.1f, 0.0f, 2.0f);
+
+			const char* resStrings = "Full\0Half\0";
+			int currentSSAORes = s_SSAORes;
+			if (ImGui::Combo("Resolution", &currentSSAORes, resStrings))
+			{
+				if (currentSSAORes != s_SSAORes)
+				{
+					s_SSAORes = currentSSAORes;
+					Resize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+				}
+			}
 
 			ImGui::TreePop();
 		}
