@@ -32,7 +32,7 @@ namespace limbo::Gfx
 		RHI::DestroyTexture(m_FinalSSAOTexture);
 	}
 
-	void SSAO::Resize(uint32 width, uint32 height)
+	void SSAO::OnResize(uint32 width, uint32 height)
 	{
 		if (m_FinalSSAOTexture.IsValid())
 			RHI::DestroyTexture(m_FinalSSAOTexture);
@@ -61,9 +61,7 @@ namespace limbo::Gfx
 
 	bool SSAO::Init()
 	{
-		RHI::OnResizedSwapchain.AddRaw(this, &SSAO::Resize);
-		Resize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
-
+		OnResize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 		return true;
 	}
 
@@ -128,7 +126,7 @@ namespace limbo::Gfx
 				if (currentSSAORes != s_SSAORes)
 				{
 					s_SSAORes = currentSSAORes;
-					Resize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
+					OnResize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 				}
 			}
 

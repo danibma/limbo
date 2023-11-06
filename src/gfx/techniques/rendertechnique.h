@@ -33,6 +33,11 @@ namespace limbo::Gfx
 		virtual bool ConditionalRender(RenderContext& context);
 
 		/**
+		 * Called when the swapchain is resized.
+		 */
+		virtual void OnResize(uint32 width, uint32 height);
+
+		/**
 		 * Perform Render operations
 		 */
 		virtual void Render(RHI::CommandContext& cmd, RenderContext& context) = 0;

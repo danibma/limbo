@@ -117,7 +117,7 @@ namespace limbo::Gfx
 		void UpdateSceneInfo();
 		void UpdateRenderer();
 		void CreateSceneTextures(uint32 width, uint32 height);
-		void UpdateSceneTextures(uint32 width, uint32 height);
+		void OnResize(uint32 width, uint32 height);
 		void DestroySceneTextures();
 		void RenderUI(float dt);
 	};

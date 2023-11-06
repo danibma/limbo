@@ -63,7 +63,7 @@ namespace limbo::Gfx
 		Core::Timer initTimer;
 
 		RHI::OnResizedSwapchain.AddRaw(&Camera, &FPSCamera::OnResize);
-		RHI::OnResizedSwapchain.AddRaw(this, &RenderContext::UpdateSceneTextures);
+		RHI::OnResizedSwapchain.AddRaw(this, &RenderContext::OnResize);
 
 		RenderSize = { RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight() };
 		CreateSceneTextures(RenderSize.x, RenderSize.y);
@@ -442,10 +442,17 @@ namespace limbo::Gfx
 		SceneTextures.GBufferDepthTarget = RHI::CreateTexture(RHI::Tex2DDepth(width, height, 0.0f, "GBuffer Depth"));
 	}
 
-	void RenderContext::UpdateSceneTextures(uint32 width, uint32 height)
+	void RenderContext::OnResize(uint32 width, uint32 height)
 	{
+		RenderSize = { width, height };
+
 		DestroySceneTextures();
 		CreateSceneTextures(width, height);
+
+		for (auto& i : CurrentRenderTechniques)
+		{
+			i->OnResize(width, height);
+		}
 	}
 
 	void RenderContext::DestroySceneTextures()

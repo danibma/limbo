@@ -13,6 +13,10 @@ namespace limbo::Gfx
 		return true;
 	}
 
+	void RenderTechnique::OnResize(uint32 width, uint32 height)
+	{
+	}
+
 	void RenderTechnique::RenderUI(RenderContext& context)
 	{
 	}

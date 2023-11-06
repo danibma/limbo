@@ -29,11 +29,18 @@ namespace limbo::Gfx
 		RHI::DestroyTexture(m_FinalTexture);
 	}
 
-	bool RTAO::Init()
+	void RTAO::OnResize(uint32 width, uint32 height)
 	{
+		if (m_NoisedTexture.IsValid())
+			RHI::DestroyTexture(m_NoisedTexture);
+		if (m_FinalTexture.IsValid())
+			RHI::DestroyTexture(m_FinalTexture);
+		if (m_PreviousFrame.IsValid())
+			RHI::DestroyTexture(m_PreviousFrame);
+
 		m_NoisedTexture = RHI::CreateTexture({
-			.Width = RHI::GetBackbufferWidth(),
-			.Height = RHI::GetBackbufferHeight(),
+			.Width = width,
+			.Height = height,
 			.DebugName = "RTAO Texture W/ Noise",
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
 			.Format = RHI::Format::RGBA8_UNORM,
@@ -41,14 +48,19 @@ namespace limbo::Gfx
 		});
 
 		m_FinalTexture = RHI::CreateTexture({
-			.Width = RHI::GetBackbufferWidth(),
-			.Height = RHI::GetBackbufferHeight(),
+			.Width = width,
+			.Height = height,
 			.DebugName = "AO Texture",
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
 			.Format = RHI::Format::R8_UNORM,
 		});
 
 		PreparePreviousFrameTexture();
+	}
+
+	bool RTAO::Init()
+	{
+		OnResize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 
 		return true;
 	}

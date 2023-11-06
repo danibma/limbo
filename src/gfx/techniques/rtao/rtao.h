@@ -23,6 +23,8 @@ namespace limbo::Gfx
 		RTAO();
 		virtual ~RTAO() override;
 
+		virtual void OnResize(uint32 width, uint32 height) override;
+
 		virtual bool Init() override;
 		virtual bool ConditionalRender(RenderContext& context) override;
 		virtual void Render(RHI::CommandContext& cmd, RenderContext& context) override;

@@ -14,7 +14,7 @@ namespace limbo::Gfx
 		SSAO();
 		virtual ~SSAO() override;
 
-		void Resize(uint32 width, uint32 height);
+		virtual void OnResize(uint32 width, uint32 height) override;
 
 		virtual bool Init() override;
 		virtual bool ConditionalRender(RenderContext& context) override;
