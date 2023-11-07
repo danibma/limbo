@@ -198,18 +198,44 @@ namespace limbo::Gfx::PSOCache
 			s_Pipelines[PipelineID::SSAO] = RHI::CreatePSO(psoInit);
 		}
 
-		// SSAOBlur
+		// SSAO_BoxBlur
 		{
 			RHI::RootSignatureHandle& rs = s_RootSignatures.emplace_back();
-			rs = RHI::CreateRootSignature("Blur SSAO RS", RHI::RSSpec().Init()
+			rs = RHI::CreateRootSignature("SSAO Box Blur RS", RHI::RSSpec().Init()
 										  .AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
 										  .AddRootConstants(0, 5));
 
 			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
 				.SetRootSignature(rs)
-				.SetComputeShader(ShadersCache::Get(ShaderID::CS_SSAOBlur))
-				.SetName("SSAO PSO");
-			s_Pipelines[PipelineID::SSAOBlur] = RHI::CreatePSO(psoInit);
+				.SetComputeShader(ShadersCache::Get(ShaderID::CS_SSAOBoxBlur))
+				.SetName("SSAO Box Blur PSO");
+			s_Pipelines[PipelineID::SSAO_BoxBlur] = RHI::CreatePSO(psoInit);
+		}
+
+		// Blur
+		{
+			RHI::RootSignatureHandle& rs = s_RootSignatures.emplace_back();
+			rs = RHI::CreateRootSignature("Blur RS", RHI::RSSpec().Init()
+										  .AddRootConstants(0, 1)
+										  .AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV));
+
+			// Horizontal
+			{
+				RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
+					.SetRootSignature(rs)
+					.SetComputeShader(ShadersCache::Get(ShaderID::CS_Blur_H))
+					.SetName("Blur Horizontal PSO");
+				s_Pipelines[PipelineID::Blur_H] = RHI::CreatePSO(psoInit);
+			}
+
+			// Vertical
+			{
+				RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
+					.SetRootSignature(rs)
+					.SetComputeShader(ShadersCache::Get(ShaderID::CS_Blur_V))
+					.SetName("Blur Vertical PSO");
+				s_Pipelines[PipelineID::Blur_V] = RHI::CreatePSO(psoInit);
+			}
 		}
 
 		// PathTracing

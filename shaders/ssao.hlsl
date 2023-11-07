@@ -35,12 +35,8 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
     float occlusion = 0.0;
     for (int i = 0; i < KERNEL_SIZE; ++i)
     {
-#if 0
-        float3 kernelSample = float3(Random01(seed), Random01(seed), Random01(seed));
-#else
         float pdf;
         float3 kernelSample = CosineWeightSampleHemisphere(Hammersley(i, KERNEL_SIZE), pdf);
-#endif
 
 		// get sample position
         float3 samplePos = mul(kernelSample, TBN); // from tangent to view-space
@@ -67,7 +63,7 @@ uint SSAOTextureIndex;
 RWTexture2D<float4> g_BlurredSSAOTexture;
 
 [numthreads(BLOCK_SIZE, BLOCK_SIZE, 1)]
-void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
+void SSAOBoxBlur(uint2 threadID : SV_DispatchThreadID)
 {
     int blurSize = 2;
 
@@ -77,8 +73,8 @@ void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
     SSAOTexture.GetDimensions(0, width, height, depth);
 
     float2 UVs = float2(threadID.x / width, threadID.y / height);
-
     float2 texelSize = 1.0 / float2(width, height);
+
     float result = 0.0;
     for (int x = -blurSize; x < blurSize; ++x)
     {
@@ -88,5 +84,5 @@ void BlurSSAO(uint2 threadID : SV_DispatchThreadID)
             result += SSAOTexture.SampleLevel(SLinearWrap, UVs + offset, 0).r;
         }
     }
-    g_BlurredSSAOTexture[threadID] = result / (4.0 * 4.0);
+    g_BlurredSSAOTexture[threadID] = result / float(pow(blurSize * 2, 2));
 }

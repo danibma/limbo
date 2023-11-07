@@ -16,8 +16,11 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::CS_GenerateMips:
 			return "generatemips.hlsl";
 		case ShaderID::CS_SSAO:
-		case ShaderID::CS_SSAOBlur:
+		case ShaderID::CS_SSAOBoxBlur:
 			return "ssao.hlsl";
+		case ShaderID::CS_Blur_V:
+		case ShaderID::CS_Blur_H:
+			return "blur.hlsl";
 		case ShaderID::CS_EquirectToCubemap:
 		case ShaderID::CS_DrawIrradianceMap:
 		case ShaderID::CS_PreFilterEnvMap:
@@ -61,8 +64,12 @@ namespace limbo::Gfx::ShadersCache
 			return "GenerateMip";
 		case ShaderID::CS_SSAO:
 			return "ComputeSSAO";
-		case ShaderID::CS_SSAOBlur:
-			return "BlurSSAO";
+		case ShaderID::CS_SSAOBoxBlur:
+			return "SSAOBoxBlur";
+		case ShaderID::CS_Blur_V:
+			return "Blur_Vertical";
+		case ShaderID::CS_Blur_H:
+			return "Blur_Horizontal";
 		case ShaderID::CS_EquirectToCubemap:
 			return "EquirectToCubemap";
 		case ShaderID::CS_DrawIrradianceMap:
@@ -101,7 +108,9 @@ namespace limbo::Gfx::ShadersCache
 		{
 		case ShaderID::CS_GenerateMips:
 		case ShaderID::CS_SSAO:
-		case ShaderID::CS_SSAOBlur:
+		case ShaderID::CS_SSAOBoxBlur:
+		case ShaderID::CS_Blur_V:
+		case ShaderID::CS_Blur_H:
 		case ShaderID::CS_EquirectToCubemap:
 		case ShaderID::CS_DrawIrradianceMap:
 		case ShaderID::CS_PreFilterEnvMap:
