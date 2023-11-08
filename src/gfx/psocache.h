@@ -12,7 +12,6 @@ namespace limbo::Gfx
 		Composite,
 		ShadowMapping,
 		SSAO,
-		SSAO_BoxBlur,
 		Blur_V,
 		Blur_H,
 		EquirectToCubemap,

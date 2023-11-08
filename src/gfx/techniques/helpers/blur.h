@@ -26,7 +26,7 @@ namespace limbo::Gfx::TechniqueHelpers
 				};
 				cmd.BindTempDescriptorTable(1, uavHandles, ARRAY_LEN(uavHandles));
 
-				cmd.Dispatch(Math::DivideAndRoundUp(textureSize.x, 1024u), textureSize.y, 1);
+				cmd.Dispatch(Math::DivideAndRoundUp(textureSize.x, 512u), textureSize.y, 1);
 				cmd.EndProfileEvent(name.c_str());
 			}
 
@@ -44,7 +44,7 @@ namespace limbo::Gfx::TechniqueHelpers
 				};
 				cmd.BindTempDescriptorTable(1, uavHandles, ARRAY_LEN(uavHandles));
 
-				cmd.Dispatch(textureSize.x, Math::DivideAndRoundUp(textureSize.y, 1024u), 1);
+				cmd.Dispatch(textureSize.x, Math::DivideAndRoundUp(textureSize.y, 512u), 1);
 				cmd.EndProfileEvent(name.c_str());
 			}
 

@@ -16,7 +16,6 @@ namespace limbo::Gfx
 		float s_SSAORadius = 0.3f;
 		float s_SSAOPower  = 1.2f;
 
-		int s_BlurType = 0; // 0 = 4x4 Box Blur, 1 = 3x3 Gaussian Blur
 		int s_SSAORes = 1;
 
 		uint32 s_SSAOResWidth;
@@ -95,26 +94,7 @@ namespace limbo::Gfx
 			cmd.EndProfileEvent("SSAO");
 		}
 
-		if (s_BlurType == 0)
-		{
-			cmd.BeginProfileEvent("SSAO Box Blur");
-			cmd.SetPipelineState(PSOCache::Get(PipelineID::SSAO_BoxBlur));
-
-			RHI::DescriptorHandle uavHandles[] =
-			{
-				RM_GET(m_FinalSSAOTexture)->UAVHandle[0]
-			};
-			cmd.BindTempDescriptorTable(0, uavHandles, ARRAY_LEN(uavHandles));
-
-			cmd.BindConstants(1, 4, RM_GET(m_UnblurredSSAOTexture)->SRV());
-
-			cmd.Dispatch(Math::DivideAndRoundUp(s_SSAOResWidth, 16u), Math::DivideAndRoundUp(s_SSAOResHeight, 16u), 1);
-			cmd.EndProfileEvent("SSAO Box Blur");
-		}
-		else if (s_BlurType == 1)
-		{
-			TechniqueHelpers::BlurPass::Execute(cmd, m_UnblurredSSAOTexture, m_FinalSSAOTexture, { s_SSAOResWidth, s_SSAOResHeight }, "SSAO");
-		}
+		TechniqueHelpers::BlurPass::Execute(cmd, m_UnblurredSSAOTexture, m_FinalSSAOTexture, { s_SSAOResWidth, s_SSAOResHeight }, "SSAO");
 
 		context.SceneTextures.AOTexture = m_FinalSSAOTexture;
 	}
@@ -136,17 +116,6 @@ namespace limbo::Gfx
 					OnResize(RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 				}
 			}
-
-			const char* blurStrings = "4x4 Box\0 9-tap Gaussian\0";
-			int currentSSAOBlur = s_BlurType;
-			if (ImGui::Combo("Blur Type", &currentSSAOBlur, blurStrings))
-			{
-				if (currentSSAOBlur != s_BlurType)
-				{
-					s_BlurType = currentSSAOBlur;
-				}
-			}
-			
 
 			ImGui::TreePop();
 		}

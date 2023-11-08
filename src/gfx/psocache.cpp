@@ -198,20 +198,6 @@ namespace limbo::Gfx::PSOCache
 			s_Pipelines[PipelineID::SSAO] = RHI::CreatePSO(psoInit);
 		}
 
-		// SSAO_BoxBlur
-		{
-			RHI::RootSignatureHandle& rs = s_RootSignatures.emplace_back();
-			rs = RHI::CreateRootSignature("SSAO Box Blur RS", RHI::RSSpec().Init()
-										  .AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
-										  .AddRootConstants(0, 5));
-
-			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
-				.SetRootSignature(rs)
-				.SetComputeShader(ShadersCache::Get(ShaderID::CS_SSAOBoxBlur))
-				.SetName("SSAO Box Blur PSO");
-			s_Pipelines[PipelineID::SSAO_BoxBlur] = RHI::CreatePSO(psoInit);
-		}
-
 		// Blur
 		{
 			RHI::RootSignatureHandle& rs = s_RootSignatures.emplace_back();

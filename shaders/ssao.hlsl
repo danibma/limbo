@@ -58,31 +58,3 @@ void ComputeSSAO(uint2 threadID : SV_DispatchThreadID)
     occlusion = 1.0 - (occlusion / KERNEL_SIZE);
     g_UnblurredSSAOTexture[threadID] = pow(occlusion, power);
 }
-
-uint SSAOTextureIndex;
-RWTexture2D<float4> g_BlurredSSAOTexture;
-
-[numthreads(BLOCK_SIZE, BLOCK_SIZE, 1)]
-void SSAOBoxBlur(uint2 threadID : SV_DispatchThreadID)
-{
-    int blurSize = 2;
-
-    Texture2D SSAOTexture = GetTexture(SSAOTextureIndex);
-
-    float width, height, depth;
-    SSAOTexture.GetDimensions(0, width, height, depth);
-
-    float2 UVs = float2(threadID.x / width, threadID.y / height);
-    float2 texelSize = 1.0 / float2(width, height);
-
-    float result = 0.0;
-    for (int x = -blurSize; x < blurSize; ++x)
-    {
-        for (int y = -blurSize; y < blurSize; ++y)
-        {
-            float2 offset = float2(float(x), float(y)) * texelSize;
-            result += SSAOTexture.SampleLevel(SLinearWrap, UVs + offset, 0).r;
-        }
-    }
-    g_BlurredSSAOTexture[threadID] = result / float(pow(blurSize * 2, 2));
-}

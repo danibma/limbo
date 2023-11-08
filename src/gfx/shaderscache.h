@@ -7,7 +7,6 @@ namespace limbo::Gfx
 	{
 		CS_GenerateMips,
 		CS_SSAO,
-		CS_SSAOBoxBlur,
 		CS_Blur_V,
 		CS_Blur_H,
 		CS_EquirectToCubemap,
