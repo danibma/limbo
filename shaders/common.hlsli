@@ -68,9 +68,9 @@ float3 NormalFromDepth(in uint2 threadID, in uint depthTextureIndex, float2 dime
     float2 uv1 = uv + float2(1, 0) / dimensions; // right 
     float2 uv2 = uv + float2(0, 1) / dimensions; // top
 
-    float depth0 = depthTexture.SampleLevel(SPointWrap, uv0, 0).r;
-    float depth1 = depthTexture.SampleLevel(SPointWrap, uv1, 0).r;
-    float depth2 = depthTexture.SampleLevel(SPointWrap, uv2, 0).r;
+    float depth0 = depthTexture.SampleLevel(SLinearWrap, uv0, 0).r;
+    float depth1 = depthTexture.SampleLevel(SLinearWrap, uv1, 0).r;
+    float depth2 = depthTexture.SampleLevel(SLinearWrap, uv2, 0).r;
 
     float3 P0 = ReconstructPosition(uv0, depth0, inverseProjection);
     float3 P1 = ReconstructPosition(uv1, depth1, inverseProjection);

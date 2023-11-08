@@ -5,8 +5,9 @@
 SamplerState SLinearWrap     : register(s0, space1);
 SamplerState SLinearClamp    : register(s1, space1);
 SamplerState SPointWrap      : register(s2, space1);
+SamplerState SPointClamp     : register(s3, space1);
 
-SamplerComparisonState SShadowWrapSampler : register(s3, space1);
+SamplerComparisonState SShadowWrapSampler : register(s4, space1);
 
 ConstantBuffer<SceneInfo> GSceneInfo : register(b100);
 ConstantBuffer<ShadowData> GShadowData : register(b101);
