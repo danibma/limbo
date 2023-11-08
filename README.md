@@ -26,9 +26,9 @@
  
 ## Screenshots
 ### Ambient Occlusion
-| RTAO | SSAO |
+| RTAO (Non-Blurred) | SSAO + Gaussian Blur |
 |------|------|
-| ![Multiple Lights](images/rtao.jpg) | ![Multiple Lights](images/ssao.png) |
+| ![Multiple Lights](images/rtao.png) | ![Multiple Lights](images/ssao.png) |
 ### Cascaded Shadow Maps
 | View | Colored Cascades |
 |------|------|
