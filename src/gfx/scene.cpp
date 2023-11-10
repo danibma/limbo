@@ -16,6 +16,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
+#include <meshoptimizer.h>
+
 namespace limbo::Gfx
 {
 	namespace
@@ -41,6 +43,24 @@ namespace limbo::Gfx
 		std::vector<TextureData> TextureStreams;
 		// map the cgltf_texture to the index in TextureStreams
 		std::unordered_map<uintptr_t, uint32> TexturesMap;
+
+		void OptimizePrimitiveData(PrimitiveData& primitiveData)
+		{
+			size_t indexCount = primitiveData.IndicesStream.size();
+			size_t vertexCount = primitiveData.PositionStream.size();
+
+			std::vector<uint32> remap(vertexCount);
+			meshopt_optimizeVertexFetchRemap(&remap[0], primitiveData.IndicesStream.data(), indexCount, vertexCount);
+
+			meshopt_remapIndexBuffer(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, remap.data());
+			meshopt_remapVertexBuffer(primitiveData.PositionStream.data(), primitiveData.PositionStream.data(), vertexCount, sizeof(float3), remap.data());
+			meshopt_remapVertexBuffer(primitiveData.NormalsStream.data(), primitiveData.NormalsStream.data(), vertexCount, sizeof(float3), remap.data());
+			if (primitiveData.TexCoordsStream.size() > 0)
+				meshopt_remapVertexBuffer(primitiveData.TexCoordsStream.data(), primitiveData.TexCoordsStream.data(), vertexCount, sizeof(float2), remap.data());
+
+			meshopt_optimizeVertexCache(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, vertexCount);
+			meshopt_optimizeOverdraw(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, &primitiveData.PositionStream[0].x, vertexCount, sizeof(float3), 1.05f);
+		}
 	}
 
 	Scene::Scene(const char* path)
@@ -346,6 +366,8 @@ namespace limbo::Gfx
 		for (size_t i = 0; i < PrimitivesStreams.size(); ++i)
 		{
 			check(dataOffset % sizeof(uint32) == 0); // the offset is a 32bit value, do not let it overflow
+
+			OptimizePrimitiveData(PrimitivesStreams[i]);
 
 			CopyData(m_Meshes[i].PositionsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].PositionStream);
 			CopyData(m_Meshes[i].NormalsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].NormalsStream);
