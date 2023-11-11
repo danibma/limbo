@@ -1,8 +1,8 @@
 ﻿#include "common.hlsli"
 
-uint g_TonemapMode; // Tonemap enum in composite.cpp
-uint g_EnableGammaCorrection;
-uint g_sceneTexture;
+uint cTonemapMode; // Tonemap enum in composite.cpp
+uint cEnableGammaCorrection;
+uint cSceneTextureIdx;
 
 float3 AcesFilm(const float3 x)
 {
@@ -43,21 +43,21 @@ float3 Unreal(float3 x)
     return x / (x + 0.155) * 1.019;
 }
 
-float4 PSMain(in QuadResult quad) : SV_Target
+float4 MainPS(in QuadResult quad) : SV_Target
 {
-    float3 finalColor = Sample2D(g_sceneTexture, SLinearWrap, quad.UV).rgb;
+    float3 finalColor = Sample2D(cSceneTextureIdx, SLinearWrap, quad.UV).rgb;
 
-    if (g_TonemapMode == 1)
+    if (cTonemapMode == 1)
         finalColor = AcesFilm(finalColor);
-    else if (g_TonemapMode == 2)
+    else if (cTonemapMode == 2)
         finalColor = ReinhardTonemap(finalColor);
-    else if (g_TonemapMode == 3)
+    else if (cTonemapMode == 3)
         finalColor = Uncharted2(finalColor);
-    else if (g_TonemapMode == 4)
+    else if (cTonemapMode == 4)
         finalColor = Unreal(finalColor);
 
     // Gamma Correction
-    if (any(g_EnableGammaCorrection) && g_TonemapMode != 4)
+    if (any(cEnableGammaCorrection) && cTonemapMode != 4)
         finalColor = pow(finalColor, (float3) (1.0 / 2.2));
     
 	return float4(finalColor, 1.0f);

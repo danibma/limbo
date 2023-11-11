@@ -1,8 +1,8 @@
 ﻿#include "raytracingcommon.hlsli"
 #include "../random.hlsli"
 
-RaytracingAccelerationStructure Scene : register(t0, space0);
-RWTexture2D<float4> RenderTarget : register(u0);
+RaytracingAccelerationStructure tSceneAS : register(t0, space0);
+RWTexture2D<float4> uRenderTarget : register(u0);
 
 // From Ray Tracing Gems II - Chapter 14
 RayDesc GeneratePinholeCameraRay(float2 pixel)
@@ -48,11 +48,11 @@ void RayGen()
     const int bounces = 5;
     for (int i = 0; i < bounces; ++i)
     {
-        MaterialRayTracingPayload payload = TraceMaterialRay(Scene, ray, RAY_FLAG_FORCE_OPAQUE);
+        MaterialRayTracingPayload payload = TraceMaterialRay(tSceneAS, ray, RAY_FLAG_FORCE_OPAQUE);
 
         if (payload.IsHit() <= 0)
         {
-            RenderTarget[DispatchRaysIndex().xy] = float4(GetSky(ray.Direction), 1.0f);
+            uRenderTarget[DispatchRaysIndex().xy] = float4(GetSky(ray.Direction), 1.0f);
             return;
         }
 
@@ -64,7 +64,7 @@ void RayGen()
 
         if (GSceneInfo.SceneViewToRender > 0)
         {
-            RenderTarget[DispatchRaysIndex().xy] = GetSceneDebugView(shadingData);
+            uRenderTarget[DispatchRaysIndex().xy] = GetSceneDebugView(shadingData);
             return;
         }
 
@@ -80,5 +80,5 @@ void RayGen()
     }
 
     radiance /= float(bounces);
-	RenderTarget[DispatchRaysIndex().xy] = float4(radiance, 1.0f);
+	uRenderTarget[DispatchRaysIndex().xy] = float4(radiance, 1.0f);
 }

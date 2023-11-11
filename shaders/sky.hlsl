@@ -9,7 +9,7 @@ struct SkyboxVertexOutput
     float4 local_position : Position;
 };
 
-SkyboxVertexOutput VSMain(float3 pos : Position)
+SkyboxVertexOutput MainVS(float3 pos : Position)
 {
     float4x4 rot_view = GSceneInfo.View;
     rot_view._m03_m13_m23 = 0.0; // remove translation
@@ -25,11 +25,11 @@ SkyboxVertexOutput VSMain(float3 pos : Position)
 //
 // Pixel Shader
 //
-uint EnvironmentCube;
+uint cEnvironmentCubeIdx;
 
-float4 PSMain(SkyboxVertexOutput vertex) : SV_Target
+float4 MainPS(SkyboxVertexOutput vertex) : SV_Target
 {
-    float3 color = SampleLevelCube(EnvironmentCube, SLinearWrap, vertex.local_position.xyz, 0).xyz;
+    float3 color = SampleLevelCube(cEnvironmentCubeIdx, SLinearWrap, vertex.local_position.xyz, 0).xyz;
 
     return float4(color, 1.0);
 }

@@ -72,18 +72,6 @@ struct Material
 	float3 EmissiveFactor;
 };
 
-struct MaterialRayTracingPayload
-{
-	float   Distance;
-	uint    PrimitiveID;
-	uint    InstanceID;
-	float2  Barycentrics;
-	uint    FrontFace;
-
-	bool IsHit() { return Distance > 0; }
-	bool IsFrontFace() { return FrontFace > 0; }
-};
-
 struct MeshVertex
 {
 	float3 Position;
@@ -101,4 +89,24 @@ struct Instance
 	uint		IndicesOffset;
 
 	float4x4	LocalTransform;
+};
+
+//
+// RayTracing Payloads
+//
+struct MaterialRayTracingPayload
+{
+	float   Distance;
+	uint    PrimitiveID;
+	uint    InstanceID;
+	float2  Barycentrics;
+	uint    FrontFace;
+
+	bool IsHit() { return Distance > 0; }
+	bool IsFrontFace() { return FrontFace > 0; }
+};
+
+struct AORayPayload
+{
+	float AOVal; // Stores 0 on a ray hit, 1 on ray miss
 };

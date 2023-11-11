@@ -8,13 +8,13 @@
 static const float OFFSETS[SAMPLE_COUNT] = { -5.333105835470851, -3.3913319905458703, -1.4528150823538653, 0.4842301631262852, 2.42177044336388, 4.361713020153613, 6 };
 static const float WEIGHTS[SAMPLE_COUNT] = { 0.04478722973395423, 0.1346844972331649, 0.24819975423522495, 0.28046819967630454, 0.19436673698947315, 0.08257469455292463, 0.014918887578953783 };
 
-uint InputTextureIdx;
-RWTexture2D<float4> OutputTexture;
+uint cInputTextureIdx;
+RWTexture2D<float4> uOutputTexture;
 
 [numthreads(BLOCK_SIZE, 1, 1)]
-void Blur_Horizontal(uint2 threadID : SV_DispatchThreadID)
+void Blur_HorizontalCS(uint2 threadID : SV_DispatchThreadID)
 {
-    Texture2D inputTexture = GetTexture(InputTextureIdx);
+    Texture2D inputTexture = GetTexture(cInputTextureIdx);
     float width, height;
     inputTexture.GetDimensions(width, height);
     float2 size = float2(width, height);
@@ -29,13 +29,13 @@ void Blur_Horizontal(uint2 threadID : SV_DispatchThreadID)
         result += inputTexture.SampleLevel(SLinearWrap, texcoords + offset, 0) * weight;
     }
 
-    OutputTexture[threadID] = result;
+    uOutputTexture[threadID] = result;
 }
 
 [numthreads(1, BLOCK_SIZE, 1)]
-void Blur_Vertical(uint2 threadID : SV_DispatchThreadID)
+void Blur_VerticalCS(uint2 threadID : SV_DispatchThreadID)
 {
-    Texture2D inputTexture = GetTexture(InputTextureIdx);
+    Texture2D inputTexture = GetTexture(cInputTextureIdx);
     float width, height;
     inputTexture.GetDimensions(width, height);
     float2 size = float2(width, height);
@@ -50,5 +50,5 @@ void Blur_Vertical(uint2 threadID : SV_DispatchThreadID)
         result += inputTexture.SampleLevel(SLinearWrap, texcoords + offset, 0) * weight;
     }
 
-    OutputTexture[threadID] = result;
+    uOutputTexture[threadID] = result;
 }

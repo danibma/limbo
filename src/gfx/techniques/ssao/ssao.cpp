@@ -13,8 +13,8 @@ namespace limbo::Gfx
 {
 	namespace
 	{
-		float s_SSAORadius = 0.3f;
-		float s_SSAOPower  = 1.2f;
+		float s_SSAORadius = 0.4f;
+		float s_SSAOPower  = 1.5f;
 
 		int s_SSAORes = 1;
 

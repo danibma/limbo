@@ -1,17 +1,13 @@
 ﻿#include "bindings.hlsli"
 
-uint cascadeIndex;
-uint instanceID;
+uint cCascadeIndex;
+uint cInstanceID;
 
-float4 VSMain(uint vertexID : SV_VertexID) : SV_Position
+float4 MainVS(uint vertexID : SV_VertexID) : SV_Position
 {
-	Instance instance = GetInstance(instanceID);
+	Instance instance = GetInstance(cInstanceID);
     float3 pos = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
 
-    float4x4 mvp = mul(GShadowData.LightViewProj[cascadeIndex], instance.LocalTransform);
+    float4x4 mvp = mul(GShadowData.LightViewProj[cCascadeIndex], instance.LocalTransform);
     return mul(mvp, float4(pos, 1.0f));
-}
-
-void PSMain()
-{
 }

@@ -24,7 +24,6 @@ namespace limbo::Gfx
 		PS_Sky,
 		PS_DeferredLighting,
 		PS_Composite,
-		PS_ShadowMapping,
 
 		LIB_PathTracer,
 		LIB_Material,

@@ -175,7 +175,6 @@ namespace limbo::Gfx::PSOCache
 
 			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
 				.SetVertexShader(ShadersCache::Get(ShaderID::VS_ShadowMapping))
-				.SetPixelShader(ShadersCache::Get(ShaderID::PS_ShadowMapping))
 				.SetRootSignature(rs)
 				.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT)
 				.SetRasterizerDesc(RHI::TStaticRasterizerState<D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, true, 7500, 1.0f, 0.0f, false>::GetRHI())
@@ -266,7 +265,7 @@ namespace limbo::Gfx::PSOCache
 				RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec().Init()
 					.SetGlobalRootSignature(rs)
 					.AddLib(ShadersCache::Get(ShaderID::LIB_RTAO), libDesc)
-					.SetShaderConfig(sizeof(float) /* AOPayload */, sizeof(float2) /* BuiltInTriangleIntersectionAttributes */)
+					.SetShaderConfig(sizeof(AORayPayload), sizeof(float2) /* BuiltInTriangleIntersectionAttributes */)
 					.SetName("RTAO PSO");
 				s_Pipelines[PipelineID::RTAO] = RHI::CreatePSO(psoInit);
 			}

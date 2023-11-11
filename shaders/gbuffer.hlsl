@@ -9,13 +9,13 @@ struct VSOut
     float2 UV       : TEXCOORD;
 };
 
-uint instanceID;
+uint cInstanceID;
 
-VSOut VSMain(uint vertexID : SV_VertexID)
+VSOut MainVS(uint vertexID : SV_VertexID)
 {
     VSOut result;
 
-    Instance instance = GetInstance(instanceID);
+    Instance instance = GetInstance(cInstanceID);
     float3 pos    = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
     float3 normal = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.NormalsOffset);
     float2 uv     = BufferLoad<float2>(instance.BufferIndex, vertexID, instance.TexCoordsOffset);
@@ -24,7 +24,7 @@ VSOut VSMain(uint vertexID : SV_VertexID)
     result.Position = mul(mvp, float4(pos, 1.0f));
     result.PixelPos = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(pos, 1.0f)));
     result.WorldPos = mul(instance.LocalTransform, float4(pos, 1.0f));
-    result.Normal   = TransformDirection(instance.LocalTransform, normal);
+    result.Normal   = TransformNormal(instance.LocalTransform, normal);
     result.UV       = uv;
 
 	return result;
@@ -40,11 +40,11 @@ struct DeferredShadingOutput
     float4 Emissive                 : SV_Target5;
 };
 
-DeferredShadingOutput PSMain(VSOut input)
+DeferredShadingOutput MainPS(VSOut input)
 {
     DeferredShadingOutput result;
 
-    Instance instance = GetInstance(instanceID);
+    Instance instance = GetInstance(cInstanceID);
     Material material = GetMaterial(instance.Material);
 
     float4 finalAlbedo = material.AlbedoFactor;

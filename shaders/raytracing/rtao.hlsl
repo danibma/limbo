@@ -1,14 +1,8 @@
 ﻿#include "raytracingcommon.hlsli"
 #include "../random.hlsli"
 
-struct AORayPayload
-{
-	float aoVal; // Stores 0 on a ray hit, 1 on ray miss
-};
-
-RaytracingAccelerationStructure SceneAS : register(t0, space0);
-
-RWTexture2D<float4> g_Output : register(u0, space0);
+RaytracingAccelerationStructure tSceneAS : register(t0, space0);
+RWTexture2D<float4> uOutput : register(u0, space0);
 
 cbuffer Constants : register(b0, space0)
 {
@@ -32,7 +26,7 @@ float ShootAmbientOcclusionRay(float3 orig, float3 dir, float minT, float maxT)
 
 	// Trace our ray. 
     TraceRay(
-        SceneAS,    // AccelerationStructure
+        tSceneAS,    // AccelerationStructure
         rayFlags,   // RayFlags
         0xFF,       // InstanceInclusionMask
         0,          // RayContributionToHitGroupIndex
@@ -42,7 +36,7 @@ float ShootAmbientOcclusionRay(float3 orig, float3 dir, float minT, float maxT)
         rayPayload  // Payload
     );
 
-    return rayPayload.aoVal;
+    return rayPayload.AOVal;
 }
 
 [shader("raygeneration")]
@@ -69,13 +63,13 @@ void RTAORayGen()
     }
 
     ao /= samples;
-    g_Output[pixel] = 1 - (saturate(1 - ao) * power);
+    uOutput[pixel] = 1 - (saturate(1 - ao) * power);
 }
 
 [shader("miss")]
 void RTAOMiss(inout AORayPayload payload)
 {
-	payload.aoVal = 1.0f;
+	payload.AOVal = 1.0f;
 }
 
 [shader("anyhit")]

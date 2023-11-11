@@ -1,17 +1,17 @@
 ﻿#include "raytracingcommon.hlsli"
 
-RWTexture2D<float4> g_DenoisedRTAOImage;
+RWTexture2D<float4> uDenoisedRTAOImage;
 
-uint accumCount;
-uint previousRTAOImage;
-uint currentRTAOImage;
+uint cAccumCount;
+uint cPreviousRTAOImageIdx;
+uint cCurrentRTAOImageIdx;
 
 [numthreads(8, 8, 1)]
-void RTAOAccumulate(uint2 threadID : SV_DispatchThreadID)
+void RTAOAccumulateCS(uint2 threadID : SV_DispatchThreadID)
 {
-    float4 curColor = GetTexture(currentRTAOImage)[threadID];
-    float4 prevColor = GetTexture(previousRTAOImage)[threadID];
+    float4 curColor = GetTexture(cCurrentRTAOImageIdx)[threadID];
+    float4 prevColor = GetTexture(cPreviousRTAOImageIdx)[threadID];
 
     // Do a weighted sum, weighing last frame's color based on total count
-    g_DenoisedRTAOImage[threadID] = (accumCount * prevColor + curColor) / (accumCount + 1);
+    uDenoisedRTAOImage[threadID] = (cAccumCount * prevColor + curColor) / (cAccumCount + 1);
 }

@@ -9,15 +9,16 @@
 */
 
 // Light info
-cbuffer Random : register(b0)
+struct Random
 {
     uint bEnableAO;
-    float3 lightPos;
-    float3 lightColor;
-}
+    float3 LightPos;
+    float3 LightColor;
+};
+ConstantBuffer<Random> cRandom : register(b0);
 
 // GBuffer textures
-cbuffer Textures : register(b1)
+struct Textures
 {
     uint PixelPosition;
     uint WorldPosition;
@@ -31,7 +32,8 @@ cbuffer Textures : register(b1)
     uint IrradianceMap;
     uint PrefilterMap;
     uint LUT;
-}
+};
+ConstantBuffer<Textures> cTextures : register(b1);
 
 float ShadowPCF3x3(float3 sc, uint cascadeIndex)
 {
@@ -57,21 +59,21 @@ float ShadowPCF3x3(float3 sc, uint cascadeIndex)
     return percentLit + 0.05f;
 }
 
-float4 PSMain(QuadResult quad) : SV_Target
+float4 MainPS(QuadResult quad) : SV_Target
 {
 	// gbuffer values
-    float3 pixelPos             = Sample2D(PixelPosition, SLinearClamp, quad.UV).rgb;
-    float3 worldPos             = Sample2D(WorldPosition, SLinearClamp, quad.UV).rgb;
-    float3 albedo               = Sample2D(Albedo, SLinearClamp, quad.UV).rgb;
-    float3 normal               = Sample2D(Normal, SLinearClamp, quad.UV).rgb;
-    float3 emissive             = Sample2D(Emissive, SLinearClamp, quad.UV).rgb;
-    float alpha                 = Sample2D(Albedo, SLinearClamp, quad.UV).a;
-    float3 roughnessMetallicAO  = Sample2D(RoughnessMetallicAO, SLinearClamp, quad.UV).rgb;
+    float3 pixelPos             = Sample2D(cTextures.PixelPosition, SLinearClamp, quad.UV).rgb;
+    float3 worldPos             = Sample2D(cTextures.WorldPosition, SLinearClamp, quad.UV).rgb;
+    float3 albedo               = Sample2D(cTextures.Albedo, SLinearClamp, quad.UV).rgb;
+    float3 normal               = Sample2D(cTextures.Normal, SLinearClamp, quad.UV).rgb;
+    float3 emissive             = Sample2D(cTextures.Emissive, SLinearClamp, quad.UV).rgb;
+    float alpha                 = Sample2D(cTextures.Albedo, SLinearClamp, quad.UV).a;
+    float3 roughnessMetallicAO  = Sample2D(cTextures.RoughnessMetallicAO, SLinearClamp, quad.UV).rgb;
     float roughness             = roughnessMetallicAO.x;
     float metallic              = roughnessMetallicAO.y;
     float ao                    = roughnessMetallicAO.z;
-    if (bEnableAO > 0)
-        ao *= Sample2D(AmbientOcclusion, SLinearClamp, quad.UV).r;
+    if (cRandom.bEnableAO > 0)
+        ao *= Sample2D(cTextures.AmbientOcclusion, SLinearClamp, quad.UV).r;
 
     if (alpha == 0.0f)
         discard;
@@ -100,21 +102,21 @@ float4 PSMain(QuadResult quad) : SV_Target
 
     float3 V = normalize(GSceneInfo.CameraPos - worldPos);
 	float3 N = normalize(normal);
-    float3 L = normalize(lightPos - worldPos); // light direction
+    float3 L = normalize(cRandom.LightPos - worldPos); // light direction
 
     // reflectance equation
     float3 directLighting = 0.0f;
     
     // Per Light
 	{
-        float distance = length(lightPos - worldPos);
+        float distance = length(cRandom.LightPos - worldPos);
         float attenuation = 1.0f / (distance * distance);
-        float3 radiance = lightColor * attenuation;
+        float3 radiance = cRandom.LightColor * attenuation;
 
         directLighting += DefaultBRDF(V, N, L, material) * radiance;
     }
 
-    float3 indirectLighting = CalculateIBL(N, V, material, IrradianceMap, PrefilterMap, LUT);
+    float3 indirectLighting = CalculateIBL(N, V, material, cTextures.IrradianceMap, cTextures.PrefilterMap, cTextures.LUT);
     float3 lightRadiance = (directLighting + indirectLighting);
 
     float shadow = 1.0f;

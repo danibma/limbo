@@ -2,6 +2,17 @@
 
 #include "bindings.hlsli"
 
+/*
+ *              Naming Convention
+ *  Variables:
+ *      UAV               : 'u' prefix, eg. uRenderTarget
+ *      SRV               : 't' prefix, eg. tSceneAS
+ *      Root Constants/CBV: 'c' prefix, eg. cTextureIdx
+ *
+ *  Function:
+ *      Entry Points: stage sufix, eg. GenerateMipCS, MainVS
+ */
+
 static const float PI       = 3.141592;
 static const float TwoPI    = 2 * PI;
 static const float HalfPI   = 0.5f * PI;
@@ -14,7 +25,7 @@ static const float FLT_MAX  = 3.402823466e+38f;
 static const float ALPHA_THRESHOLD = 0.5f;
 
 // https://github.com/graphitemaster/normals_revisited
-float3 TransformDirection(in float4x4 transform, in float3 direction)
+float3 TransformNormal(in float4x4 transform, in float3 direction)
 {
     float4x4 result;
 #define minor(m, r0, r1, r2, c0, c1, c2)                                \

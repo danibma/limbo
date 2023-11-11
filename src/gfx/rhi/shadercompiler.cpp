@@ -100,7 +100,7 @@ namespace limbo::RHI::SC
 		// IDxcCompiler3::Compile will always return an error buffer, but its length will be zero if there are no warnings or errors.
 		if (errors != nullptr && errors->GetStringLength() != 0)
 		{
-			LB_ERROR("%s", errors->GetStringPointer());
+			LB_ERROR("Shader: %s -> %s", pShader->File, errors->GetStringPointer());
 			return false;
 		}
 

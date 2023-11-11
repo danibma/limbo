@@ -34,7 +34,6 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::VS_Quad:
 			return "quad.hlsl";
 		case ShaderID::VS_ShadowMapping:
-		case ShaderID::PS_ShadowMapping:
 			return "shadowmap.hlsl";
 		case ShaderID::PS_DeferredLighting:
 			return "deferredlighting.hlsl";
@@ -60,34 +59,33 @@ namespace limbo::Gfx::ShadersCache
 		switch (shaderID)
 		{
 		case ShaderID::CS_GenerateMips:
-			return "GenerateMip";
+			return "GenerateMipCS";
 		case ShaderID::CS_SSAO:
-			return "ComputeSSAO";
+			return "ComputeSSAOCS";
 		case ShaderID::CS_Blur_V:
-			return "Blur_Vertical";
+			return "Blur_VerticalCS";
 		case ShaderID::CS_Blur_H:
-			return "Blur_Horizontal";
+			return "Blur_HorizontalCS";
 		case ShaderID::CS_EquirectToCubemap:
-			return "EquirectToCubemap";
+			return "EquirectToCubemapCS";
 		case ShaderID::CS_DrawIrradianceMap:
-			return "DrawIrradianceMap";
+			return "DrawIrradianceMapCS";
 		case ShaderID::CS_PreFilterEnvMap:
-			return "PreFilterEnvMap";
+			return "PreFilterEnvMapCS";
 		case ShaderID::CS_ComputeBRDFLUT:
-			return "ComputeBRDFLUT";
+			return "ComputeBRDFLUTCS";
 		case ShaderID::CS_RTAOAccumulate:
-			return "RTAOAccumulate";
+			return "RTAOAccumulateCS";
 		case ShaderID::VS_GBuffer:
 		case ShaderID::VS_Sky:
 		case ShaderID::VS_Quad:
 		case ShaderID::VS_ShadowMapping:
-			return "VSMain";
+			return "MainVS";
 		case ShaderID::PS_GBuffer:
 		case ShaderID::PS_Sky:
 		case ShaderID::PS_DeferredLighting:
 		case ShaderID::PS_Composite:
-		case ShaderID::PS_ShadowMapping:
-			return "PSMain";
+			return "MainPS";
 		case ShaderID::LIB_PathTracer:
 		case ShaderID::LIB_Material:
 		case ShaderID::LIB_RTAO:
@@ -122,7 +120,6 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::PS_Sky:
 		case ShaderID::PS_DeferredLighting:
 		case ShaderID::PS_Composite:
-		case ShaderID::PS_ShadowMapping:
 			return RHI::ShaderType::Pixel;
 		case ShaderID::LIB_PathTracer:
 		case ShaderID::LIB_Material:
