@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "commandline.h"
+#include "windowsplatform.h"
 
 //
 // General Macro
@@ -28,145 +29,6 @@ typedef int8_t   int8;
 typedef int16_t  int16;
 typedef int32_t  int32;
 typedef int64_t  int64;
-
-//
-// Platform defines
-//
-typedef struct HWND__* HWND;
-typedef const char* LPCSTR;
-typedef struct HINSTANCE__* HINSTANCE;
-typedef HINSTANCE HMODULE;
-typedef void* HANDLE;
-typedef const wchar_t* LPCWSTR;
-typedef struct _SECURITY_ATTRIBUTES SECURITY_ATTRIBUTES;
-typedef unsigned long DWORD;
-typedef struct HMONITOR__* HMONITOR;
-typedef long HRESULT;
-typedef long long INT_PTR;
-typedef INT_PTR(__stdcall* FARPROC)();
-
-extern "C" __declspec(dllimport) HMODULE __stdcall LoadLibraryA(LPCSTR lpLibFileName);
-extern "C" __declspec(dllimport) FARPROC __stdcall GetProcAddress(HMODULE hModule, LPCSTR lpProcName);
-extern "C" __declspec(dllimport) void __stdcall OutputDebugStringA(_In_opt_ const char* lpOutputString);
-extern "C" __declspec(dllimport) void __stdcall OutputDebugStringW(_In_opt_ const wchar_t* lpOutputString);
-
-
-//
-// Logging macros
-//
-#define INTERNAL_PLATFORM_LOG(msg) OutputDebugStringA(msg)
-#define INTERNAL_PLATFORM_WLOG(msg) OutputDebugStringW(msg)
-
-#if !LB_RELEASE
-	#define INTERNAL_PLATFORM_BREAK() __debugbreak();
-#else
-	#define INTERNAL_PLATFORM_BREAK();
-#endif
-
-#if !LB_RELEASE
-	#define LB_LOG(msg, ...) \
-	{ \
-		constexpr uint16 bufferSize = 1024; \
-		char header[bufferSize], body[bufferSize]; \
-		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
-		snprintf(body, bufferSize, "[Limbo] Info: %s\n", header); \
-		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY); \
-		printf("%s", body); \
-		INTERNAL_PLATFORM_LOG(body); \
-	}
-
-	#define LB_WLOG(msg, ...) \
-	{ \
-		constexpr uint16 bufferSize = 1024; \
-		wchar_t header[bufferSize], body[bufferSize]; \
-		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
-		_snwprintf_s(body, bufferSize, L"[Limbo] Info: %ls\n", header); \
-		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY); \
-		printf("%ls", body); \
-		INTERNAL_PLATFORM_WLOG(body); \
-	}
-
-	#define LB_WARN(msg, ...) \
-	{ \
-		constexpr uint16 bufferSize = 1024; \
-		char header[bufferSize], body[bufferSize]; \
-		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
-		snprintf(body, bufferSize, "[Limbo] Warn: %s\n", header); \
-		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY); \
-		printf("%s", body); \
-		INTERNAL_PLATFORM_LOG(body); \
-	}
-
-	#define LB_WWARN(msg, ...) \
-	{ \
-		constexpr uint16 bufferSize = 1024; \
-		wchar_t header[bufferSize], body[bufferSize]; \
-		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
-		_snwprintf_s(body, bufferSize, L"[Limbo] Warning: %ls\n", header); \
-		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY); \
-		printf("%ls", body); \
-		INTERNAL_PLATFORM_WLOG(body); \
-	}
-
-	#define LB_ERROR(msg, ...) \
-	{ \
-		constexpr uint16 bufferSize = 1024; \
-		char header[bufferSize], body[bufferSize]; \
-		snprintf(header, bufferSize, msg, ##__VA_ARGS__); \
-		snprintf(body, bufferSize, "[Limbo] Error: %s\n", header); \
-		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_INTENSITY); \
-		printf("%s", body); \
-		INTERNAL_PLATFORM_LOG(body); \
-		INTERNAL_PLATFORM_BREAK(); \
-	}
-
-	#define LB_WERROR(msg, ...) \
-	{ \
-		constexpr uint16 bufferSize = 1024; \
-		wchar_t header[bufferSize], body[bufferSize]; \
-		_snwprintf_s(header, bufferSize, L##msg, ##__VA_ARGS__); \
-		_snwprintf_s(body, bufferSize, L"[Limbo] Error: %ls\n", header); \
-		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, FOREGROUND_RED | FOREGROUND_INTENSITY); \
-		printf("%ls", body); \
-		INTERNAL_PLATFORM_WLOG(body); \
-		INTERNAL_PLATFORM_BREAK(); \
-	}
-#else
-	#define LB_LOG(msg, ...) __noop()
-	#define LB_WLOG(msg, ...) __noop()
-	#define LB_WWARN(msg, ...) __noop()
-	#define LB_WARN(msg, ...) __noop()
-	#define LB_WERROR(msg, ...) __noop()
-	#define LB_ERROR(msg, ...) __noop()
-#endif
-
-//
-// Assertion macros
-//
-#if !LB_RELEASE
-	#define ensure(expr) \
-		([&]() \
-		{\
-			bool r = (expr);\
-			if (!(r)) \
-				LB_ERROR("Assertion Failed!"); \
-			return r; \
-		}())
-#else 
-	#define ensure(expr) (expr)
-#endif
-
-#define check(expr) \
-	do { \
-		bool r = (expr); \
-		if (!(r)) \
-		{ \
-			LB_ERROR("Check failed! '%s'", #expr); \
-			abort(); \
-		} \
-	} while(0)
-
-#define ENSURE_RETURN(expr, ...) if (!ensure(!(expr))) return __VA_ARGS__;
 
 /* An empty function as breakpoint target
 Usage: just put Noop(); at any line in a function, then you can set a breakpoint there.
@@ -236,6 +98,92 @@ constexpr inline bool EnumHasAnyFlags(Enum Flags, Enum Contains)
 {
 	return (((__underlying_type(Enum))Flags) & (__underlying_type(Enum))Contains) != 0;
 }
+
+//
+// Logging macros
+//
+#if !LB_RELEASE
+	enum class InternalLogColor : uint8
+	{
+		Info  = 15, // FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY
+		Warn  = 14, // FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY
+		Error = 12  // FOREGROUND_RED | FOREGROUND_INTENSITY
+	};
+
+	template<typename CharType, typename... Args>
+	void Internal_Log(const char* severity, InternalLogColor color, const CharType* format, Args&&... args)
+	{
+		constexpr uint16 bufferSize = 1024;
+		CharType header[bufferSize], body[bufferSize];
+		SetConsoleTextAttribute(limbo::Core::CommandLine::ConsoleHandle, (uint16)color);
+		if constexpr (TIsSame<CharType, char>::Value)
+		{
+			snprintf(header, bufferSize, format, args...);
+			snprintf(body, bufferSize, "[Limbo] %s: %s\n", severity, header);
+			printf("%s", body);
+			OutputDebugStringA(body);
+		}
+		else if constexpr (TIsSame<CharType, wchar_t>::Value)
+		{
+			_snwprintf_s(header, bufferSize, format, args...);
+			_snwprintf_s(body, bufferSize, L"[Limbo] %s: %ls\n", severity, header);
+			printf("%ls", body);
+			OutputDebugStringW(body);
+		}
+
+		if (color == InternalLogColor::Error)
+		{
+			if (IsDebuggerPresent())
+			{
+				__debugbreak();
+			}
+			else
+			{
+				if constexpr (TIsSame<CharType, char>::Value)
+					MessageBoxA(nullptr, body, "limbo", MB_OK);
+				else if constexpr (TIsSame<CharType, wchar_t>::Value)
+					MessageBoxW(nullptr, body, L"limbo", MB_OK);
+				abort();
+			}
+		}
+	}
+
+	#define LB_LOG(msg, ...) Internal_Log("Info", InternalLogColor::Info, msg, __VA_ARGS__)
+	#define LB_WARN(msg, ...) Internal_Log("Warn", InternalLogColor::Warn, msg, __VA_ARGS__)
+	#define LB_ERROR(msg, ...) Internal_Log("Error", InternalLogColor::Error, msg, __VA_ARGS__)
+
+#else
+	#define LB_LOG(msg, ...) __noop()
+	#define LB_WARN(msg, ...) __noop()
+	#define LB_ERROR(msg, ...) __noop()
+#endif
+
+//
+// Assertion macros
+//
+#if !LB_RELEASE
+#define ensure(expr) \
+		([&]() \
+		{\
+			bool r = (expr);\
+			if (!(r)) \
+				LB_ERROR("Assertion Failed!"); \
+			return r; \
+		}())
+#else 
+#define ensure(expr) (expr)
+#endif
+
+#define check(expr) \
+	do { \
+		bool r = (expr); \
+		if (!(r)) \
+		{ \
+			LB_ERROR("Check failed! '%s'", #expr); \
+		} \
+	} while(0)
+
+#define ENSURE_RETURN(expr, ...) if (!ensure(!(expr))) return __VA_ARGS__;
 
 // Simple math operations
 namespace limbo::Math

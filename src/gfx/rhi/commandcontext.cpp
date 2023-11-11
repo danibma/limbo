@@ -370,6 +370,12 @@ namespace limbo::RHI
 		m_CommandList->DrawIndexedInstanced(indexCount, instanceCount, firstIndex, baseVertex, firstInstance);
 	}
 
+	void CommandContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	{
+		SubmitResourceBarriers();
+		m_CommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
+	}
+
 	void CommandContext::DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth)
 	{
 		SubmitResourceBarriers();
@@ -379,10 +385,10 @@ namespace limbo::RHI
 		m_CommandList->DispatchRays(&desc);
 	}
 
-	void CommandContext::Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
+	void CommandContext::DispatchMesh(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 	{
 		SubmitResourceBarriers();
-		m_CommandList->Dispatch(groupCountX, groupCountY, groupCountZ);
+		m_CommandList->DispatchMesh(groupCountX, groupCountY, groupCountZ);
 	}
 
 	void CommandContext::SubmitResourceBarriers()

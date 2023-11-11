@@ -95,6 +95,7 @@ namespace limbo::RHI
 		DX_CHECK(m_FeatureSupport.Init(m_Device.Get()));
 		check(m_FeatureSupport.ResourceBindingTier() >= D3D12_RESOURCE_BINDING_TIER_3);
 		check(m_FeatureSupport.HighestShaderModel() >= D3D_SHADER_MODEL_6_6);
+		check(m_FeatureSupport.MeshShaderTier() > D3D12_MESH_SHADER_TIER_NOT_SUPPORTED);
 
 		m_GPUInfo.bSupportsRaytracing = false;
 
@@ -102,7 +103,7 @@ namespace limbo::RHI
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		if (!IsUnderRenderDoc())
 		{
-			// RenderDoc does not support rt for some reason as well
+			// RenderDoc does not support rt
 			m_GPUInfo.bSupportsRaytracing = m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1;
 
 			if (bD3DDebug)
@@ -539,7 +540,7 @@ namespace limbo::RHI
 		filename.append(L".wpix");
 
 		DX_CHECK(PIXGpuCaptureNextFrames(filename.c_str(), 1));
-		LB_WLOG("Saved the GPU capture to '%ls'", filename.c_str());
+		LB_LOG("Saved the GPU capture to '%ls'", filename.c_str());
 
 		m_LastGPUCaptureFilename = std::move(filename);
 	}
@@ -636,7 +637,7 @@ namespace limbo::RHI
 
 		DXGI_ADAPTER_DESC1 desc;
 		DX_CHECK(m_Adapter->GetDesc1(&desc));
-		LB_WLOG("Initiliazed D3D12 on %ls", desc.Description);
+		LB_LOG("Initiliazed D3D12 on %ls", desc.Description);
 
 		Utils::StringConvert(desc.Description, m_GPUInfo.Name);
 	}

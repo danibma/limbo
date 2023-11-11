@@ -55,12 +55,13 @@ namespace limbo::RHI
 		using DescriptorTablesMap = std::unordered_map<uint32, DescriptorTable>;
 
 		using ResourceStatesMap = std::unordered_map<const void*, ResourceState>;
+		using CommandList = ID3D12GraphicsCommandList6;
 
 	private:
 		bool								m_bIsClosed = false;
 
 		ID3D12CommandAllocator*				m_Allocator;
-		RefCountPtr<ID3D12GraphicsCommandList4>	m_CommandList;
+		RefCountPtr<CommandList>			m_CommandList;
 		CommandQueue*						m_ParentQueue;
 		ContextType							m_Type;
 
@@ -76,7 +77,7 @@ namespace limbo::RHI
 		~CommandContext();
 
 		CommandQueue* GetQueue() const { return m_ParentQueue; }
-		ID3D12GraphicsCommandList4* Get() const { return m_CommandList.Get(); }
+		CommandList* Get() const { return m_CommandList.Get(); }
 		ContextType GetType() const { return m_Type; }
 
 		void CopyTextureToTexture(TextureHandle src, TextureHandle dst);
@@ -137,6 +138,7 @@ namespace limbo::RHI
 		void DrawIndexed(uint32 indexCount, uint32 instanceCount = 1, uint32 firstIndex = 0, int32 baseVertex = 0, uint32 firstInstance = 0);
 		void Dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 		void DispatchRays(const ShaderBindingTable& sbt, uint32 width, uint32 height, uint32 depth = 1);
+		void DispatchMesh(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ);
 
 		void BuildRaytracingAccelerationStructure(const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS& inputs, BufferHandle scratch, BufferHandle result);
 
