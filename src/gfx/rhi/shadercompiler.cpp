@@ -42,11 +42,15 @@ namespace limbo::RHI::SC
 		case ShaderType::Vertex:
 			profile.append(L"vs");
 			break;
+		case ShaderType::Mesh:
+			profile.append(L"ms");
+			break;
 		case ShaderType::Pixel:
 			profile.append(L"ps");
 			break;
 		case ShaderType::Lib:
 			profile.append(L"lib");
+			break;
 		}
 		profile.append(L"_6_6");
 

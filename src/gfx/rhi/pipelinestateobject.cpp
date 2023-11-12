@@ -50,7 +50,8 @@ namespace limbo::RHI
 
 	PipelineStateSpec& PipelineStateSpec::SetRootSignature(RootSignatureHandle rootSignature)
 	{
-		m_RootSignature = rootSignature;
+		m_RootSignatureHandle = rootSignature;
+		m_Stream.pRootSignature = RM_GET(m_RootSignatureHandle)->Get();
 		return *this;
 	}
 
@@ -62,32 +63,39 @@ namespace limbo::RHI
 
 	PipelineStateSpec& PipelineStateSpec::SetTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE topology)
 	{
-		m_Topology = topology;
+		m_Stream.PrimitiveTopologyType = topology;
 		return *this;
 	}
 
 	PipelineStateSpec& PipelineStateSpec::SetBlendDesc(const D3D12_RENDER_TARGET_BLEND_DESC& desc)
 	{
-		m_BlendDesc = desc;
+		CD3DX12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		blendState.RenderTarget[0] = desc;
+
+		m_Stream.BlendState = blendState;
 		return *this;
 	}
 
 	PipelineStateSpec& PipelineStateSpec::SetRasterizerDesc(const D3D12_RASTERIZER_DESC& desc)
 	{
-		m_RasterizerDesc = desc;
+		m_Stream.RasterizerState = CD3DX12_RASTERIZER_DESC(desc);
 		return *this;
 	}
 
-	PipelineStateSpec& PipelineStateSpec::SetDepthStencilDesc(const D3D12_DEPTH_STENCIL_DESC& desc)
+	PipelineStateSpec& PipelineStateSpec::SetDepthStencilDesc(const D3D12_DEPTH_STENCIL_DESC1& desc)
 	{
-		m_DepthStencilDesc = desc;
+		m_Stream.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(desc);
 		return *this;
 	}
 
 	PipelineStateSpec& PipelineStateSpec::SetRenderTargetFormats(const Span<Format>& rtFormats, Format depthFormat)
 	{
-		m_RenderTargetFormats = rtFormats;
-		m_DepthTargetFormat = depthFormat;
+		D3D12_RT_FORMAT_ARRAY rt = {};
+		rt.NumRenderTargets = rtFormats.GetSize();
+		for (uint32 i = 0; i < rtFormats.GetSize(); ++i)
+			rt.RTFormats[i] = D3DFormat(rtFormats[i]);
+		m_Stream.RTVFormats = rt;
+		m_Stream.DSVFormat = D3DFormat(depthFormat);
 		return *this;
 	}
 
@@ -97,32 +105,58 @@ namespace limbo::RHI
 		return *this;
 	}
 
+	void PipelineStateSpec::SetShaderBytecode(ShaderHandle shader, D3D12_SHADER_BYTECODE& bytecode)
+	{
+		Shader* pShader = RM_GET(shader);
+
+		bytecode = {
+			.pShaderBytecode = pShader->Bytecode->GetBufferPointer(),
+			.BytecodeLength = pShader->Bytecode->GetBufferSize()
+		};
+	}
+
 	PipelineStateSpec& PipelineStateSpec::SetVertexShader(ShaderHandle vertexShader)
 	{
-		m_VertexShader = vertexShader;
+		SetShaderBytecode(vertexShader, m_Stream.VS);
+		return *this;
+	}
+
+	PipelineStateSpec& PipelineStateSpec::SetMeshShader(ShaderHandle meshShader)
+	{
+		SetShaderBytecode(meshShader, m_Stream.MS);
+		return *this;
+	}
+
+	PipelineStateSpec& PipelineStateSpec::SetAmplificationShader(ShaderHandle ampShader)
+	{
+		SetShaderBytecode(ampShader, m_Stream.AS);
 		return *this;
 	}
 
 	PipelineStateSpec& PipelineStateSpec::SetPixelShader(ShaderHandle pixelShader)
 	{
-		m_PixelShader = pixelShader;
+		SetShaderBytecode(pixelShader, m_Stream.PS);
 		return *this;
 	}
 
 	PipelineStateSpec& PipelineStateSpec::SetComputeShader(ShaderHandle computeShader)
 	{
-		m_ComputeShader = computeShader;
+		m_bIsCompute = true;
+		SetShaderBytecode(computeShader, m_Stream.CS);
 		return *this;
 	}
 
 	PipelineStateSpec& PipelineStateSpec::Init()
 	{
 		m_Name = "";
-		m_Topology = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		m_BlendDesc = TStaticBlendState<>::GetRHI();
-		m_RasterizerDesc = TStaticRasterizerState<>::GetRHI();
-		m_DepthStencilDesc = TStaticDepthStencilState<>::GetRHI();
-		m_DepthTargetFormat = Format::UNKNOWN;
+		m_Stream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		m_Stream.RasterizerState = CD3DX12_RASTERIZER_DESC(TStaticRasterizerState<>::GetRHI());
+		m_Stream.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(TStaticDepthStencilState<>::GetRHI());
+		m_Stream.DSVFormat = DXGI_FORMAT_UNKNOWN;
+
+		CD3DX12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+		blendState.RenderTarget[0] = TStaticBlendState<>::GetRHI();
+		m_Stream.BlendState = blendState;
 
 		return *this;
 	}
@@ -184,149 +218,65 @@ namespace limbo::RHI
 	}
 
 	PipelineStateObject::PipelineStateObject(const PipelineStateSpec& spec)
+		: m_Spec(spec)
 	{
-		check((spec.m_ComputeShader.IsValid() && !spec.m_VertexShader.IsValid() && !spec.m_PixelShader.IsValid()) ||
-			  (!spec.m_ComputeShader.IsValid() && (spec.m_VertexShader.IsValid() || spec.m_PixelShader.IsValid())));
-
-		if (spec.m_ComputeShader.IsValid())
-			CreateComputePSO(spec);
-		else
-			CreateGraphicsPSO(spec);
-
-		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([spec, this]()
+		CreatePSO();
+		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([this]()
 		{
-			if (spec.m_ComputeShader.IsValid())
-				CreateComputePSO(spec);
-			else
-				CreateGraphicsPSO(spec);
+			CreatePSO();
 		});
 	}
 
 	PipelineStateObject::PipelineStateObject(const RTPipelineStateSpec& spec)
+		: m_RTSpec(spec)
 	{
 		check(spec.m_LibsNum > 0);
 		check(spec.m_RootSignature.IsValid());
 
-		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([spec, this]()
+		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([this]()
 		{
-			CreateRTPSO(spec);
+			CreateRayTracingPSO();
 		});
 
-		CreateRTPSO(spec);
+		CreateRayTracingPSO();
 	}
 
-	void PipelineStateObject::CreateGraphicsPSO(const PipelineStateSpec& spec)
+	void PipelineStateObject::CreatePSO()
 	{
-		check(spec.m_RootSignature.IsValid());
+		m_RootSignature = m_Spec.m_RootSignatureHandle;
+		m_Compute = m_Spec.m_bIsCompute;
 
-		D3D12_SHADER_BYTECODE vsBytecode = {};
-		D3D12_SHADER_BYTECODE psBytecode = {};
+		D3D12_INPUT_LAYOUT_DESC inputLayout = { m_Spec.m_InputLayout.data(), (uint32)m_Spec.m_InputLayout.size() };
+		DXGI_SAMPLE_DESC sampleDesc = { 1, 0 };
+		D3D12_STREAM_OUTPUT_DESC streamOutput = { nullptr };
 
-		m_RootSignature = spec.m_RootSignature;
+		m_Spec.m_Stream.InputLayout = inputLayout;
+		m_Spec.m_Stream.SampleMask = 0xFFFFFFFF;
+		m_Spec.m_Stream.SampleDesc = sampleDesc;
+		m_Spec.m_Stream.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
+		m_Spec.m_Stream.StreamOutput = streamOutput;
+		m_Spec.m_Stream.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+		m_Spec.m_Stream.NodeMask = 0;
 
-		if (spec.m_VertexShader.IsValid())
-		{
-			Shader* pShader = RM_GET(spec.m_VertexShader);
+		D3D12_PIPELINE_STATE_STREAM_DESC psoStream = {};
+		psoStream.SizeInBytes = sizeof(decltype(m_Spec.m_Stream));
+		psoStream.pPipelineStateSubobjectStream = &m_Spec.m_Stream;
 
-			vsBytecode = {
-				.pShaderBytecode = pShader->Bytecode->GetBufferPointer(),
-				.BytecodeLength = pShader->Bytecode->GetBufferSize()
-			};
-		}
+		DX_CHECK(Device::Ptr->GetDevice()->CreatePipelineState(&psoStream, IID_PPV_ARGS(m_PipelineState.ReleaseAndGetAddressOf())));
 
-		if (spec.m_PixelShader.IsValid())
-		{
-			Shader* pShader = RM_GET(spec.m_PixelShader);
-
-			psBytecode = {
-				.pShaderBytecode = pShader->Bytecode->GetBufferPointer(),
-				.BytecodeLength = pShader->Bytecode->GetBufferSize()
-			};
-		}
-
-		D3D12_BLEND_DESC blendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-		blendState.RenderTarget[0] = spec.m_BlendDesc;
-
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = RM_GET(m_RootSignature)->Get(),
-			.VS = vsBytecode,
-			.PS = psBytecode,
-			.StreamOutput = nullptr,
-			.BlendState = blendState,
-			.SampleMask = 0xFFFFFFFF,
-			.RasterizerState = spec.m_RasterizerDesc,
-			.DepthStencilState = spec.m_DepthStencilDesc,
-			.InputLayout = {
-				spec.m_InputLayout.data(),
-				(uint32)spec.m_InputLayout.size(),
-			},
-			.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED,
-			.PrimitiveTopologyType = spec.m_Topology,
-			.SampleDesc = {
-				.Count = 1,
-				.Quality = 0
-			},
-			.NodeMask = 0,
-			.CachedPSO = nullptr,
-			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
-		};
-
-		desc.NumRenderTargets = spec.m_RenderTargetFormats.GetSize();
-
-		for (uint32 i = 0; i < desc.NumRenderTargets; i++)
-			desc.RTVFormats[i] = D3DFormat(spec.m_RenderTargetFormats[i]);
-
-		check(spec.m_DepthStencilDesc.DepthEnable == (spec.m_DepthTargetFormat != Format::UNKNOWN));
-		desc.DSVFormat = D3DFormat(Device::Ptr->GetSwapchainDepthFormat());
-
-		DX_CHECK(Device::Ptr->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(m_PipelineState.ReleaseAndGetAddressOf())));
-
-		if (!spec.m_Name.empty())
+		if (!m_Spec.m_Name.empty())
 		{
 			std::wstring wName;
-			Utils::StringConvert(spec.m_Name, wName);
+			Utils::StringConvert(m_Spec.m_Name, wName);
 			m_PipelineState->SetName(wName.c_str());
 		}
 	}
 
-	void PipelineStateObject::CreateComputePSO(const PipelineStateSpec& spec)
-	{
-		check(spec.m_ComputeShader.IsValid());
-		check(spec.m_RootSignature.IsValid());
-
-		m_RootSignature = spec.m_RootSignature;
-
-		Shader* pShader = RM_GET(spec.m_ComputeShader);
-
-		D3D12_SHADER_BYTECODE shaderByteCode = {
-			.pShaderBytecode = pShader->Bytecode->GetBufferPointer(),
-			.BytecodeLength = pShader->Bytecode->GetBufferSize()
-		};
-
-		D3D12_COMPUTE_PIPELINE_STATE_DESC desc = {
-			.pRootSignature = RM_GET(m_RootSignature)->Get(),
-			.CS = shaderByteCode,
-			.NodeMask = 0,
-			.CachedPSO = nullptr,
-			.Flags = D3D12_PIPELINE_STATE_FLAG_NONE
-		};
-		DX_CHECK(Device::Ptr->GetDevice()->CreateComputePipelineState(&desc, IID_PPV_ARGS(m_PipelineState.ReleaseAndGetAddressOf())));
-
-		if (!spec.m_Name.empty())
-		{
-			std::wstring wName;
-			Utils::StringConvert(spec.m_Name, wName);
-			m_PipelineState->SetName(wName.c_str());
-		}
-
-		m_Compute = true;
-	}
-
-	void PipelineStateObject::CreateRTPSO(const RTPipelineStateSpec& spec)
+	void PipelineStateObject::CreateRayTracingPSO()
 	{
 		if (!RHI::GetGPUInfo().bSupportsRaytracing) return;
 
-		m_RootSignature = spec.m_RootSignature;
+		m_RootSignature = m_RTSpec.m_RootSignature;
 
 		RayTracingStateObjectStream stream;
 		uint32 numObjects = 0;
@@ -340,19 +290,19 @@ namespace limbo::RHI
 		};
 
 		// Get all the libs, to later create the global root signature
-		for (uint32 i = 0; i < spec.m_LibsNum; ++i)
+		for (uint32 i = 0; i < m_RTSpec.m_LibsNum; ++i)
 		{
-			ShaderHandle lib = spec.m_Libs[i];
+			ShaderHandle lib = m_RTSpec.m_Libs[i];
 			Shader* pLib = RM_GET(lib);
 
 			D3D12_DXIL_LIBRARY_DESC* dxilLib = stream.ContentData.Allocate<D3D12_DXIL_LIBRARY_DESC>();
 			dxilLib->DXILLibrary = { pLib->Bytecode->GetBufferPointer(), pLib->Bytecode->GetBufferSize() };
-			dxilLib->NumExports = (uint32)spec.m_LibsDescs[i].m_Exports.size();
-			dxilLib->pExports = const_cast<D3D12_EXPORT_DESC*>(spec.m_LibsDescs[i].m_Exports.data());
+			dxilLib->NumExports = (uint32)m_RTSpec.m_LibsDescs[i].m_Exports.size();
+			dxilLib->pExports = const_cast<D3D12_EXPORT_DESC*>(m_RTSpec.m_LibsDescs[i].m_Exports.data());
 
 			AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY, dxilLib);
 
-			for (const D3D12_HIT_GROUP_DESC& desc : spec.m_LibsDescs[i].m_HitGroupDescs)
+			for (const D3D12_HIT_GROUP_DESC& desc : m_RTSpec.m_LibsDescs[i].m_HitGroupDescs)
 			{
 				D3D12_HIT_GROUP_DESC* hitGroup = stream.ContentData.Allocate<D3D12_HIT_GROUP_DESC>();
 				hitGroup->HitGroupExport = desc.HitGroupExport;
@@ -364,15 +314,15 @@ namespace limbo::RHI
 			}
 		}
 
-		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &spec.m_ShaderConfig);
+		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG, &m_RTSpec.m_ShaderConfig);
 
 		// According to Microsoft: Set max recursion depth as low as needed as drivers may apply optimization strategies for low recursion depths. 
 		D3D12_RAYTRACING_PIPELINE_CONFIG pipelineConfig = {
-			.MaxTraceRecursionDepth = spec.m_MaxTraceRecursionDepth
+			.MaxTraceRecursionDepth = m_RTSpec.m_MaxTraceRecursionDepth
 		};
 		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG, &pipelineConfig);
 
-		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RM_GET(spec.m_RootSignature)->Get() };
+		D3D12_GLOBAL_ROOT_SIGNATURE globalRS = { .pGlobalRootSignature = RM_GET(m_RTSpec.m_RootSignature)->Get() };
 		AddSubobject(D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE, &globalRS);
 
 		D3D12_STATE_OBJECT_DESC desc = {
@@ -382,10 +332,10 @@ namespace limbo::RHI
 		};
 		DX_CHECK(Device::Ptr->GetDevice()->CreateStateObject(&desc, IID_PPV_ARGS(m_StateObject.ReleaseAndGetAddressOf())));
 
-		if (!spec.m_Name.empty())
+		if (!m_RTSpec.m_Name.empty())
 		{
 			std::wstring wName;
-			Utils::StringConvert(spec.m_Name, wName);
+			Utils::StringConvert(m_RTSpec.m_Name, wName);
 			m_StateObject->SetName(wName.c_str());
 		}
 	}

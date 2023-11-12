@@ -49,7 +49,7 @@ namespace limbo::RHI
 	class TStaticDepthStencilState
 	{
 	public:
-		static D3D12_DEPTH_STENCIL_DESC GetRHI()
+		static D3D12_DEPTH_STENCIL_DESC1 GetRHI()
 		{
 			return {
 				.DepthEnable = DepthEnable,

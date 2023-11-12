@@ -29,6 +29,7 @@ namespace limbo::RHI
 	{
 		Compute,
 		Vertex,
+		Mesh,
 		Pixel,
 		Lib,
 

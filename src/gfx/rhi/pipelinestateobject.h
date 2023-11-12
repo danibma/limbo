@@ -17,22 +17,14 @@ namespace limbo::RHI
 		friend class PipelineStateObject;
 
 		using TInputLayout = std::vector<D3D12_INPUT_ELEMENT_DESC>;
+		TInputLayout					m_InputLayout;
+		RootSignatureHandle				m_RootSignatureHandle;
+		std::string						m_Name;
+		bool							m_bIsCompute;
+		CD3DX12_PIPELINE_STATE_STREAM2	m_Stream;
 
-		RootSignatureHandle							m_RootSignature;
-		TInputLayout								m_InputLayout;
-		D3D12_PRIMITIVE_TOPOLOGY_TYPE				m_Topology;
-		D3D12_RENDER_TARGET_BLEND_DESC				m_BlendDesc;
-		D3D12_RASTERIZER_DESC						m_RasterizerDesc;
-		D3D12_DEPTH_STENCIL_DESC					m_DepthStencilDesc;
-
-		ShaderHandle								m_VertexShader;
-		ShaderHandle								m_PixelShader;
-		ShaderHandle								m_ComputeShader;
-
-		TStaticArray<Format, MAX_RENDER_TARGETS>	m_RenderTargetFormats;
-		Format										m_DepthTargetFormat;
-
-		std::string									m_Name;
+	private:
+		void SetShaderBytecode(ShaderHandle shader, D3D12_SHADER_BYTECODE& bytecode);
 
 	public:
 		PipelineStateSpec& Init();
@@ -41,11 +33,13 @@ namespace limbo::RHI
 		PipelineStateSpec& SetTopology(D3D12_PRIMITIVE_TOPOLOGY_TYPE topology);
 		PipelineStateSpec& SetBlendDesc(const D3D12_RENDER_TARGET_BLEND_DESC& desc);
 		PipelineStateSpec& SetRasterizerDesc(const D3D12_RASTERIZER_DESC& desc);
-		PipelineStateSpec& SetDepthStencilDesc(const D3D12_DEPTH_STENCIL_DESC& desc);
+		PipelineStateSpec& SetDepthStencilDesc(const D3D12_DEPTH_STENCIL_DESC1& desc);
 		PipelineStateSpec& SetRenderTargetFormats(const Span<Format>& rtFormats, Format depthFormat);
 		PipelineStateSpec& SetName(const std::string_view& name);
 		PipelineStateSpec& SetVertexShader(ShaderHandle vertexShader);
 		PipelineStateSpec& SetPixelShader(ShaderHandle pixelShader);
+		PipelineStateSpec& SetMeshShader(ShaderHandle meshShader);
+		PipelineStateSpec& SetAmplificationShader(ShaderHandle ampShader);
 		PipelineStateSpec& SetComputeShader(ShaderHandle computeShader);
 	};
 
@@ -125,15 +119,17 @@ namespace limbo::RHI
 		}
 
 	private:
-		void CreateGraphicsPSO(const PipelineStateSpec& spec);
-		void CreateComputePSO(const PipelineStateSpec& spec);
-		void CreateRTPSO(const RTPipelineStateSpec& spec);
+		void CreatePSO();
+		void CreateRayTracingPSO();
 
 	private:
 		RefCountPtr<ID3D12PipelineState>	m_PipelineState;
 		RefCountPtr<ID3D12StateObject>		m_StateObject; // for RayTracing
 		RootSignatureHandle					m_RootSignature;
 		DelegateHandle						m_OnReloadShadersHandle;
+
+		PipelineStateSpec					m_Spec;
+		RTPipelineStateSpec					m_RTSpec;
 
 		bool m_Compute = false;
 	};
