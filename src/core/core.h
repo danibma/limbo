@@ -17,6 +17,7 @@
 
 #define FORCENOINLINE __declspec(noinline)
 #define FORCEINLINE   __forceinline
+#define PLATFORM_BREAK() if (IsDebuggerPresent()) __debugbreak()
 
 //
 // Types
@@ -111,7 +112,7 @@ constexpr inline bool EnumHasAnyFlags(Enum Flags, Enum Contains)
 	};
 
 	template<typename CharType, typename... Args>
-	void Internal_Log(const char* severity, InternalLogColor color, const CharType* format, Args&&... args)
+	FORCEINLINE void Internal_Log(const char* severity, InternalLogColor color, const CharType* format, Args&&... args)
 	{
 		constexpr uint16 bufferSize = 1024;
 		CharType header[bufferSize], body[bufferSize];
@@ -131,26 +132,19 @@ constexpr inline bool EnumHasAnyFlags(Enum Flags, Enum Contains)
 			OutputDebugStringW(body);
 		}
 
-		if (color == InternalLogColor::Error)
+		if (color == InternalLogColor::Error && !IsDebuggerPresent())
 		{
-			if (IsDebuggerPresent())
-			{
-				__debugbreak();
-			}
-			else
-			{
-				if constexpr (TIsSame<CharType, char>::Value)
-					MessageBoxA(nullptr, body, "limbo", MB_OK);
-				else if constexpr (TIsSame<CharType, wchar_t>::Value)
-					MessageBoxW(nullptr, body, L"limbo", MB_OK);
-				abort();
-			}
+			if constexpr (TIsSame<CharType, char>::Value)
+				MessageBoxA(nullptr, body, "limbo", MB_OK);
+			else if constexpr (TIsSame<CharType, wchar_t>::Value)
+				MessageBoxW(nullptr, body, L"limbo", MB_OK);
+			abort();
 		}
 	}
 
 	#define LB_LOG(msg, ...) Internal_Log("Info", InternalLogColor::Info, msg, __VA_ARGS__)
 	#define LB_WARN(msg, ...) Internal_Log("Warn", InternalLogColor::Warn, msg, __VA_ARGS__)
-	#define LB_ERROR(msg, ...) Internal_Log("Error", InternalLogColor::Error, msg, __VA_ARGS__)
+	#define LB_ERROR(msg, ...) do { Internal_Log("Error", InternalLogColor::Error, msg, __VA_ARGS__); PLATFORM_BREAK(); } while(0)
 
 #else
 	#define LB_LOG(msg, ...) __noop()
