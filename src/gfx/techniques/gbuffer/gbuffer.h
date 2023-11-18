@@ -8,7 +8,8 @@ namespace limbo::Gfx
 	public:
 		GBuffer();
 
-		bool Init() override;
-		void Render(RHI::CommandContext& cmd, RenderContext& context) override;
+		virtual bool Init() override;
+		virtual void Render(RHI::CommandContext& cmd, RenderContext& context) override;
+		virtual void RenderUI(RenderContext& context) override;
 	};
 }

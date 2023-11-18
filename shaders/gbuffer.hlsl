@@ -7,13 +7,15 @@ struct VSOut
     float4 WorldPos : WorldPosition;
     float3 Normal   : Normal;
     float2 UV       : TEXCOORD;
+
+    uint MeshletIndex : MeshletIndex;
 };
 
 uint cInstanceID;
 
 VSOut MainVS(uint vertexID : SV_VertexID)
 {
-    VSOut result;
+    VSOut result = (VSOut)0;
 
     Instance instance = GetInstance(cInstanceID);
     float3 pos    = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
@@ -28,6 +30,44 @@ VSOut MainVS(uint vertexID : SV_VertexID)
     result.UV       = uv;
 
 	return result;
+}
+
+[outputtopology("triangle")]
+[numthreads(MS_NUM_BLOCKS, 1, 1)]
+void MainMS(uint threadID : SV_DispatchThreadID, uint gtID : SV_GroupThreadID, uint groupID : SV_GroupID, 
+		    out indices uint3 tris[MESHLET_MAX_TRIANGLES], out vertices VSOut verts[MESHLET_MAX_VERTICES])
+{
+    Instance instance = GetInstance(cInstanceID);
+    Meshlet meshlet = BufferLoad<Meshlet>(instance.BufferIndex, groupID, instance.MeshletsOffset);
+
+    SetMeshOutputCounts(meshlet.VertexCount, meshlet.TriangleCount);
+
+    if (gtID < meshlet.TriangleCount)
+    {
+        uint triangleID = gtID + meshlet.TriangleOffset;
+    	Meshlet::Triangle t = BufferLoad<Meshlet::Triangle>(instance.BufferIndex, triangleID, instance.MeshletsTrianglesOffset);
+        tris[gtID] = uint3(t.V0, t.V1, t.V2);
+    }
+
+    if (gtID < meshlet.VertexCount)
+    {
+	    VSOut result;
+
+        uint vertexID = BufferLoad<uint>(instance.BufferIndex, gtID + meshlet.VertexOffset, instance.MeshletsVerticesOffset);
+
+	    float3 pos    = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
+	    float3 normal = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.NormalsOffset);
+	    float2 uv     = BufferLoad<float2>(instance.BufferIndex, vertexID, instance.TexCoordsOffset);
+
+	    float4x4 mvp        = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
+	    result.Position     = mul(mvp, float4(pos, 1.0f));
+	    result.PixelPos     = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(pos, 1.0f)));
+	    result.WorldPos     = mul(instance.LocalTransform, float4(pos, 1.0f));
+	    result.Normal       = TransformNormal(instance.LocalTransform, normal);
+	    result.UV           = uv;
+        result.MeshletIndex = groupID;
+		verts[gtID] = result;    
+    }
 }
 
 struct DeferredShadingOutput
@@ -108,6 +148,9 @@ DeferredShadingOutput MainPS(VSOut input)
 
         normal = mul(tbn, rgbNormal);
     }
+
+    //uint meshletIndex = input.MeshletIndex;
+	//finalAlbedo = float4(float(meshletIndex & 1), float(meshletIndex & 3) / 4, float(meshletIndex & 7) / 8, 1);
 
     result.PixelPosition        = input.PixelPos;
     result.WorldPosition        = input.WorldPos;

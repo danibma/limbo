@@ -20,6 +20,8 @@ namespace limbo::Gfx
 		VS_Quad,
 		VS_ShadowMapping,
 
+		MS_GBuffer,
+
 		PS_GBuffer,
 		PS_Sky,
 		PS_DeferredLighting,

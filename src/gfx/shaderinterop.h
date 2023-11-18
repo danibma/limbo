@@ -12,6 +12,10 @@
 #define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
 #define __PAD uint MACRO_CONCAT(padding, __COUNTER__)
 
+/* According to https://developer.nvidia.com/blog/advanced-api-performance-mesh-shaders/ */
+__CONST int MESHLET_MAX_TRIANGLES = 124;
+__CONST int MESHLET_MAX_VERTICES = 64;
+
 #define SHADOWMAP_CASCADES 4
 
 __CONST uint SHADOWMAP_SIZES[SHADOWMAP_CASCADES] =
@@ -87,8 +91,30 @@ struct Instance
 	uint		NormalsOffset;
 	uint		TexCoordsOffset;
 	uint		IndicesOffset;
+	uint		MeshletsOffset;
+	uint		MeshletsTrianglesOffset;
+	uint		MeshletsVerticesOffset;
 
 	float4x4	LocalTransform;
+};
+
+struct Meshlet
+{
+	/* Offsets within MeshletVertices and MeshletTriangles buffers inside the correspoding scene's GeometryBuffer */
+	uint VertexOffset;
+	uint TriangleOffset;
+
+	/* Number of vertices and triangles used in the meshlet */
+	uint VertexCount;
+	uint TriangleCount;
+
+	struct Triangle
+	{
+		uint V0 : 10;
+		uint V1 : 10;
+		uint V2 : 10;
+		uint : 2;
+	};
 };
 
 //

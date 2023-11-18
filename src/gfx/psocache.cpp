@@ -47,13 +47,21 @@ namespace limbo::Gfx::PSOCache
 			};
 
 			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
-				.SetVertexShader(ShadersCache::Get(ShaderID::VS_GBuffer))
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_GBuffer))
 				.SetRootSignature(rs)
 				.SetRenderTargetFormats(deferredShadingFormats, RHI::Format::D32_SFLOAT)
 				.SetDepthStencilDesc(RHI::TStaticDepthStencilState<true, false, D3D12_COMPARISON_FUNC_GREATER>::GetRHI())
 				.SetName("Deferred Shading PSO");
-			s_Pipelines[PipelineID::DeferredShading] = RHI::CreatePSO(psoInit);
+
+			{
+				auto normalPSO = RHI::PipelineStateSpec(psoInit).SetVertexShader(ShadersCache::Get(ShaderID::VS_GBuffer));
+				s_Pipelines[PipelineID::DeferredShading] = RHI::CreatePSO(normalPSO);
+			}
+
+			{
+				auto meshPSO = RHI::PipelineStateSpec(psoInit).SetMeshShader(ShadersCache::Get(ShaderID::MS_GBuffer));
+				s_Pipelines[PipelineID::DeferredShading_Mesh] = RHI::CreatePSO(meshPSO);
+			}
 		}
 
 		// Sky

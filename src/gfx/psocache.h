@@ -7,6 +7,7 @@ namespace limbo::Gfx
 	{
 		GenerateMips,
 		DeferredShading,
+		DeferredShading_Mesh,
 		Skybox,
 		PBRLighting,
 		Composite,

@@ -24,10 +24,14 @@ namespace limbo::Gfx
 	{
 		struct PrimitiveData
 		{
-			std::vector<float3> PositionStream;
-			std::vector<float3> NormalsStream;
-			std::vector<float2> TexCoordsStream;
-			std::vector<uint32> IndicesStream;
+			std::vector<float3>		PositionStream;
+			std::vector<float3>		NormalsStream;
+			std::vector<float2>		TexCoordsStream;
+			std::vector<uint32>		IndicesStream;
+
+			std::vector<Meshlet>			Meshlets;
+			std::vector<uint32>				MeshletVertices;
+			std::vector<Meshlet::Triangle>	MeshletTriangles;
 		};
 		std::vector<PrimitiveData> PrimitivesStreams;
 
@@ -43,6 +47,27 @@ namespace limbo::Gfx
 		std::vector<TextureData> TextureStreams;
 		// map the cgltf_texture to the index in TextureStreams
 		std::unordered_map<uintptr_t, uint32> TexturesMap;
+
+		void CopyVertexData(RHI::VertexBufferView& view, uint8* data, uint64 gpuAddress, uint64& offset, const auto& stream)
+		{
+			auto streamSize = stream.size() * sizeof(stream[0]);
+			view = {
+				.BufferLocation = gpuAddress + offset,
+				.SizeInBytes = (uint32)streamSize,
+				.StrideInBytes = sizeof(stream[0]),
+				.Offset = (uint32)offset
+			};
+			memcpy(data + offset, stream.data(), streamSize);
+			offset += streamSize;
+		}
+
+		void CopyMeshletData(uint32& currentDataOffset, uint8* data, uint64& offset, const auto& stream)
+		{
+			auto streamSize = stream.size() * sizeof(stream[0]);
+			currentDataOffset = (uint32)offset;
+			memcpy(data + offset, stream.data(), streamSize);
+			offset += streamSize;
+		}
 
 		void OptimizePrimitiveData(PrimitiveData& primitiveData)
 		{
@@ -60,6 +85,47 @@ namespace limbo::Gfx
 
 			meshopt_optimizeVertexCache(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, vertexCount);
 			meshopt_optimizeOverdraw(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, &primitiveData.PositionStream[0].x, vertexCount, sizeof(float3), 1.05f);
+		}
+
+		void CreateMeshlets(PrimitiveData& data)
+		{
+			size_t indexCount = data.IndicesStream.size();
+			size_t vertexCount = data.PositionStream.size();
+
+			size_t maxMeshlets = meshopt_buildMeshletsBound(indexCount, MESHLET_MAX_VERTICES, MESHLET_MAX_TRIANGLES);
+
+			std::vector<meshopt_Meshlet> meshlets(maxMeshlets);
+			std::vector<uint8>indices(maxMeshlets * MESHLET_MAX_TRIANGLES * 3);
+			data.MeshletVertices.resize(maxMeshlets * MESHLET_MAX_VERTICES);
+			size_t meshletCount = meshopt_buildMeshlets(meshlets.data(), data.MeshletVertices.data(), indices.data(),
+														data.IndicesStream.data(), indexCount, &data.PositionStream[0].x, vertexCount,
+														sizeof(float3), MESHLET_MAX_VERTICES, MESHLET_MAX_TRIANGLES, 0.0f);
+
+			// Trimming
+			const meshopt_Meshlet& last = meshlets[meshletCount - 1];
+
+			meshlets.resize(meshletCount);
+			indices.resize(last.triangle_offset + ((last.triangle_count * 3 + 3) & ~3));
+			data.Meshlets.reserve(meshletCount);
+			data.MeshletVertices.resize(last.vertex_offset + last.vertex_count);
+			data.MeshletTriangles.resize(indices.size() / 3);
+
+			uint32 triangleOffset = 0;
+			for (const meshopt_Meshlet& meshlet : meshlets)
+			{
+				uint8* pData = indices.data() + meshlet.triangle_offset;
+				for (uint32 i = 0; i < meshlet.triangle_count; ++i)
+				{
+					Meshlet::Triangle& triangle = data.MeshletTriangles[i + triangleOffset];
+					triangle.V0 = *pData++;
+					triangle.V1 = *pData++;
+					triangle.V2 = *pData++;
+				}
+
+				data.Meshlets.emplace_back(meshlet.vertex_offset, triangleOffset, meshlet.vertex_count, meshlet.triangle_count);
+				triangleOffset += meshlet.triangle_count;
+			}
+			data.MeshletTriangles.resize(triangleOffset);
 		}
 	}
 
@@ -320,14 +386,22 @@ namespace limbo::Gfx
 		uint64 bufferSize = 0;
 		uint32 elementCount = 0;
 
-		// Calculate the geometry buffer size
 		for (size_t i = 0; i < PrimitivesStreams.size(); ++i)
 		{
-			bufferSize += PrimitivesStreams[i].PositionStream.size()  * sizeof(float3);
-			bufferSize += PrimitivesStreams[i].NormalsStream.size()   * sizeof(float3);
-			bufferSize += PrimitivesStreams[i].TexCoordsStream.size() * sizeof(float2);
-			bufferSize += PrimitivesStreams[i].IndicesStream.size()   * sizeof(uint32);
+			// Optimize the mesh data and create the meshlets
+			OptimizePrimitiveData(PrimitivesStreams[i]);
+			CreateMeshlets(PrimitivesStreams[i]);
+
+			// Calculate the geometry buffer size
+			bufferSize += PrimitivesStreams[i].PositionStream.size()   * sizeof(float3);
+			bufferSize += PrimitivesStreams[i].NormalsStream.size()    * sizeof(float3);
+			bufferSize += PrimitivesStreams[i].TexCoordsStream.size()  * sizeof(float2);
+			bufferSize += PrimitivesStreams[i].IndicesStream.size()    * sizeof(uint32);
+			bufferSize += PrimitivesStreams[i].Meshlets.size()		   * sizeof(Meshlet);
+			bufferSize += PrimitivesStreams[i].MeshletVertices.size()  * sizeof(uint32);
+			bufferSize += PrimitivesStreams[i].MeshletTriangles.size() * sizeof(Meshlet::Triangle);
 		}
+		check(bufferSize <= 0xffffffffu);
 
 		elementCount = (uint32)bufferSize / sizeof(uint32);
 
@@ -346,19 +420,6 @@ namespace limbo::Gfx
 			.Flags = RHI::BufferUsage::Upload
 		});
 
-		auto CopyData = [](RHI::VertexBufferView& view, uint8* data, uint64 gpuAddress, uint64& offset, const auto& stream)
-		{
-			auto streamSize = stream.size() * sizeof(stream[0]);
-			view = {
-				.BufferLocation = gpuAddress + offset,
-				.SizeInBytes = (uint32)streamSize,
-				.StrideInBytes = sizeof(stream[0]),
-				.Offset = (uint32)offset
-			};
-			memcpy(data + offset, stream.data(), streamSize);
-			offset += streamSize;
-		};
-
 		RHI::Buffer* pUploadBuffer = RM_GET(upload);
 		pUploadBuffer->Map();
 		uint8* data = (uint8*)pUploadBuffer->MappedData;
@@ -367,11 +428,13 @@ namespace limbo::Gfx
 		{
 			check(dataOffset % sizeof(uint32) == 0); // the offset is a 32bit value, do not let it overflow
 
-			OptimizePrimitiveData(PrimitivesStreams[i]);
+			CopyVertexData(m_Meshes[i].PositionsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].PositionStream);
+			CopyVertexData(m_Meshes[i].NormalsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].NormalsStream);
+			CopyVertexData(m_Meshes[i].TexCoordsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].TexCoordsStream);
 
-			CopyData(m_Meshes[i].PositionsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].PositionStream);
-			CopyData(m_Meshes[i].NormalsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].NormalsStream);
-			CopyData(m_Meshes[i].TexCoordsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].TexCoordsStream);
+			CopyMeshletData(m_Meshes[i].MeshletsOffset, data, dataOffset, PrimitivesStreams[i].Meshlets);
+			CopyMeshletData(m_Meshes[i].MeshletVerticesOffset, data, dataOffset, PrimitivesStreams[i].MeshletVertices);
+			CopyMeshletData(m_Meshes[i].MeshletTrianglesOffset, data, dataOffset, PrimitivesStreams[i].MeshletTriangles);
 
 			size_t streamSize = PrimitivesStreams[i].IndicesStream.size() * sizeof(uint32);
 			m_Meshes[i].IndicesLocation = {
@@ -382,9 +445,11 @@ namespace limbo::Gfx
 			memcpy(data + dataOffset, PrimitivesStreams[i].IndicesStream.data(), streamSize);
 			dataOffset += streamSize;
 
-			m_Meshes[i].IndexCount  = PrimitivesStreams[i].IndicesStream.size();
-			m_Meshes[i].VertexCount = PrimitivesStreams[i].PositionStream.size();
+			m_Meshes[i].IndexCount    = PrimitivesStreams[i].IndicesStream.size();
+			m_Meshes[i].VertexCount   = PrimitivesStreams[i].PositionStream.size();
+			m_Meshes[i].MeshletsCount = PrimitivesStreams[i].Meshlets.size();
 		}
+		check(dataOffset <= 0xffffffffu);
 
 		RHI::CommandContext::GetCommandContext()->CopyBufferToBuffer(upload, m_GeometryBuffer, bufferSize);
 		RHI::CommandContext::GetCommandContext()->InsertResourceBarrier(m_GeometryBuffer, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_INDEX_BUFFER | D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);

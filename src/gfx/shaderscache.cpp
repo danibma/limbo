@@ -27,6 +27,7 @@ namespace limbo::Gfx::ShadersCache
 			return "ibl.hlsl";
 		case ShaderID::VS_GBuffer:
 		case ShaderID::PS_GBuffer:
+		case ShaderID::MS_GBuffer:
 			return "gbuffer.hlsl";
 		case ShaderID::VS_Sky:
 		case ShaderID::PS_Sky:
@@ -81,6 +82,8 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::VS_Quad:
 		case ShaderID::VS_ShadowMapping:
 			return "MainVS";
+		case ShaderID::MS_GBuffer:
+			return "MainMS";
 		case ShaderID::PS_GBuffer:
 		case ShaderID::PS_Sky:
 		case ShaderID::PS_DeferredLighting:
@@ -116,6 +119,8 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::VS_Quad:
 		case ShaderID::VS_ShadowMapping:
 			return RHI::ShaderType::Vertex;
+		case ShaderID::MS_GBuffer:
+			return RHI::ShaderType::Mesh;
 		case ShaderID::PS_GBuffer:
 		case ShaderID::PS_Sky:
 		case ShaderID::PS_DeferredLighting:

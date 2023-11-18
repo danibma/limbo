@@ -366,13 +366,16 @@ namespace limbo::Gfx
 			{
 				mesh.InstanceID = instanceID;
 				Instance& instance = instances.emplace_back();
-				instance.LocalTransform  = mesh.Transform;
-				instance.Material		 = (uint32)materials.size() + mesh.LocalMaterialIndex;
-				instance.PositionsOffset = mesh.PositionsLocation.Offset;
-				instance.NormalsOffset   = mesh.NormalsLocation.Offset;
-				instance.TexCoordsOffset = mesh.TexCoordsLocation.Offset;
-				instance.IndicesOffset	 = mesh.IndicesLocation.Offset;
-				instance.BufferIndex	 = scene->GetGeometryBuffer()->CBVHandle.Index;
+				instance.LocalTransform				= mesh.Transform;
+				instance.Material					= (uint32)materials.size() + mesh.LocalMaterialIndex;
+				instance.PositionsOffset			= mesh.PositionsLocation.Offset;
+				instance.NormalsOffset				= mesh.NormalsLocation.Offset;
+				instance.TexCoordsOffset			= mesh.TexCoordsLocation.Offset;
+				instance.IndicesOffset				= mesh.IndicesLocation.Offset;
+				instance.MeshletsOffset				= mesh.MeshletsOffset;
+				instance.MeshletsTrianglesOffset	= mesh.MeshletTrianglesOffset;
+				instance.MeshletsVerticesOffset		= mesh.MeshletVerticesOffset;
+				instance.BufferIndex				= scene->GetGeometryBuffer()->CBVHandle.Index;
 				instanceID++;
 			}));
 

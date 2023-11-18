@@ -8,6 +8,11 @@
 
 namespace limbo::Gfx
 {
+	namespace 
+	{
+		bool bMeshShadersRendering = true;
+	}
+
 	GBuffer::GBuffer()
 		: RenderTechnique("GBuffer")
 	{
@@ -23,7 +28,10 @@ namespace limbo::Gfx
 		auto renderTargets = context.GetGBufferTextures();
 
 		cmd.BeginProfileEvent(m_Name.data());
-		cmd.SetPipelineState(PSOCache::Get(PipelineID::DeferredShading));
+		if (!bMeshShadersRendering)
+			cmd.SetPipelineState(PSOCache::Get(PipelineID::DeferredShading));
+		else
+			cmd.SetPipelineState(PSOCache::Get(PipelineID::DeferredShading_Mesh));
 		cmd.SetPrimitiveTopology();
 		cmd.SetRenderTargets(renderTargets, context.SceneTextures.GBufferDepthTarget);
 		cmd.SetViewport(context.RenderSize.x, context.RenderSize.y);
@@ -39,9 +47,22 @@ namespace limbo::Gfx
 				cmd.BindConstants(0, 0, mesh.InstanceID);
 
 				cmd.SetIndexBufferView(mesh.IndicesLocation);
-				cmd.DrawIndexed((uint32)mesh.IndexCount);
+				if (!bMeshShadersRendering)
+					cmd.DrawIndexed((uint32)mesh.IndexCount);
+				else
+					cmd.DispatchMesh((uint32)mesh.MeshletsCount, 1, 1);
 			}));
 		}
 		cmd.EndProfileEvent(m_Name.data());
+	}
+
+	void GBuffer::RenderUI(RenderContext& context)
+	{
+		if (ImGui::TreeNode("GBuffer"))
+		{
+			ImGui::Checkbox("Enable Mesh Shading", &bMeshShadersRendering);
+
+			ImGui::TreePop();
+		}
 	}
 }

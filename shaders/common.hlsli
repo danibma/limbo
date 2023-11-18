@@ -24,6 +24,9 @@ static const float FLT_MAX  = 3.402823466e+38f;
 
 static const float ALPHA_THRESHOLD = 0.5f;
 
+// Mesh Shaders
+#define MS_NUM_BLOCKS 128
+
 // https://github.com/graphitemaster/normals_revisited
 float3 TransformNormal(in float4x4 transform, in float3 direction)
 {

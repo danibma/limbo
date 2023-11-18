@@ -31,7 +31,11 @@ namespace limbo::Gfx
 		RHI::VertexBufferView		TexCoordsLocation;
 		RHI::IndexBufferView		IndicesLocation;
 
-		RHI::BufferHandle	BLAS;
+		uint32						MeshletsOffset;
+		uint32						MeshletVerticesOffset;
+		uint32						MeshletTrianglesOffset;
+
+		RHI::BufferHandle			BLAS;
 
 		uint32						LocalMaterialIndex;
 		uint32						InstanceID;
@@ -40,6 +44,7 @@ namespace limbo::Gfx
 
 		size_t						IndexCount = 0;
 		size_t						VertexCount = 0;
+		size_t						MeshletsCount = 0;
 
 		const char*					Name;
 	};
