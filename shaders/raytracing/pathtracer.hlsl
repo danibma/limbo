@@ -38,47 +38,52 @@ void RayGen()
     float2 resolution = float2(DispatchRaysDimensions().xy);
 
     uint seed = RandomSeed(pixel, resolution, GSceneInfo.FrameIndex);
+    const uint depth = 10;
+	const uint samples = 5;
 
     pixel = (((pixel + 0.5f) / resolution) * 2.f - 1.f);
-    RayDesc ray = GeneratePinholeCameraRay(pixel);
 
-    float3 radiance = 0.0f;
-    float3 weight   = 1.0f;
+	float3 color = 0.0f;
+	for (uint s = 0; s < samples; ++s)
+	{
+		RayDesc ray = GeneratePinholeCameraRay(pixel);
 
-    const int bounces = 5;
-    for (int i = 0; i < bounces; ++i)
-    {
-        MaterialRayTracingPayload payload = TraceMaterialRay(tSceneAS, ray, RAY_FLAG_FORCE_OPAQUE);
+		float3 result = 0.0f;
+		float3 attenuation = 1.0f;
+		for (int i = 0; i < depth; ++i)
+		{
+			MaterialRayTracingPayload payload = TraceMaterialRay(tSceneAS, ray, RAY_FLAG_FORCE_OPAQUE);
 
-        if (payload.IsHit() <= 0)
-        {
-            uRenderTarget[DispatchRaysIndex().xy] = float4(GetSky(ray.Direction), 1.0f);
-            return;
-        }
+			Instance instance = GetInstance(payload.InstanceID);
+			VertexAttributes vertex = GetVertexAttributes(instance, payload.Barycentrics, payload.PrimitiveID);
+			Material material = GetMaterial(instance.Material);
+			ShadingData shadingData = GetShadingData(material, vertex);
 
-        Instance instance = GetInstance(payload.InstanceID);
-        VertexAttributes vertex = GetVertexAttributes(instance, payload.Barycentrics, payload.PrimitiveID);
-        Material material = GetMaterial(instance.Material);
-        ShadingData shadingData = GetShadingData(material, vertex);
+			if (GSceneInfo.SceneViewToRender > 0)
+			{
+				uRenderTarget[DispatchRaysIndex().xy] = GetSceneDebugView(shadingData);
+				return;
+			}
 
+			float3 geometryNormal = vertex.GeometryNormal;
 
-        if (GSceneInfo.SceneViewToRender > 0)
-        {
-            uRenderTarget[DispatchRaysIndex().xy] = GetSceneDebugView(shadingData);
-            return;
-        }
+			if (!payload.IsFrontFace())
+				geometryNormal = -geometryNormal;
 
-        float3 geometryNormal = vertex.GeometryNormal;
+			if (!payload.IsHit())
+			{
+				result = GetSky(ray.Direction);
+				break;
+			}
 
-        if (!payload.IsFrontFace())
-            geometryNormal = -geometryNormal;
+			ray.Origin = ray.Origin + ray.Direction * payload.Distance;
+			ray.Direction = GetCosHemisphereSample(seed, geometryNormal);
+			attenuation *= shadingData.Albedo;
+		}
 
-        radiance += weight * shadingData.Emissive;
-        ray.Origin += ray.Direction * payload.Distance;
-        ray.Direction = GetCosHemisphereSample(seed, geometryNormal);
-        weight *= shadingData.Albedo * 2.0f * dot(geometryNormal, ray.Direction);
-    }
+		color += result * attenuation;
+	}
 
-    radiance /= float(bounces);
-	uRenderTarget[DispatchRaysIndex().xy] = float4(radiance, 1.0f);
+	color /= float(samples);
+	uRenderTarget[DispatchRaysIndex().xy] = float4(color, 1.0f);
 }

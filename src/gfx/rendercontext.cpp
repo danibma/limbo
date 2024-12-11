@@ -69,7 +69,8 @@ namespace limbo::Gfx
 		CreateSceneTextures(RenderSize.x, RenderSize.y);
 
 		const auto& rendererNames = Gfx::Renderer::GetNames();
-		CurrentRendererString = *rendererNames.cbegin();
+		//CurrentRendererString = *rendererNames.cbegin();
+		CurrentRendererString = "Path Tracer";
 		CurrentRenderer = Renderer::Create(CurrentRendererString);
 		CurrentRenderTechniques = CurrentRenderer->SetupRenderTechniques();
 		for (auto& i : CurrentRenderTechniques)
@@ -86,9 +87,9 @@ namespace limbo::Gfx
 			"assets/environment/venice_dawn_1_4k.hdr",
 		};
 
-		//LoadNewScene("assets/models/cornell_box.glb");
+		LoadNewScene("assets/models/cornellbox/cornell_pbr.gltf");
 		//LoadNewScene("assets/models/vulkanscene_shadow.gltf");
-		LoadNewScene("assets/models/Sponza/Sponza.gltf");
+		//LoadNewScene("assets/models/Sponza/Sponza.gltf");
 
 		LB_LOG("Took %.2fs to initialize the Scene Renderer", initTimer.ElapsedSeconds());
 	}
