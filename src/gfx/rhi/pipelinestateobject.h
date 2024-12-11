@@ -91,8 +91,6 @@ namespace limbo::RHI
 		explicit PipelineStateObject(const PipelineStateSpec& spec);
 		explicit PipelineStateObject(const RTPipelineStateSpec& spec);
 
-		~PipelineStateObject();
-
 		bool IsRaytracing()
 		{
 			return m_StateObject.IsValid();

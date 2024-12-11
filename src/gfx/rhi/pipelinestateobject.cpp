@@ -221,10 +221,6 @@ namespace limbo::RHI
 		: m_Spec(spec)
 	{
 		CreatePSO();
-		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([this]()
-		{
-			CreatePSO();
-		});
 	}
 
 	PipelineStateObject::PipelineStateObject(const RTPipelineStateSpec& spec)
@@ -232,11 +228,6 @@ namespace limbo::RHI
 	{
 		check(spec.m_LibsNum > 0);
 		check(spec.m_RootSignature.IsValid());
-
-		m_OnReloadShadersHandle = OnReloadShaders.AddLambda([this]()
-		{
-			CreateRayTracingPSO();
-		});
 
 		CreateRayTracingPSO();
 	}
@@ -338,10 +329,5 @@ namespace limbo::RHI
 			Utils::StringConvert(m_RTSpec.m_Name, wName);
 			m_StateObject->SetName(wName.c_str());
 		}
-	}
-
-	PipelineStateObject::~PipelineStateObject()
-	{
-		OnReloadShaders.Remove(m_OnReloadShadersHandle);
 	}
 }

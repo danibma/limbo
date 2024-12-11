@@ -154,7 +154,7 @@ namespace limbo::Gfx::ShadersCache
 		for (uint8 i = 0; i < ENUM_COUNT<ShaderID>(); ++i)
 		{
 			if (!ensure(s_Shaders.contains((ShaderID)i))) continue;
-			RHI::DestroyShader(s_Shaders[(ShaderID)i]);
+			RHI::DestroyShader(s_Shaders[(ShaderID)i], true);
 		}
 	}
 

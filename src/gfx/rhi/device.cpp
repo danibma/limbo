@@ -18,6 +18,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 
 #include "gfx/psocache.h"
+#include "gfx/shaderscache.h"
 
 unsigned int DelegateHandle::CURRENT_ID = 0;
 
@@ -272,7 +273,11 @@ namespace limbo::RHI
 		{
 			Core::Timer t;
 			IdleGPU();
-			OnReloadShaders.Broadcast();
+			Gfx::ShadersCache::DestroyShaders();
+			Gfx::PSOCache::DestroyPSOs();
+			Gfx::ShadersCache::CompileShaders();
+			Gfx::PSOCache::CompilePSOs();
+			
 			m_bNeedsShaderReload = false;
 			LB_LOG("Shaders got reloaded. It took %.2fs", t.ElapsedSeconds());
 		}

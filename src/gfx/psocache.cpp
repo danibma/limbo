@@ -296,11 +296,14 @@ namespace limbo::Gfx::PSOCache
 		for (uint8 i = 0; i < ENUM_COUNT<PipelineID>(); ++i)
 		{
 			if (!ensure(s_Pipelines.contains((PipelineID)i))) continue;
-			RHI::DestroyPSO(s_Pipelines[(PipelineID)i]);
+			RHI::DestroyPSO(s_Pipelines[(PipelineID)i], true);
 		}
 
 		for (RHI::RootSignatureHandle rs : s_RootSignatures)
-			RHI::DestroyRootSignature(rs);
+			RHI::DestroyRootSignature(rs, true);
+
+		s_Pipelines.clear();
+		s_RootSignatures.clear();
 	}
 
 	RHI::PSOHandle Get(PipelineID pipelineID)

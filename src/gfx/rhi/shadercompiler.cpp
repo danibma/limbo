@@ -111,9 +111,6 @@ namespace limbo::RHI::SC
 		// Get shader blob
 		DX_CHECK(compileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(pShader->Bytecode.ReleaseAndGetAddressOf()), nullptr));
 
-		if (!pShader->IsCompiled())
-			pShader->AddToRecompilation();
-
 		return true;
 	}
 

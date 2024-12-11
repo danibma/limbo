@@ -13,9 +13,6 @@ namespace limbo::RHI
 	DECLARE_MULTICAST_DELEGATE(TOnResizedSwapchain, uint32, uint32);
 	inline TOnResizedSwapchain OnResizedSwapchain;
 
-	DECLARE_MULTICAST_DELEGATE(TReloadShaders);
-	inline TReloadShaders OnReloadShaders;
-
 	enum class ContextType : uint8
 	{
 		Direct = 0,
