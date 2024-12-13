@@ -34,13 +34,13 @@ VertexAttributes GetVertexAttributes(Instance instance, float2 attribBarycentric
     VertexAttributes vertex;
     vertex.UV       = InterpolateVertex(uv[0], uv[1], uv[2], barycentrics);
     vertex.Normal   = InterpolateVertex(normals[0], normals[1], normals[2], barycentrics);
-    vertex.Normal   = normalize(mul(vertex.Normal, (float3x3)instance.LocalTransform));
+    vertex.Normal   = normalize(TransformNormal(instance.LocalTransform, vertex.Normal));
 
 	// Calculate geometry normal from triangle vertices positions
     float3 edge20 = positions[2] - positions[0];
     float3 edge21 = positions[2] - positions[1];
     float3 edge10 = positions[1] - positions[0];
-    vertex.GeometryNormal = normalize(mul(cross(edge20, edge10), (float3x3)instance.LocalTransform));
+    vertex.GeometryNormal = normalize(TransformNormal(instance.LocalTransform, cross(edge20, edge10)));
 
     return vertex;
 }
