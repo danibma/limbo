@@ -91,14 +91,21 @@ namespace limbo::RHI
 	{
 		DescriptorHandle handle = {};
 
-		uint32 descriptor = GetNextTemporary();
+		uint32 firstDescriptor = GetNextTemporary();
 		handle.OwnerHeapType = m_HeapType;
-		handle.Index = descriptor;
-		handle.CpuHandle.ptr = m_Heap->GetCPUDescriptorHandleForHeapStart().ptr + (descriptor * m_DescriptorSize);
+		handle.Index = firstDescriptor;
+		handle.CpuHandle.ptr = m_Heap->GetCPUDescriptorHandleForHeapStart().ptr + (firstDescriptor * m_DescriptorSize);
 		if (m_bShaderVisible)
-			handle.GPUHandle.ptr = m_Heap->GetGPUDescriptorHandleForHeapStart().ptr + (descriptor * m_DescriptorSize);
+			handle.GPUHandle.ptr = m_Heap->GetGPUDescriptorHandleForHeapStart().ptr + (firstDescriptor * m_DescriptorSize);
 
 		m_TempDeletionQueue.emplace_back(handle.Index, Device::Ptr->GetPresentFence()->GetCurrentValue());
+
+		for (uint32 i = 1; i < count; ++i)
+		{
+			uint32 descriptor = GetNextTemporary();
+			m_TempDeletionQueue.emplace_back(descriptor, Device::Ptr->GetPresentFence()->GetCurrentValue());
+		}
+		
 		return handle;
 	}
 }

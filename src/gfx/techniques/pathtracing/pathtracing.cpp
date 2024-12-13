@@ -51,7 +51,11 @@ namespace limbo::Gfx
 
 		cmd.BindRootSRV(0, context.SceneAccelerationStructure.GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 
-		RHI::DescriptorHandle uavHandles[] = { RM_GET(context.SceneTextures.PreCompositeSceneTexture)->UAVHandle[0], RM_GET(m_AccumulationBuffer)->UAVHandle[0] };
+		RHI::DescriptorHandle uavHandles[] =
+		{
+			RM_GET(context.SceneTextures.PreCompositeSceneTexture)->UAVHandle[0],
+			RM_GET(m_AccumulationBuffer)->UAVHandle[0]
+		};
 		cmd.BindTempDescriptorTable(1, uavHandles, 2);
 
 		cmd.BindTempConstantBuffer(2, context.SceneInfo);
