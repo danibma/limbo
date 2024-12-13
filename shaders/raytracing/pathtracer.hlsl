@@ -3,6 +3,12 @@
 
 RaytracingAccelerationStructure tSceneAS : register(t0, space0);
 RWTexture2D<float4> uRenderTarget : register(u0);
+RWTexture2D<float4> uAccumulationBuffer : register(u1);
+
+cbuffer Constants : register(b0)
+{
+	uint cAccumulatedFrames;
+};
 
 // From Ray Tracing Gems II - Chapter 14
 RayDesc GeneratePinholeCameraRay(float2 pixel)
@@ -76,7 +82,7 @@ void RayGen()
 				break;
 			}
 
-			ray.Origin = ray.Origin + ray.Direction * payload.Distance;
+			ray.Origin = ray.Origin + payload.Distance * ray.Direction;
 			ray.Direction = GetCosHemisphereSample(seed, geometryNormal);
 			attenuation *= shadingData.Albedo;
 		}
@@ -85,5 +91,15 @@ void RayGen()
 	}
 
 	color /= float(samples);
-	uRenderTarget[DispatchRaysIndex().xy] = float4(color, 1.0f);
+
+	float3 accumulatedColor = color;
+	
+	if (cAccumulatedFrames > 1)
+	{
+		float3 previousColor = uAccumulationBuffer[DispatchRaysIndex().xy].rgb;
+		accumulatedColor += previousColor;
+	}
+
+    uAccumulationBuffer[DispatchRaysIndex().xy] = float4(accumulatedColor, 1.0f);
+	uRenderTarget[DispatchRaysIndex().xy] = float4(accumulatedColor / cAccumulatedFrames, 1.0f);
 }

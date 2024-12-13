@@ -236,8 +236,9 @@ namespace limbo::Gfx::PSOCache
 			RHI::RootSignatureHandle& rs = s_RootSignatures.emplace_back();
 			rs = RHI::CreateRootSignature("PT Common RS", RHI::RSSpec().Init()
 										  .AddRootSRV(0)
-										  .AddDescriptorTable(0, 1, D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
-										  .AddRootCBV(100));
+										  .AddDescriptorTable(0, 2, D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
+										  .AddRootCBV(100)
+										  .AddRootConstants(0, 1));
 
 			RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec().Init()
 				.SetGlobalRootSignature(rs)
