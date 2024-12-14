@@ -45,7 +45,7 @@ namespace limbo::RHI
 					geometry.Triangles.IndexFormat = DXGI_FORMAT_R32_UINT;
 					geometry.Triangles.IndexCount = (uint32)mesh.IndexCount;
 					geometry.Triangles.Transform3x4 = 0;
-					geometry.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_NONE; // todo: check if a mesh has need for alpha testing, if not, use the opaque flag
+					geometry.Flags = D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE; // todo: check if a mesh has need for alpha testing, if not, use the opaque flag
 
 					// Describe the bottom-level acceleration structure inputs.
 					D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS ASInputs = {};
@@ -83,7 +83,7 @@ namespace limbo::RHI
 				D3D12_RAYTRACING_INSTANCE_DESC& instance = instances.emplace_back();
 				memcpy(instance.Transform, &glm::transpose(mesh.Transform)[0], sizeof(float3x4));
 				instance.InstanceID = 0;
-				instance.InstanceMask = 1;
+				instance.InstanceMask = 0xFF;
 				instance.InstanceContributionToHitGroupIndex = 0;
 				instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_NONE;
 				instance.AccelerationStructure = pResult->Resource->GetGPUVirtualAddress();

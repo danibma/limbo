@@ -87,7 +87,9 @@ namespace limbo::Gfx
 			"assets/environment/venice_dawn_1_4k.hdr",
 		};
 
-		LoadNewScene("assets/models/cornellbox/cornell_pbr.gltf");
+		LoadNewScene("assets/models/cornellbox_simple/cornell_box.gltf");
+		//LoadNewScene("assets/models/bathroom/LAZIENKA.gltf");
+		//LoadNewScene("assets/models/cornellbox_pbr/cornell_pbr.gltf");
 		//LoadNewScene("assets/models/vulkanscene_shadow.gltf");
 		//LoadNewScene("assets/models/Sponza/Sponza.gltf");
 

@@ -22,7 +22,7 @@ RayDesc GeneratePinholeCameraRay(float2 pixel)
 	// Set up the ray.
 	RayDesc ray;
     ray.Origin = pos;
-	ray.TMin = 0.f;
+	ray.TMin = 0.001f;
 	ray.TMax = FLT_MAX;
 
 	// Extract the aspect ratio and fov from the projection matrix.
@@ -83,7 +83,8 @@ void RayGen()
 			}
 
 			ray.Origin = ray.Origin + payload.Distance * ray.Direction;
-			ray.Direction = GetCosHemisphereSample(seed, geometryNormal);
+			float pdf;
+			ray.Direction = CosineWeightSampleHemisphere(float2(Random01(seed), Random01(seed)), pdf);
 			attenuation *= shadingData.Albedo;
 		}
 

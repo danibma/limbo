@@ -25,7 +25,7 @@ namespace limbo::Gfx
 	{
 		m_AccumulationBuffer = RHI::CreateTexture({
 			.Width = RHI::GetBackbufferWidth(),
-			.Height = RHI::GetBackbufferWidth(),
+			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "PathTracer Accumulation Buffer",
 			.Flags = RHI::TextureUsage::UnorderedAccess,
 			.Format = RHI::Format::RGBA32_SFLOAT,
