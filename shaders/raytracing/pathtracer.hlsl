@@ -47,6 +47,10 @@ void RayGen()
     const uint depth = 10;
 	const uint samples = 5;
 
+	// Jittering primary ray directions for antialiasing. Add a random offset to the pixel's screen coordinates.
+	float2 offset = float2(Random01(seed), Random01(seed));
+	pixel += lerp(-0.5f, 0.5f, offset);
+	
     pixel = (((pixel + 0.5f) / resolution) * 2.f - 1.f);
 
 	float3 color = 0.0f;
