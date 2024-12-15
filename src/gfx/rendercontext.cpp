@@ -80,6 +80,7 @@ namespace limbo::Gfx
 
 		EnvironmentMaps = {
 			"assets/environment/a_rotes_rathaus_4k.hdr",
+			"assets/environment/evening_road_01_puresky_2k.hdr",
 			"assets/environment/footprint_court.hdr",
 			"assets/environment/kiara_1_dawn_4k.hdr",
 			"assets/environment/pink_sunrise_4k.hdr",
@@ -87,9 +88,10 @@ namespace limbo::Gfx
 			"assets/environment/venice_dawn_1_4k.hdr",
 		};
 
-		LoadNewScene("assets/models/cornellbox_simple/cornell_box.gltf");
+		//LoadNewScene("assets/models/cornellbox_simple/cornell_box.gltf");
 		//LoadNewScene("assets/models/bathroom/LAZIENKA.gltf");
-		//LoadNewScene("assets/models/cornellbox_pbr/cornell_pbr.gltf");
+		LoadNewScene("assets/models/cornellbox_pbr/cornell_pbr.gltf");
+		//LoadNewScene("assets/models/white_room/the-white-room-low.gltf");
 		//LoadNewScene("assets/models/vulkanscene_shadow.gltf");
 		//LoadNewScene("assets/models/Sponza/Sponza.gltf");
 
