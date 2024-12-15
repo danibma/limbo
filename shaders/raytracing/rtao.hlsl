@@ -45,7 +45,7 @@ void RTAORayGen()
     uint2 pixel		 = DispatchRaysIndex().xy;
     uint2 resolution = DispatchRaysDimensions().xy;
 
-    uint seed = RandomSeed(pixel, resolution, GSceneInfo.FrameIndex);
+    uint seed = InitSeed(pixel, resolution, GSceneInfo.FrameIndex);
 
     float4 position = GetTexture(positionsTextureIndex)[pixel];
     float4 normal = GetTexture(normalsTextureIndex)[pixel];

@@ -2,20 +2,24 @@
 
 #include "common.hlsli"
 
-// Hash Functions for GPU Rendering - Nathan Reed
-// https://www.reedbeta.com/blog/hash-functions-for-gpu-rendering/
+// Converts unsigned integer into float int range <0; 1) by using 23 most significant bits for mantissa
+float __uintToFloat(uint x)
+{
+	return asfloat(0x3f800000 | (x >> 9)) - 1.0f;
+}
 
-uint RandomSeed(uint seed)
+// https://www.reedbeta.com/blog/hash-functions-for-gpu-rendering/
+uint PCG_Hash(uint seed)
 {
 	uint state = seed * 747796405u + 2891336453u;
 	uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
 	return (word >> 22u) ^ word;
 }
 
-uint RandomSeed(uint2 pixel, uint2 resolution, uint frameIndex)
+uint InitSeed(uint2 pixel, uint2 resolution, uint frameIndex)
 {
-	uint rngState = Flatten2D(pixel, resolution) ^ RandomSeed(frameIndex);
-	return RandomSeed(rngState);
+	uint rngState = dot(pixel, uint2(1, resolution.x)) ^ PCG_Hash(frameIndex);
+	return PCG_Hash(rngState);
 }
 
 uint XORShift(inout uint seed)
@@ -29,7 +33,41 @@ uint XORShift(inout uint seed)
 
 float Random01(inout uint seed)
 {
-	return asfloat(0x3f800000 | XORShift(seed) >> 9) - 1.0;
+	return __uintToFloat(XORShift(seed));
+}
+
+// Initialize RNG for given pixel, and frame number (PCG version)
+uint4 InitSeed_PCG4(uint2 pixelCoords, uint2 resolution, uint frameNumber)
+{
+	return uint4(pixelCoords.xy, frameNumber, 0); //< Seed for PCG uses a sequential sample number in 4th channel, which increments on every RNG call and starts from 0
+}
+
+// PCG random numbers generator
+// Source: "Hash Functions for GPU Rendering" by Jarzynski & Olano
+uint4 PCG4(uint4 v)
+{
+	v = v * 1664525u + 1013904223u;
+
+	v.x += v.y * v.w; 
+	v.y += v.z * v.x; 
+	v.z += v.x * v.y; 
+	v.w += v.y * v.z;
+
+	v = v ^ (v >> 16u);
+
+	v.x += v.y * v.w; 
+	v.y += v.z * v.x; 
+	v.z += v.x * v.y; 
+	v.w += v.y * v.z;
+
+	return v;
+}
+
+// Return random float in <0; 1) range  (PCG version)
+float Random01_PCG4(inout uint4 rngState)
+{
+	rngState.w++; //< Increment sample index
+	return __uintToFloat(PCG4(rngState).x);
 }
 
 // Samples a direction within a hemisphere oriented along +Z axis with a *cosine-weighted* distribution

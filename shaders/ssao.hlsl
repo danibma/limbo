@@ -23,7 +23,7 @@ void ComputeSSAOCS(uint2 threadID : SV_DispatchThreadID)
     float3 pixelPos = SampleLevel2D(cPositionsMapIdx, SLinearClamp, uv, 0).rgb;
     float3 normal = NormalFromDepth(threadID, cSceneDepthIdx, targetDimensions, GSceneInfo.InvProjection);
 
-    uint seed = RandomSeed(threadID, targetDimensions, GSceneInfo.FrameIndex);
+    uint seed = InitSeed(threadID, targetDimensions, GSceneInfo.FrameIndex);
     float3 randomVec = float3(Random01(seed), Random01(seed), Random01(seed)) * 2.0f - 1.0f;
 
     // Gramm-Schmidt process to create an orthogonal basis

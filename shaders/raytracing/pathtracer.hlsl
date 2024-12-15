@@ -43,12 +43,12 @@ void RayGen()
     float2 pixel = float2(DispatchRaysIndex().xy);
     float2 resolution = float2(DispatchRaysDimensions().xy);
 
-    uint seed = RandomSeed(pixel, resolution, GSceneInfo.FrameIndex);
+    uint4 seed = InitSeed_PCG4(pixel, resolution, GSceneInfo.FrameIndex);
     const uint depth = 10;
 	const uint samples = 5;
 
 	// Jittering primary ray directions for antialiasing. Add a random offset to the pixel's screen coordinates.
-	float2 offset = float2(Random01(seed), Random01(seed));
+	float2 offset = float2(Random01_PCG4(seed), Random01_PCG4(seed));
 	pixel += lerp(-0.5f, 0.5f, offset);
 	
     pixel = (((pixel + 0.5f) / resolution) * 2.f - 1.f);
@@ -88,7 +88,7 @@ void RayGen()
 
 			ray.Origin = ray.Origin + payload.Distance * ray.Direction;
 			float pdf;
-			ray.Direction = CosineWeightSampleHemisphere(float2(Random01(seed), Random01(seed)), pdf);
+			ray.Direction = CosineWeightSampleHemisphere(float2(Random01_PCG4(seed), Random01_PCG4(seed)), pdf);
 			attenuation *= shadingData.Albedo;
 		}
 
