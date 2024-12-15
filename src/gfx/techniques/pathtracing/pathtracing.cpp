@@ -30,14 +30,18 @@ namespace limbo::Gfx
 			.Flags = RHI::TextureUsage::UnorderedAccess,
 			.Format = RHI::Format::RGBA32_SFLOAT,
 		});
+
+		m_Constants.NumAccumulatedFrames = 1;
+		m_Constants.bAccumulateEnabled = true;
+		m_Constants.bAntiAliasingEnabled = true;
 		
 		return true;
 	}
 
 	void PathTracing::Render(RHI::CommandContext& cmd, RenderContext& context)
 	{
-		if (context.SceneInfo.PrevView != context.SceneInfo.View)
-			m_AccumulatedFrames = 1;
+		if (context.SceneInfo.PrevView != context.SceneInfo.View || !m_Constants.bAccumulateEnabled)
+			m_Constants.NumAccumulatedFrames = 1;
 		
 		RHI::PSOHandle pso = PSOCache::Get(PipelineID::PathTracing);
 
@@ -59,8 +63,25 @@ namespace limbo::Gfx
 		cmd.BindTempDescriptorTable(1, uavHandles, 2);
 
 		cmd.BindTempConstantBuffer(2, context.SceneInfo);
-		cmd.BindConstants(3, 0, m_AccumulatedFrames++);
+		cmd.BindConstants(3, 3, 0, &m_Constants);
 		cmd.DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 		cmd.EndProfileEvent("Path Tracing");
+
+		m_Constants.NumAccumulatedFrames++;
+	}
+
+	void PathTracing::RenderUI(RenderContext& context)
+	{
+		if (ImGui::TreeNode("Path Tracing"))
+		{
+			bool bResetAccumulation = false;
+			bResetAccumulation |= ImGui::Checkbox("Accumulate", (bool*)&m_Constants.bAccumulateEnabled);
+			bResetAccumulation |= ImGui::Checkbox("Anti-Aliasing", (bool*)&m_Constants.bAntiAliasingEnabled);
+
+			if (bResetAccumulation)
+				m_Constants.NumAccumulatedFrames = 1;
+			
+			ImGui::TreePop();
+		}
 	}
 }

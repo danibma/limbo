@@ -20,9 +20,10 @@ namespace limbo::Gfx
 
 		virtual bool Init() override;
 		virtual void Render(RHI::CommandContext& cmd, RenderContext& context) override;
+		virtual void RenderUI(RenderContext& context) override;
 
 	private:
-		uint32 m_AccumulatedFrames = 1;
+		PathTracerConstants m_Constants;
 		RHI::TextureHandle m_AccumulationBuffer; 
 	};
 }

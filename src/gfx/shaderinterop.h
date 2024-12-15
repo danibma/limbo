@@ -117,6 +117,13 @@ struct Meshlet
 	};
 };
 
+struct PathTracerConstants
+{
+	uint NumAccumulatedFrames;
+	uint bAccumulateEnabled;
+	uint bAntiAliasingEnabled;
+};
+
 //
 // RayTracing Payloads
 //

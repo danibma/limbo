@@ -238,7 +238,7 @@ namespace limbo::Gfx::PSOCache
 										  .AddRootSRV(0)
 										  .AddDescriptorTable(0, 2, D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
 										  .AddRootCBV(100)
-										  .AddRootConstants(0, 1));
+										  .AddRootConstants(0, 3));
 
 			RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec().Init()
 				.SetGlobalRootSignature(rs)
