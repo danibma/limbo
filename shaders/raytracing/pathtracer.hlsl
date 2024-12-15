@@ -58,8 +58,8 @@ void RayGen()
 	{
 		RayDesc ray = GeneratePinholeCameraRay(pixel);
 
-		float3 result = 0.0f;
-		float3 attenuation = 1.0f;
+		float3 radiance = 0.0f;
+		float3 throughput = 1.0f;
 		for (int i = 0; i < depth; ++i)
 		{
 			MaterialRayTracingPayload payload = TraceMaterialRay(tSceneAS, ray, RAY_FLAG_FORCE_OPAQUE);
@@ -76,23 +76,24 @@ void RayGen()
 			}
 
 			float3 geometryNormal = vertex.GeometryNormal;
-
 			if (!payload.IsFrontFace())
 				geometryNormal = -geometryNormal;
 
 			if (!payload.IsHit())
 			{
-				result = GetSky(ray.Direction);
+				radiance += GetSky(ray.Direction);
 				break;
 			}
+
+			radiance += shadingData.Emissive;
 
 			ray.Origin = ray.Origin + payload.Distance * ray.Direction;
 			float pdf;
 			ray.Direction = CosineWeightSampleHemisphere(float2(Random01_PCG4(seed), Random01_PCG4(seed)), pdf);
-			attenuation *= shadingData.Albedo;
+			throughput *= shadingData.Albedo;
 		}
 
-		color += result * attenuation;
+		color += radiance * throughput;
 	}
 
 	color /= float(samples);
