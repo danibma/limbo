@@ -107,7 +107,7 @@ namespace limbo::RHI
 		CreateDXGISwapchain();
 		InitBackBuffers();
 
-		OnResizedSwapchain.Broadcast(m_BackbufferWidth, m_BackbufferHeight);
+		Delegates::OnResizedSwapchain.Broadcast(m_BackbufferWidth, m_BackbufferHeight);
 	}
 
 	void Swapchain::Present(bool vsync)

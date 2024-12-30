@@ -141,8 +141,8 @@ namespace limbo::RHI
 		}
 #endif
 
-		m_GlobalHeap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV, 4098, 4098, true);
-		m_UAVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::UAV, 2046,    0);
+		m_GlobalHeap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV, 4098, 8196, true);
+		m_UAVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::UAV, 4098,    0);
 		m_CBVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::CBV,  128,    0);
 		m_RTVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::RTV,  128,    0);
 		m_DSVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::DSV,   64,    0);
@@ -259,7 +259,7 @@ namespace limbo::RHI
 		uint64 presentValue = m_PresentFence->Signal(m_CommandQueues[(int)ContextType::Direct]);
 		m_PresentFence->CpuWait(presentValue);
 
-		OnPrepareFrame.Broadcast();
+		Delegates::OnPrepareFrame.Broadcast();
 
 		if (m_bNeedsResize)
 		{
@@ -280,6 +280,8 @@ namespace limbo::RHI
 			
 			m_bNeedsShaderReload = false;
 			LB_LOG("Shaders got reloaded. It took %.2fs", t.ElapsedSeconds());
+
+			Delegates::OnShadersReloaded.Broadcast();
 		}
 
 		// Prepare frame render targets

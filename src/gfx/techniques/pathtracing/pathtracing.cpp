@@ -34,6 +34,11 @@ namespace limbo::Gfx
 		m_Constants.NumAccumulatedFrames = 1;
 		m_Constants.bAccumulateEnabled = true;
 		m_Constants.bAntiAliasingEnabled = true;
+
+		RHI::Delegates::OnShadersReloaded.AddLambda([&]()
+		{
+			m_Constants.NumAccumulatedFrames = 1;
+		});
 		
 		return true;
 	}
@@ -46,6 +51,7 @@ namespace limbo::Gfx
 		if (!context.HasScenes())
 		{
 			cmd.ClearRenderTargets({ context.SceneTextures.PreCompositeSceneTexture });
+			m_Constants.NumAccumulatedFrames = 1;
 			return;
 		}
 		

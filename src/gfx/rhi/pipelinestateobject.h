@@ -124,7 +124,6 @@ namespace limbo::RHI
 		RefCountPtr<ID3D12PipelineState>	m_PipelineState;
 		RefCountPtr<ID3D12StateObject>		m_StateObject; // for RayTracing
 		RootSignatureHandle					m_RootSignature;
-		DelegateHandle						m_OnReloadShadersHandle;
 
 		PipelineStateSpec					m_Spec;
 		RTPipelineStateSpec					m_RTSpec;

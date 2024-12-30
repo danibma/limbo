@@ -41,8 +41,8 @@ void RayGen()
     float2 resolution = float2(DispatchRaysDimensions().xy);
 
     uint4 seed = InitSeed_PCG4(pixel, resolution, GSceneInfo.FrameIndex);
-    const uint depth = 10;
-	const uint samples = 5;
+    const uint depth = 5;
+	const uint samples = 1;
 
 	// Jittering primary ray directions for antialiasing. Add a random offset to the pixel's screen coordinates.
 	if (c.bAntiAliasingEnabled)

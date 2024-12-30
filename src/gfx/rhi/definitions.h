@@ -7,11 +7,17 @@ namespace limbo::RHI
 	constexpr uint8	NUM_BACK_BUFFERS = 3;
 	constexpr uint8 MAX_RENDER_TARGETS = 8;
 
-	DECLARE_MULTICAST_DELEGATE(TOnPrepareFrame);
-	inline TOnPrepareFrame OnPrepareFrame;
+	namespace Delegates
+	{
+		DECLARE_MULTICAST_DELEGATE(TOnPrepareFrame);
+		inline TOnPrepareFrame OnPrepareFrame;
 
-	DECLARE_MULTICAST_DELEGATE(TOnResizedSwapchain, uint32, uint32);
-	inline TOnResizedSwapchain OnResizedSwapchain;
+		DECLARE_MULTICAST_DELEGATE(TOnResizedSwapchain, uint32, uint32);
+		inline TOnResizedSwapchain OnResizedSwapchain;
+
+		DECLARE_MULTICAST_DELEGATE(TOnShadersReloaded);
+		inline TOnShadersReloaded OnShadersReloaded;
+	}
 
 	enum class ContextType : uint8
 	{

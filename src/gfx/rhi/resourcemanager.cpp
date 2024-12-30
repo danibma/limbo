@@ -29,7 +29,7 @@ namespace limbo::RHI
 			});
 		});
 
-		OnPrepareFrame.AddLambda([&]()
+		Delegates::OnPrepareFrame.AddLambda([&]()
 		{
 			RunDeletionQueue();
 		});

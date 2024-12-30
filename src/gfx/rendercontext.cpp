@@ -62,8 +62,8 @@ namespace limbo::Gfx
 	{
 		Core::Timer initTimer;
 
-		RHI::OnResizedSwapchain.AddRaw(&Camera, &FPSCamera::OnResize);
-		RHI::OnResizedSwapchain.AddRaw(this, &RenderContext::OnResize);
+		RHI::Delegates::OnResizedSwapchain.AddRaw(&Camera, &FPSCamera::OnResize);
+		RHI::Delegates::OnResizedSwapchain.AddRaw(this, &RenderContext::OnResize);
 
 		RenderSize = { RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight() };
 		CreateSceneTextures(RenderSize.x, RenderSize.y);
