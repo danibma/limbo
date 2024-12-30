@@ -42,6 +42,12 @@ namespace limbo::Gfx
 	{
 		if (context.SceneInfo.PrevView != context.SceneInfo.View || !m_Constants.bAccumulateEnabled)
 			m_Constants.NumAccumulatedFrames = 1;
+
+		if (!context.HasScenes())
+		{
+			cmd.ClearRenderTargets({ context.SceneTextures.PreCompositeSceneTexture });
+			return;
+		}
 		
 		RHI::PSOHandle pso = PSOCache::Get(PipelineID::PathTracing);
 
