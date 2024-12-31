@@ -39,13 +39,11 @@ namespace limbo::RHI
 		if (bGPUValidation)
 			LB_WARN("GPU Validation enabled");
 
-#if !LB_RELEASE
 		if (bD3DDebug)
 			dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
-#endif
+
 		DX_CHECK(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(m_Factory.ReleaseAndGetAddressOf())));
 
-#if !LB_RELEASE
 		if (!IsUnderPIX() && !bGPUValidation)
 		{
 			HMODULE pixGPUCapturer = PIXLoadLatestWinPixGpuCapturerLibrary();
@@ -73,7 +71,6 @@ namespace limbo::RHI
 			DX_CHECK(debugController->QueryInterface(IID_PPV_ARGS(debugController1.ReleaseAndGetAddressOf())));
 			debugController1->SetEnableGPUBasedValidation(true);
 		}
-#endif
 
 		PickGPU();
 
@@ -98,15 +95,11 @@ namespace limbo::RHI
 		check(m_FeatureSupport.HighestShaderModel() >= D3D_SHADER_MODEL_6_6);
 		check(m_FeatureSupport.MeshShaderTier() > D3D12_MESH_SHADER_TIER_NOT_SUPPORTED);
 
-		m_GPUInfo.bSupportsRaytracing = false;
+		m_GPUInfo.bSupportsRaytracing = m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1;
 
-#if !LB_RELEASE
 		// RenderDoc does not support ID3D12InfoQueue1 so do not enable it when running under it
 		if (!IsUnderRenderDoc())
 		{
-			// RenderDoc does not support rt
-			m_GPUInfo.bSupportsRaytracing = m_FeatureSupport.RaytracingTier() == D3D12_RAYTRACING_TIER_1_1;
-
 			if (bD3DDebug)
 			{
 				RefCountPtr<ID3D12InfoQueue> d3d12InfoQueue;
@@ -139,7 +132,6 @@ namespace limbo::RHI
 				}
 			}
 		}
-#endif
 
 		m_GlobalHeap	= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::SRV, 4098, 8196, true);
 		m_UAVHeap		= new DescriptorHeap(m_Device.Get(), DescriptorHeapType::UAV, 4098,    0);
