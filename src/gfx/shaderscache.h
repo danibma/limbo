@@ -28,7 +28,6 @@ namespace limbo::Gfx
 		PS_Composite,
 
 		LIB_PathTracer,
-		LIB_Material,
 		LIB_RTAO,
 
 		MAX

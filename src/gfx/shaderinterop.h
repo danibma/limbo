@@ -80,6 +80,7 @@ struct MeshVertex
 {
 	float3 Position;
 	float3 Normal;
+	float3 Tangent;
 	float2 UV;
 };
 
@@ -87,9 +88,7 @@ struct Instance
 {
 	uint		Material;
 	uint		BufferIndex;
-	uint		PositionsOffset;
-	uint		NormalsOffset;
-	uint		TexCoordsOffset;
+	uint		VerticesOffset;
 	uint		IndicesOffset;
 	uint		MeshletsOffset;
 	uint		MeshletsTrianglesOffset;
@@ -127,7 +126,7 @@ struct PathTracerConstants
 //
 // RayTracing Payloads
 //
-struct MaterialRayTracingPayload
+struct PathTracingPayload
 {
 	float   Distance;
 	uint    PrimitiveID;

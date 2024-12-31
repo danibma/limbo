@@ -37,8 +37,8 @@ namespace limbo::RHI
 					// Describe the geometry.
 					D3D12_RAYTRACING_GEOMETRY_DESC geometry;
 					geometry.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
-					geometry.Triangles.VertexBuffer.StartAddress = mesh.PositionsLocation.BufferLocation;
-					geometry.Triangles.VertexBuffer.StrideInBytes = mesh.PositionsLocation.StrideInBytes;
+					geometry.Triangles.VertexBuffer.StartAddress = mesh.VerticesLocation.BufferLocation;
+					geometry.Triangles.VertexBuffer.StrideInBytes = mesh.VerticesLocation.StrideInBytes;
 					geometry.Triangles.VertexCount = (uint32)mesh.VertexCount;
 					geometry.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
 					geometry.Triangles.IndexBuffer = mesh.IndicesLocation.BufferLocation;

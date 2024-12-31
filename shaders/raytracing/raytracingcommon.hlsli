@@ -11,7 +11,7 @@ T InterpolateVertex(T a0, T a1, T a2, float3 b)
 struct VertexAttributes
 {
     float3 Normal;
-    float3 GeometryNormal;
+    float3 Tangent;
     float2 UV;
 };
 
@@ -20,29 +20,23 @@ VertexAttributes GetVertexAttributes(Instance instance, float2 attribBarycentric
     float3 barycentrics = float3(1 - attribBarycentrics.x - attribBarycentrics.y, attribBarycentrics.x, attribBarycentrics.y);
     uint3  primitive    = BufferLoad<uint3>(instance.BufferIndex, primitiveIndex, instance.IndicesOffset);
 
-    float3 positions[3];
-    float3 normals[3];
-    float2 uv[3];
+    MeshVertex vertex[3];
     for (int i = 0; i < 3; ++i)
     {
         uint vertexID = primitive[i];
-        positions[i]  = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
-        normals[i]    = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.NormalsOffset);
-        uv[i]         = BufferLoad<float2>(instance.BufferIndex, vertexID, instance.TexCoordsOffset);
+        vertex[i] = BufferLoad<MeshVertex>(instance.BufferIndex, vertexID, instance.VerticesOffset);
     }
 
-    VertexAttributes vertex;
-    vertex.UV       = InterpolateVertex(uv[0], uv[1], uv[2], barycentrics);
-    vertex.Normal   = InterpolateVertex(normals[0], normals[1], normals[2], barycentrics);
-    vertex.Normal   = normalize(TransformNormal(instance.LocalTransform, vertex.Normal));
+    VertexAttributes vertexAttrib;
+    vertexAttrib.UV       = InterpolateVertex(vertex[0].UV, vertex[1].UV, vertex[2].UV, barycentrics);
 
-	// Calculate geometry normal from triangle vertices positions
-    float3 edge20 = positions[2] - positions[0];
-    float3 edge21 = positions[2] - positions[1];
-    float3 edge10 = positions[1] - positions[0];
-    vertex.GeometryNormal = normalize(TransformNormal(instance.LocalTransform, cross(edge20, edge10)));
+    vertexAttrib.Normal   = InterpolateVertex(vertex[0].Normal, vertex[1].Normal, vertex[2].Normal, barycentrics);
+    vertexAttrib.Normal   = TransformNormal(instance.LocalTransform, vertexAttrib.Normal);
 
-    return vertex;
+    vertexAttrib.Tangent = InterpolateVertex(vertex[0].Tangent, vertex[1].Tangent, vertex[2].Tangent, barycentrics);
+    vertexAttrib.Tangent = TransformNormal(instance.LocalTransform, vertexAttrib.Tangent);
+
+    return vertexAttrib;
 }
 
 float3 GetSky(float3 rayDir)
@@ -72,7 +66,6 @@ struct ShadingData
     float3 Normal;
     float  Roughness;
     float  Metallic;
-    float  AO;
     float3 Emissive;
 };
 
@@ -106,24 +99,21 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
         emissive = SampleLevel2D(material.EmissiveIndex, SLinearWrap, vertex.UV, mipLevel).rgb;
     }
 
-    float ao = 1.0f;
-    if (material.AmbientOcclusionIndex != -1)
-    {
-        float4 AOMap = SampleLevel2D(material.AmbientOcclusionIndex, SLinearWrap, vertex.UV, mipLevel);
-        ao = AOMap.r;
-    }
-
     float3 normal = normalize(vertex.Normal);
-    if (material.NormalIndex != -1 && false) // no support for normal mapping in ray tracing for now
+    if (material.NormalIndex != -1)
     {
         float4 normalMap = SampleLevel2D(material.NormalIndex, SLinearWrap, vertex.UV, mipLevel);
+        float3 rgbNormal = 2.0f * normalMap.rgb - 1.0f; // from [0, 1] to [-1, 1]
+        
+        float3 bitangent = cross(vertex.Tangent, normal);
+        float3x3 TBN = transpose(float3x3(vertex.Tangent, bitangent, normal));
+        normal = mul(TBN, rgbNormal);
     }
 
     data.Albedo     = finalAlbedo.rgb;
     data.Normal     = normal;
     data.Roughness  = roughness;
     data.Metallic   = metallic;
-    data.AO         = ao;
     data.Emissive   = emissive;
 
     return data;
@@ -144,25 +134,7 @@ float4 GetSceneDebugView(in ShadingData shadingData)
     else if (GSceneInfo.SceneViewToRender == 6)
         return float4(shadingData.Emissive, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 7)
-        return float4((float3)shadingData.AO, 1.0f);
+        return 0.0f;
 
     return 0.0f;
-}
-
-MaterialRayTracingPayload TraceMaterialRay(in RaytracingAccelerationStructure tlas, in RayDesc ray, in RAY_FLAG flag = RAY_FLAG_NONE, in uint instanceMask = 0xFF)
-{
-    MaterialRayTracingPayload payload = (MaterialRayTracingPayload)0;
-
-    TraceRay(
-	    tlas,           // AccelerationStructure
-	    flag,           // RayFlags
-	    instanceMask,   // InstanceInclusionMask
-	    0,              // RayContributionToHitGroupIndex
-	    0,              // MultiplierForGeometryContributionToHitGroupIndex
-	    0,              // MissShaderIndex
-	    ray,            // Ray
-	    payload         // Payload
-    );
-
-    return payload;
 }

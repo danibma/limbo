@@ -42,8 +42,6 @@ namespace limbo::Gfx::ShadersCache
 			return "scenecomposite.hlsl";
 		case ShaderID::LIB_PathTracer:
 			return "raytracing/pathtracer.hlsl";
-		case ShaderID::LIB_Material:
-			return "raytracing/materiallib.hlsl";
 		case ShaderID::LIB_RTAO:
 			return "raytracing/rtao.hlsl";
 		case ShaderID::CS_RTAOAccumulate:
@@ -90,7 +88,6 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::PS_Composite:
 			return "MainPS";
 		case ShaderID::LIB_PathTracer:
-		case ShaderID::LIB_Material:
 		case ShaderID::LIB_RTAO:
 			return "";
 		case ShaderID::MAX:
@@ -127,7 +124,6 @@ namespace limbo::Gfx::ShadersCache
 		case ShaderID::PS_Composite:
 			return RHI::ShaderType::Pixel;
 		case ShaderID::LIB_PathTracer:
-		case ShaderID::LIB_Material:
 		case ShaderID::LIB_RTAO:
 			return RHI::ShaderType::Lib;
 		case ShaderID::MAX:

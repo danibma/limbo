@@ -35,7 +35,7 @@ RayDesc GeneratePinholeCameraRay(float2 pixel)
 }
 
 [shader("raygeneration")]
-void RayGen()
+void PTRayGen()
 {
     float2 pixel = float2(DispatchRaysIndex().xy);
     float2 resolution = float2(DispatchRaysDimensions().xy);
@@ -62,7 +62,18 @@ void RayGen()
 		float3 throughput = 1.0f;
 		for (int i = 0; i < depth; ++i)
 		{
-			MaterialRayTracingPayload payload = TraceMaterialRay(tSceneAS, ray, RAY_FLAG_FORCE_OPAQUE);
+			PathTracingPayload payload = (PathTracingPayload)0;
+
+			TraceRay(
+				tSceneAS,				// AccelerationStructure
+				RAY_FLAG_FORCE_OPAQUE,  // RayFlags
+				0xFF,					// InstanceInclusionMask
+				0,                      // RayContributionToHitGroupIndex
+				0,                      // MultiplierForGeometryContributionToHitGroupIndex
+				0,                      // MissShaderIndex
+				ray,                    // Ray
+				payload                 // Payload
+			);
 
 			Instance instance = GetInstance(payload.InstanceID);
 			VertexAttributes vertex = GetVertexAttributes(instance, payload.Barycentrics, payload.PrimitiveID);
@@ -75,9 +86,9 @@ void RayGen()
 				return;
 			}
 
-			float3 geometryNormal = vertex.GeometryNormal;
-			if (!payload.IsFrontFace())
-				geometryNormal = -geometryNormal;
+			//float3 geometryNormal = vertex.GeometryNormal;
+			//if (!payload.IsFrontFace())
+			//	geometryNormal = -geometryNormal;
 
 			if (!payload.IsHit())
 			{
@@ -88,9 +99,18 @@ void RayGen()
 			radiance += shadingData.Emissive;
 
 			ray.Origin = ray.Origin + payload.Distance * ray.Direction;
-			float pdf;
-			ray.Direction = CosineWeightSampleHemisphere(float2(Random01_PCG4(seed), Random01_PCG4(seed)), pdf);
 			throughput *= shadingData.Albedo;
+			if (shadingData.Metallic == 1)
+			{
+				float3 reflected = reflect(ray.Direction, shadingData.Normal);
+				float pdf;
+				ray.Direction = normalize(reflected) + (shadingData.Roughness * CosineWeightSampleHemisphere(float2(Random01_PCG4(seed), Random01_PCG4(seed)), pdf));
+			}
+			else
+			{
+				float pdf;
+				ray.Direction = CosineWeightSampleHemisphere(float2(Random01_PCG4(seed), Random01_PCG4(seed)), pdf);	
+			}
 		}
 
 		color += radiance * throughput;
@@ -108,4 +128,25 @@ void RayGen()
 
     uAccumulationBuffer[DispatchRaysIndex().xy] = float4(accumulatedColor, 1.0f);
 	uRenderTarget[DispatchRaysIndex().xy] = float4(accumulatedColor / c.NumAccumulatedFrames, 1.0f);
+}
+
+[shader("closesthit")]
+void PTClosestHit(inout PathTracingPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+{
+	payload.PrimitiveID		= PrimitiveIndex();
+	payload.InstanceID		= InstanceIndex();
+	payload.Distance		= RayTCurrent();
+	payload.Barycentrics	= attr.barycentrics;
+}
+
+[shader("miss")]
+void PTMiss(inout PathTracingPayload payload)
+{
+	payload = (PathTracingPayload)0;
+}
+
+[shader("anyhit")]
+void PTAnyHit(inout PathTracingPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+{
+	if (!AnyHitAlphaTest(attr.barycentrics)) IgnoreHit();
 }

@@ -26,7 +26,10 @@ namespace limbo::Gfx
 		{
 			std::vector<float3>		PositionStream;
 			std::vector<float3>		NormalsStream;
+			std::vector<float4>		TangentsStream;
 			std::vector<float2>		TexCoordsStream;
+
+			std::vector<MeshVertex> VerticesStream;
 			std::vector<uint32>		IndicesStream;
 
 			std::vector<Meshlet>			Meshlets;
@@ -69,28 +72,41 @@ namespace limbo::Gfx
 			offset += streamSize;
 		}
 
+		void CreateVertexStream(PrimitiveData& primitiveData)
+		{
+			size_t vertexCount = primitiveData.PositionStream.size();
+
+			primitiveData.VerticesStream.resize(vertexCount);
+			for (int i = 0; i < vertexCount; ++i)
+			{
+				MeshVertex& vertex = primitiveData.VerticesStream[i];
+				vertex = {};
+
+				vertex.Position = primitiveData.PositionStream[i];
+				if (primitiveData.NormalsStream.size() > i) vertex.Normal = primitiveData.NormalsStream[i];
+				if (primitiveData.TexCoordsStream.size() > i) vertex.UV = primitiveData.TexCoordsStream[i];
+				if (primitiveData.TangentsStream.size() > i) vertex.Tangent = primitiveData.TangentsStream[i];
+			}
+		}
+		
 		void OptimizePrimitiveData(PrimitiveData& primitiveData)
 		{
 			size_t indexCount = primitiveData.IndicesStream.size();
-			size_t vertexCount = primitiveData.PositionStream.size();
+			size_t vertexCount = primitiveData.VerticesStream.size();
 
 			std::vector<uint32> remap(vertexCount);
 			meshopt_optimizeVertexFetchRemap(&remap[0], primitiveData.IndicesStream.data(), indexCount, vertexCount);
 
 			meshopt_remapIndexBuffer(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, remap.data());
-			meshopt_remapVertexBuffer(primitiveData.PositionStream.data(), primitiveData.PositionStream.data(), vertexCount, sizeof(float3), remap.data());
-			meshopt_remapVertexBuffer(primitiveData.NormalsStream.data(), primitiveData.NormalsStream.data(), vertexCount, sizeof(float3), remap.data());
-			if (primitiveData.TexCoordsStream.size() > 0)
-				meshopt_remapVertexBuffer(primitiveData.TexCoordsStream.data(), primitiveData.TexCoordsStream.data(), vertexCount, sizeof(float2), remap.data());
-
+			meshopt_remapVertexBuffer(primitiveData.VerticesStream.data(), primitiveData.VerticesStream.data(), vertexCount, sizeof(MeshVertex), remap.data());
 			meshopt_optimizeVertexCache(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, vertexCount);
-			meshopt_optimizeOverdraw(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, &primitiveData.PositionStream[0].x, vertexCount, sizeof(float3), 1.05f);
+			meshopt_optimizeOverdraw(primitiveData.IndicesStream.data(), primitiveData.IndicesStream.data(), indexCount, &primitiveData.VerticesStream[0].Position.x, vertexCount, sizeof(MeshVertex), 1.05f);
 		}
 
 		void CreateMeshlets(PrimitiveData& data)
 		{
 			size_t indexCount = data.IndicesStream.size();
-			size_t vertexCount = data.PositionStream.size();
+			size_t vertexCount = data.VerticesStream.size();
 
 			size_t maxMeshlets = meshopt_buildMeshletsBound(indexCount, MESHLET_MAX_VERTICES, MESHLET_MAX_TRIANGLES);
 
@@ -98,8 +114,8 @@ namespace limbo::Gfx
 			std::vector<uint8>indices(maxMeshlets * MESHLET_MAX_TRIANGLES * 3);
 			data.MeshletVertices.resize(maxMeshlets * MESHLET_MAX_VERTICES);
 			size_t meshletCount = meshopt_buildMeshlets(meshlets.data(), data.MeshletVertices.data(), indices.data(),
-														data.IndicesStream.data(), indexCount, &data.PositionStream[0].x, vertexCount,
-														sizeof(float3), MESHLET_MAX_VERTICES, MESHLET_MAX_TRIANGLES, 0.0f);
+														data.IndicesStream.data(), indexCount, &data.VerticesStream[0].Position.x, vertexCount,
+														sizeof(MeshVertex), MESHLET_MAX_VERTICES, MESHLET_MAX_TRIANGLES, 0.0f);
 
 			// Trimming
 			const meshopt_Meshlet& last = meshlets[meshletCount - 1];
@@ -126,6 +142,86 @@ namespace limbo::Gfx
 				triangleOffset += meshlet.triangle_count;
 			}
 			data.MeshletTriangles.resize(triangleOffset);
+		}
+
+		void CalculateNormals(PrimitiveData& data)
+		{
+			data.NormalsStream.resize(data.PositionStream.size(), float3(0.0f));
+
+			for (int i = 0; i < data.IndicesStream.size(); ++i)
+			{
+				const uint idx0 = data.IndicesStream[i + 0];
+				const uint idx1 = data.IndicesStream[i + 1];
+				const uint idx2 = data.IndicesStream[i + 2];
+
+				const float3 p0 = data.PositionStream[idx0];
+				const float3 p1 = data.PositionStream[idx1];
+				const float3 p2 = data.PositionStream[idx2];
+
+				const float3 v0 = glm::normalize(p0 - p1);
+				const float3 v1 = glm::normalize(p1 - p2);
+
+				float3 normal = glm::normalize(glm::cross(v0, v1));
+				ensure(!glm::any(glm::isnan(normal)));
+
+				data.NormalsStream[i + 0] = normal;
+				data.NormalsStream[i + 1] = normal;
+				data.NormalsStream[i + 2] = normal;
+			}
+		}
+
+		void CalculateTangents(PrimitiveData& data)
+		{
+			// https://terathon.com/blog/tangent-space.html
+			std::vector<float3> bitangents, tangents;
+			bitangents.resize(data.PositionStream.size(), float3(0.0f));
+			tangents.resize(data.PositionStream.size(), float3(0.0f));
+
+			for (int i = 0; i < data.IndicesStream.size(); ++i)
+			{
+				const uint idx0 = data.IndicesStream[i + 0];
+				const uint idx1 = data.IndicesStream[i + 1];
+				const uint idx2 = data.IndicesStream[i + 2];
+
+				const float3 p0 = data.PositionStream[idx0];
+				const float3 p1 = data.PositionStream[idx1];
+				const float3 p2 = data.PositionStream[idx2];
+
+				const float2 uv0 = data.TexCoordsStream[idx0];
+				const float2 uv1 = data.TexCoordsStream[idx1];
+				const float2 uv2 = data.TexCoordsStream[idx2];
+
+				const float3 q1 = p1 - p0;
+				const float3 q2 = p2 - p0;
+
+				const float s1 = uv1.x - uv0.x;
+				const float s2 = uv2.x - uv0.x;
+
+				const float t1 = uv1.y - uv0.y;
+				const float t2 = uv2.y - uv0.y;
+
+				const float r = 1 / ((s1 * t2) - (s2 * t1));
+
+				float3 t = float3((t2 * q1 - t1 * q2) * r);
+				float3 b = float3((s1 * q2 - s2 * q1) * r);
+				
+				tangents[idx0] += t;
+				tangents[idx1] += t;
+				tangents[idx2] += t;
+			}
+
+			data.TangentsStream.resize(data.PositionStream.size(), float4(0.0f));
+			for (int i = 0; i < data.IndicesStream.size(); ++i)
+			{
+				const float3 t = tangents[i];
+				const float3 b = bitangents[i];
+				const float3 n = data.NormalsStream[i];
+
+				// Gram-Schmidt process to make sure the vectors are perpendicular to each other. Here is a nice explanation of it: https://youtu.be/4FaWLgsctqY?si=TlqfkJl2AtK3cNxJ&t=1218
+				float3 tangent = t - glm::dot(t, n) * n;
+
+				data.TangentsStream[i] = float4(tangent, 1.0f);
+			}
 		}
 	}
 
@@ -172,14 +268,14 @@ namespace limbo::Gfx
 		LB_LOG("Finished loading %s (took %.3fs)", path, timer.ElapsedSeconds());
 
 		// Clear streams
-		PrimitivesStreams.clear();
-		TexturesMap.clear();
+		std::vector<PrimitiveData>().swap(PrimitivesStreams);
+		std::unordered_map<uintptr_t, uint32>().swap(TexturesMap);
 		for (TextureData& texture : TextureStreams)
 		{
 			free(texture.Data);
 			texture.Data = nullptr;
 		}
-		TextureStreams.clear();
+		std::vector<TextureData>().swap(TextureStreams);
 	}
 
 	Scene* Scene::Load(const char* path)
@@ -365,8 +461,15 @@ namespace limbo::Gfx
 
 			readAttributeData("POSITION", primitiveData.PositionStream, 3);
 			readAttributeData("NORMAL", primitiveData.NormalsStream, 3);
+			readAttributeData("TANGENT", primitiveData.TangentsStream, 4);
 			readAttributeData("TEXCOORD_0", primitiveData.TexCoordsStream, 2);
 		}
+
+		if (primitiveData.NormalsStream.empty() && !primitiveData.PositionStream.empty())
+			CalculateNormals(primitiveData);
+
+		if (primitiveData.TangentsStream.empty() && !primitiveData.TexCoordsStream.empty())
+			CalculateTangents(primitiveData);
 
 		// process indices
 		cgltf_accessor* indices = primitive->indices;
@@ -388,14 +491,14 @@ namespace limbo::Gfx
 
 		for (size_t i = 0; i < PrimitivesStreams.size(); ++i)
 		{
+			CreateVertexStream(PrimitivesStreams[i]);
+			
 			// Optimize the mesh data and create the meshlets
 			OptimizePrimitiveData(PrimitivesStreams[i]);
 			CreateMeshlets(PrimitivesStreams[i]);
 
 			// Calculate the geometry buffer size
-			bufferSize += PrimitivesStreams[i].PositionStream.size()   * sizeof(float3);
-			bufferSize += PrimitivesStreams[i].NormalsStream.size()    * sizeof(float3);
-			bufferSize += PrimitivesStreams[i].TexCoordsStream.size()  * sizeof(float2);
+			bufferSize += PrimitivesStreams[i].VerticesStream.size()   * sizeof(MeshVertex);
 			bufferSize += PrimitivesStreams[i].IndicesStream.size()    * sizeof(uint32);
 			bufferSize += PrimitivesStreams[i].Meshlets.size()		   * sizeof(Meshlet);
 			bufferSize += PrimitivesStreams[i].MeshletVertices.size()  * sizeof(uint32);
@@ -428,9 +531,7 @@ namespace limbo::Gfx
 		{
 			check(dataOffset % sizeof(uint32) == 0); // the offset is a 32bit value, do not let it overflow
 
-			CopyVertexData(m_Meshes[i].PositionsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].PositionStream);
-			CopyVertexData(m_Meshes[i].NormalsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].NormalsStream);
-			CopyVertexData(m_Meshes[i].TexCoordsLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].TexCoordsStream);
+			CopyVertexData(m_Meshes[i].VerticesLocation, data, geoBufferAddress, dataOffset, PrimitivesStreams[i].VerticesStream);
 
 			CopyMeshletData(m_Meshes[i].MeshletsOffset, data, dataOffset, PrimitivesStreams[i].Meshlets);
 			CopyMeshletData(m_Meshes[i].MeshletVerticesOffset, data, dataOffset, PrimitivesStreams[i].MeshletVertices);
@@ -446,7 +547,7 @@ namespace limbo::Gfx
 			dataOffset += streamSize;
 
 			m_Meshes[i].IndexCount    = PrimitivesStreams[i].IndicesStream.size();
-			m_Meshes[i].VertexCount   = PrimitivesStreams[i].PositionStream.size();
+			m_Meshes[i].VertexCount   = PrimitivesStreams[i].VerticesStream.size();
 			m_Meshes[i].MeshletsCount = PrimitivesStreams[i].Meshlets.size();
 		}
 		check(dataOffset <= 0xffffffffu);

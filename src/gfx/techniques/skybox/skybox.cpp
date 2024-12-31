@@ -40,7 +40,7 @@ namespace limbo::Gfx
 
 		m_SkyboxCube->IterateMeshes(TOnDrawMesh::CreateLambda([&](const Mesh& mesh)
 		{
-			cmd.SetVertexBufferView(mesh.PositionsLocation);
+			cmd.SetVertexBufferView(mesh.VerticesLocation);
 			cmd.SetIndexBufferView(mesh.IndicesLocation);
 			cmd.DrawIndexed((uint32)mesh.IndexCount);
 		}));

@@ -61,9 +61,9 @@ namespace limbo::Gfx
 		cmd.SetPipelineState(pso);
 
 		RHI::ShaderBindingTable SBT(pso);
-		SBT.BindRayGen(L"RayGen");
-		SBT.BindMissShader(L"MaterialMiss");
-		SBT.BindHitGroup(L"MaterialHitGroup");
+		SBT.BindRayGen(L"PTRayGen");
+		SBT.BindMissShader(L"PTMiss");
+		SBT.BindHitGroup(L"PTHitGroup");
 
 		cmd.BindRootSRV(0, context.SceneAccelerationStructure.GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 

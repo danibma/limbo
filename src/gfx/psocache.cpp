@@ -243,17 +243,15 @@ namespace limbo::Gfx::PSOCache
 			RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec().Init()
 				.SetGlobalRootSignature(rs)
 				.SetName("Path Tracer PSO")
-				.SetShaderConfig(sizeof(MaterialRayTracingPayload), sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
+				.SetShaderConfig(sizeof(PathTracingPayload), sizeof(float2) /* BuiltInTriangleIntersectionAttributes */);
 
-			RHI::RTLibSpec pathTracerDesc = RHI::RTLibSpec().Init().AddExport(L"RayGen");
+			RHI::RTLibSpec pathTracerDesc = RHI::RTLibSpec().Init()
+				.AddExport(L"PTRayGen")
+				.AddExport(L"PTAnyHit")
+				.AddExport(L"PTClosestHit")
+				.AddExport(L"PTMiss")
+				.AddHitGroup(L"PTHitGroup", L"PTAnyHit", L"PTClosestHit");
 			psoInit.AddLib(ShadersCache::Get(ShaderID::LIB_PathTracer), pathTracerDesc);
-
-			RHI::RTLibSpec materialDesc = RHI::RTLibSpec().Init()
-				.AddExport(L"MaterialAnyHit")
-				.AddExport(L"MaterialClosestHit")
-				.AddExport(L"MaterialMiss")
-				.AddHitGroup(L"MaterialHitGroup", L"MaterialAnyHit", L"MaterialClosestHit");
-			psoInit.AddLib(ShadersCache::Get(ShaderID::LIB_Material), materialDesc);
 
 			s_Pipelines[PipelineID::PathTracing] = RHI::CreatePSO(psoInit);
 		}

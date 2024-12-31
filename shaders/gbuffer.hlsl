@@ -6,6 +6,7 @@ struct VSOut
     float4 PixelPos : PixelPosition;
     float4 WorldPos : WorldPosition;
     float3 Normal   : Normal;
+	float3x3 TBN	: TBN; 
     float2 UV       : TEXCOORD;
 
     uint MeshletIndex : MeshletIndex;
@@ -18,16 +19,20 @@ VSOut MainVS(uint vertexID : SV_VertexID)
     VSOut result = (VSOut)0;
 
     Instance instance = GetInstance(cInstanceID);
-    float3 pos    = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
-    float3 normal = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.NormalsOffset);
-    float2 uv     = BufferLoad<float2>(instance.BufferIndex, vertexID, instance.TexCoordsOffset);
+    MeshVertex vertex = BufferLoad<MeshVertex>(instance.BufferIndex, vertexID, instance.VerticesOffset);
 
+	float3 normal = TransformNormal(instance.LocalTransform, vertex.Normal);
+	float3 tangent = TransformNormal(instance.LocalTransform, vertex.Tangent);
+
+	float3 bitangent = cross(tangent, normal);
+	
     float4x4 mvp    = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
-    result.Position = mul(mvp, float4(pos, 1.0f));
-    result.PixelPos = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(pos, 1.0f)));
-    result.WorldPos = mul(instance.LocalTransform, float4(pos, 1.0f));
-    result.Normal   = TransformNormal(instance.LocalTransform, normal);
-    result.UV       = uv;
+    result.Position = mul(mvp, float4(vertex.Position, 1.0f));
+    result.PixelPos = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(vertex.Position, 1.0f)));
+    result.WorldPos = mul(instance.LocalTransform, float4(vertex.Position, 1.0f));
+    result.Normal   = normal;
+	result.TBN		= transpose(float3x3(tangent, bitangent, normal));
+    result.UV       = vertex.UV;
 
 	return result;
 }
@@ -55,16 +60,21 @@ void MainMS(uint threadID : SV_DispatchThreadID, uint gtID : SV_GroupThreadID, u
 
         uint vertexID = BufferLoad<uint>(instance.BufferIndex, gtID + meshlet.VertexOffset, instance.MeshletsVerticesOffset);
 
-	    float3 pos    = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.PositionsOffset);
-	    float3 normal = BufferLoad<float3>(instance.BufferIndex, vertexID, instance.NormalsOffset);
-	    float2 uv     = BufferLoad<float2>(instance.BufferIndex, vertexID, instance.TexCoordsOffset);
+    	MeshVertex vertex = BufferLoad<MeshVertex>(instance.BufferIndex, vertexID, instance.VerticesOffset);
 
-	    float4x4 mvp        = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
-	    result.Position     = mul(mvp, float4(pos, 1.0f));
-	    result.PixelPos     = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(pos, 1.0f)));
-	    result.WorldPos     = mul(instance.LocalTransform, float4(pos, 1.0f));
-	    result.Normal       = TransformNormal(instance.LocalTransform, normal);
-	    result.UV           = uv;
+    	float3 normal = TransformNormal(instance.LocalTransform, vertex.Normal);
+    	float3 tangent = TransformNormal(instance.LocalTransform, vertex.Tangent);
+
+    	float3 bitangent = cross(tangent, normal);
+	
+    	float4x4 mvp    = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
+    	result.Position = mul(mvp, float4(vertex.Position, 1.0f));
+    	result.PixelPos = mul(GSceneInfo.View, mul(instance.LocalTransform, float4(vertex.Position, 1.0f)));
+    	result.WorldPos = mul(instance.LocalTransform, float4(vertex.Position, 1.0f));
+    	result.Normal   = normal;
+    	result.TBN		= transpose(float3x3(tangent, bitangent, normal));
+    	result.UV       = vertex.UV;
+    	
         result.MeshletIndex = groupID;
 		verts[gtID] = result;    
     }
@@ -124,29 +134,8 @@ DeferredShadingOutput MainPS(VSOut input)
     {
         float4 normalMap = Sample2D(material.NormalIndex, SLinearWrap, input.UV);
 
-        float3 viewDirection = normalize(GSceneInfo.CameraPos - input.WorldPos.xyz);
-
-        // Use ddx/ddy to get the exact data for this pixel, since the GPU computes 2x2 pixels at a time
-        float3 dp1  = ddx(-viewDirection);
-        float3 dp2  = ddy(-viewDirection);
-        float2 duv1 = ddx(input.UV);
-        float2 duv2 = ddy(input.UV);
-
-        float3 dp1perp   = normalize(cross(normal, dp1));
-        float3 dp2perp   = normalize(cross(dp2, normal));
-
-        // https://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping
-        float3 tangent   = dp2perp * duv1.x + dp1perp * duv2.x;
-        float3 bitangent = dp2perp * duv1.y + dp1perp * duv2.y;
-
-        float invmax     = rsqrt(max(dot(tangent, tangent), dot(bitangent, bitangent)));
-
-        // Since this is a orthogonal matrix (each axis is a perpendicular unit vector) its transpose equals its inverse.
-        // With this we can transform all the world-space vectors into tangent-space, and vice-versa
-        float3x3 tbn     = transpose(float3x3(tangent * invmax, bitangent * invmax, normal));
-        float3 rgbNormal = 2.0f * normalMap.rgb - 1.0f; // from [0, 1] to [-1, 1]
-
-        normal = mul(tbn, rgbNormal);
+    	float3 rgbNormal = 2.0f * normalMap.rgb - 1.0f; // from [0, 1] to [-1, 1]
+        normal = mul(input.TBN, rgbNormal);
     }
 
     //uint meshletIndex = input.MeshletIndex;

@@ -89,8 +89,8 @@ namespace limbo::Gfx
 		};
 
 		//LoadNewScene("assets/models/cornellbox_simple/cornell_box.gltf");
-		//LoadNewScene("assets/models/bathroom/LAZIENKA.gltf");
-		LoadNewScene("assets/models/cornellbox_pbr/cornell_pbr.gltf");
+		LoadNewScene("assets/models/bathroom/LAZIENKA.gltf");
+		//LoadNewScene("assets/models/cornellbox_pbr/cornell_pbr.gltf");
 		//LoadNewScene("assets/models/white_room/the-white-room-low.gltf");
 		//LoadNewScene("assets/models/vulkanscene_shadow.gltf");
 		//LoadNewScene("assets/models/Sponza/Sponza.gltf");
@@ -373,9 +373,7 @@ namespace limbo::Gfx
 				Instance& instance = instances.emplace_back();
 				instance.LocalTransform				= mesh.Transform;
 				instance.Material					= (uint32)materials.size() + mesh.LocalMaterialIndex;
-				instance.PositionsOffset			= mesh.PositionsLocation.Offset;
-				instance.NormalsOffset				= mesh.NormalsLocation.Offset;
-				instance.TexCoordsOffset			= mesh.TexCoordsLocation.Offset;
+				instance.VerticesOffset				= mesh.VerticesLocation.Offset;
 				instance.IndicesOffset				= mesh.IndicesLocation.Offset;
 				instance.MeshletsOffset				= mesh.MeshletsOffset;
 				instance.MeshletsTrianglesOffset	= mesh.MeshletTrianglesOffset;

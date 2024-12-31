@@ -26,9 +26,8 @@ namespace limbo::Gfx
 {
 	struct Mesh
 	{
-		RHI::VertexBufferView		PositionsLocation;
-		RHI::VertexBufferView		NormalsLocation;
-		RHI::VertexBufferView		TexCoordsLocation;
+		// Positions in the geometry buffer
+		RHI::VertexBufferView		VerticesLocation;
 		RHI::IndexBufferView		IndicesLocation;
 
 		uint32						MeshletsOffset;
