@@ -271,13 +271,17 @@ namespace limbo::RHI
 		gRHIPixelFormats[(int)Format::D24_FLOAT_S8_UINT] = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 		gRHIPixelFormats[(int)Format::D32_FLOAT_S8_UINT] = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
 		gRHIPixelFormats[(int)Format::BC1_UNORM] = DXGI_FORMAT_BC1_UNORM;
+		gRHIPixelFormats[(int)Format::BC1_UNORM_SRGB] = DXGI_FORMAT_BC1_UNORM_SRGB;
 		gRHIPixelFormats[(int)Format::BC2_UNORM] = DXGI_FORMAT_BC2_UNORM;
+		gRHIPixelFormats[(int)Format::BC2_UNORM_SRGB] = DXGI_FORMAT_BC2_UNORM_SRGB;
 		gRHIPixelFormats[(int)Format::BC3_UNORM] = DXGI_FORMAT_BC3_UNORM;
+		gRHIPixelFormats[(int)Format::BC3_UNORM_SRGB] = DXGI_FORMAT_BC3_UNORM_SRGB;
 		gRHIPixelFormats[(int)Format::BC4_UNORM] = DXGI_FORMAT_BC4_UNORM;
 		gRHIPixelFormats[(int)Format::BC4_SNORM] = DXGI_FORMAT_BC4_SNORM;
 		gRHIPixelFormats[(int)Format::BC5_UNORM] = DXGI_FORMAT_BC5_UNORM;
 		gRHIPixelFormats[(int)Format::BC5_SNORM] = DXGI_FORMAT_BC5_SNORM;
 		gRHIPixelFormats[(int)Format::BC7_UNORM] = DXGI_FORMAT_BC7_UNORM;
+		gRHIPixelFormats[(int)Format::BC7_UNORM_SRGB] = DXGI_FORMAT_BC7_UNORM_SRGB;
 		gRHIPixelFormats[(int)Format::R11G11B10_FLOAT] = DXGI_FORMAT_R11G11B10_FLOAT;
 		gRHIPixelFormats[(int)Format::RGB10A2_UNORM] = DXGI_FORMAT_R10G10B10A2_UNORM;
 		gRHIPixelFormats[(int)Format::BGRA4_UNORM] = DXGI_FORMAT_B4G4R4A4_UNORM;

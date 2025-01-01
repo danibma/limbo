@@ -89,7 +89,7 @@ namespace limbo::Gfx
 		void ProcessPrimitivesData();
 
 		void LoadTexture(const cgltf_texture* texture);
-		uint CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName);
+		uint CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName, bool bIsSRGB);
 	};
 
 	inline Scene* LoadScene(const char* path)

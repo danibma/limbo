@@ -95,13 +95,17 @@ namespace limbo::RHI
 
 	    // Compressed
 	    { FORMAT_TYPE(BC1_UNORM),			8,		4,		   3,		  },
+		{ FORMAT_TYPE(BC1_UNORM_SRGB),		8,		4,		   3,		  },
 	    { FORMAT_TYPE(BC2_UNORM),			16,		4,		   4,		  },
+	    { FORMAT_TYPE(BC2_UNORM_SRGB),		16,		4,		   4,		  },
 	    { FORMAT_TYPE(BC3_UNORM),			16,		4,		   4,		  },
+	    { FORMAT_TYPE(BC3_UNORM_SRGB),		16,		4,		   4,		  },
 	    { FORMAT_TYPE(BC4_UNORM),			8,		4,		   1,		  },
 	    { FORMAT_TYPE(BC4_SNORM),			8,		4,		   1,		  },
 	    { FORMAT_TYPE(BC5_UNORM),			16,		4,		   2,		  },
 	    { FORMAT_TYPE(BC5_SNORM),			16,		4,		   2,		  },
 	    { FORMAT_TYPE(BC7_UNORM),			16,		4,		   4,		  },
+		{ FORMAT_TYPE(BC7_UNORM_SRGB),		16,		4,		   4,		  },
 
 	    { FORMAT_TYPE(R11G11B10_FLOAT),		4,		1,		   3,		  },
 	    { FORMAT_TYPE(RGB10A2_UNORM),		4,		1,		   4,		  },
@@ -179,6 +183,21 @@ namespace limbo::RHI
 
 		ensure(false);
 		return Format::MAX;
+	}
+
+	Format ConvertToSRGBFormat(Format format)
+	{
+		switch (format)
+		{
+		case Format::RGBA8_UNORM: return Format::RGBA8_UNORM_SRGB;
+		case Format::BC1_UNORM: return Format::BC1_UNORM_SRGB;
+		case Format::BC2_UNORM: return Format::BC2_UNORM_SRGB;
+		case Format::BC3_UNORM: return Format::BC3_UNORM_SRGB;
+		case Format::BC7_UNORM: return Format::BC7_UNORM_SRGB;
+		default:
+			ensure(false);
+			return Format::UNKNOWN;
+		}
 	}
 
 	uint16 CalculateMipCount(uint32 width, uint32 height, uint32 depth)

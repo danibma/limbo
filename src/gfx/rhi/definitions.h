@@ -116,13 +116,17 @@ namespace limbo::RHI
 		
 		// Compressed
 		BC1_UNORM,
+		BC1_UNORM_SRGB,
 		BC2_UNORM,
+		BC2_UNORM_SRGB,
 		BC3_UNORM,
+		BC3_UNORM_SRGB,
 		BC4_UNORM,
 		BC4_SNORM,
 		BC5_UNORM,
 		BC5_SNORM,
 		BC7_UNORM,
+		BC7_UNORM_SRGB,
 
 		R11G11B10_FLOAT,
 		RGB10A2_UNORM,
@@ -151,6 +155,7 @@ namespace limbo::RHI
 	DXGI_FORMAT D3DFormat(Format format);
 
 	Format GetFormat(DXGI_FORMAT format);
+	Format ConvertToSRGBFormat(Format format);
 
 	uint16 CalculateMipCount(uint32 width, uint32 height = 0, uint32 depth = 0);
 	const FormatInfo& GetFormatInfo(Format format);

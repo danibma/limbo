@@ -341,12 +341,12 @@ namespace limbo::Gfx
 			const cgltf_pbr_metallic_roughness& workflow = cgltfMaterial->pbr_metallic_roughness;
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "Albedo");
-				material.AlbedoIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str());
+				material.AlbedoIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str(), true);
 				material.AlbedoFactor = float4(workflow.base_color_factor[0], workflow.base_color_factor[1], workflow.base_color_factor[2], workflow.base_color_factor[3]);
 			}
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "MetallicRoughness");
-				material.RoughnessMetalIndex = CreateTextureResource(&workflow.metallic_roughness_texture, debugName.c_str());
+				material.RoughnessMetalIndex = CreateTextureResource(&workflow.metallic_roughness_texture, debugName.c_str(), false);
 				material.RoughnessFactor = workflow.roughness_factor;
 				material.MetallicFactor = workflow.metallic_factor;
 			}
@@ -358,18 +358,18 @@ namespace limbo::Gfx
 
 		{
 			std::string debugName = std::format(" Material({}) {}", index, "Normal");
-			material.NormalIndex = CreateTextureResource(&cgltfMaterial->normal_texture, debugName.c_str());
+			material.NormalIndex = CreateTextureResource(&cgltfMaterial->normal_texture, debugName.c_str(), false);
 		}
 
 		{
 			std::string debugName   = std::format(" Material({}) {}", index, "Emissive");
-			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str());
+			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str(), false);
 			material.EmissiveFactor = float3(cgltfMaterial->emissive_factor[0], cgltfMaterial->emissive_factor[1], cgltfMaterial->emissive_factor[2]);
 		}
 
 		{
 			std::string debugName			= std::format(" Material({}) {}", index, "AmbientOcclusion");
-			material.AmbientOcclusionIndex  = CreateTextureResource(&cgltfMaterial->occlusion_texture, debugName.c_str());
+			material.AmbientOcclusionIndex  = CreateTextureResource(&cgltfMaterial->occlusion_texture, debugName.c_str(), false);
 		}
 	}
 
@@ -430,7 +430,7 @@ namespace limbo::Gfx
 		TextureStreams.emplace_back(data);
 	}
 
-	uint Scene::CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName)
+	uint Scene::CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName, bool bIsSRGB)
 	{
 		if (!textureView->texture)
 			return -1;
@@ -444,13 +444,15 @@ namespace limbo::Gfx
 		if (textureData.bGenerateMips)
 			usage |= RHI::TextureUsage::UnorderedAccess;
 
+		RHI::Format format = bIsSRGB ? RHI::ConvertToSRGBFormat(textureData.Format) : textureData.Format;
+
 		RHI::TextureHandle texture = RHI::CreateTexture({
 			.Width = (uint32)textureData.Width,
 			.Height = (uint32)textureData.Height,
 			.MipLevels = textureData.NumMips,
 			.DebugName = textureData.Name.c_str(),
 			.Flags = usage,
-			.Format = textureData.Format,
+			.Format = format,
 			.Type = RHI::TextureType::Texture2D,
 			.InitialData = {
 				.Data = textureData.Data,
