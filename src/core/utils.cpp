@@ -5,6 +5,8 @@
 
 #include <windows.h>
 #include <shobjidl_core.h>
+#include <fstream>
+#include <filesystem>
 
 namespace limbo::Utils
 {
@@ -114,5 +116,20 @@ namespace limbo::Utils
 		DWORD dwAttrib = GetFileAttributesA(path);
 
 		return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+	}
+
+	bool FileRead(const char* filename, std::vector<uint8>& filedata)
+	{
+		std::ifstream file(filename, std::ios::binary);
+
+		if (file.is_open())
+		{
+			filedata.resize(std::filesystem::file_size(filename));
+			file.read((char*)filedata.data(), filedata.size());
+			file.close();
+			return true;
+		}
+
+		return false;
 	}
 }

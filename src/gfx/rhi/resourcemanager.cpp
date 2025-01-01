@@ -25,7 +25,7 @@ namespace limbo::RHI
 				.Flags = TextureUsage::ShaderResource,
 				.Format = Format::RGBA8_UNORM,
 				.Type = TextureType::Texture2D,
-				.InitialData = &textureData,
+				.InitialData = { .Data = &textureData },
 			});
 		});
 
@@ -158,7 +158,7 @@ namespace limbo::RHI
 	{
 		for (uint32 i = 0; i < m_DeletionQueue.size();)
 		{
-			if (++m_DeletionQueue[i].DeletionCounter >= NUM_BACK_BUFFERS)
+			if (++m_DeletionQueue[i].DeletionCounter >= gRHIBufferCount)
 				m_DeletionQueue.pop_front();
 			else
 				++i;

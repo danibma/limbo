@@ -69,7 +69,7 @@ namespace limbo::RHI
 
 		m_Fence = new Fence(device);
 
-		for (int i = 0; i < NUM_BACK_BUFFERS + 1; ++i)
+		for (int i = 0; i < gRHIBufferCount + 1; ++i)
 		{
 			ID3D12CommandAllocator* allocator;
 			DX_CHECK(device->GetDevice()->CreateCommandAllocator(D3DCmdListType(type), IID_PPV_ARGS(&allocator)));

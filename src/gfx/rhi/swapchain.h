@@ -17,10 +17,10 @@ namespace limbo::RHI
 	class Swapchain
 	{
 		RefCountPtr<IDXGISwapChain3>	m_Swapchain;
-		TextureHandle					m_Backbuffers[NUM_BACK_BUFFERS];
-		TextureHandle					m_DepthBackbuffers[NUM_BACK_BUFFERS];
+		TextureHandle					m_Backbuffers[gRHIBufferCount];
+		TextureHandle					m_DepthBackbuffers[gRHIBufferCount];
 		const Format					m_Format      = Format::RGBA8_UNORM;
-		const Format					m_DepthFormat = Format::D32_SFLOAT;
+		const Format					m_DepthFormat = Format::D32_FLOAT;
 		uint32							m_BackbufferWidth;
 		uint32							m_BackbufferHeight;
 

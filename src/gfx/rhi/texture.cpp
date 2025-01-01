@@ -44,7 +44,7 @@ namespace limbo::RHI
 			.Alignment = 0,
 			.Width = spec.Width,
 			.Height = spec.Height,
-			.DepthOrArraySize = spec.Type == TextureType::TextureCube ? 6u : 1u,
+			.DepthOrArraySize = spec.Depth,
 			.MipLevels = spec.MipLevels,
 			.Format = D3DFormat(spec.Format),
 			.SampleDesc = {
@@ -93,7 +93,7 @@ namespace limbo::RHI
 		{
 			data = stbi_loadf(path, &width, &height, &numChannels, 4);
 			ENSURE_RETURN(!data);
-			format = Format::RGBA32_SFLOAT;
+			format = Format::RGBA32_FLOAT;
 		}
 		else
 		{
@@ -112,7 +112,7 @@ namespace limbo::RHI
 			.Flags = TextureUsage::ShaderResource | TextureUsage::UnorderedAccess,
 			.Format = format,
 			.Type = TextureType::Texture2D,
-			.InitialData = data,
+			.InitialData = { .Data = data },
 		};
 		CreateResource(spec);
 		InitResource(spec);
@@ -231,23 +231,29 @@ namespace limbo::RHI
 			CreateSRV();
 		}
 
-		if (spec.InitialData)
+		if (spec.InitialData.Data)
 		{
-			uint8 bytesPerChannel = D3DBytesPerChannel(spec.Format);
-			uint8 numChannels = 4;
+			auto resourceDesc = Resource->GetDesc();
+			
+			uint64 total;
+			device->GetDevice()->GetCopyableFootprints(&resourceDesc, 0, spec.InitialData.NumMips, 0, nullptr, nullptr, nullptr, &total);
 
+			D3D12_SUBRESOURCE_DATA* data = new D3D12_SUBRESOURCE_DATA[spec.InitialData.NumMips];
+			uint64 offset = 0;
+			for (int i = 0; i < spec.InitialData.NumMips; ++i)
+			{
+				data[i].pData = (uint8*)spec.InitialData.Data + offset;
+				data[i].RowPitch = GetRowPitch(spec.Format, spec.Width, i);
+				data[i].SlicePitch = GetSlicePitch(spec.Format, spec.Width, spec.Height, i);
 
-			D3D12_SUBRESOURCE_DATA subresourceData = {
-				spec.InitialData,
-				spec.Width * numChannels * bytesPerChannel,
-				spec.Width * spec.Height * numChannels * bytesPerChannel,
-			};
+				offset += GetTextureMipByteSize(spec.Format, spec.Width, spec.Height, spec.Depth, i);
+			}
 
-			uint64 size = spec.Width * numChannels * spec.Height * bytesPerChannel;
 			RingBufferAllocation allocation;
-			GetRingBufferAllocator()->Allocate(size, allocation);
-			UpdateSubresources(allocation.Context->Get(), Resource.Get(), allocation.Buffer->Resource.Get(), allocation.Offset, 0, 1, &subresourceData);
+			GetRingBufferAllocator()->Allocate(total, allocation);
+			UpdateSubresources(allocation.Context->Get(), Resource.Get(), allocation.Buffer->Resource.Get(), allocation.Offset, 0, spec.InitialData.NumMips, data);
 			GetRingBufferAllocator()->Free(allocation);
+			delete[] data;
 		}
 
 		if (!spec.DebugName.empty())
@@ -288,17 +294,16 @@ namespace limbo::RHI
 		return {
 			.Width = width,
 			.Height = height,
-			.MipLevels = 1,
 			.DebugName = debugName ? debugName : "",
 			.Flags = TextureUsage::DepthStencil | TextureUsage::ShaderResource,
 			.ClearValue = {
-				.Format = D3DFormat(Format::D32_SFLOAT),
+				.Format = D3DFormat(Format::D32_FLOAT),
 				.DepthStencil = {
 					.Depth = depthClearValue,
 					.Stencil = 0
 				}
 			},
-			.Format = Format::D32_SFLOAT,
+			.Format = Format::D32_FLOAT,
 			.Type = TextureType::Texture2D,
 		};
 	}
@@ -308,7 +313,6 @@ namespace limbo::RHI
 		return {
 			.Width = width,
 			.Height = height,
-			.MipLevels = 1,
 			.DebugName = debugName ? debugName : "",
 			.Flags = TextureUsage::RenderTarget | TextureUsage::ShaderResource,
 			.ClearValue = {

@@ -57,13 +57,13 @@ namespace limbo
 
 		m_Readback = RHI::CreateBuffer({
 			.DebugName = "Profiler Readback buffer",
-			.ByteSize = MaxProfiles * RHI::NUM_BACK_BUFFERS * 2 * sizeof(uint64),
+			.ByteSize = MaxProfiles * RHI::gRHIBufferCount * 2 * sizeof(uint64),
 			.Flags = RHI::BufferUsage::Readback | RHI::BufferUsage::Upload
 		});
 
 		D3D12_QUERY_HEAP_DESC desc = {
 			.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP,
-			.Count = MaxProfiles * RHI::NUM_BACK_BUFFERS * 2,
+			.Count = MaxProfiles * RHI::gRHIBufferCount * 2,
 			.NodeMask = 0
 		};
 		DX_CHECK(RHI::Device::Ptr->GetDevice()->CreateQueryHeap(&desc, IID_PPV_ARGS(m_QueryHeap.ReleaseAndGetAddressOf())));

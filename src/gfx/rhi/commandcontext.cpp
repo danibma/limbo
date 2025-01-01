@@ -212,7 +212,7 @@ namespace limbo::RHI
 			depthDescriptor = &pDepthTarget->RTVHandle.CpuHandle;
 		}
 
-		TStaticArray<D3D12_CPU_DESCRIPTOR_HANDLE, MAX_RENDER_TARGETS> renderTargetDescriptors;
+		TStaticArray<D3D12_CPU_DESCRIPTOR_HANDLE, gRHIMaxRenderTargets> renderTargetDescriptors;
 		for (uint32 i = 0; i < renderTargets.GetSize(); ++i)
 		{
 			Texture* pRenderTarget = RM_GET(renderTargets[i]);

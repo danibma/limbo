@@ -30,6 +30,8 @@ namespace limbo::RHI
 	Device::Device(Core::Window* window, GfxDeviceFlags flags)
 		: m_Flags(flags), m_GPUInfo()
 	{
+		SetupRHIGlobals();
+		
 		uint32_t dxgiFactoryFlags = 0;
 		bool bD3DDebug = Core::CommandLine::HasArg(LIMBO_CMD_D3DDEBUG);
 		bool bGPUValidation = Core::CommandLine::HasArg(LIMBO_CMD_GPU_VALIDATION);
@@ -171,7 +173,7 @@ namespace limbo::RHI
 			DescriptorHandle imguiDescriptor = m_GlobalHeap->AllocatePersistent();
 
 			ImGui_ImplGlfw_InitForOther(window->GetGlfwHandle(), true);
-			ImGui_ImplDX12_Init(m_Device.Get(), NUM_BACK_BUFFERS, D3DFormat(m_Swapchain->GetFormat()),
+			ImGui_ImplDX12_Init(m_Device.Get(), gRHIBufferCount, D3DFormat(m_Swapchain->GetFormat()),
 			                    m_GlobalHeap->GetHeap(), imguiDescriptor.CpuHandle, imguiDescriptor.GPUHandle);
 
 			ImGui_ImplDX12_NewFrame();
@@ -219,6 +221,69 @@ namespace limbo::RHI
 		delete m_TempBufferAllocator;
 		delete m_UploadRingBuffer;
 		delete m_Swapchain;
+	}
+
+	void Device::SetupRHIGlobals()
+	{
+		gRHIPixelFormats[(int)Format::UNKNOWN] = DXGI_FORMAT_UNKNOWN;
+		gRHIPixelFormats[(int)Format::R8_UNORM] = DXGI_FORMAT_R8_UNORM;
+		gRHIPixelFormats[(int)Format::R8_UINT] = DXGI_FORMAT_R8_UINT;
+		gRHIPixelFormats[(int)Format::R8_SINT] = DXGI_FORMAT_R8_SINT;
+		gRHIPixelFormats[(int)Format::R8_SNORM] = DXGI_FORMAT_R8_SNORM;
+		gRHIPixelFormats[(int)Format::R16_UNORM] = DXGI_FORMAT_R16_UNORM;
+		gRHIPixelFormats[(int)Format::R16_SNORM] = DXGI_FORMAT_R16_SNORM;
+		gRHIPixelFormats[(int)Format::R16_UINT] = DXGI_FORMAT_R16_UINT;
+		gRHIPixelFormats[(int)Format::R16_SINT] = DXGI_FORMAT_R16_SINT;
+		gRHIPixelFormats[(int)Format::R16_FLOAT] = DXGI_FORMAT_R16_FLOAT;
+		gRHIPixelFormats[(int)Format::R32_UINT] = DXGI_FORMAT_R32_UINT;
+		gRHIPixelFormats[(int)Format::R32_SINT] = DXGI_FORMAT_R32_SINT;
+		gRHIPixelFormats[(int)Format::R32_FLOAT] = DXGI_FORMAT_R32_FLOAT;
+		gRHIPixelFormats[(int)Format::RG8_UINT] = DXGI_FORMAT_R8G8_UINT;
+		gRHIPixelFormats[(int)Format::RG8_SINT] = DXGI_FORMAT_R8G8_SINT;
+		gRHIPixelFormats[(int)Format::RG8_UNORM] = DXGI_FORMAT_R8G8_UNORM;
+		gRHIPixelFormats[(int)Format::RG8_SNORM] = DXGI_FORMAT_R8G8_SNORM;
+		gRHIPixelFormats[(int)Format::RG16_FLOAT] = DXGI_FORMAT_R16G16_FLOAT;
+		gRHIPixelFormats[(int)Format::RG16_UINT] = DXGI_FORMAT_R16G16_UINT;
+		gRHIPixelFormats[(int)Format::RG16_SINT] = DXGI_FORMAT_R16G16_SINT;
+		gRHIPixelFormats[(int)Format::RG16_UNORM] = DXGI_FORMAT_R16G16_UNORM;
+		gRHIPixelFormats[(int)Format::RG16_SNORM] = DXGI_FORMAT_R16G16_SNORM;
+		gRHIPixelFormats[(int)Format::RG32_FLOAT] = DXGI_FORMAT_R32G32_FLOAT;
+		gRHIPixelFormats[(int)Format::RG32_SINT] = DXGI_FORMAT_R32G32_SINT;
+		gRHIPixelFormats[(int)Format::RG32_UINT] = DXGI_FORMAT_R32G32_UINT;
+		gRHIPixelFormats[(int)Format::RGB32_SINT] = DXGI_FORMAT_R32G32B32_SINT;
+		gRHIPixelFormats[(int)Format::RGB32_UINT] = DXGI_FORMAT_R32G32B32_UINT;
+		gRHIPixelFormats[(int)Format::RGB32_FLOAT] = DXGI_FORMAT_R32G32B32_FLOAT;
+		gRHIPixelFormats[(int)Format::RGBA8_SNORM] = DXGI_FORMAT_R8G8B8A8_SNORM;
+		gRHIPixelFormats[(int)Format::RGBA8_UNORM] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		gRHIPixelFormats[(int)Format::RGBA8_SINT] = DXGI_FORMAT_R8G8B8A8_SINT;
+		gRHIPixelFormats[(int)Format::RGBA8_UINT] = DXGI_FORMAT_R8G8B8A8_UINT;
+		gRHIPixelFormats[(int)Format::RGBA8_UNORM_SRGB] = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		gRHIPixelFormats[(int)Format::RGBA16_UNORM] = DXGI_FORMAT_R16G16B16A16_UNORM;
+		gRHIPixelFormats[(int)Format::RGBA16_SNORM] = DXGI_FORMAT_R16G16B16A16_SNORM;
+		gRHIPixelFormats[(int)Format::RGBA16_FLOAT] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		gRHIPixelFormats[(int)Format::RGBA16_SINT] = DXGI_FORMAT_R16G16B16A16_SINT;
+		gRHIPixelFormats[(int)Format::RGBA16_UINT] = DXGI_FORMAT_R16G16B16A16_UINT;
+		gRHIPixelFormats[(int)Format::RGBA32_FLOAT] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		gRHIPixelFormats[(int)Format::RGBA32_SINT] = DXGI_FORMAT_R32G32B32A32_SINT;
+		gRHIPixelFormats[(int)Format::RGBA32_UINT] = DXGI_FORMAT_R32G32B32A32_UINT;
+		gRHIPixelFormats[(int)Format::D16_UNORM] = DXGI_FORMAT_D16_UNORM;
+		gRHIPixelFormats[(int)Format::D32_FLOAT] = DXGI_FORMAT_D32_FLOAT;
+		gRHIPixelFormats[(int)Format::D24_FLOAT_S8_UINT] = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+		gRHIPixelFormats[(int)Format::D32_FLOAT_S8_UINT] = DXGI_FORMAT_D32_FLOAT_S8X24_UINT;
+		gRHIPixelFormats[(int)Format::BC1_UNORM] = DXGI_FORMAT_BC1_UNORM;
+		gRHIPixelFormats[(int)Format::BC2_UNORM] = DXGI_FORMAT_BC2_UNORM;
+		gRHIPixelFormats[(int)Format::BC3_UNORM] = DXGI_FORMAT_BC3_UNORM;
+		gRHIPixelFormats[(int)Format::BC4_UNORM] = DXGI_FORMAT_BC4_UNORM;
+		gRHIPixelFormats[(int)Format::BC4_SNORM] = DXGI_FORMAT_BC4_SNORM;
+		gRHIPixelFormats[(int)Format::BC5_UNORM] = DXGI_FORMAT_BC5_UNORM;
+		gRHIPixelFormats[(int)Format::BC5_SNORM] = DXGI_FORMAT_BC5_SNORM;
+		gRHIPixelFormats[(int)Format::BC7_UNORM] = DXGI_FORMAT_BC7_UNORM;
+		gRHIPixelFormats[(int)Format::R11G11B10_FLOAT] = DXGI_FORMAT_R11G11B10_FLOAT;
+		gRHIPixelFormats[(int)Format::RGB10A2_UNORM] = DXGI_FORMAT_R10G10B10A2_UNORM;
+		gRHIPixelFormats[(int)Format::BGRA4_UNORM] = DXGI_FORMAT_B4G4R4A4_UNORM;
+		gRHIPixelFormats[(int)Format::B5G6R5_UNORM] = DXGI_FORMAT_B5G6R5_UNORM;
+		gRHIPixelFormats[(int)Format::B5G5R5A1_UNORM] = DXGI_FORMAT_B5G5R5A1_UNORM;
+		gRHIPixelFormats[(int)Format::BGRA8_UNORM] = DXGI_FORMAT_B8G8R8A8_UNORM;
 	}
 
 	void Device::Present(bool bEnableVSync)
@@ -416,10 +481,10 @@ namespace limbo::RHI
 		case Format::D16_UNORM:
 			format = DXGI_FORMAT_R16_UNORM;
 			break;
-		case Format::D32_SFLOAT:
+		case Format::D32_FLOAT:
 			format = DXGI_FORMAT_R32_FLOAT;
 			break;
-		case Format::D32_SFLOAT_S8_UINT:
+		case Format::D32_FLOAT_S8_UINT:
 			format = DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS;
 			break;
 		default:

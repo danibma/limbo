@@ -136,6 +136,8 @@ namespace limbo::RHI
 		void InitResources();
 		void DestroyResources();
 
+		void SetupRHIGlobals();
+
 		void PickGPU();
 		void IdleGPU();
 

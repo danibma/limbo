@@ -4,9 +4,6 @@
 
 namespace limbo::RHI
 {
-	constexpr uint8	NUM_BACK_BUFFERS = 3;
-	constexpr uint8 MAX_RENDER_TARGETS = 8;
-
 	namespace Delegates
 	{
 		DECLARE_MULTICAST_DELEGATE(TOnPrepareFrame);
@@ -17,6 +14,12 @@ namespace limbo::RHI
 
 		DECLARE_MULTICAST_DELEGATE(TOnShadersReloaded);
 		inline TOnShadersReloaded OnShadersReloaded;
+	}
+
+	namespace Internal
+	{
+		void DXHandleError(HRESULT hr, const char* file, int line);
+		void DXMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext);
 	}
 
 	enum class ContextType : uint8
@@ -55,112 +58,109 @@ namespace limbo::RHI
 
 	enum class Format : uint8
 	{
-		UNKNOWN,
+		UNKNOWN = 0,
 
 		// R
 		R8_UNORM,
 		R8_UINT,
+		R8_SINT,
+		R8_SNORM,
 		R16_UNORM,
+		R16_SNORM,
 		R16_UINT,
-		R16_SFLOAT,
+		R16_SINT,
+		R16_FLOAT,
 		R32_UINT,
-		R32_SFLOAT,
+		R32_SINT,
+		R32_FLOAT,
+		
 		// RG
+		RG8_UINT,
+		RG8_SINT,
 		RG8_UNORM,
-		RG16_SFLOAT,
-		RG32_SFLOAT,
+		RG8_SNORM,
+		RG16_FLOAT,
+		RG16_UINT,
+		RG16_SINT,
+		RG16_UNORM,
+		RG16_SNORM,
+		RG32_FLOAT,
+		RG32_SINT,
+		RG32_UINT,
+		
 		// RGB
-		B10GR11_UFLOAT_PACK32,
-		RGB32_SFLOAT,
+		RGB32_SINT,
+		RGB32_UINT,
+		RGB32_FLOAT,
+		
 		// RGBA
+		RGBA8_SNORM,
 		RGBA8_UNORM,
+		RGBA8_SINT,
+		RGBA8_UINT,
 		RGBA8_UNORM_SRGB,
-		A2RGB10_UNORM_PACK32,
 		RGBA16_UNORM,
 		RGBA16_SNORM,
-		RGBA16_SFLOAT,
-		RGBA32_SFLOAT,
+		RGBA16_FLOAT,
+		RGBA16_SINT,
+		RGBA16_UINT,
+		RGBA32_FLOAT,
+		RGBA32_SINT,
+		RGBA32_UINT,
+		
 		// DEPTH
 		D16_UNORM,
-		D32_SFLOAT,
-		D32_SFLOAT_S8_UINT,
+		D32_FLOAT,
+		D24_FLOAT_S8_UINT,
+		D32_FLOAT_S8_UINT,
+		
 		// Compressed
-		BC7_UNORM_BLOCK,
+		BC1_UNORM,
+		BC2_UNORM,
+		BC3_UNORM,
+		BC4_UNORM,
+		BC4_SNORM,
+		BC5_UNORM,
+		BC5_SNORM,
+		BC7_UNORM,
+
+		R11G11B10_FLOAT,
+		RGB10A2_UNORM,
+		BGRA4_UNORM,
+		B5G6R5_UNORM,
+		B5G5R5A1_UNORM,
+		
 		//Surface
-		BGRA8_UNORM
+		BGRA8_UNORM,
+		
+		MAX
 	};
 
-	inline std::string_view CmdListTypeToStr(ContextType type)
+	struct FormatInfo
 	{
-		switch (type)
-		{
-		case ContextType::Direct:
-			return "Direct";
-		case ContextType::Copy:
-			return "Copy";
-		case ContextType::Compute:
-			return "Compute";
-		case ContextType::MAX:
-		default:
-			ensure(false);
-			return "NONE";
-		}
-	}
+		Format			Format;
+		uint8			BytesPerBlock : 8;
+		uint8			BlockSize : 4;
+		uint8			NumComponents : 3;
+	};
+
+	std::string_view CmdListTypeToStr(ContextType type);
 
 	D3D12_COMMAND_LIST_TYPE D3DCmdListType(ContextType type);
 	D3D12_RESOURCE_DIMENSION D3DTextureType(TextureType type);
 	DXGI_FORMAT D3DFormat(Format format);
 
-	inline uint8 D3DBytesPerChannel(Format format)
-	{
-		switch (format)
-		{
-		case Format::R8_UNORM:
-		case Format::R8_UINT:
-		case Format::RG8_UNORM:
-		case Format::RGBA8_UNORM:
-		case Format::RGBA8_UNORM_SRGB:
-		case Format::BGRA8_UNORM:
-			return 1;
-		case Format::R16_UNORM:
-		case Format::R16_UINT:
-		case Format::R16_SFLOAT:
-		case Format::D16_UNORM:
-		case Format::RG16_SFLOAT:
-		case Format::RGBA16_UNORM:
-		case Format::RGBA16_SNORM:
-		case Format::RGBA16_SFLOAT:
-			return 2;
-		case Format::R32_UINT:
-		case Format::R32_SFLOAT:
-		case Format::RG32_SFLOAT:
-		case Format::RGB32_SFLOAT:
-		case Format::RGBA32_SFLOAT:
-		case Format::D32_SFLOAT:
-			return 4;
-		case Format::D32_SFLOAT_S8_UINT:
-		case Format::BC7_UNORM_BLOCK:
-		case Format::B10GR11_UFLOAT_PACK32:
-		case Format::A2RGB10_UNORM_PACK32:
-		case Format::UNKNOWN:
-		default:
-			ensure(false);
-			return 0;
-		}
-	}
+	Format GetFormat(DXGI_FORMAT format);
 
-	inline uint16 CalculateMipCount(uint32 width, uint32 height = 0, uint32 depth = 0)
-	{
-		uint16 mipCount = 0;
-		uint32 mipSize = Math::Max(width, Math::Max(height, depth));
-		while (mipSize >= 1) { mipSize >>= 1; mipCount++; }
-		return mipCount;
-	}
+	uint16 CalculateMipCount(uint32 width, uint32 height = 0, uint32 depth = 0);
+	const FormatInfo& GetFormatInfo(Format format);
+	uint64 GetRowPitch(Format format, uint32 width, uint32 mipIndex = 0);
+	uint64 GetSlicePitch(Format format, uint32 width, uint32 height, uint32 mipIndex = 0);
+	uint64 GetTextureMipByteSize(Format format, uint32 width, uint32 height, uint32 depth, uint32 mipIndex = 0);
 
-	namespace Internal
-	{
-		void DXHandleError(HRESULT hr, const char* file, int line);
-		void DXMessageCallback(D3D12_MESSAGE_CATEGORY Category, D3D12_MESSAGE_SEVERITY Severity, D3D12_MESSAGE_ID ID, LPCSTR pDescription, void* pContext);
-	}
+	inline DXGI_FORMAT gRHIPixelFormats[(uint32)Format::MAX];
+
+	constexpr uint8 gRHIBufferCount = 3;
+	constexpr uint8 gRHIMaxRenderTargets = D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT;
 }
 #define DX_CHECK(expression) { HRESULT _hr = expression; if (_hr != S_OK) limbo::RHI::Internal::DXHandleError(_hr, __FILE__, __LINE__); }

@@ -432,19 +432,19 @@ namespace limbo::Gfx
 			.DebugName = "PreCompositeSceneTexture",
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource | RHI::TextureUsage::RenderTarget,
 			.ClearValue = {
-				.Format = RHI::D3DFormat(RHI::Format::RGBA16_SFLOAT),
+				.Format = RHI::D3DFormat(RHI::Format::RGBA16_FLOAT),
 				.Color = clearValue[0]
 			},
-			.Format = RHI::Format::RGBA16_SFLOAT,
+			.Format = RHI::Format::RGBA16_FLOAT,
 			.Type = RHI::TextureType::Texture2D,
 		});
 
-		SceneTextures.GBufferRenderTargetA = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetA"));
-		SceneTextures.GBufferRenderTargetB = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetB"));
-		SceneTextures.GBufferRenderTargetC = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetC"));
-		SceneTextures.GBufferRenderTargetD = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetD"));
-		SceneTextures.GBufferRenderTargetE = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetE"));
-		SceneTextures.GBufferRenderTargetF = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_SFLOAT, "GBufferRenderTargetF"));
+		SceneTextures.GBufferRenderTargetA = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_FLOAT, "GBufferRenderTargetA"));
+		SceneTextures.GBufferRenderTargetB = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_FLOAT, "GBufferRenderTargetB"));
+		SceneTextures.GBufferRenderTargetC = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_FLOAT, "GBufferRenderTargetC"));
+		SceneTextures.GBufferRenderTargetD = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_FLOAT, "GBufferRenderTargetD"));
+		SceneTextures.GBufferRenderTargetE = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_FLOAT, "GBufferRenderTargetE"));
+		SceneTextures.GBufferRenderTargetF = RHI::CreateTexture(RHI::Tex2DRenderTarget(width, height, RHI::Format::RGBA16_FLOAT, "GBufferRenderTargetF"));
 		SceneTextures.GBufferDepthTarget = RHI::CreateTexture(RHI::Tex2DDepth(width, height, 0.0f, "GBuffer Depth"));
 	}
 
@@ -525,9 +525,10 @@ namespace limbo::Gfx
 		SceneTextures.EnvironmentCubemap = RHI::CreateTexture({
 			.Width = equirectangularTextureSize.x,
 			.Height = equirectangularTextureSize.y,
+			.Depth = 6,
 			.DebugName = "Environment Cubemap",
 			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
-			.Format = RHI::Format::RGBA16_SFLOAT,
+			.Format = RHI::Format::RGBA16_FLOAT,
 			.Type = RHI::TextureType::TextureCube,
 		});
 
@@ -556,9 +557,10 @@ namespace limbo::Gfx
 			SceneTextures.IrradianceMap = RHI::CreateTexture({
 				.Width = irradianceSize.x,
 				.Height = irradianceSize.y,
+				.Depth = 6,
 				.DebugName = "Irradiance Map",
 				.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
-				.Format = RHI::Format::RGBA16_SFLOAT,
+				.Format = RHI::Format::RGBA16_FLOAT,
 				.Type = RHI::TextureType::TextureCube,
 			});
 
@@ -583,10 +585,11 @@ namespace limbo::Gfx
 			SceneTextures.PrefilterMap = RHI::CreateTexture({
 				.Width = prefilterSize.x,
 				.Height = prefilterSize.y,
+				.Depth = 6,
 				.MipLevels = prefilterMipLevels,
 				.DebugName = "PreFilter Map",
 				.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
-				.Format = RHI::Format::RGBA16_SFLOAT,
+				.Format = RHI::Format::RGBA16_FLOAT,
 				.Type = RHI::TextureType::TextureCube,
 			});
 
@@ -618,7 +621,7 @@ namespace limbo::Gfx
 				.Height = brdfLUTMapSize.y,
 				.DebugName = "BRDF LUT Map",
 				.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
-				.Format = RHI::Format::RG16_SFLOAT,
+				.Format = RHI::Format::RG16_FLOAT,
 				.Type = RHI::TextureType::Texture2D,
 			});
 

@@ -16,17 +16,24 @@ namespace limbo::RHI
 	};
 	DECLARE_ENUM_BITWISE_OPERATORS(TextureUsage)
 
+	struct TextureInitialData
+	{
+		void*  Data;
+		uint16 NumMips = 1;
+	};
+
 	struct TextureSpec
 	{
-		uint32					Width = 0;
-		uint32					Height = 0;
+		uint32					Width = 1;
+		uint32					Height = 1;
+		uint16					Depth = 1;
 		uint16					MipLevels = 1;
 		std::string				DebugName;
 		TextureUsage			Flags = TextureUsage::None;
 		D3D12_CLEAR_VALUE		ClearValue;
 		Format					Format = Format::R8_UNORM;
 		TextureType				Type = TextureType::Texture2D;
-		void*					InitialData;
+		TextureInitialData		InitialData;
 	};
 
 	// Helpers

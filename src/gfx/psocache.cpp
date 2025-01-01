@@ -38,18 +38,18 @@ namespace limbo::Gfx::PSOCache
 										  .AddRootCBV(100));
 
 			constexpr RHI::Format deferredShadingFormats[] = {
-				RHI::Format::RGBA16_SFLOAT,
-				RHI::Format::RGBA16_SFLOAT,
-				RHI::Format::RGBA16_SFLOAT,
-				RHI::Format::RGBA16_SFLOAT,
-				RHI::Format::RGBA16_SFLOAT,
-				RHI::Format::RGBA16_SFLOAT
+				RHI::Format::RGBA16_FLOAT,
+				RHI::Format::RGBA16_FLOAT,
+				RHI::Format::RGBA16_FLOAT,
+				RHI::Format::RGBA16_FLOAT,
+				RHI::Format::RGBA16_FLOAT,
+				RHI::Format::RGBA16_FLOAT
 			};
 
 			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_GBuffer))
 				.SetRootSignature(rs)
-				.SetRenderTargetFormats(deferredShadingFormats, RHI::Format::D32_SFLOAT)
+				.SetRenderTargetFormats(deferredShadingFormats, RHI::Format::D32_FLOAT)
 				.SetDepthStencilDesc(RHI::TStaticDepthStencilState<true, false, D3D12_COMPARISON_FUNC_GREATER>::GetRHI())
 				.SetName("Deferred Shading PSO");
 
@@ -76,7 +76,7 @@ namespace limbo::Gfx::PSOCache
 				.SetVertexShader(ShadersCache::Get(ShaderID::VS_Sky))
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_Sky))
 				.SetRootSignature(rs)
-				.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::UNKNOWN)
+				.SetRenderTargetFormats({ RHI::Format::RGBA16_FLOAT }, RHI::Format::UNKNOWN)
 				.SetDepthStencilDesc(RHI::TStaticDepthStencilState<false>::GetRHI())
 				.SetInputLayout({ { "Position", 0, DXGI_FORMAT_R32G32B32_FLOAT } })
 				.SetName("Skybox PSO");
@@ -96,7 +96,7 @@ namespace limbo::Gfx::PSOCache
 				.SetVertexShader(ShadersCache::Get(ShaderID::VS_Quad))
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_DeferredLighting))
 				.SetRootSignature(rs)
-				.SetRenderTargetFormats({ RHI::Format::RGBA16_SFLOAT }, RHI::Format::UNKNOWN)
+				.SetRenderTargetFormats({ RHI::Format::RGBA16_FLOAT }, RHI::Format::UNKNOWN)
 				.SetDepthStencilDesc(RHI::TStaticDepthStencilState<false>::GetRHI())
 				.SetName("PBR Lighting PSO");
 			s_Pipelines[PipelineID::PBRLighting] = RHI::CreatePSO(psoInit);
@@ -113,7 +113,7 @@ namespace limbo::Gfx::PSOCache
 				.SetVertexShader(ShadersCache::Get(ShaderID::VS_Quad))
 				.SetPixelShader(ShadersCache::Get(ShaderID::PS_Composite))
 				.SetRootSignature(rs)
-				.SetRenderTargetFormats({ RHI::GetSwapchainFormat() }, RHI::Format::D32_SFLOAT)
+				.SetRenderTargetFormats({ RHI::GetSwapchainFormat() }, RHI::Format::D32_FLOAT)
 				.SetName("Composite PSO");
 			s_Pipelines[PipelineID::Composite] = RHI::CreatePSO(psoInit);
 		}
@@ -184,7 +184,7 @@ namespace limbo::Gfx::PSOCache
 			RHI::PipelineStateSpec psoInit = RHI::PipelineStateSpec().Init()
 				.SetVertexShader(ShadersCache::Get(ShaderID::VS_ShadowMapping))
 				.SetRootSignature(rs)
-				.SetRenderTargetFormats({}, RHI::Format::D32_SFLOAT)
+				.SetRenderTargetFormats({}, RHI::Format::D32_FLOAT)
 				.SetRasterizerDesc(RHI::TStaticRasterizerState<D3D12_FILL_MODE_SOLID, D3D12_CULL_MODE_FRONT, true, 7500, 1.0f, 0.0f, false>::GetRHI())
 				.SetName("Shadow Map PSO");
 			s_Pipelines[PipelineID::ShadowMapping] = RHI::CreatePSO(psoInit);

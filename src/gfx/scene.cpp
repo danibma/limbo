@@ -15,8 +15,10 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
-
+#include <dds/dds.h>
 #include <meshoptimizer.h>
+
+#include "core/utils.h"
 
 namespace limbo::Gfx
 {
@@ -44,7 +46,10 @@ namespace limbo::Gfx
 			int			Width = 0;
 			int			Height = 0;
 			int			Channels = 0;
-			void*		Data;
+			void*		Data = nullptr;
+			uint16		NumMips = 1;
+			bool		bGenerateMips = true;
+			RHI::Format Format;
 		};
 
 		std::vector<TextureData> TextureStreams;
@@ -336,12 +341,12 @@ namespace limbo::Gfx
 			const cgltf_pbr_metallic_roughness& workflow = cgltfMaterial->pbr_metallic_roughness;
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "Albedo");
-				material.AlbedoIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM_SRGB);
+				material.AlbedoIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str());
 				material.AlbedoFactor = float4(workflow.base_color_factor[0], workflow.base_color_factor[1], workflow.base_color_factor[2], workflow.base_color_factor[3]);
 			}
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "MetallicRoughness");
-				material.RoughnessMetalIndex = CreateTextureResource(&workflow.metallic_roughness_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM);
+				material.RoughnessMetalIndex = CreateTextureResource(&workflow.metallic_roughness_texture, debugName.c_str());
 				material.RoughnessFactor = workflow.roughness_factor;
 				material.MetallicFactor = workflow.metallic_factor;
 			}
@@ -353,18 +358,18 @@ namespace limbo::Gfx
 
 		{
 			std::string debugName = std::format(" Material({}) {}", index, "Normal");
-			material.NormalIndex = CreateTextureResource(&cgltfMaterial->normal_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM);
+			material.NormalIndex = CreateTextureResource(&cgltfMaterial->normal_texture, debugName.c_str());
 		}
 
 		{
 			std::string debugName   = std::format(" Material({}) {}", index, "Emissive");
-			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM_SRGB);
+			material.EmissiveIndex  = CreateTextureResource(&cgltfMaterial->emissive_texture, debugName.c_str());
 			material.EmissiveFactor = float3(cgltfMaterial->emissive_factor[0], cgltfMaterial->emissive_factor[1], cgltfMaterial->emissive_factor[2]);
 		}
 
 		{
 			std::string debugName			= std::format(" Material({}) {}", index, "AmbientOcclusion");
-			material.AmbientOcclusionIndex  = CreateTextureResource(&cgltfMaterial->occlusion_texture, debugName.c_str(), RHI::Format::RGBA8_UNORM);
+			material.AmbientOcclusionIndex  = CreateTextureResource(&cgltfMaterial->occlusion_texture, debugName.c_str());
 		}
 	}
 
@@ -374,37 +379,58 @@ namespace limbo::Gfx
 		if (!texture)
 			return;
 
-		int width = 0;
-		int height = 0;
-		int channels = 0;
-		void* data;
+		TextureData data;
 
-		std::string dname;
 		cgltf_image* image = texture->image;
 		if (image->uri)
 		{
-			dname = image->uri;
+			data.Name = image->uri;
 			std::string filename = std::string(m_FolderPath) + std::string(image->uri);
-			data = stbi_load(filename.c_str(), &width, &height, &channels, 4);
+			if (filename.find(".dds") != std::string::npos)
+			{
+				std::vector<uint8> filedata;
+				check(Utils::FileRead(filename.c_str(), filedata));
+				dds::Header header = dds::read_header(filedata.data(), filedata.size());
+				check(header.is_valid());
+
+				uint8* textureData = filedata.data() + header.data_offset(); 
+				data.Data = malloc(filedata.size());
+				memcpy(data.Data, textureData, filedata.size());
+
+				data.Width = header.width();
+				data.Height = header.height();
+				data.NumMips = header.mip_levels();
+				data.bGenerateMips = false;
+				data.Format = RHI::GetFormat((DXGI_FORMAT)header.format());
+			}
+			else
+			{
+				data.Data = stbi_load(filename.c_str(), &data.Width, &data.Height, &data.Channels, 4);
+				data.NumMips = RHI::CalculateMipCount(data.Width);
+				data.bGenerateMips = true;
+				data.Format = RHI::Format::RGBA8_UNORM;
+			}
 		}
 		else
 		{
-			dname = m_SceneName;
+			data.Name = m_SceneName;
 			cgltf_buffer_view* bufferView = image->buffer_view;
 			cgltf_buffer* buffer = bufferView->buffer;
 			uint32 size = (uint32)bufferView->size;
 			void* bufferLocation = (uint8*)buffer->data + bufferView->offset;
-			data = stbi_load_from_memory((stbi_uc*)bufferLocation, size, &width, &height, &channels, 4);
+			data.Data = stbi_load_from_memory((stbi_uc*)bufferLocation, size, &data.Width, &data.Height, &data.Channels, 4);
+			data.NumMips = RHI::CalculateMipCount(data.Width);
+			data.bGenerateMips = true;
+			data.Format = RHI::Format::RGBA8_UNORM;
 		}
-		ensure(data);
-
+		ensure(data.Data);
 
 		std::scoped_lock<std::mutex> lock(m_AddToTextureMapMutex);
 		TexturesMap[(uintptr_t)texture] = (uint32)TextureStreams.size();
-		TextureStreams.emplace_back(dname, width, height, channels, data);
+		TextureStreams.emplace_back(data);
 	}
 
-	uint Scene::CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName, RHI::Format format)
+	uint Scene::CreateTextureResource(const cgltf_texture_view* textureView, const std::string& debugName)
 	{
 		if (!textureView->texture)
 			return -1;
@@ -413,18 +439,27 @@ namespace limbo::Gfx
 		check(textureData.Data);
 		textureData.Name += debugName;
 
+		uint16 numMips = textureData.bGenerateMips ? 1u : textureData.NumMips;
+		RHI::TextureUsage usage = RHI::TextureUsage::ShaderResource;
+		if (textureData.bGenerateMips)
+			usage |= RHI::TextureUsage::UnorderedAccess;
+
 		RHI::TextureHandle texture = RHI::CreateTexture({
 			.Width = (uint32)textureData.Width,
 			.Height = (uint32)textureData.Height,
-			.MipLevels = RHI::CalculateMipCount(textureData.Width),
+			.MipLevels = textureData.NumMips,
 			.DebugName = textureData.Name.c_str(),
-			.Flags = RHI::TextureUsage::UnorderedAccess | RHI::TextureUsage::ShaderResource,
-			.Format = format,
+			.Flags = usage,
+			.Format = textureData.Format,
 			.Type = RHI::TextureType::Texture2D,
-			.InitialData = textureData.Data
+			.InitialData = {
+				.Data = textureData.Data,
+				.NumMips = numMips
+			}
 		});
 
-		RHI::CommandContext::GetCommandContext()->GenerateMipLevels(texture);
+		if (textureData.bGenerateMips)
+			RHI::CommandContext::GetCommandContext()->GenerateMipLevels(texture);
 		m_Textures.push_back(texture);
 
 		RHI::Texture* t = RM_GET(texture);

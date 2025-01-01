@@ -28,7 +28,7 @@ namespace limbo::Gfx
 			.Height = RHI::GetBackbufferHeight(),
 			.DebugName = "PathTracer Accumulation Buffer",
 			.Flags = RHI::TextureUsage::UnorderedAccess,
-			.Format = RHI::Format::RGBA32_SFLOAT,
+			.Format = RHI::Format::RGBA32_FLOAT,
 		});
 
 		m_Constants.NumAccumulatedFrames = 1;

@@ -18,6 +18,7 @@ namespace limbo::Utils
 	bool PathExists(const wchar_t* path);
 	bool PathExists(const char* path);
 
+	bool FileRead(const char* filename, std::vector<uint8>& filedata);
 
 	inline uint64 ToKB(uint64 bytes)
 	{
