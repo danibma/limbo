@@ -26,6 +26,19 @@ __CONST uint SHADOWMAP_SIZES[SHADOWMAP_CASCADES] =
 	2048,
 };
 
+enum class Tonemap
+{
+	None = 0,
+	AcesFilm,
+	Reinhard,
+	Uncharted2,
+	Unreal,
+	GT,
+	Agx,
+
+	MAX
+};
+
 struct SceneInfo
 {
 	float4x4	View;

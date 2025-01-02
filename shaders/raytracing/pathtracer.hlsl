@@ -131,7 +131,7 @@ LightData SampleLightData(inout uint4 seed, float3 hitPosition, out float lightS
 	else // Point
 	{
 		data.Position = cLight.LightPos - hitPosition;
-		data.Intensity = 10.0f; // TODO
+		data.Intensity = 1.0f; // TODO
 		data.Distance = length(data.Position);
 	}
 

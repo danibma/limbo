@@ -10,7 +10,7 @@ namespace limbo::Gfx
 {
 	namespace 
 	{
-		int32 s_CurrentTonemap = 1;
+		int32 s_CurrentTonemap = (int32)Tonemap::GT;
 		bool  s_EnableGammaCorrection = true;
 	}
 
@@ -50,18 +50,7 @@ namespace limbo::Gfx
 	{
 		if (ImGui::TreeNode("Composite"))
 		{
-			enum class Tonemap : uint8
-			{
-				None = 0,
-				AcesFilm,
-				Reinhard,
-				Uncharted2,
-				Unreal,
-
-				MAX
-			};
-
-			const char* tonemapList[ENUM_COUNT<Tonemap>()] = { "None", "AcesFilm", "Reinhard", "Uncharted2", "Unreal" };
+			const char* tonemapList[ENUM_COUNT<Tonemap>()] = { "None", "AcesFilm", "Reinhard", "Uncharted2", "Unreal", "GT", "Agx" };
 			ImGui::Combo("Tonemap", &s_CurrentTonemap, tonemapList, ENUM_COUNT<Tonemap>());
 			ImGui::Checkbox("Gamma Correction", &s_EnableGammaCorrection);
 
