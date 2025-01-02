@@ -14,15 +14,15 @@ namespace limbo::RHI
 	private:
 		ID3D12StateObject*			m_StateObject;
 		ShaderRecord				m_RayGenerationRecord;
-		ShaderRecord				m_MissShaderRecord;
-		ShaderRecord				m_HitGroupRecord;
+		std::vector<ShaderRecord>	m_MissShaderRecords;
+		std::vector<ShaderRecord>	m_HitGroupRecords;
 
 	public:
 		ShaderBindingTable() = default;
 		ShaderBindingTable(PSOHandle pso);
 		void BindRayGen(const wchar_t* name);
-		void BindMissShader(const wchar_t* name);
-		void BindHitGroup(const wchar_t* name);
+		void AddMissShader(const wchar_t* name);
+		void AddHitGroup(const wchar_t* name);
 		void Commit(D3D12_DISPATCH_RAYS_DESC& dispatchDesc, uint32 width, uint32 height, uint32 depth) const;
 
 	private:

@@ -16,14 +16,14 @@ namespace limbo::RHI
 		m_RayGenerationRecord = CreateShaderRecord(name);
 	}
 
-	void ShaderBindingTable::BindMissShader(const wchar_t* name)
+	void ShaderBindingTable::AddMissShader(const wchar_t* name)
 	{
-		m_MissShaderRecord = CreateShaderRecord(name);
+		m_MissShaderRecords.emplace_back(CreateShaderRecord(name));
 	}
 
-	void ShaderBindingTable::BindHitGroup(const wchar_t* name)
+	void ShaderBindingTable::AddHitGroup(const wchar_t* name)
 	{
-		m_HitGroupRecord = CreateShaderRecord(name);
+		m_HitGroupRecords.emplace_back(CreateShaderRecord(name));
 	}
 
 	void ShaderBindingTable::Commit(D3D12_DISPATCH_RAYS_DESC& dispatchDesc, uint32 width, uint32 height, uint32 depth) const
@@ -43,10 +43,18 @@ namespace limbo::RHI
 		memcpy(data, m_RayGenerationRecord.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
 		data += D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
 
-		memcpy(data, m_MissShaderRecord.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+		for (const ShaderRecord& record : m_MissShaderRecords)
+		{
+			memcpy(data, record.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+			data += D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+		}
 		data += D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
 
-		memcpy(data, m_HitGroupRecord.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+		for (const ShaderRecord& record : m_HitGroupRecords)
+		{
+			memcpy(data, record.Identifier, D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES);
+			data += D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;	
+		}
 		data += D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
 
 		dispatchDesc = {
@@ -56,12 +64,12 @@ namespace limbo::RHI
 			},
 			.MissShaderTable = {
 				.StartAddress = sbtResource->GetGPUVirtualAddress() + D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT,
-				.SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES,
+				.SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES * m_MissShaderRecords.size(),
 				.StrideInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES
 			},
 			.HitGroupTable = {
-				.StartAddress = sbtResource->GetGPUVirtualAddress() + (D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT * 2),
-				.SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES,
+				.StartAddress = sbtResource->GetGPUVirtualAddress() + (D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT * (m_MissShaderRecords.size() + 1)),
+				.SizeInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES * m_HitGroupRecords.size(),
 				.StrideInBytes = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES
 			},
 			.Width = width,

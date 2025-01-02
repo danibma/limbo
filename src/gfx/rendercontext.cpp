@@ -58,7 +58,7 @@ namespace limbo::Gfx
 		: Window(window)
 		, Camera(CreateCamera(window, float3(0.0f, 1.0f, 4.0f), float3(0.0f, 0.0f, -1.0f)))
 		, Light({.Position = float3(0.0f, 0.5f, 0.0f), .Color = float3(1, 0.45f, 0) })
-		, Sun({ 0.5f, 12.0f, 2.0f })
+		, Sun({ 0.5f, 12.0f, 2.0f }, 5.0f)
 	{
 		Core::Timer initTimer;
 
@@ -278,13 +278,19 @@ namespace limbo::Gfx
 
 			if (ImGui::CollapsingHeader("Light"))
 			{
-				ImGui::DragFloat3("Light Position", &Light.Position[0], 0.1f);
+				if (ImGui::DragFloat3("Light Position", &Light.Position[0], 0.1f))
+					bResetAccumulationBuffer = true;
+				
 				ImGui::ColorEdit3("Light Color", &Light.Color[0]);
 			}
 
 			if (ImGui::CollapsingHeader("Sun"))
 			{
-				ImGui::DragFloat3("Direction", &Sun.Direction[0], 0.1f);
+				if (ImGui::DragFloat3("Direction", &Sun.Direction[0], 0.1f))
+					bResetAccumulationBuffer = true;
+				
+				if (ImGui::DragFloat("Intensity", &Sun.Intensity, 0.1f))
+					bResetAccumulationBuffer = true;
 			}
 
 			ImGui::End();
@@ -396,6 +402,7 @@ namespace limbo::Gfx
 	{
 		SceneInfo.bSunCastsShadows		= Tweaks::bSunCastsShadows;
 		SceneInfo.SunDirection			= float4(Sun.Direction, 1.0f);
+		SceneInfo.SunIntensity			= Sun.Intensity;
 		SceneInfo.bShowShadowCascades	= UIGlobals::bShowShadowCascades;
 
 		SceneInfo.PrevView				= SceneInfo.View;

@@ -45,8 +45,11 @@ namespace limbo::Gfx
 
 	void PathTracing::Render(RHI::CommandContext& cmd, RenderContext& context)
 	{
-		if (context.SceneInfo.PrevView != context.SceneInfo.View || !m_Constants.bAccumulateEnabled)
+		if (context.SceneInfo.PrevView != context.SceneInfo.View || context.bResetAccumulationBuffer || !m_Constants.bAccumulateEnabled)
+		{
 			m_Constants.NumAccumulatedFrames = 1;
+			context.bResetAccumulationBuffer = false;
+		}
 
 		if (!context.HasScenes())
 		{
@@ -62,8 +65,10 @@ namespace limbo::Gfx
 
 		RHI::ShaderBindingTable SBT(pso);
 		SBT.BindRayGen(L"PTRayGen");
-		SBT.BindMissShader(L"PTMiss");
-		SBT.BindHitGroup(L"PTHitGroup");
+		SBT.AddMissShader(L"PTMiss");
+		SBT.AddMissShader(L"ShadowMiss");
+		SBT.AddHitGroup(L"PTHitGroup");
+		SBT.AddHitGroup(L"ShadowHitGroup");
 
 		cmd.BindRootSRV(0, context.SceneAccelerationStructure.GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 
@@ -76,6 +81,13 @@ namespace limbo::Gfx
 
 		cmd.BindTempConstantBuffer(2, context.SceneInfo);
 		cmd.BindConstants(3, 3, 0, &m_Constants);
+
+		// TODO: Lights
+		{
+			cmd.BindConstants(4, 0, context.Light.Position);
+			cmd.BindConstants(4, 3, context.Light.Color);
+		}
+		
 		cmd.DispatchRays(SBT, RHI::GetBackbufferWidth(), RHI::GetBackbufferHeight());
 		cmd.EndProfileEvent("Path Tracing");
 

@@ -8,11 +8,32 @@ RWTexture2D<float4> uAccumulationBuffer : register(u1);
 
 ConstantBuffer<PathTracerConstants> c : register(b0);
 
+struct Light
+{
+	float3 LightPos;
+	float3 LightColor;
+};
+ConstantBuffer<Light> cLight : register(b1);
+
 enum class EBRDFType
 {
 	Diffuse,
 	Specular
 };
+
+struct ShadowPayload
+{
+	bool bHit;
+};
+
+struct LightData
+{
+	float3 Position;
+	float Distance;
+	float Intensity;
+};
+
+#define SUN_ONLY 1
 
 // From Ray Tracing Gems II - Chapter 14
 RayDesc GeneratePinholeCameraRay(float2 pixel)
@@ -59,11 +80,11 @@ float GetBRDFProbability(ShadingData shading, float3 V)
 	return clamp(specular / (specular + diffuse), 0.1f, 0.9f);
 }
 
-void EvaluateBRDF(EBRDFType brdfType, float2 u, ShadingData shadingData, float3 V, out float3 rayDirection, out float3 brdfWeight)
+void EvaluateIndirectCombinedBRDF(EBRDFType brdfType, float2 u, ShadingData shadingData, float3 V, out float3 rayDirection, out float3 brdfWeight)
 {
 	float NdotV = max(dot(shadingData.ShadingNormal, V), 0.00001f);
 	
-	float3 F0 = lerp(0.04.xxx, shadingData.Albedo, shadingData.Metallic);
+	float3 F0 = lerp(MIN_DIELECTRICS_F0.xxx, shadingData.Albedo, shadingData.Metallic);
 	float3 fresnel = FresnelSchlick(NdotV, F0);
 	
 	if (brdfType == EBRDFType::Specular)
@@ -93,6 +114,30 @@ void EvaluateBRDF(EBRDFType brdfType, float2 u, ShadingData shadingData, float3 
 	}
 }
 
+LightData SampleLightData(inout uint4 seed, float3 hitPosition, out float lightSampleWeight)
+{
+	const uint lightCount = 2; // One directional and one point
+	uint randomLightIndex = min(lightCount - 1, uint(Random01_PCG4(seed) * lightCount));
+
+	lightSampleWeight = float(lightCount);
+
+	LightData data;
+	if (randomLightIndex == 0 || SUN_ONLY) // Directional
+	{
+		data.Position = normalize(GSceneInfo.SunDirection.xyz);
+		data.Intensity = GSceneInfo.SunIntensity;
+		data.Distance = FLT_MAX;
+	}
+	else // Point
+	{
+		data.Position = cLight.LightPos - hitPosition;
+		data.Intensity = 10.0f; // TODO
+		data.Distance = length(data.Position);
+	}
+
+	return data;
+}
+
 // Clever offset_ray function from Ray Tracing Gems chapter 6
 // Offsets the ray origin from current position p, along normal n (which must be geometric normal)
 // so that no self-intersection can occur.
@@ -112,6 +157,46 @@ float3 OffsetRay(const float3 p, const float3 n)
 	return float3(abs(p.x) < origin ? p.x + float_scale * n.x : p_i.x,
 		abs(p.y) < origin ? p.y + float_scale * n.y : p_i.y,
 		abs(p.z) < origin ? p.z + float_scale * n.z : p_i.z);
+}
+
+bool CastShadowRay(float3 hitPosition, float3 N, float3 L, float lightDistance)
+{
+	RayDesc ray;
+	ray.Origin = OffsetRay(hitPosition, N);
+	ray.Direction = L;
+	ray.TMin = 0.0f;
+	ray.TMax = lightDistance;
+
+	ShadowPayload payload;
+	payload.bHit = true; // It will be set to false on a miss
+
+	TraceRay(
+		tSceneAS,				// AccelerationStructure
+		RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_FORCE_NON_OPAQUE, // RayFlags
+		0xFF,					// InstanceInclusionMask
+		1,                      // RayContributionToHitGroupIndex
+		0,                      // MultiplierForGeometryContributionToHitGroupIndex
+		1,                      // MissShaderIndex
+		ray,                    // Ray
+		payload                 // Payload
+	);
+
+	return !payload.bHit;
+}
+
+[shader("miss")]
+void ShadowMiss(inout ShadowPayload payload)
+{
+	payload.bHit = false;
+}
+
+[shader("anyhit")]
+void ShadowAnyHit(inout ShadowPayload payload, in BuiltInTriangleIntersectionAttributes attr)
+{
+	if (!AnyHitAlphaTest(attr.barycentrics))
+		IgnoreHit();
+	else
+		AcceptHitAndEndSearch();
 }
 
 [shader("raygeneration")]
@@ -178,33 +263,25 @@ void PTRayGen()
 			float3 V = -ray.Direction;
 			if (dot(shadingData.ShadingNormal, V) < 0.0f) shadingData.ShadingNormal = -shadingData.ShadingNormal;
 			if (dot(shadingData.ShadingNormal, shadingData.GeometryNormal) < 0.0f) shadingData.GeometryNormal = -shadingData.GeometryNormal;
-			
-			EBRDFType brdfType;
-			if (shadingData.Metallic == 1 && shadingData.Roughness == 0)
-			{
-				// Fast path for mirrors
-				brdfType = EBRDFType::Specular;
-			}
-			else
-			{
-				float brdfProbability = GetBRDFProbability(shadingData, V);
-				if (Random01_PCG4(seed) < brdfProbability)
-				{
-					brdfType = EBRDFType::Specular;
-					throughput /= brdfProbability;
-				}
-				else
-				{
-					brdfType = EBRDFType::Diffuse;
-					throughput /= (1 - brdfProbability);
-				}
-			}
-			
 			ray.Origin = OffsetRay(vertex.Position, shadingData.GeometryNormal);
-			
-			float3 brdfWeight;
-			EvaluateBRDF(brdfType, float2(Random01_PCG4(seed), Random01_PCG4(seed)), shadingData, V, ray.Direction, brdfWeight);
-			throughput *= brdfWeight;
+
+			// Directional light calculation
+			{
+				float lightSampleWeight;
+				LightData light = SampleLightData(seed, vertex.Position, lightSampleWeight);
+				float3 L = normalize(light.Position);
+				if (CastShadowRay(vertex.Position, shadingData.GeometryNormal, L, light.Distance))
+				{
+					MaterialProperties props;
+					props.BaseColor = shadingData.Albedo;
+					props.Normal    = shadingData.ShadingNormal;
+					props.Roughness = shadingData.Roughness;
+					props.Metallic  = shadingData.Metallic;
+					props.AO        = 1.0f;
+
+					radiance += throughput * DefaultBRDF(V, shadingData.ShadingNormal, L, props) * (light.Intensity * lightSampleWeight);
+				}
+			}
 
 			// Russian roulette, decides if paths should terminate earlier
 			if (bounce > minBounces)
@@ -214,6 +291,34 @@ void PTRayGen()
 					break;
 				else
 					throughput /= rr_p;
+			}
+
+			// Indirect lighting
+			{
+				EBRDFType brdfType;
+				if (shadingData.Metallic == 1 && shadingData.Roughness == 0)
+				{
+					// Fast path for mirrors
+					brdfType = EBRDFType::Specular;
+				}
+				else
+				{
+					float brdfProbability = GetBRDFProbability(shadingData, V);
+					if (Random01_PCG4(seed) < brdfProbability)
+					{
+						brdfType = EBRDFType::Specular;
+						throughput /= brdfProbability;
+					}
+					else
+					{
+						brdfType = EBRDFType::Diffuse;
+						throughput /= (1 - brdfProbability);
+					}
+				}
+			
+				float3 brdfWeight;
+				EvaluateIndirectCombinedBRDF(brdfType, float2(Random01_PCG4(seed), Random01_PCG4(seed)), shadingData, V, ray.Direction, brdfWeight);
+				throughput *= brdfWeight;
 			}
 		}
 

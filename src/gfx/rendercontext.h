@@ -32,6 +32,7 @@ namespace limbo::Gfx
 	struct DirectionalLight
 	{
 		float3 Direction;
+		float Intensity;
 	};
 
 	class Scene;
@@ -89,6 +90,7 @@ namespace limbo::Gfx
 
 		bool							bUpdateRenderer = false;
 		bool							bNeedsEnvMapChange = true;
+		bool							bResetAccumulationBuffer = false;
 		EnvironmentMapList				EnvironmentMaps;
 
 	public:

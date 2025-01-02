@@ -36,6 +36,7 @@ struct SceneInfo
 	float4x4	ViewProjection;
 	float4		SunDirection;
 	float3		CameraPos;
+	float		SunIntensity;
 
 	uint		FrameIndex;
 	uint		SkyIndex;
@@ -45,7 +46,6 @@ struct SceneInfo
 
 	uint		bSunCastsShadows;
 	uint		bShowShadowCascades;
-	__PAD;
 	__PAD;
 };
 #ifdef __cplusplus

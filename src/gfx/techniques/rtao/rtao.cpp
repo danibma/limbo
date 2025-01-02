@@ -86,8 +86,8 @@ namespace limbo::Gfx
 
 			RHI::ShaderBindingTable SBT(pso);
 			SBT.BindRayGen(L"RTAORayGen");
-			SBT.BindMissShader(L"RTAOMiss");
-			SBT.BindHitGroup(L"RTAOHitGroup");
+			SBT.AddMissShader(L"RTAOMiss");
+			SBT.AddHitGroup(L"RTAOHitGroup");
 
 			cmd.BindRootSRV(0, context.SceneAccelerationStructure.GetTLASBuffer()->Resource->GetGPUVirtualAddress());
 

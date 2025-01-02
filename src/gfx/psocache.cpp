@@ -238,7 +238,8 @@ namespace limbo::Gfx::PSOCache
 										  .AddRootSRV(0)
 										  .AddDescriptorTable(0, 2, D3D12_DESCRIPTOR_RANGE_TYPE_UAV)
 										  .AddRootCBV(100)
-										  .AddRootConstants(0, 3));
+										  .AddRootConstants(0, 3)
+										  .AddRootConstants(1, 4));
 
 			RHI::RTPipelineStateSpec psoInit = RHI::RTPipelineStateSpec().Init()
 				.SetGlobalRootSignature(rs)
@@ -250,7 +251,10 @@ namespace limbo::Gfx::PSOCache
 				.AddExport(L"PTAnyHit")
 				.AddExport(L"PTClosestHit")
 				.AddExport(L"PTMiss")
-				.AddHitGroup(L"PTHitGroup", L"PTAnyHit", L"PTClosestHit");
+				.AddHitGroup(L"PTHitGroup", L"PTAnyHit", L"PTClosestHit")
+				.AddExport(L"ShadowMiss")
+				.AddExport(L"ShadowAnyHit")
+				.AddHitGroup(L"ShadowHitGroup", L"ShadowAnyHit");
 			psoInit.AddLib(ShadersCache::Get(ShaderID::LIB_PathTracer), pathTracerDesc);
 
 			s_Pipelines[PipelineID::PathTracing] = RHI::CreatePSO(psoInit);

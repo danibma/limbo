@@ -70,7 +70,7 @@ bool AnyHitAlphaTest(float2 attribBarycentrics)
         finalAlbedo *= albedo;
     }
 
-    return finalAlbedo.a > ALPHA_THRESHOLD;
+    return finalAlbedo.a > 0.99f;
 }
 
 struct ShadingData
@@ -81,6 +81,8 @@ struct ShadingData
     float  Roughness;
     float  Metallic;
     float3 Emissive;
+
+    float Opacity;
 };
 
 ShadingData GetShadingData(Material material, VertexAttributes vertex)
@@ -125,6 +127,7 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
     }
 
     data.Albedo         = finalAlbedo.rgb;
+    data.Opacity        = finalAlbedo.a;
     data.ShadingNormal  = normal;
     data.GeometryNormal = vertex.GeometryNormal;
     data.Roughness      = roughness;
@@ -141,7 +144,7 @@ float4 GetSceneDebugView(in ShadingData shadingData)
     else if (GSceneInfo.SceneViewToRender == 2)
         return float4(shadingData.ShadingNormal, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 3)
-        return 0.0f;
+        return float4(shadingData.Opacity.xxx, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 4)
         return float4((float3)shadingData.Metallic, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 5)
