@@ -254,11 +254,11 @@ void PTRayGen()
 
 			if (!payload.IsHit())
 			{
-				radiance += GetSky(ray.Direction);
+				radiance += throughput * GetSky(ray.Direction);
 				break;
 			}
 
-			radiance += shadingData.Emissive;
+			radiance += throughput * shadingData.Emissive;
 
 			float3 V = -ray.Direction;
 			if (dot(shadingData.ShadingNormal, V) < 0.0f) shadingData.ShadingNormal = -shadingData.ShadingNormal;
@@ -322,7 +322,7 @@ void PTRayGen()
 			}
 		}
 
-		color += radiance * throughput;
+		color += radiance;
 	}
 
 	color /= float(samples);
