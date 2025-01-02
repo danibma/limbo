@@ -15,36 +15,6 @@ float2 Hammersley(uint i)
     return Hammersley(i, NumSamples);
 }
 
-// Schlick-GGX approximation of geometric attenuation function using Smith's method (IBL version).
-float SchlickGGX_IBL(float NdotL, float NdotV, float roughness)
-{
-    float r = roughness;
-    float k = (r * r) / 2.0; // Epic suggests using this roughness remapping for IBL lighting.
-    return SchlickG1(NdotV, k) * SchlickG1(NdotL, k);
-}
-
-// Importance sample GGX normal distribution function for a fixed roughness value.
-// For derivation see: http://blog.tobias-franke.eu/2014/03/30/notes_on_importance_sampling.html & Epic's s2013 presentation
-float3 ImportanceSampleGGX(float2 Xi, float roughness, float3 N)
-{
-	float alpha = roughness * roughness;
-
-	float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha * alpha - 1.0) * Xi.y));
-	float sinTheta = sqrt(1.0 - cosTheta * cosTheta); // Trig. identity
-	float phi = TwoPI * Xi.x;
-
-    float3 H;
-    H.x = sinTheta * cos(phi);
-    H.y = sinTheta * sin(phi);
-    H.z = cosTheta;
-    float3 UpVector = abs(N.z) < 0.999 ? float3(0, 0, 1) : float3(1, 0, 0);
-    float3 TangentX = normalize(cross(UpVector, N));
-    float3 TangentY = cross(N, TangentX);
-
-	// Tangent to world space
-    return normalize(TangentX * H.x + TangentY * H.y + N * H.z);
-}
-
 // Convert point from tangent/shading space to world space.
 // Removed from the ImportanceSampleGGX, from Epic's s2013 presentation
 float3 TangentToWorld(const float3 V, const float3 N)
@@ -95,17 +65,6 @@ uint QueryTextureLevels(uint tex)
 {
     float3 dimensions = GetDimensionsCube(tex);
     return uint(dimensions.z);
-}
-
-// Fresnel Schlick taking count of roughness, by Sébastien Lagarde - https://seblagarde.wordpress.com/2011/08/17/hello-world/
-float3 FresnelSchlickRoughness(float NdotV, float3 F0, float roughness)
-{
-#if 0
-    return F0 + (max(1 - roughness, F0) - F0) * pow(1 - saturate(NdotV), 5.0);
-#else
-    float val = 1.0 - NdotV;
-    return F0 + (max(1.0 - roughness, F0) - F0) * (val * val * val * val * val); //Faster than pow
-#endif
 }
 
 // 4.10.2 - Specular occlusion from frostbite - https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf

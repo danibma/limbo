@@ -518,6 +518,7 @@ namespace limbo::Gfx
 		Mesh& result = m_Meshes.emplace_back();
 		cgltf_node_transform_world(node, &result.Transform[0][0]);
 		result.LocalMaterialIndex = m_MaterialPtrToIndex[material];
+		result.bIsOpaque = material ? material->alpha_mode == cgltf_alpha_mode_opaque : true;
 		result.Name = meshName.c_str();
 	}
 

@@ -37,6 +37,7 @@ namespace limbo::Gfx
 		RHI::BufferHandle			BLAS;
 
 		uint32						LocalMaterialIndex;
+		bool						bIsOpaque;
 		uint32						InstanceID;
 
 		float4x4					Transform;

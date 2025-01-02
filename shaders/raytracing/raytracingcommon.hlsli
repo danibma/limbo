@@ -10,7 +10,9 @@ T InterpolateVertex(T a0, T a1, T a2, float3 b)
 
 struct VertexAttributes
 {
-    float3 Normal;
+    float3 Position;
+    float3 ShadingNormal;
+    float3 GeometryNormal;
     float3 Tangent;
     float2 UV;
 };
@@ -28,13 +30,20 @@ VertexAttributes GetVertexAttributes(Instance instance, float2 attribBarycentric
     }
 
     VertexAttributes vertexAttrib;
+    vertexAttrib.Position = mul(instance.LocalTransform, float4(InterpolateVertex(vertex[0].Position, vertex[1].Position, vertex[2].Position, barycentrics), 1.0f)).rgb;
     vertexAttrib.UV       = InterpolateVertex(vertex[0].UV, vertex[1].UV, vertex[2].UV, barycentrics);
 
-    vertexAttrib.Normal   = InterpolateVertex(vertex[0].Normal, vertex[1].Normal, vertex[2].Normal, barycentrics);
-    vertexAttrib.Normal   = TransformNormal(instance.LocalTransform, vertexAttrib.Normal);
+    vertexAttrib.ShadingNormal = InterpolateVertex(vertex[0].Normal, vertex[1].Normal, vertex[2].Normal, barycentrics);
+    vertexAttrib.ShadingNormal = TransformNormal(instance.LocalTransform, vertexAttrib.ShadingNormal);
 
     vertexAttrib.Tangent = InterpolateVertex(vertex[0].Tangent, vertex[1].Tangent, vertex[2].Tangent, barycentrics);
     vertexAttrib.Tangent = TransformNormal(instance.LocalTransform, vertexAttrib.Tangent);
+
+    // Calculate geometry normal from triangle vertices positions
+    float3 edge20 = vertex[2].Position - vertex[0].Position;
+    float3 edge21 = vertex[2].Position - vertex[1].Position;
+    float3 edge10 = vertex[1].Position - vertex[0].Position;
+    vertexAttrib.GeometryNormal = normalize(cross(edge20, edge10));
 
     return vertexAttrib;
 }
@@ -55,7 +64,11 @@ bool AnyHitAlphaTest(float2 attribBarycentrics)
     Material material = GetMaterial(instance.Material);
 
     float4 finalAlbedo = material.AlbedoFactor;
-    finalAlbedo *= SampleLevel2D(material.AlbedoIndex, SLinearWrap, vertex.UV, 0);
+    if (material.AlbedoIndex != -1)
+    {
+        float4 albedo = SampleLevel2D(material.AlbedoIndex, SLinearWrap, vertex.UV, 0);
+        finalAlbedo *= albedo;
+    }
 
     return finalAlbedo.a > ALPHA_THRESHOLD;
 }
@@ -63,7 +76,8 @@ bool AnyHitAlphaTest(float2 attribBarycentrics)
 struct ShadingData
 {
     float3 Albedo;
-    float3 Normal;
+    float3 ShadingNormal;
+    float3 GeometryNormal;
     float  Roughness;
     float  Metallic;
     float3 Emissive;
@@ -99,7 +113,7 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
         emissive = SampleLevel2D(material.EmissiveIndex, SLinearWrap, vertex.UV, mipLevel).rgb;
     }
 
-    float3 normal = normalize(vertex.Normal);
+    float3 normal = normalize(vertex.ShadingNormal);
     if (material.NormalIndex != -1)
     {
         float4 normalMap = SampleLevel2D(material.NormalIndex, SLinearWrap, vertex.UV, mipLevel);
@@ -110,11 +124,12 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
         normal = mul(TBN, rgbNormal);
     }
 
-    data.Albedo     = finalAlbedo.rgb;
-    data.Normal     = normal;
-    data.Roughness  = roughness;
-    data.Metallic   = metallic;
-    data.Emissive   = emissive;
+    data.Albedo         = finalAlbedo.rgb;
+    data.ShadingNormal  = normal;
+    data.GeometryNormal = vertex.GeometryNormal;
+    data.Roughness      = roughness;
+    data.Metallic       = metallic;
+    data.Emissive       = emissive;
 
     return data;
 }
@@ -124,7 +139,7 @@ float4 GetSceneDebugView(in ShadingData shadingData)
     if (GSceneInfo.SceneViewToRender == 1)
         return float4(shadingData.Albedo, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 2)
-        return float4(shadingData.Normal, 1.0f);
+        return float4(shadingData.ShadingNormal, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 3)
         return 0.0f;
     else if (GSceneInfo.SceneViewToRender == 4)
