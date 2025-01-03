@@ -57,6 +57,7 @@ namespace limbo::Gfx
 		std::vector<RHI::TextureHandle>					m_Textures;
 		char											m_FolderPath[256];
 		char											m_SceneName[128];
+		char											m_Extension[16];
 
 		std::unordered_map<cgltf_material*, uint32>		m_MaterialPtrToIndex;
 

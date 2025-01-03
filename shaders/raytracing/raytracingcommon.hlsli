@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "../common.hlsli"
+#include "../brdf.hlsli"
 
 template<typename T>
 T InterpolateVertex(T a0, T a1, T a2, float3 b)
@@ -13,7 +14,7 @@ struct VertexAttributes
     float3 Position;
     float3 ShadingNormal;
     float3 GeometryNormal;
-    float3 Tangent;
+    float4 Tangent;
     float2 UV;
 };
 
@@ -37,7 +38,7 @@ VertexAttributes GetVertexAttributes(Instance instance, float2 attribBarycentric
     vertexAttrib.ShadingNormal = TransformNormal(instance.LocalTransform, vertexAttrib.ShadingNormal);
 
     vertexAttrib.Tangent = InterpolateVertex(vertex[0].Tangent, vertex[1].Tangent, vertex[2].Tangent, barycentrics);
-    vertexAttrib.Tangent = TransformNormal(instance.LocalTransform, vertexAttrib.Tangent);
+    vertexAttrib.Tangent.xyz = TransformNormal(instance.LocalTransform, vertexAttrib.Tangent.xyz);
 
     // Calculate geometry normal from triangle vertices positions
     float3 edge20 = vertex[2].Position - vertex[0].Position;
@@ -63,52 +64,58 @@ bool AnyHitAlphaTest(float2 attribBarycentrics)
 
     Material material = GetMaterial(instance.Material);
 
-    float4 finalAlbedo = material.AlbedoFactor;
-    if (material.AlbedoIndex != -1)
+    float4 finalAlbedo = material.BaseColorFactor;
+    if (material.BaseColorIndex != -1)
     {
-        float4 albedo = SampleLevel2D(material.AlbedoIndex, SLinearWrap, vertex.UV, 0);
+        float4 albedo = SampleLevel2D(material.BaseColorIndex, SLinearWrap, vertex.UV, 0);
         finalAlbedo *= albedo;
     }
 
-    return finalAlbedo.a > 0.99f;
+    return finalAlbedo.a > ALPHA_THRESHOLD;
 }
-
-struct ShadingData
-{
-    float3 Albedo;
-    float3 ShadingNormal;
-    float3 GeometryNormal;
-    float  Roughness;
-    float  Metallic;
-    float3 Emissive;
-
-    float Opacity;
-};
 
 ShadingData GetShadingData(Material material, VertexAttributes vertex)
 {
     ShadingData data;
+    data.bIsSpecularGloss = any(material.bIsSpecularGlossModel);
 
     // In the future is probably a good idea to implement some mip mapping calculation, like the Ray Cone method from
     // Texture Level of Detail Strategies for Real-Time Ray Tracing - RayTracing Gems book
     const float mipLevel = 0;
 
-    float4 finalAlbedo = material.AlbedoFactor;
-    if (material.AlbedoIndex != -1)
+    float4 finalBaseColor = material.BaseColorFactor;
+    if (material.BaseColorIndex != -1)
     {
-        float4 albedo = SampleLevel2D(material.AlbedoIndex, SLinearWrap, vertex.UV, mipLevel);
-        finalAlbedo *= albedo;
+        float4 baseColor = SampleLevel2D(material.BaseColorIndex, SLinearWrap, vertex.UV, mipLevel);
+        finalBaseColor *= baseColor;
     }
 
-    float roughness = material.RoughnessFactor;
-    float metallic = material.MetallicFactor;
-    if (material.RoughnessMetalIndex != -1)
+    float roughness = 0.0f;
+    float metallic = 0.0f;
+    float3 specular = 0.0f;
+    if (data.bIsSpecularGloss)
     {
-        float4 roughnessMetalMap = SampleLevel2D(material.RoughnessMetalIndex, SLinearWrap, vertex.UV, mipLevel);
-        roughness *= roughnessMetalMap.g;
-        metallic *= roughnessMetalMap.b;
+        roughness = material.RoughnessFactor; // The roughness factor is already converted(1 - glossiness) when loading the scene
+        specular = material.SpecularFactor;
+        if (material.RoughnessMetalIndex != -1) // This is the SpecularGlossiness texture
+        {
+            float4 specularGlossinessMap = SampleLevel2D(material.RoughnessMetalIndex, SLinearWrap, vertex.UV, mipLevel);
+            specular *= specularGlossinessMap.rgb;
+            roughness = 1 - specularGlossinessMap.a;
+        }
     }
-
+    else
+    {
+        roughness = material.RoughnessFactor;
+        metallic = material.MetallicFactor;
+        if (material.RoughnessMetalIndex != -1)
+        {
+            float4 roughnessMetalMap = SampleLevel2D(material.RoughnessMetalIndex, SLinearWrap, vertex.UV, mipLevel);
+            roughness *= roughnessMetalMap.g;
+            metallic *= roughnessMetalMap.b;
+        }
+    }
+    
     float3 emissive = material.EmissiveFactor;
     if (material.EmissiveIndex != -1)
     {
@@ -118,21 +125,22 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
     float3 normal = normalize(vertex.ShadingNormal);
     if (material.NormalIndex != -1)
     {
-        float4 normalMap = SampleLevel2D(material.NormalIndex, SLinearWrap, vertex.UV, mipLevel);
-        float3 rgbNormal = 2.0f * normalMap.rgb - 1.0f; // from [0, 1] to [-1, 1]
-        
-        float3 bitangent = cross(vertex.Tangent, normal);
-        float3x3 TBN = transpose(float3x3(vertex.Tangent, bitangent, normal));
-        normal = mul(TBN, rgbNormal);
+        float3 normalMap = UnpackNormalMap(SampleLevel2D(material.NormalIndex, SLinearWrap, vertex.UV, mipLevel)).rgb;
+
+        float4 tangent = normalize(vertex.Tangent);
+        float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
+        float3x3 TBN = transpose(float3x3(tangent.xyz, bitangent, normal));
+        normal = normalize(mul(TBN, normalMap));
     }
 
-    data.Albedo         = finalAlbedo.rgb;
-    data.Opacity        = finalAlbedo.a;
-    data.ShadingNormal  = normal;
-    data.GeometryNormal = vertex.GeometryNormal;
-    data.Roughness      = roughness;
-    data.Metallic       = metallic;
-    data.Emissive       = emissive;
+    data.BaseColor        = finalBaseColor.rgb;
+    data.ShadingNormal    = normal;
+    data.GeometryNormal   = vertex.GeometryNormal;
+    data.Roughness        = roughness;
+    data.Specular         = specular;
+    data.Metallic         = metallic;
+    data.Emissive         = emissive;
+    data.AO               = 1.0f;
 
     return data;
 }
@@ -140,11 +148,11 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
 float4 GetSceneDebugView(in ShadingData shadingData)
 {
     if (GSceneInfo.SceneViewToRender == 1)
-        return float4(shadingData.Albedo, 1.0f);
+        return float4(shadingData.BaseColor, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 2)
         return float4(shadingData.ShadingNormal, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 3)
-        return float4(shadingData.Opacity.xxx, 1.0f);
+        return float4(shadingData.CalculateDiffuseReflectance(), 1.0f);
     else if (GSceneInfo.SceneViewToRender == 4)
         return float4((float3)shadingData.Metallic, 1.0f);
     else if (GSceneInfo.SceneViewToRender == 5)

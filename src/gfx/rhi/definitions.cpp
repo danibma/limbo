@@ -185,8 +185,24 @@ namespace limbo::RHI
 		return Format::MAX;
 	}
 
+	bool IsFormatSRGB(Format format)
+	{
+		switch (format)
+		{
+		case Format::RGBA8_UNORM_SRGB: return true;
+		case Format::BC1_UNORM_SRGB: return true;
+		case Format::BC2_UNORM_SRGB: return true;
+		case Format::BC3_UNORM_SRGB: return true;
+		case Format::BC7_UNORM_SRGB: return true;
+		}
+
+		return false;
+	}
+
 	Format ConvertToSRGBFormat(Format format)
 	{
+		if (IsFormatSRGB(format)) return format;
+		
 		switch (format)
 		{
 		case Format::RGBA8_UNORM: return Format::RGBA8_UNORM_SRGB;

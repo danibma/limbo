@@ -77,42 +77,42 @@ float ComputeSpecOcclusion(float NdotV, float AO, float roughness)
 // IBL Calculation
 //
 
-float3 Diffuse_IBL(in MaterialProperties material, in float3 F, in float3 N, uint IrradianceMap)
+float3 Diffuse_IBL(in ShadingData shading, in float3 F, in float3 N, uint IrradianceMap)
 {
 	// Get diffuse contribution factor (as with direct lighting).
-    float3 kD = (1.0f - F) * (1.0f - material.Metallic * (1.0f - material.Roughness));
+    float3 kD = (1.0f - F) * (1.0f - shading.Metallic * (1.0f - shading.Roughness));
   
     float3 irradiance = SampleLevelCube(IrradianceMap, SLinearClamp, N, 0).rgb;
-    return kD * irradiance * material.BaseColor * material.AO;
+    return kD * irradiance * shading.BaseColor * shading.AO;
 }
 
-float3 Specular_IBL(in MaterialProperties material, float3 F, float3 N, float3 V, float NdotV, uint PrefilterEnvMap, uint BRDFLUT)
+float3 Specular_IBL(in ShadingData shading, float3 F, float3 N, float3 V, float NdotV, uint PrefilterEnvMap, uint BRDFLUT)
 {
 	// Specular reflection vector.
     float3 R = 2.0 * NdotV * N - V;
 
     float specularLevels = QueryTextureLevels(PrefilterEnvMap);
-    float3 prefilteredColor = SampleLevelCube(PrefilterEnvMap, SLinearClamp, R, material.Roughness * specularLevels).rgb;
+    float3 prefilteredColor = SampleLevelCube(PrefilterEnvMap, SLinearClamp, R, shading.Roughness * specularLevels).rgb;
 
     // Split-sum approximation factors for Cook-Torrance specular BRDF.
-    float2 envBRDF = Sample2D(BRDFLUT, SLinearClamp, float2(NdotV, material.Roughness)).rg;
+    float2 envBRDF = Sample2D(BRDFLUT, SLinearClamp, float2(NdotV, shading.Roughness)).rg;
 
     // Total specular IBL contribution.
-    return prefilteredColor * (F * envBRDF.x + envBRDF.y) * ComputeSpecOcclusion(NdotV, material.AO, material.Roughness);
+    return prefilteredColor * (F * envBRDF.x + envBRDF.y) * ComputeSpecOcclusion(NdotV, shading.AO, shading.Roughness);
 }
 
-float3 CalculateIBL(float3 N, float3 V, in MaterialProperties material, uint IrradianceMap, uint PrefilterEnvMap, uint BRDFLUT)
+float3 CalculateIBL(float3 N, float3 V, in ShadingData shading, uint IrradianceMap, uint PrefilterEnvMap, uint BRDFLUT)
 {
     // Preserve specular highlight
-    material.Roughness = max(0.05, material.Roughness);
+    shading.Roughness = max(0.05, shading.Roughness);
 
     float NdotV = saturate(dot(N, V));
-    float3 F0 = lerp(MIN_DIELECTRICS_F0, material.BaseColor, material.Metallic);
+    float3 F0 = lerp(MIN_DIELECTRICS_F0, shading.BaseColor, shading.Metallic);
 
-    float3 F = FresnelSchlickRoughness(NdotV, F0, material.Roughness);
+    float3 F = FresnelSchlickRoughness(NdotV, F0, shading.Roughness);
 
-    float3 diffuse  = Diffuse_IBL(material, F, N, IrradianceMap);
-    float3 specular = Specular_IBL(material, F, N, V, NdotV, PrefilterEnvMap, BRDFLUT);
+    float3 diffuse  = Diffuse_IBL(shading, F, N, IrradianceMap);
+    float3 specular = Specular_IBL(shading, F, N, V, NdotV, PrefilterEnvMap, BRDFLUT);
 
     return diffuse + specular;
 }

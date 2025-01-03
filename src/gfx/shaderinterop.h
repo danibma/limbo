@@ -77,15 +77,18 @@ static_assert(sizeof(ShadowData) % 16 == 0);
 
 struct Material
 {
-	int    AlbedoIndex;
+	uint   bIsSpecularGlossModel;
+	
+	int    BaseColorIndex;
 	int    NormalIndex;
 	int    RoughnessMetalIndex;
 	int    EmissiveIndex;
 	int    AmbientOcclusionIndex;
 
-	float4 AlbedoFactor;
+	float4 BaseColorFactor;
 	float  MetallicFactor;
 	float  RoughnessFactor;
+	float3 SpecularFactor;
 	float3 EmissiveFactor;
 };
 
@@ -93,7 +96,7 @@ struct MeshVertex
 {
 	float3 Position;
 	float3 Normal;
-	float3 Tangent;
+	float4 Tangent;
 	float2 UV;
 };
 

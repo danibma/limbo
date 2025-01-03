@@ -213,6 +213,10 @@ namespace limbo::Gfx
 				tangents[idx0] += t;
 				tangents[idx1] += t;
 				tangents[idx2] += t;
+
+				bitangents[idx0] += b;
+				bitangents[idx1] += b;
+				bitangents[idx2] += b;
 			}
 
 			data.TangentsStream.resize(data.PositionStream.size(), float4(0.0f));
@@ -224,8 +228,9 @@ namespace limbo::Gfx
 
 				// Gram-Schmidt process to make sure the vectors are perpendicular to each other. Here is a nice explanation of it: https://youtu.be/4FaWLgsctqY?si=TlqfkJl2AtK3cNxJ&t=1218
 				float3 tangent = t - glm::dot(t, n) * n;
+				float handedness = (glm::dot(glm::cross(n, t), b) < 0.0F) ? -1.0F : 1.0F;;
 
-				data.TangentsStream[i] = float4(tangent, 1.0f);
+				data.TangentsStream[i] = float4(tangent, handedness);
 			}
 		}
 	}
@@ -244,6 +249,7 @@ namespace limbo::Gfx
 
 		Paths::GetPath(path, m_FolderPath);
 		Paths::GetFilename(path, m_SceneName);
+		Paths::GetExtension(path, m_Extension);
 
 		// load all textures
 #if 0
@@ -338,17 +344,36 @@ namespace limbo::Gfx
 		m_MaterialPtrToIndex[cgltfMaterial] = index;
 		if (cgltfMaterial->has_pbr_metallic_roughness)
 		{
+			material.bIsSpecularGlossModel = false;
+			
 			const cgltf_pbr_metallic_roughness& workflow = cgltfMaterial->pbr_metallic_roughness;
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "Albedo");
-				material.AlbedoIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str(), true);
-				material.AlbedoFactor = float4(workflow.base_color_factor[0], workflow.base_color_factor[1], workflow.base_color_factor[2], workflow.base_color_factor[3]);
+				material.BaseColorIndex  = CreateTextureResource(&workflow.base_color_texture, debugName.c_str(), true);
+				material.BaseColorFactor = float4(workflow.base_color_factor[0], workflow.base_color_factor[1], workflow.base_color_factor[2], workflow.base_color_factor[3]);
 			}
 			{
 				std::string debugName = std::format(" Material({}) {}", index, "MetallicRoughness");
 				material.RoughnessMetalIndex = CreateTextureResource(&workflow.metallic_roughness_texture, debugName.c_str(), false);
 				material.RoughnessFactor = workflow.roughness_factor;
 				material.MetallicFactor = workflow.metallic_factor;
+			}
+		}
+		else if (cgltfMaterial->has_pbr_specular_glossiness)
+		{
+			material.bIsSpecularGlossModel = true;
+			
+			const cgltf_pbr_specular_glossiness& workflow = cgltfMaterial->pbr_specular_glossiness;
+			{
+				std::string debugName = std::format(" Material({}) {}", index, "Albedo");
+				material.BaseColorIndex  = CreateTextureResource(&workflow.diffuse_texture, debugName.c_str(), true);
+				material.BaseColorFactor = float4(workflow.diffuse_factor[0], workflow.diffuse_factor[1], workflow.diffuse_factor[2], workflow.diffuse_factor[3]);
+			}
+			{
+				std::string debugName = std::format(" Material({}) {}", index, "MetallicRoughness");
+				material.RoughnessMetalIndex = CreateTextureResource(&workflow.specular_glossiness_texture, debugName.c_str(), true);
+				material.RoughnessFactor = 1 - workflow.glossiness_factor;
+				material.SpecularFactor = float3(workflow.specular_factor[0], workflow.specular_factor[1], workflow.specular_factor[2]);
 			}
 		}
 		else
@@ -389,9 +414,15 @@ namespace limbo::Gfx
 			if (filename.find(".dds") != std::string::npos)
 			{
 				std::vector<uint8> filedata;
-				check(Utils::FileRead(filename.c_str(), filedata));
+				bool bIsValid = Utils::FileRead(filename.c_str(), filedata);
 				dds::Header header = dds::read_header(filedata.data(), filedata.size());
-				check(header.is_valid());
+				bIsValid &= header.is_valid();
+
+				if (!bIsValid)
+				{
+					LB_WARN("Failed to load texture");
+					return;
+				}
 
 				uint8* textureData = filedata.data() + header.data_offset(); 
 				data.Data = malloc(filedata.size());
@@ -423,7 +454,12 @@ namespace limbo::Gfx
 			data.bGenerateMips = true;
 			data.Format = RHI::Format::RGBA8_UNORM;
 		}
-		ensure(data.Data);
+
+		if (!data.Data)
+		{
+			LB_WARN("Failed to load texture");
+			return;
+		}
 
 		std::scoped_lock<std::mutex> lock(m_AddToTextureMapMutex);
 		TexturesMap[(uintptr_t)texture] = (uint32)TextureStreams.size();
@@ -436,7 +472,8 @@ namespace limbo::Gfx
 			return -1;
 
 		TextureData& textureData = TextureStreams.at(TexturesMap[(uintptr_t)textureView->texture]);
-		check(textureData.Data);
+		if (!textureData.Data)
+			return -1;
 		textureData.Name += debugName;
 
 		uint16 numMips = textureData.bGenerateMips ? 1u : textureData.NumMips;
@@ -465,7 +502,8 @@ namespace limbo::Gfx
 		m_Textures.push_back(texture);
 
 		RHI::Texture* t = RM_GET(texture);
-		ENSURE_RETURN(!t, -1);
+		if (!t)
+			return -1;
 		return t->SRV();
 	}
 

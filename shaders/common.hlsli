@@ -55,6 +55,19 @@ float3 TransformNormal(in float4x4 transform, in float3 direction)
 #undef minor    // cleanup
 }
 
+/**
+ * Unpack a normal stored in a normal map. The X and Y components are rescaled from [0,1] to [-1,1] and Z is reconstructed.
+ * Taken from UE4 - Common.ush
+ */
+float4 UnpackNormalMap(float4 textureSample)
+{
+    float2 normalXY = textureSample.rg;
+	
+    normalXY = normalXY * float2(2.0f, 2.0f) - float2(1.0f, 1.0f);
+    float normalZ = sqrt(saturate(1.0f - dot(normalXY, normalXY)));
+    return float4(normalXY.xy, normalZ, 1.0f);
+}
+
 uint Flatten2D(uint2 index, uint2 dimensions)
 {
     return index.x + index.y * dimensions.x;

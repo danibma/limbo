@@ -93,12 +93,16 @@ float4 MainPS(QuadResult quad) : SV_Target
     if (GSceneInfo.SceneViewToRender == 7)
         return float4((float3)ao, 1.0f);
 
-    MaterialProperties material;
-    material.BaseColor = albedo;
-    material.Normal    = normal;
-    material.Roughness = roughness;
-    material.Metallic  = metallic;
-    material.AO        = ao;
+    // TODO: Update this to work with specular gloss model as well. At the moment is completely broken
+    ShadingData shading;
+    shading.bIsSpecularGloss = false;
+    shading.BaseColor        = albedo;
+    shading.ShadingNormal    = normal;
+    shading.GeometryNormal   = normal;
+    shading.Specular         = 0.0f;
+    shading.Roughness        = roughness;
+    shading.Metallic         = metallic;
+    shading.AO               = ao;
 
     float3 V = normalize(GSceneInfo.CameraPos - worldPos);
 	float3 N = normalize(normal);
@@ -113,10 +117,10 @@ float4 MainPS(QuadResult quad) : SV_Target
         float attenuation = 1.0f / (distance * distance);
         float3 radiance = cRandom.LightColor * attenuation;
 
-        directLighting += DefaultBRDF(V, N, L, material) * radiance;
+        directLighting += DefaultBRDF(V, N, L, shading) * radiance;
     }
 
-    float3 indirectLighting = CalculateIBL(N, V, material, cTextures.IrradianceMap, cTextures.PrefilterMap, cTextures.LUT);
+    float3 indirectLighting = CalculateIBL(N, V, shading, cTextures.IrradianceMap, cTextures.PrefilterMap, cTextures.LUT);
     float3 lightRadiance = (directLighting + indirectLighting);
 
     float shadow = 1.0f;

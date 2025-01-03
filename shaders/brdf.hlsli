@@ -9,14 +9,36 @@
 // Nothing has lower reflectance than 2%, but we use 4% UE4, Frostbite, etc.
 #define MIN_DIELECTRICS_F0 0.04f
 
-struct MaterialProperties
+struct ShadingData
 {
+	bool bIsSpecularGloss;
+	
     float3 BaseColor;
-    float3 Normal;
+	float3 Emissive;
+	float3 Specular; // Specular-Gloss model
+	
+	float3 ShadingNormal;
+	float3 GeometryNormal; // For Path Tracing
 
     float Roughness;
-    float Metallic;
+    float Metallic; // Metallic-Roughness model
     float AO;
+
+	float3 CalculateF0()
+	{
+		if (bIsSpecularGloss)
+			return Specular;
+		else
+			return lerp(MIN_DIELECTRICS_F0, BaseColor, Metallic);
+	}
+
+	float3 CalculateDiffuseReflectance()
+	{
+		if (bIsSpecularGloss)
+			return BaseColor * (1 - max(Specular.r, max(Specular.g, Specular.b)));
+		else
+			return BaseColor * (1 - Metallic);
+	}
 };
 
 struct BRDFContext
@@ -158,7 +180,7 @@ float3 Diffuse_Lambert(in BRDFContext brdfContext)
 //					BRDF
 //--------------------------------------------
 
-BRDFContext InitBRDF(float3 V, float3 N, float3 L, in MaterialProperties material)
+BRDFContext InitBRDF(float3 V, float3 N, float3 L, in ShadingData shading)
 {
     float3 H = normalize(V + L);
 
@@ -174,20 +196,20 @@ BRDFContext InitBRDF(float3 V, float3 N, float3 L, in MaterialProperties materia
     brdf.NdotH = saturate(dot(N, H));
     brdf.HdotV = saturate(dot(H, V));
 
-    brdf.DiffuseReflectance = material.BaseColor * (1 - material.Metallic);
+    brdf.DiffuseReflectance = shading.CalculateDiffuseReflectance();
 
-    brdf.F0 = lerp(MIN_DIELECTRICS_F0, material.BaseColor, material.Metallic);
+    brdf.F0 = shading.CalculateF0();
     brdf.F  = FresnelSchlick(brdf.HdotV, brdf.F0);
 
     // Preserve specular highlight
-    brdf.Roughness = max(0.05, material.Roughness);
+    brdf.Roughness = max(0.05, shading.Roughness);
 
     return brdf;
 }
 
-float3 DefaultBRDF(float3 V, float3 N, float3 L, MaterialProperties material)
+float3 DefaultBRDF(float3 V, float3 N, float3 L, ShadingData shading)
 {
-    BRDFContext brdfContext = InitBRDF(V, N, L, material);
+    BRDFContext brdfContext = InitBRDF(V, N, L, shading);
 
     float3 specularBRDF = Microfacet(brdfContext);
     float3 diffuseBRDF  = Diffuse_Lambert(brdfContext);

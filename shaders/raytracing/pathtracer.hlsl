@@ -70,8 +70,8 @@ float Luminance(float3 color)
 
 float GetBRDFProbability(ShadingData shading, float3 V)
 {
-	float F0 = Luminance(lerp(MIN_DIELECTRICS_F0, shading.Albedo, shading.Metallic));
-	float diffuseReflectance = Luminance(shading.Albedo * (1 - shading.Metallic));
+	float F0 = Luminance(shading.CalculateF0());
+	float diffuseReflectance = Luminance(shading.CalculateDiffuseReflectance());
 	float fresnel = saturate(Luminance(FresnelSchlick(dot(shading.ShadingNormal, V), F0)));
 	
 	float specular = fresnel;
@@ -84,7 +84,7 @@ void EvaluateIndirectCombinedBRDF(EBRDFType brdfType, float2 u, ShadingData shad
 {
 	float NdotV = max(dot(shadingData.ShadingNormal, V), 0.00001f);
 	
-	float3 F0 = lerp(MIN_DIELECTRICS_F0.xxx, shadingData.Albedo, shadingData.Metallic);
+	float3 F0 = shadingData.CalculateF0();
 	float3 fresnel = FresnelSchlick(NdotV, F0);
 	
 	if (brdfType == EBRDFType::Specular)
@@ -109,7 +109,7 @@ void EvaluateIndirectCombinedBRDF(EBRDFType brdfType, float2 u, ShadingData shad
 		rayDirection = CosineWeightSampleHemisphere(u, pdf);
 
 		// DiffuseReflectance from lambertian diffuse
-		brdfWeight = (1.0 - shadingData.Metallic) * shadingData.Albedo;
+		brdfWeight = shadingData.CalculateDiffuseReflectance();
 		brdfWeight *= (1.0 - fresnel);
 	}
 }
@@ -164,7 +164,7 @@ bool CastShadowRay(float3 hitPosition, float3 N, float3 L, float lightDistance)
 	RayDesc ray;
 	ray.Origin = OffsetRay(hitPosition, N);
 	ray.Direction = L;
-	ray.TMin = 0.0f;
+	ray.TMin = 0.0001f; // TODO: We seem to have issues with self-intersection but that should not happen when offsetting the ray
 	ray.TMax = lightDistance;
 
 	ShadowPayload payload;
@@ -172,7 +172,7 @@ bool CastShadowRay(float3 hitPosition, float3 N, float3 L, float lightDistance)
 
 	TraceRay(
 		tSceneAS,				// AccelerationStructure
-		RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_FORCE_NON_OPAQUE, // RayFlags
+		RAY_FLAG_SKIP_CLOSEST_HIT_SHADER | RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH, // RayFlags
 		0xFF,					// InstanceInclusionMask
 		1,                      // RayContributionToHitGroupIndex
 		0,                      // MultiplierForGeometryContributionToHitGroupIndex
@@ -272,14 +272,7 @@ void PTRayGen()
 				float3 L = normalize(light.Position);
 				if (CastShadowRay(vertex.Position, shadingData.GeometryNormal, L, light.Distance))
 				{
-					MaterialProperties props;
-					props.BaseColor = shadingData.Albedo;
-					props.Normal    = shadingData.ShadingNormal;
-					props.Roughness = shadingData.Roughness;
-					props.Metallic  = shadingData.Metallic;
-					props.AO        = 1.0f;
-
-					radiance += throughput * DefaultBRDF(V, shadingData.ShadingNormal, L, props) * (light.Intensity * lightSampleWeight);
+					radiance += throughput * DefaultBRDF(V, shadingData.ShadingNormal, L, shadingData) * (light.Intensity * lightSampleWeight);
 				}
 			}
 

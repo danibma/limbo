@@ -22,9 +22,9 @@ VSOut MainVS(uint vertexID : SV_VertexID)
     MeshVertex vertex = BufferLoad<MeshVertex>(instance.BufferIndex, vertexID, instance.VerticesOffset);
 
 	float3 normal = TransformNormal(instance.LocalTransform, vertex.Normal);
-	float3 tangent = TransformNormal(instance.LocalTransform, vertex.Tangent);
+	float3 tangent = normalize(TransformNormal(instance.LocalTransform, vertex.Tangent.xyz));
 
-	float3 bitangent = cross(tangent, normal);
+	float3 bitangent = cross(normal, tangent) * vertex.Tangent.w;
 	
     float4x4 mvp    = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
     result.Position = mul(mvp, float4(vertex.Position, 1.0f));
@@ -62,10 +62,10 @@ void MainMS(uint threadID : SV_DispatchThreadID, uint gtID : SV_GroupThreadID, u
 
     	MeshVertex vertex = BufferLoad<MeshVertex>(instance.BufferIndex, vertexID, instance.VerticesOffset);
 
-    	float3 normal = TransformNormal(instance.LocalTransform, vertex.Normal);
-    	float3 tangent = TransformNormal(instance.LocalTransform, vertex.Tangent);
+    	float3 normal = normalize(TransformNormal(instance.LocalTransform, vertex.Normal));
+    	float3 tangent = normalize(TransformNormal(instance.LocalTransform, vertex.Tangent.xyz));
 
-    	float3 bitangent = cross(tangent, normal);
+    	float3 bitangent = cross(normal, tangent) * vertex.Tangent.w;
 	
     	float4x4 mvp    = mul(GSceneInfo.ViewProjection, instance.LocalTransform);
     	result.Position = mul(mvp, float4(vertex.Position, 1.0f));
@@ -97,10 +97,10 @@ DeferredShadingOutput MainPS(VSOut input)
     Instance instance = GetInstance(cInstanceID);
     Material material = GetMaterial(instance.Material);
 
-    float4 finalAlbedo = material.AlbedoFactor;
-    if (material.AlbedoIndex != -1)
+    float4 finalAlbedo = material.BaseColorFactor;
+    if (material.BaseColorIndex != -1)
     {
-	    float4 albedo = Sample2D(material.AlbedoIndex, SLinearWrap, input.UV);
+	    float4 albedo = Sample2D(material.BaseColorIndex, SLinearWrap, input.UV);
 	    finalAlbedo *= albedo;
     }
 
@@ -132,10 +132,8 @@ DeferredShadingOutput MainPS(VSOut input)
     float3 normal = normalize(input.Normal);
     if (material.NormalIndex != -1)
     {
-        float4 normalMap = Sample2D(material.NormalIndex, SLinearWrap, input.UV);
-
-    	float3 rgbNormal = 2.0f * normalMap.rgb - 1.0f; // from [0, 1] to [-1, 1]
-        normal = mul(input.TBN, rgbNormal);
+        float4 normalMap = UnpackNormalMap(Sample2D(material.NormalIndex, SLinearWrap, input.UV));
+        normal = normalize(mul(input.TBN, normalMap.rgb));
     }
 
     //uint meshletIndex = input.MeshletIndex;
