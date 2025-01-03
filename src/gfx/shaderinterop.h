@@ -110,7 +110,7 @@ struct Instance
 	uint		MeshletsTrianglesOffset;
 	uint		MeshletsVerticesOffset;
 
-	float4x4	LocalTransform;
+	float4x4	LocalTransform; // Same as ObjectToWorld in raytracing
 };
 
 struct Meshlet

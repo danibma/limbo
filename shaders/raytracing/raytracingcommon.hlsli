@@ -3,12 +3,6 @@
 #include "../common.hlsli"
 #include "../brdf.hlsli"
 
-template<typename T>
-T InterpolateVertex(T a0, T a1, T a2, float3 b)
-{
-    return b.x * a0 + b.y * a1 + b.z * a2;
-}
-
 struct VertexAttributes
 {
     float3 Position;
@@ -20,25 +14,27 @@ struct VertexAttributes
 
 VertexAttributes GetVertexAttributes(Instance instance, float2 attribBarycentrics, uint primitiveIndex)
 {
+    // Given attributes a0, a1 and a2 for the 3 vertices of a triangle, barycentrics.x is the weight for a1 and barycentrics.y is the weight for a2.
     float3 barycentrics = float3(1 - attribBarycentrics.x - attribBarycentrics.y, attribBarycentrics.x, attribBarycentrics.y);
     uint3  primitive    = BufferLoad<uint3>(instance.BufferIndex, primitiveIndex, instance.IndicesOffset);
 
     MeshVertex vertex[3];
+    VertexAttributes vertexAttrib = (VertexAttributes)0;
     for (int i = 0; i < 3; ++i)
     {
         uint vertexID = primitive[i];
         vertex[i] = BufferLoad<MeshVertex>(instance.BufferIndex, vertexID, instance.VerticesOffset);
+
+        vertex[i].Position = mul(instance.LocalTransform, float4(vertex[i].Position, 1.0f)).xyz;
+
+        vertexAttrib.Position       += vertex[i].Position * barycentrics[i];
+        vertexAttrib.UV             += vertex[i].UV       * barycentrics[i];
+        vertexAttrib.ShadingNormal  += vertex[i].Normal   * barycentrics[i];
+        vertexAttrib.Tangent        += vertex[i].Tangent  * barycentrics[i];
     }
 
-    VertexAttributes vertexAttrib;
-    vertexAttrib.Position = mul(instance.LocalTransform, float4(InterpolateVertex(vertex[0].Position, vertex[1].Position, vertex[2].Position, barycentrics), 1.0f)).rgb;
-    vertexAttrib.UV       = InterpolateVertex(vertex[0].UV, vertex[1].UV, vertex[2].UV, barycentrics);
-
-    vertexAttrib.ShadingNormal = InterpolateVertex(vertex[0].Normal, vertex[1].Normal, vertex[2].Normal, barycentrics);
-    vertexAttrib.ShadingNormal = TransformNormal(instance.LocalTransform, vertexAttrib.ShadingNormal);
-
-    vertexAttrib.Tangent = InterpolateVertex(vertex[0].Tangent, vertex[1].Tangent, vertex[2].Tangent, barycentrics);
-    vertexAttrib.Tangent.xyz = TransformNormal(instance.LocalTransform, vertexAttrib.Tangent.xyz);
+    vertexAttrib.ShadingNormal = normalize(TransformNormal(instance.LocalTransform, vertexAttrib.ShadingNormal));
+    vertexAttrib.Tangent.xyz = normalize(TransformNormal(instance.LocalTransform, vertexAttrib.Tangent.xyz));
 
     // Calculate geometry normal from triangle vertices positions
     float3 edge20 = vertex[2].Position - vertex[0].Position;
@@ -122,14 +118,13 @@ ShadingData GetShadingData(Material material, VertexAttributes vertex)
         emissive = SampleLevel2D(material.EmissiveIndex, SLinearWrap, vertex.UV, mipLevel).rgb;
     }
 
-    float3 normal = normalize(vertex.ShadingNormal);
+    float3 normal = vertex.ShadingNormal;
     if (material.NormalIndex != -1)
     {
         float3 normalMap = UnpackNormalMap(SampleLevel2D(material.NormalIndex, SLinearWrap, vertex.UV, mipLevel)).rgb;
 
-        float4 tangent = normalize(vertex.Tangent);
-        float3 bitangent = cross(normal, tangent.xyz) * tangent.w;
-        float3x3 TBN = transpose(float3x3(tangent.xyz, bitangent, normal));
+        float3 bitangent = cross(normal, vertex.Tangent.xyz) * vertex.Tangent.w;
+        float3x3 TBN = transpose(float3x3(vertex.Tangent.xyz, bitangent, normal));
         normal = normalize(mul(TBN, normalMap));
     }
 

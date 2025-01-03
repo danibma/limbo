@@ -47,7 +47,7 @@ RayDesc GeneratePinholeCameraRay(float2 pixel)
 	// Set up the ray.
 	RayDesc ray;
     ray.Origin = pos;
-	ray.TMin = 0.00001f;
+	ray.TMin = 0.0f; // Since we are offsetting the ray, we do not need to worry about self-intersections
 	ray.TMax = FLT_MAX;
 
 	// Extract the aspect ratio and fov from the projection matrix.
@@ -164,7 +164,7 @@ bool CastShadowRay(float3 hitPosition, float3 N, float3 L, float lightDistance)
 	RayDesc ray;
 	ray.Origin = OffsetRay(hitPosition, N);
 	ray.Direction = L;
-	ray.TMin = 0.0001f; // TODO: We seem to have issues with self-intersection but that should not happen when offsetting the ray
+	ray.TMin = 0.0f; // Since we are offsetting the ray, we do not need to worry about self-intersection
 	ray.TMax = lightDistance;
 
 	ShadowPayload payload;
