@@ -23,6 +23,7 @@
 - Screen space ambient occlusion
 - Raytraced ambient occlusion (no denoising yet, only temporal accumulation)
 - PCF Cascaded Shadow Maps for directional lights
+- Path-tracer(WIP)
  
 ## Screenshots
 ### Ambient Occlusion
@@ -33,4 +34,6 @@
 | View | Colored Cascades |
 |------|------|
 |![CSM](images/csm.png)|![CSM](images/csm_cascades.png)|
+### Path-tracer
+![PT](images/pt.png)
 
